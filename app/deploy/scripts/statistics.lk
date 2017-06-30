@@ -1,0 +1,30 @@
+
+// to run this example, first open the High Flux Solar Furnace example
+
+trace();
+
+// returns a table of statistics on the target
+stat = elementstats( 2, 0, 15, 15, 1000.0, false );
+
+// show the ray hits in each bin
+for (r=0;r<#stat.flux;r++)
+{
+	for (c=0;c<#stat.flux[r];c++)
+		out( stat.flux[r][c] + "\t");
+	
+	outln("");
+}
+
+// nullify the flux grid and the x,y arrays to show the various names of table fields
+stat.flux = null; 
+stat.xvalues = null;
+stat.yvalues = null;
+keys = @stat; // obtain an array of all the non-null keys in the stat structure
+
+outln("all statistics:");
+for (i=0;i<#keys;i++) 
+	outln( "\t'" + keys[i] + "' = " + stat{keys[i]} );
+	
+	
+outln("ray hits on heliostat: " + rayhits(0, 0));
+outln("ray hits on target: " + rayhits(2, 0));

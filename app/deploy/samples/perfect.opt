@@ -1,0 +1,52 @@
+OPTICAL PROPERTIES (Front)
+---------------------------
+optical surface number
+1
+Indices of Refraction - real in, imag in
+1.1
+1.2
+Aperture Stop or Grating Type
+3
+Diffraction Order
+4
+Grating Spacing Polynomial Coefficients
+1.1
+1.2
+1.3
+1.4
+Reflectivity
+1
+Transmissivity
+1.0
+RMS Slope Error
+0
+RMS Specularity Error
+0
+Distribution Type: g = Gaussian, p = pillbox
+g
+OPTICAL PROPERTIES (Back)
+---------------------------
+optical surface number
+1
+Indices of Refraction - real in, imag in
+1.1
+1.2
+Aperture Stop or Grating Type
+3
+Diffraction Order
+4
+Grating Spacing Polynomial Coefficients
+1.1
+1.2
+1.3
+1.4
+Reflectivity
+0.00
+Transmissivity
+1.0
+RMS Slope Error
+0
+RMS Specularity Error
+0
+Distribution Type: g = Gaussian, p = pillbox
+g

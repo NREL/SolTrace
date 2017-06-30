@@ -1,0 +1,15 @@
+
+SolTrace
+- plot configuration (axes labels, limits, export, type)
+- specify specific elements i.e. 1, 5-10, also by comment field
+- specify arbitrary plane in 3D -> to flux map
+- high quality PDF export
+- consider OpenGL API
+- output custom plugins (language independent), also call python script after trace?
+- Tim's list of scripting improvement requests??
+- HTML HelpNDoc system
+- easier selection of elements
+- save trace settings to input file
+- save binary ray files and read back in from disk when opening an input file.
+- compress/decompress binary ray data file
+- file extension to .stp

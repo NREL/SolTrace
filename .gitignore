@@ -1,0 +1,16 @@
+# Ignored files and extensions
+
+*.filters
+*.user
+*.sdf
+*.opensdf
+*.suo
+*.exe
+*.log
+*.tlog
+*.lib
+*.obj
+vc120.*
+*.pdb
+*.ilk
+*.res

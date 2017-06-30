@@ -1,0 +1,87 @@
+// tmy3 helper functions
+tmy3_open = define( file, header )
+{
+	data = null;
+	f = open( file, "r" );
+	if (!f) {
+		outln("file could not be opened.");
+		return 0;
+	}
+	line = "";
+	result = read_line( f, line );
+	parts = split(line, ",");
+	if ( #parts < 7 ) {
+		outln("f = " + f + ", too few parts in header...");
+		return 0;
+	}	
+	header.loc_id = to_int(parts[0]);
+	header.city = parts[1];
+	header.state = parts[2];
+	header.tz = to_real( parts[3] );
+	header.lat = to_real( parts[4] );
+	header.lon = to_real( parts[5] );
+	header.elev = to_real( parts[6] );
+	read_line( f, line ); // skip units	
+	return f;
+};
+
+tmy3_read = define( f, data )
+{
+	data = null;
+	line = "";
+	if (!read_line(f, line)) return false;
+	parts = split( line, "," );
+	
+	data.date_str = parts[0];
+	data.time_str = parts[1];
+	data.ghi = to_real( parts[4] );
+	data.dni = to_real( parts[7] );
+	
+	parts = split(data.date_str, "/");
+	data.month = to_int( parts[0] );
+	data.day = to_int( parts[1] );
+	data.year = to_int( parts[2] );
+	
+	parts = split(data.time_str, ":");
+	data.hour = to_real( parts[0] );
+	data.minute = to_real( parts[1] );
+	
+	return true;
+};
+
+// start main script here
+
+data = null;
+// PICK A TMY3 FILE TO READ
+f = tmy3_open( "724699TY.csv", data );
+if (!f)
+{
+	outln("could not open TMY3 file specified.");
+	exit;
+}
+
+outln( "header=" + data );
+latitude = data.lat;
+longitude = data.lon;
+
+dT = 1.0; // hourly timestep
+i=dT; // i is hour counter: assumes hourly timesteps
+while( tmy3_read(f, data) )
+{
+	jday = to_int( i/24.0 );
+	hour = 0;
+	if (to_real(jday) == i/24.0) hour = 24;
+	else {
+		hour = i-jday*24;
+		jday++;
+	}
+	
+	// PUT YOUR PROCESSING CODE HERE
+	
+	outln("jday=" + jday + " hour=" + hour + "   data=" + data);	
+	i=i+dT;
+}
+
+notice("finished reading whole tmy3 file");
+
+close(f);
