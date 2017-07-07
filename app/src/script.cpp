@@ -613,6 +613,7 @@ static void _addstage( lk::invoke_t &cxt )
 	active_stage_name = name;
 }
 
+
 static void _clearstages(lk::invoke_t &cxt)
 {
 	LK_DOC("clearstages", "Clears all stages from the project.", "(void):void");
@@ -768,6 +769,23 @@ static void _addelement( lk::invoke_t &cxt )
 	sf->Append( n );
 	MainWindow::Instance().SetModified();
 }
+
+// new function for importing stage TJW 6-29-17
+static void _import_stage(lk::invoke_t &cxt)
+{
+	LK_DOC("import_stage", "Imports an existing stage file into active stage. Overwrites active stage data.", "(string:filename):boolean");
+	wxString file = cxt.arg(0).as_string();
+
+	//cxt.result().assign(MainWindow::Instance().LoadProject(file, true) ? 1.0 : 0.0);
+	Stage *s = 0;
+	StageForm *sf = 0;
+	if (!deref_stage(&s, &sf)) return;
+
+	sf->Import(file);
+	MainWindow::Instance().SetModified();
+
+}
+
 
 static void _clearelements( lk::invoke_t &cxt )
 {
@@ -1069,6 +1087,7 @@ static lk::fcall_t *soltrace_functions()
 		_opticopt,
 
 		_addstage,
+		_import_stage,  //TJW 6-29-17 
 		_clearstages,
 		_liststages,
 		_stageopt,

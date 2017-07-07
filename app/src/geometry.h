@@ -23,7 +23,8 @@ public:
 
 	void UpdateFromData();
 
-	void Import();
+	void Import(const wxString &file);  //TJW 6-29-17 adding capability to import file w/o the dialog, but by directly passing the file as argumen
+	//void Import();                    //TJW 6-29-17
 	void Export();
 	void Clear();
 	void Delete(int idx=-1);

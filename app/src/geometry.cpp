@@ -1301,25 +1301,61 @@ void StageForm::OnGridCellDClick(wxGridEvent &evt)
 		evt.Skip();
 }
 
-void StageForm::Import()
+  
+void StageForm::Import(const wxString &file)  //TJW 6-29-17 adding capability to import file w/o the dialog in lk scripting function, by directly passing the file name as an argument
+//void StageForm::Import()                    //TJW 6-29-17
 {
 	if (!m_stage) return;
-	
-	wxFileDialog dlg(this, "Import stage geometry");
-	if ( dlg.ShowModal()==wxID_OK )
+
+	if (file == "")  //TJW 6-29-17 added test for capability to import file w/o the dialog, but by directly passing the file as argument
+	{//TWJ 6-29-17
+		wxFileDialog dlg(this, "Import stage geometry");
+		if (dlg.ShowModal() == wxID_OK)
+		{
+			wxString file = dlg.GetPath();
+			FILE *fp = fopen(file.c_str(), "r");
+			if (fp)
+			{
+				Stage *ss = new Stage;
+				if (ss->Read(fp))
+				{
+					// free memory associated with current stage elements
+					m_stage->ClearElements();
+
+					// copy over everything, incl. element pointers
+					*m_stage = *ss;
+
+					// erase element pointer list without deleting element data, since pointers
+					// to newly read in elements are part of m_stage
+					ss->ElementList.clear();
+
+					UpdateFromData();
+					m_geoForm->UpdateStageNames();
+					Modified();
+				}
+				else
+					wxMessageBox("Error reading stage data from:\n\n" + file);
+
+				delete ss;
+				fclose(fp);
+			}
+			else
+				wxMessageBox("Could not open file for reading:\n\n" + file);
+		}
+	}//TJW 6-29-17 adding the following block for capability to import file w/o the dialog, but by directly passing the file as argument
+	else
 	{
-		wxString file = dlg.GetPath();
 		FILE *fp = fopen(file.c_str(), "r");
 		if (fp)
 		{
 			Stage *ss = new Stage;
-			if ( ss->Read( fp ) )
+			if (ss->Read(fp))
 			{
 				// free memory associated with current stage elements
 				m_stage->ClearElements();
 
 				// copy over everything, incl. element pointers
-				*m_stage = *ss; 
+				*m_stage = *ss;
 
 				// erase element pointer list without deleting element data, since pointers
 				// to newly read in elements are part of m_stage
@@ -1330,14 +1366,14 @@ void StageForm::Import()
 				Modified();
 			}
 			else
-				wxMessageBox("Error reading stage data from:\n\n" + file );
-			
+				wxMessageBox("Error reading stage data from:\n\n" + file);
+
 			delete ss;
-			fclose( fp );			
+			fclose(fp);
 		}
 		else
-			wxMessageBox("Could not open file for reading:\n\n" + file );
-	}
+			wxMessageBox("Could not open file for reading:\n\n" + file);
+	}//TJW 6-29-17 
 }
 
 void StageForm::Export()
@@ -1493,6 +1529,8 @@ void StageForm::OnCommand( wxCommandEvent &evt )
 {
 	if ( !m_stage ) return;
 
+	wxString ff;
+
 	switch( evt.GetId() )
 	{
 	case ID_STAGE_NAME:
@@ -1526,7 +1564,12 @@ void StageForm::OnCommand( wxCommandEvent &evt )
 	case ID_ZROT: m_stage->ZRot = m_zrot->Value(); break;
 
 
-	case ID_IMPORT: Import(); break;
+	case ID_IMPORT:
+		ff = ""; //no file name specified when using the import button
+		Import(ff);
+		break;  //TJW 6-30-17
+
+	//case ID_IMPORT: Import(); break;
 	case ID_EXPORT: Export(); break;
 	case wxID_COPY: m_grid->Copy( true ); break;
 	case wxID_PASTE: m_grid->Paste( wxExtGridCtrl::PASTE_ALL_RESIZE_ROWS ); break;
