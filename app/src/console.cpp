@@ -71,53 +71,53 @@ int main(int argc, char **argv)
 
     wxCmdLineParser parser(cmdLineDesc, argc, argv);
 
-    //parser.Parse();
-    //
-    //if( parser.Found("f", &fname) )
-    //{
-    //    //wxPrintf( fname.mb_str() );
+    parser.Parse();
+    
+    if( parser.Found("f", &fname) )
+    {
+        //wxPrintf( fname.mb_str() );
 
-    //    //check that file exists
-    //    if(! ::wxFileExists( fname ) )
-    //    {
-    //        wxPrintf( "\nInput file not found! Invalid path." );
-    //        return 0;
-    //    }
-    //}
+        //check that file exists
+        if(! ::wxFileExists( fname ) )
+        {
+            wxPrintf( "\nInput file not found! Invalid path." );
+            return 0;
+        }
+    }
 
-    //parser.Found("r", &rays);
-    //
-    //parser.Found("m", &maxrays);
-    //
-    //parser.Found("c", &threads);
+    parser.Found("r", &rays);
+    
+    parser.Found("m", &maxrays);
+    
+    parser.Found("c", &threads);
 
-    //parser.Found("d", &l_seed);
+    parser.Found("d", &l_seed);
 
-    //parser.Found("p", &l_sunshape);
+    parser.Found("p", &l_sunshape);
 
-    //parser.Found("e", &l_error);
+    parser.Found("e", &l_error);
 
-    //parser.Found("t", &l_tower);
-    //        
-    //if( parser.Found("o", &fnout) )
-    //{
-    //    //check that file exists
-    //    if(! ::wxFileExists( fnout ) )
-    //    {
-    //        wxPrintf( "\nOutput file not found! Invalid path." );
-    //        return 0;
-    //    }
-    //}
+    parser.Found("t", &l_tower);
+            
+    if( parser.Found("o", &fnout) )
+    {
+        //check that file exists
+        if(! ::wxFileExists( fnout ) )
+        {
+            wxPrintf( "\nOutput file not found! Invalid path." );
+            return 0;
+        }
+    }
 
 
-    //if ( argc == 1 )
-    //{
-    //    // If there were no command-line options supplied, emit a message
-    //    // otherwise it's not obvious that the sample ran successfully
-    //    wxPrintf("Welcome to the SolTrace 'console' interface!\n");
-    //    wxPrintf("For more information, run again with the --help option\n");
-    //    return 0;
-    //}
+    if ( argc == 1 )
+    {
+        // If there were no command-line options supplied, emit a message
+        // otherwise it's not obvious that the sample ran successfully
+        wxPrintf("Welcome to the SolTrace 'console' interface!\n");
+        wxPrintf("For more information, run again with the --help option\n");
+        return 0;
+    }
 
     // create and execute according to the commands
     FILE *fp_in = fopen( fname.c_str(), "r" );
