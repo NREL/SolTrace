@@ -45,6 +45,7 @@
     <ClCompile Include="..\..\coretrace\treemesh.cpp" />
     <ClCompile Include="..\..\coretrace\types.cpp" />
     <ClCompile Include="..\..\coretrace\vshot.cpp" />
+    <ClCompile Include="..\src\console.cpp" />
     <ClCompile Include="..\src\elementlist.cpp" />
     <ClCompile Include="..\src\fluxmap.cpp" />
     <ClCompile Include="..\src\geometry.cpp" />
@@ -226,7 +227,7 @@
       <AdditionalLibraryDirectories>$(LKDIR);$(WEXDIR);$(WEXDIR)\build_vc2013\libcurl_ssl_x64\lib;$(WXMSW3)\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)\$(TargetName).pdb</ProgramDatabaseFile>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
     </Link>
     <Bscmake>
       <OutputFile>vc_mswud\soltrace_vc9.bsc</OutputFile>

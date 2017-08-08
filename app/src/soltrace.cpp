@@ -139,7 +139,9 @@ public:
 	}
 };
 
-IMPLEMENT_APP( MyApp );
+#ifndef ST_CONSOLE_APP
+    IMPLEMENT_APP( MyApp );
+#endif
 
 
 enum { ID_MAIN_MENU = wxID_HIGHEST+123, ID_TABS,
@@ -398,7 +400,9 @@ void MainWindow::OnClose( wxCloseEvent &evt )
 	}
 	
 	// destroy the window
+#ifndef ST_CONSOLE_APP
 	wxGetApp().ScheduleForDestruction( this );
+#endif
 }
 
 void MainWindow::OnCommand( wxCommandEvent &evt )
