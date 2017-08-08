@@ -31,8 +31,8 @@
 
 static const wxCmdLineEntryDesc cmdLineDesc[] =
 {
-    { wxCMD_LINE_SWITCH, "h", "help", "show this help message",
-        wxCMD_LINE_VAL_NONE, wxCMD_LINE_OPTION_HELP },
+    { wxCMD_LINE_SWITCH, "h", "help", "show this help message", wxCMD_LINE_VAL_NONE, wxCMD_LINE_OPTION_HELP },
+    { wxCMD_LINE_SWITCH, "a", "add", "Add integer values" },
     { wxCMD_LINE_SWITCH, "d", "dummy", "a dummy switch" },
     // ... your other command line options here...
 
@@ -58,6 +58,40 @@ int main(int argc, char **argv)
             break;
 
         case 0:
+            if( parser.Found("a") )
+            {
+                int sval=0;
+                while (1)
+                {
+                    wxChar input[128];
+                    wxPrintf("Add a new integer (type 'quit' to escape): ");
+                    if ( !wxFgets(input, WXSIZEOF(input), stdin) )
+                        break;
+
+                    // kill the last '\n'
+                    input[wxStrlen(input) - 1] = 0;
+
+                    if (wxStrcmp(input, "quit") == 0)
+                        break;
+
+                    long val;
+                    if (!wxString(input).ToLong(&val))
+                    {
+                        wxPrintf("Invalid number...\n");
+                        continue;
+                    }
+
+                    sval += val;
+
+                    wxPrintf( "%d", sval );
+
+                }
+
+
+            }
+            break;
+
+        case 1:
             // everything is ok; proceed
             if (parser.Found("d"))
             {
