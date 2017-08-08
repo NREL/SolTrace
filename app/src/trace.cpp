@@ -573,7 +573,7 @@ int trace_callback_multi_thread(st_uint_t ntracedtotal, st_uint_t ntraced, st_ui
 
 int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 						  int nmaxthreads, int *seed, bool sunshape, bool opterrs, bool aspowertower,
-						  wxArrayString &errors )
+						  wxArrayString &errors, bool is_cmd )
 {
 	if (nmaxthreads < 1)
 	{
@@ -586,9 +586,14 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	size_t ncpus = wxThread::GetCPUCount();
 	if (nmaxthreads >= 1 && ncpus > (size_t)nmaxthreads) ncpus = (size_t)nmaxthreads;
 
-	wxThreadProgressDialog tpd( &MainWindow::Instance(), ncpus, true );
-	tpd.CenterOnParent();
-	tpd.Show();
+    wxThreadProgressDialog *tpd = 0;
+
+    if(! is_cmd )
+    {
+        tpd = new wxThreadProgressDialog( &MainWindow::Instance(), ncpus, true );
+	    tpd->CenterOnParent();
+	    tpd->Show();
+    }
 		
 	std::vector<TraceThread*> ThreadList;
 
@@ -628,7 +633,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	}
 
 	
-	g_currentThreadProgress = &tpd;
+	g_currentThreadProgress = tpd;
 	wxStopWatch sw;
 	for (i=0;i<ThreadList.size();i++)
 	{
@@ -652,18 +657,22 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 		for (i=0;i<ThreadList.size();i++)
 		{
 			ThreadList[i]->status(&ntotal, &ntraced, &ntotrace, &stagenum, &nstages);
-			tpd.Update( i, 100.0f*((float)ntraced)/((float)std::max(1,(int)ntotrace)), wxString::Format("Stage %d of %d", (int)stagenum, (int)nstages) );
+			if(! is_cmd )
+                tpd->Update( i, 100.0f*((float)ntraced)/((float)std::max(1,(int)ntotrace)), wxString::Format("Stage %d of %d", (int)stagenum, (int)nstages) );
 			ntotaltraces += ntotal;
 		}
 		
 		// need to process events
 		wxYield();
 
-		if (tpd.IsCanceled())
-		{
-			for (i=0;i<ThreadList.size();i++)
-				ThreadList[i]->cancelTrace();
-		}
+        if( !is_cmd )
+        {
+		    if (tpd->IsCanceled())
+		    {
+			    for (i=0;i<ThreadList.size();i++)
+				    ThreadList[i]->cancelTrace();
+		    }
+        }
 
 		// sleep a little
 		wxMilliSleep( 50 );
@@ -720,12 +729,17 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	
 	g_currentThreadProgress = NULL;
 	
-	
-	if ( tpd.IsCanceled() )
-	{
-		errors.Add("ray trace canceled by user");
-		return -5;
-	}
+	if(! is_cmd )
+    {
+	    if ( tpd->IsCanceled() )
+	    {
+            delete tpd;
+		    errors.Add("ray trace canceled by user");
+		    return -5;
+	    }
+
+        delete tpd;
+    }
 		
 	return errors_found ? -2 : millisec;
 }
