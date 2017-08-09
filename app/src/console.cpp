@@ -2,9 +2,6 @@
 
 #ifdef ST_CONSOLE_APP
 
-#define _CRT_SECURE_NO_DEPRECATE 1
-#define _CRT_NON_CONFORMING_SWPRINTFS 1
-#define _SCL_SECURE_NO_WARNINGS 1
 #define _CONSOLE
 
 // For compilers that support precompilation, includes "wx/wx.h".
