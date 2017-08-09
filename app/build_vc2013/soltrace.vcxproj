@@ -308,7 +308,7 @@
       <AdditionalLibraryDirectories>$(LKDIR);$(WEXDIR);$(WEXDIR)\build_vc2013\libcurl_ssl_x64\lib;$(WEXDIR);$(LKDIR);$(WXMSW3)\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)\$(TargetName).pdb</ProgramDatabaseFile>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
     </Link>

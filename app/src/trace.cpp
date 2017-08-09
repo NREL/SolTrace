@@ -588,7 +588,11 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 
     wxThreadProgressDialog *tpd = 0;
 
-    if(! is_cmd )
+    if( is_cmd )
+    {
+        wxPrintf("\nRunning simulation with %d threads...", (int)ncpus);
+    }
+    else
     {
         tpd = new wxThreadProgressDialog( &MainWindow::Instance(), ncpus, true );
 	    tpd->CenterOnParent();
@@ -654,11 +658,22 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 			break;
 
 		int ntotaltraces = 0;
-		for (i=0;i<ThreadList.size();i++)
+        wxString cmd_threadstate; cmd_threadstate.clear();
+		
+        for (i=0;i<ThreadList.size();i++)
 		{
 			ThreadList[i]->status(&ntotal, &ntraced, &ntotrace, &stagenum, &nstages);
-			if(! is_cmd )
+			if( is_cmd )
+            {
+                cmd_threadstate += wxString::Format("%5.1f", 100.0f*((float)ntraced)/((float)std::max(1,(int)ntotrace)) );
+
+                if( i==ThreadList.size()-1 )
+                    wxPrintf( "\nStage %d of %d: %s", (int)stagenum, (int)nstages, cmd_threadstate.c_str() );
+            }
+            else
+            {
                 tpd->Update( i, 100.0f*((float)ntraced)/((float)std::max(1,(int)ntotrace)), wxString::Format("Stage %d of %d", (int)stagenum, (int)nstages) );
+            }
 			ntotaltraces += ntotal;
 		}
 		
@@ -675,7 +690,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
         }
 
 		// sleep a little
-		wxMilliSleep( 50 );
+		wxMilliSleep( is_cmd ? 200 : 50 );
 	}
 	
 	// wait on the joinable threads
