@@ -4,7 +4,7 @@
 #include <wx/frame.h>
 #include "project.h"
 
-#define ST_CONSOLE_APP      //define this if we want to compile as a console application (no gui)
+//#define ST_CONSOLE_APP      //define this if we want to compile as a console application (no gui)
 
 class wxSimplebook;
 class wxPanel;
