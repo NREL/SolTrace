@@ -2,7 +2,7 @@ VPATH = ..
 CC = gcc
 CXX = g++
 CFLAGS = -fPIC -Wall -g -O3 -I../ 
-CXXFLAGS = $(CFLAGS)
+CXXFLAGS = -std=c++11 $(CFLAGS)
 
 OBJECTS = \
 	treemesh.o \

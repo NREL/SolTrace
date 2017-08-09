@@ -12,7 +12,7 @@ class wxCheckBox;
 
 int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 						int nmaxthreads, int *seed, bool sunshape, bool opterrs, bool aspowertower,
-						wxArrayString &errors );
+						wxArrayString &errors, bool is_cmd=false );
 
 class TraceForm : public wxPanel
 {

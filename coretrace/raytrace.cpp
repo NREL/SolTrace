@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cmath>
 #include <algorithm>
+#include <ctime>
 //#define WITH_DEBUG_TIMER
 #ifdef WITH_DEBUG_TIMER
     #include <chrono>    //comment out for production
@@ -465,6 +466,11 @@ bool Trace(TSystem *System, unsigned int seed,
         fout.close();
 #endif
 
+        //use the callbacks based on elapsed time rather than fixed rays processed. 
+
+        clock_t startTime = clock();     //start timer
+        int rays_per_callback_estimate = 50;    //starting rough estimate for how often to check the clock
+
 		for (st_uint_t i=0;i<System->StageList.size();i++)
 		{
 
@@ -573,8 +579,19 @@ Label_StartRayLoop:
 
 			// CheckForCancelAndUpdateProgressBar
 			if (callback != 0
-				&& RaysTracedTotal++ % 15 == 0)
+				&& RaysTracedTotal++ % rays_per_callback_estimate == 0)
 			{
+                if( RaysTracedTotal > 1 )
+                {
+                    //update how often to call this
+                    double msec_per_ray = 1000.*( clock() - startTime ) / CLOCKS_PER_SEC / (double)(RaysTracedTotal > 0 ? RaysTracedTotal : 1);
+                    //set the new callback estimate to be about 50 ms
+                    rays_per_callback_estimate = (int)( 200. / msec_per_ray );
+                    //limit to something reasonable
+                    rays_per_callback_estimate = rays_per_callback_estimate < 5 ? 5 : rays_per_callback_estimate;
+                }
+
+                //do the callback
 				if ( ! (*callback)( RaysTracedTotal, RayNumber,
 									LastRayNumberInPreviousStage, i+1,
 									System->StageList.size(), cbdata ))
