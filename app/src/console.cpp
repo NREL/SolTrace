@@ -48,9 +48,6 @@ static const wxCmdLineEntryDesc cmdLineDesc[] =
     { wxCMD_LINE_OPTION, "d", "dni", "DNI [kW/m2] (=1)", wxCMD_LINE_VAL_NUMBER},
 
     { wxCMD_LINE_PARAM, 0, 0, "Stage.element number(s) for data reporting", wxCMD_LINE_VAL_STRING, wxCMD_LINE_PARAM_MULTIPLE},
-    //{ wxCMD_LINE_OPTION, "s", "summary", "File to write summary", wxCMD_LINE_VAL_STRING},
-    //{ wxCMD_LINE_OPTION, "s", "script", "Run an lk script file", wxCMD_LINE_VAL_STRING},
-    //{ wxCMD_LINE_SWITCH, "i", "interactive", "Interactive mode"},
     { wxCMD_LINE_NONE }
 };
 
@@ -178,6 +175,7 @@ int main(int argc, char **argv)
 
     wxArrayString ref_errors;
 
+    //run the simulation here
     int msec = RunTraceMultiThreaded( &project, 
             (int)rays,
 			(int)maxrays,
@@ -220,13 +218,6 @@ int main(int argc, char **argv)
 	    fputs( "Pos X,Pos Y,Pos Z,Cos X,Cos Y,Cos Z,Element,Stage,Ray Number\n", fp_out );
 	    while( rd.GetNextExport( project, Pos, Cos, Elm, Stg, Ray ) )
 	    {
-		    /*if ( nwr % nupdate == 0 )
-		    {
-			    bool proceed = pd.Update( (int)( 100*((double)nwr)/((double)nwrite) ), 
-					    "Writing data to " + dlg.GetPath() + wxString::Format(" (%.2lf MB)", bytes*0.000001 ) );
-			    if( !proceed )
-				    break;
-		    }*/
 
 		    int nb = fprintf( fp_out, "%lg,%lg,%lg,%lg,%lg,%lg,%d,%d,%d\n",
 			    Pos[0], Pos[1], Pos[2],
@@ -244,25 +235,6 @@ int main(int argc, char **argv)
     
         fclose(fp_out);
     }
-
-    ////------------------------------------------------------------------------------
-    //if(! fnsum.IsEmpty() )
-    //{
-    //    //write summary data from the run
-
-    //    FILE *fp_sum = fopen( fnsum.c_str(), "w" );
-	   // if ( !fp_sum )
-	   // {
-		  //  wxPrintf("Could not open file for writing:\n%s\n", fnsum);
-		  //  return 0;
-	   // }
-
-	   // 
-    //    
-
-    //    fclose(fp_sum);
-    //}
-
 
     //------------------------------------------------------------------------------
     size_t nelout = parser.GetParamCount();
@@ -318,6 +290,7 @@ int main(int argc, char **argv)
             continue;
         }
 
+        //summary metrics
         fprintf(fp_e, "Sun ray count,%d\n", rd.SunRayCount );
         fprintf(fp_e, "Over box of dimensions,%lg,%lg\n", rd.SunXMax - rd.SunXMin, rd.SunYMax - rd.SunYMin );
         fprintf(fp_e, "Power per ray,%lg\n", es.PowerPerRay);
