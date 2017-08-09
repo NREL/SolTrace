@@ -11,13 +11,14 @@ CORETRACELIB = $(CORETRACEDIR)/build_linux/coretrace.a
 CC = gcc
 CXX = g++
 
-CFLAGS = -g -O2 -std=c++0x -I. -I$(LKDIR)/include -I$(WEXDIR)/include -I$(CORETRACEDIR) -DLK_USE_WXWIDGETS `wx-config-3 --cflags`
+CFLAGS = -g -O2 -std=c++11 -I. -I$(LKDIR)/include -I$(WEXDIR)/include -I$(CORETRACEDIR) -DLK_USE_WXWIDGETS `wx-config-3 --cflags`
 
 CXXFLAGS = $(CFLAGS)
 LDFLAGS =  $(WEXLIB) $(LKLIB) $(CORETRACELIB) `wx-config-3 --libs stc` `wx-config-3 --libs aui` `wx-config-3 --libs gl` `wx-config-3 --libs` -lm -lcurl  -lfontconfig -ldl 
 
 
 OBJECTS = \
+	console.o\
 	elementlist.o \
 	fluxmap.o \
 	intersections.o \

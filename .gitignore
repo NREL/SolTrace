@@ -14,3 +14,7 @@ vc120.*
 *.pdb
 *.ilk
 *.res
+*.o
+*.a
+app/build_linux/soltrace
+app/deploy/linux_64/
