@@ -30,9 +30,9 @@
 
 #include "soltrace.h"
 
-int version_major = 2016;
-int version_minor = 12;
-int version_micro = 22;
+int version_major = 1;
+int version_minor = 0;
+int version_micro = 0;
 
 class CustomThemeProvider : public wxMetroThemeProvider
 {
