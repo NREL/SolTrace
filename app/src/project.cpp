@@ -591,6 +591,11 @@ bool Project::Read(FILE *fp)
 	char c = fgetc(fp);
 	if ( c == '#' )
 	{
+		/* 
+		Do a version compatibility check. In the old paradigm, the version was year.month.day of release. 
+		Open source reset to version 3.0.0 with symantic versions. Version 3.0.0 is compatible with SolTrace
+		major versions 2012-2016 prior.
+		*/
 		int vmaj = 0, vmin = 0, vmic = 0;
 		read_line( buf, 1023, fp ); sscanf( buf, " SOLTRACE VERSION %d.%d.%d INPUT FILE", &vmaj, &vmin, &vmic);
 
@@ -598,8 +603,12 @@ bool Project::Read(FILE *fp)
 		unsigned int cur_version = version_major*10000 + version_minor*100 + version_micro;
 		unsigned int file_version = vmaj*10000 + vmin*100 + vmic;
 
-		if (file_version > cur_version)
-			return false;
+		if (vmaj < 2010) //current version is compatible with year versions
+		{
+			//if file is later than current, or if major version has changed
+			if (file_version > cur_version || version_major != vmaj)
+				return false;
+		}
 	}
 	else
 	{
