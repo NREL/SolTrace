@@ -16,9 +16,9 @@ The desktop version of SolTrace for Windows or Linux builds from the following o
 
 For detailed build instructions see the [wiki](https://github.com/NREL/SolTrace/wiki), with specific instructions for:
 
-  * [Windows](https://github.com/NREL/SolTrace/wiki/Windows-Build)
-  * [OSX](https://github.com/NREL/SolTrace/wiki/OSX-Build)
-  * [Linux](https://github.com/NREL/SolTrace/wiki/Linux-Build)
+  * [Windows](https://github.com/NREL/SolTrace/wiki/build-windows)
+  * [OSX](https://github.com/NREL/SolTrace/wiki/build-osx)
+  * [Linux](https://github.com/NREL/SolTrace/wiki/build-linux)
 
 These are the general quick steps you need to follow to set up your computer for developing SolTrace:
 
