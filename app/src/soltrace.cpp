@@ -30,7 +30,7 @@
 
 #include "soltrace.h"
 
-int version_major = 1;
+int version_major = 3;
 int version_minor = 0;
 int version_micro = 0;
 
