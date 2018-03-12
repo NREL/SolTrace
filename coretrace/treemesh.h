@@ -56,7 +56,7 @@
 using namespace std;
 
 
-struct LayoutData
+struct KDLayoutData
 {
     double xlim[2];     //[min, max]
     double ylim[2];     //[min, max]
@@ -118,7 +118,7 @@ public:
 class st_hash_tree
 {
 protected:
-	LayoutData *Data;
+	KDLayoutData Data;
 	vector<st_opt_element> nodes;
 	st_opt_element head_node;
 	int nx_req, ny_req; //The number of divisions required to achieve the desired resolution
@@ -128,7 +128,7 @@ protected:
 public:
 	st_hash_tree();
 	void reset();
-	bool create_mesh(LayoutData *Data);
+	bool create_mesh(KDLayoutData &Data);
 	
     virtual void add_object(void *object, double locx, double locy, double *objsize=0);
     virtual string pos_to_binary_base(double x, double y);

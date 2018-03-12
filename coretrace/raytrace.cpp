@@ -412,7 +412,7 @@ bool Trace(TSystem *System, unsigned int seed,
             }
 
             //set up the layout data object that provides configuration details for the hash tree
-            LayoutData sun_ld;
+            KDLayoutData sun_ld;
             sun_ld.xlim[0] = System->Sun.MinXSun;
             sun_ld.xlim[1] = System->Sun.MaxXSun;
             sun_ld.ylim[0] = System->Sun.MinYSun;
@@ -420,7 +420,7 @@ bool Trace(TSystem *System, unsigned int seed,
             sun_ld.min_unit_dx = d_elm_max;
             sun_ld.min_unit_dy = d_elm_max;
 
-            sun_hash.create_mesh( &sun_ld );
+            sun_hash.create_mesh( sun_ld );
             time("Adding solar mesh elements:\t", &fout);
             
            //load stage 0 elements into the mesh
@@ -437,7 +437,7 @@ bool Trace(TSystem *System, unsigned int seed,
             if(AsPowerTower)
             {
                 //Set things up for the polar coordinate tree
-                LayoutData rec_ld;
+                KDLayoutData rec_ld;
                 rec_ld.xlim[0] = -M_PI;
                 rec_ld.xlim[1] = M_PI;
                 rec_ld.ylim[0] = -M_PI/2.;
@@ -445,7 +445,7 @@ bool Trace(TSystem *System, unsigned int seed,
                 //use smallest element to set the minimum size
                 rec_ld.min_unit_dx = rec_ld.min_unit_dy = el_proj_dat.back().d_proj; //radians at equator
             
-                rec_hash.create_mesh( &rec_ld );
+                rec_hash.create_mesh( rec_ld );
                 time("Adding polar mesh elements:\t", &fout);
 
                 //load stage 0 elements into the receiver mesh in the order of largest projection to smallest
