@@ -12,22 +12,22 @@ The desktop version of SolTrace for Windows or Linux builds from the following o
 
 * This repository, **SolTrace**, provides the user interface to assign values to inputs of the computational modules, run the modules in the correct order, and display calculation results. It also includes tools for editing LK scripts and viewing ray intersection and flux map data.
 
-# Quick Steps for Building SolTrace
+## Quick Steps for Building SolTrace
 
 For detailed build instructions see the [wiki](https://github.com/NREL/SolTrace/wiki), with specific instructions for:
 
-  * [Windows](https://github.com/NREL/SolTrace/wiki/build-windows)
-  * [OSX](https://github.com/NREL/SolTrace/wiki/build-osx)
-  * [Linux](https://github.com/NREL/SolTrace/wiki/build-linux)
+* [Windows](https://github.com/NREL/SolTrace/wiki/build-windows)
+* [OSX](https://github.com/NREL/SolTrace/wiki/build-osx)
+* [Linux](https://github.com/NREL/SolTrace/wiki/build-linux)
 
 These are the general quick steps you need to follow to set up your computer for developing SolTrace:
 
 1. Set up your development tools:
 
-    * Windows: Visual Studio 2017 Community or other editions available at https://www.visualstudio.com/.
-    * Linux: g++ compiler available at http://www.cprogramming.com/g++.html or as part of the Linux distribution.
+    * Windows: Visual Studio 2017 Community or other editions available at [https://www.visualstudio.com/](https://www.visualstudio.com/).
+    * Linux: g++ compiler available at [http://www.cprogramming.com/g++.html](http://www.cprogramming.com/g++.html) or as part of the Linux distribution.
 
-2. Download the wxWidgets 3.1.0 source code for your operating system from https://www.wxwidgets.org/downloads/.
+2. Download the wxWidgets 3.1.0 source code for your operating system from [https://www.wxwidgets.org/downloads/](https://www.wxwidgets.org/downloads/).
 
 3. Build wxWidgets.
 
@@ -41,12 +41,22 @@ These are the general quick steps you need to follow to set up your computer for
 <tr><td>WEX</td><td>https://github.com/NREL/wex</td><td>WEXDIR</td></tr>
 </table>
 
-# Contributing
+## Contributing
 
 If you would like to report an issue with SolTrace or make a feature request, please let us know by adding a new issue on the [issues page](https://github.com/NREL/SolTrace/issues).
 
 If you would like to submit code to fix an issue or add a feature, you can use GitHub to do so. Please see [Contributing](CONTRIBUTING.md) for instructions.
 
-# License
+## License
 
 SolTrace's open source code is copyrighted by the Alliance for Sustainable Energy and licensed under a [mixed MIT and GPLv3 license](LICENSE.md). It allows for-profit and not-for-profit organizations to develop and redistribute software based on SolTrace under terms of an MIT license and requires that research entities including national laboratories, colleges and universities, and non-profit organizations make the source code of any redistribution publicly available under terms of a GPLv3 license.
+
+## Citing SolTrace
+
+We appreciate your use of SolTrace, and ask that you appropriately cite the software in exchange for its open-source publication. Please use one of the following references in documentation that you provide on your work. For general usage citations, the preferred option is:
+
+> Wendelin, T. (2003). "SolTRACE: A New Optical Modeling Tool for Concentrating Solar Optics." Proceedings of the ISEC 2003: International Solar Energy Conference, 15-18 March 2003, Kohala Coast, Hawaii. New York: American Society of Mechanical Engineers, pp. 253-260; NREL Report No. CP-550-32866.
+
+For citations in work that involves substantial development or extension of the existing code, the preferred option is:
+
+> Wendelin, T., Wagner, M.J. (2018). "SolTrace Open-Source Software Project: [github.com/NREL/SolTrace](https://github.com/NREL/SolTrace)". National Renewable Energy Laboratory. Golden, Colorado.
