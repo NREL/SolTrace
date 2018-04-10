@@ -141,29 +141,30 @@ Label_50:
 	{
 	case 'g':
 	case 'G': //gaussian distribution
-			delop3 = 3.0*delop;
+			//delop3 = 3*delop;
 Label_110:
-			thetax = 2.0*delop3*RANGEN() - delop3;
-			thetay = 2.0*delop3*RANGEN() - delop3;
-			theta2 = thetax*thetax + thetay*thetay;
-			theta = sqrt(theta2);  //wendelin 1-9-12  do the test once on theta NOT individually on thetax and thetay as before
+			//thetax = 2.0*delop3*RANGEN() - delop3;
+			//thetay = 2.0*delop3*RANGEN() - delop3;
+			//theta2 = thetax*thetax + thetay*thetay;
+			//theta = sqrt(theta2);  //wendelin 1-9-12  do the test once on theta NOT individually on thetax and thetay as before
+			theta2 = 2 * (delop*delop) * (-log(RANGEN())); //theta=sqrt(2)*delop*sqrt(-log(RANGEN()));  
 			if (delop == 0.0)      //handles case were specific optical errors are set to zero  06-11-07
 				ttheta = 1.0;
 			else
-				ttheta = 1.0/exp(theta*theta/(2.0*delop*delop));
-
-			if (RANGEN() > ttheta) goto Label_110;
-			if (theta2 > (delop3*delop3)) goto Label_110;
+			//	ttheta = 1.0/exp(theta*theta/(2.0*delop*delop));
+			//if (RANGEN() > ttheta) goto Label_110;
+			//if (theta2 > (delop3*delop3)) goto Label_110;
 			
 		break;
 	
 	case 'p':
 	case 'P':  //pillbox distribution
 Label_200:
-			thetax = 2.0*delop*RANGEN() - delop;
-			thetay = 2.0*delop*RANGEN() - delop;
-			theta2 = thetax*thetax + thetay*thetay;
-			if (theta2 > (delop*delop)) goto Label_200;
+			//thetax = 2.0*delop*RANGEN() - delop;
+			//thetay = 2.0*delop*RANGEN() - delop;
+			//theta2 = thetax*thetax + thetay*thetay;
+			theta2=pow((asin(sin(delop)*sqrt(RANGEN()))),2);
+			//if (theta2 > (delop*delop)) goto Label_200;
 		break;
 
 	case 'd':
