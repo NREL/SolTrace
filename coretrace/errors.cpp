@@ -144,7 +144,7 @@ Label_50:
 
 Label_110:
 			if (delop == 0.0)      //handles case were specific optical errors are set to zero  06-11-07
-				theta2 = 0;
+				theta2 = 0.0;
 			else
 				theta2 = 2 * (delop*delop) * (-log(RANGEN())); // See "Derivation of the Angular Dispersion Error Distribution of Mirror Surfaces for Monte Carlo Ray-Tracing Applications".  
 		break;

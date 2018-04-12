@@ -121,16 +121,16 @@ Label_9:
 		//gaussian distribution
 
 				if (delop == 0.0)      //handles case were specific optical errors are set to zero  06-11-07
-					theta2 = 0;
+					theta2 = 0.0;
 				else
-					theta2 = 2 * (delop*delop) * (-log(RANGEN()));
+					theta2 = 2 * (delop*delop) * (-log(RANGEN())); // See "Derivation of the Angular Dispersion Error Distribution of Mirror Surfaces for Monte Carlo Ray-Tracing Applications".  
 
 		break;
 
 	case 'p':
 	case 'P':
 		//pillbox distribution
-		theta2 = pow((asin(sin(delop)*sqrt(RANGEN()))), 2);
+		theta2 = pow((asin(sin(delop)*sqrt(RANGEN()))), 2); // Like a diffuse distribution constrained to delop angle
 
 		break;
 	}
