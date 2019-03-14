@@ -119,37 +119,12 @@ Label_9:
 	case 'g':
 	case 'G':
 		//gaussian distribution
-		delop3 = 3.0*delop;
+        thetax = myrng.randNorm(0., delop);
+        thetay = myrng.randNorm(0., delop);
 
-		do
-		{
-			nninner = 0;
-
-			do
-			{
-				thetax = 2.0*delop3*RANGEN() - delop3;
-				if (delop == 0.0)       //handles case were specific optical errors are set to zero  06-11-07
-					ttheta = 1.0;
-				else
-					ttheta = 1.0/exp(thetax*thetax/(2.0*delop*delop));
-
-			} while( RANGEN() > ttheta );
-
-			do
-			{
-				thetay = 2.0*delop3*RANGEN() - delop3;
-				if (delop == 0.0)      //handles case were specific optical errors are set to zero  06-11-07
-					ttheta = 1.0;
-				else
-					ttheta = 1.0/exp(thetay*thetay/(2.0*delop*delop));
-
-			} while ( RANGEN() > ttheta );
-
-			theta2 = thetax*thetax + thetay*thetay;
-
-		} while ( theta2 > (delop3*delop3) );
-
-		break;
+        theta2 = thetax*thetax + thetay*thetay;
+		
+        break;
 
 	case 'p':
 	case 'P':
@@ -172,11 +147,13 @@ Label_9:
 
 	/* {Generate errors in terms of direction cosines in local ray coordinate system} */
 	theta = sqrt(theta2);
-
 	//phi = atan2(thetay, thetax); //This function appears to  present irregularities that bias results incorrectly for small values of thetay or thetax
 	phi = RANGEN()*2.0*3.1415926535897932385; // Therefore have chosen to randomize phi rather than calculate from randomized theta components
                                                       //  obtained from the distribution. The two approaches are equivalent save for this issue with
                                                       //  arctan2.      wendelin 01-12-11 
+    //FILE* fout = fopen("C:/Users/mwagner/Documents/NREL/SolarPaces/Optical model comparison/rerun-all-2019/A/raylog.txt", "a");
+    //fprintf(fout, "%f,%f\n", theta, phi);
+    //fclose(fout);
 
 	CosOut[0] = sin(theta)*cos(phi);
 	CosOut[1] = sin(theta)*sin(phi);

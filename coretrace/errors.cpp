@@ -141,20 +141,11 @@ Label_50:
 	{
 	case 'g':
 	case 'G': //gaussian distribution
-			delop3 = 3.0*delop;
-Label_110:
-			thetax = 2.0*delop3*RANGEN() - delop3;
-			thetay = 2.0*delop3*RANGEN() - delop3;
-			theta2 = thetax*thetax + thetay*thetay;
-			theta = sqrt(theta2);  //wendelin 1-9-12  do the test once on theta NOT individually on thetax and thetay as before
-			if (delop == 0.0)      //handles case were specific optical errors are set to zero  06-11-07
-				ttheta = 1.0;
-			else
-				ttheta = 1.0/exp(theta*theta/(2.0*delop*delop));
+            thetax = myrng.randNorm(0., delop);
+            thetay = myrng.randNorm(0., delop);
 
-			if (RANGEN() > ttheta) goto Label_110;
-			if (theta2 > (delop3*delop3)) goto Label_110;
-			
+            theta2 = thetax * thetax + thetay * thetay;
+
 		break;
 	
 	case 'p':
@@ -182,9 +173,9 @@ Label_300:
 			if (i == 0)
 				stest = Sun->SunShapeIntensity[0];
 			else  //change from average interpolation between data points to linear interpolation  12-20-11 wendelin
-                                stest = Sun->SunShapeIntensity[i-1]
-                                        + (Sun->SunShapeIntensity[i] - Sun->SunShapeIntensity[i-1])*(theta - Sun->SunShapeAngle[i-1])/
-						(Sun->SunShapeAngle[i] - Sun->SunShapeAngle[i-1]);
+                stest = Sun->SunShapeIntensity[i-1]
+                        + (Sun->SunShapeIntensity[i] - Sun->SunShapeIntensity[i-1])*(theta - Sun->SunShapeAngle[i-1])/
+						  (Sun->SunShapeAngle[i] - Sun->SunShapeAngle[i-1]);
 				//stest = (Sun->SunShapeIntensity[i] + Sun->SunShapeIntensity[i-1])/2.0;
 
 			if (RANGEN() > (stest/Sun->MaxIntensity)) goto Label_300;
