@@ -119,48 +119,18 @@ Label_9:
 	case 'g':
 	case 'G':
 		//gaussian distribution
-		delop3 = 3.0*delop;
 
-		do
-		{
-			nninner = 0;
-
-			do
-			{
-				thetax = 2.0*delop3*RANGEN() - delop3;
-				if (delop == 0.0)       //handles case were specific optical errors are set to zero  06-11-07
-					ttheta = 1.0;
-				else
-					ttheta = 1.0/exp(thetax*thetax/(2.0*delop*delop));
-
-			} while( RANGEN() > ttheta );
-
-			do
-			{
-				thetay = 2.0*delop3*RANGEN() - delop3;
 				if (delop == 0.0)      //handles case were specific optical errors are set to zero  06-11-07
-					ttheta = 1.0;
+					theta2 = 0.0;
 				else
-					ttheta = 1.0/exp(thetay*thetay/(2.0*delop*delop));
-
-			} while ( RANGEN() > ttheta );
-
-			theta2 = thetax*thetax + thetay*thetay;
-
-		} while ( theta2 > (delop3*delop3) );
+					theta2 = 2 * (delop*delop) * (-log(RANGEN())); // See "Derivation of the Angular Dispersion Error Distribution of Mirror Surfaces for Monte Carlo Ray-Tracing Applications".  
 
 		break;
 
 	case 'p':
 	case 'P':
 		//pillbox distribution
-		do
-		{
-			thetax = 2.0*delop*RANGEN() - delop;
-			thetay = 2.0*delop*RANGEN() - delop;
-			theta2 = thetax*thetax + thetay*thetay;
-		}
-		while ( theta2 > (delop*delop) );
+		theta2 = pow((asin(sin(delop)*sqrt(RANGEN()))), 2); // Like a diffuse distribution constrained to delop angle
 
 		break;
 	}
