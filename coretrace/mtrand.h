@@ -141,8 +141,6 @@ protected:
 // Methods
 public:
 	MTRand( const uint32 oneSeed );  // initialize with a simple uint32
-	//MTRand( uint32 *const bigSeed, uint32 const seedLength = N );  // or array
-	//MTRand();  // auto-initialize with /dev/urandom or time() and clock()
 	MTRand( const MTRand& o );  // copy
 	
 	// Do NOT use for CRYPTOGRAPHY without securely hashing several returned
@@ -154,14 +152,7 @@ public:
 	uint32 randInt( const uint32 n );     // integer in [0,n] for n < 2^32
 	double rand();                        // real number in [0,1]
 	double rand( const double n );        // real number in [0,n]
-	//double randExc();                     // real number in [0,1)
-	//double randExc( const double n );     // real number in [0,n)
-	//double randDblExc();                  // real number in (0,1)
-	//double randDblExc( const double n );  // real number in (0,n)
 	double operator()();                  // same as rand()
-	
-	// Access to 53-bit random numbers (capacity of IEEE double precision)
-	//double rand53();  // real number in [0,1)
 	
 	// Access to nonuniform random number distributions
 	double randNorm( const double mean = 0.0, const double stddev = 1.0 );
@@ -313,16 +304,6 @@ inline MTRand::MTRand( const uint32 oneSeed )
     uniform_int_distribution = std::uniform_int_distribution<int>(0, RAND_MAX);
 }
 
-//inline MTRand::MTRand( uint32 *const bigSeed, const uint32 seedLength )
-//{ 
-//    seed(bigSeed,seedLength); 
-//}
-
-//inline MTRand::MTRand()
-//{ 
-//    seed(); 
-//}
-
 inline MTRand::MTRand( const MTRand& o )
 {
 	register const uint32 *t = o.state;
@@ -335,46 +316,16 @@ inline MTRand::MTRand( const MTRand& o )
 
 inline MTRand::uint32 MTRand::randInt()
 {
-	// Pull a 32-bit integer from the generator state
-	// Every other access function simply transforms the numbers extracted here
-	
-	/*if( left == 0 ) reload();
-	--left;
-	
-	register uint32 s1;
-	s1 = *pNext++;
-	s1 ^= (s1 >> 11);
-	s1 ^= (s1 <<  7) & 0x9d2c5680UL;
-	s1 ^= (s1 << 15) & 0xefc60000UL;
-	return ( s1 ^ (s1 >> 18) );*/
-
     return uniform_int_distribution(random_generator);
 }
 
 inline MTRand::uint32 MTRand::randInt( const uint32 n )
 {
-	//// Find which bits are used in n
-	//// Optimized by Magnus Jonsson (magnus@smartelectronix.com)
-	//uint32 used = n;
-	//used |= used >> 1;
-	//used |= used >> 2;
-	//used |= used >> 4;
-	//used |= used >> 8;
-	//used |= used >> 16;
-	//
-	//// Draw numbers until one is found in [0,n]
-	//uint32 i;
-	//do
-	//	i = randInt() & used;  // toss unused bits to shorten search
-	//while( i > n );
-	//return i;
-
     return uniform_int_distribution(random_generator) % n;
 }
 
 inline double MTRand::rand()
 {
-//	return double(randInt()) * (1.0/4294967295.0);
     return uniform_distribution(random_generator);
 }
 
@@ -383,46 +334,10 @@ inline double MTRand::rand( const double n )
     return rand() * n; 
 }
 
-//inline double MTRand::randExc()
-//{ 
-//    return double(randInt()) * (1.0/4294967296.0);
-//}
-//
-//inline double MTRand::randExc( const double n )
-//{ 
-//    return randExc() * n; 
-//}
-//
-//inline double MTRand::randDblExc()
-//{ 
-//    return ( double(randInt()) + 0.5 ) * (1.0/4294967296.0); 
-//}
-//
-//inline double MTRand::randDblExc( const double n )
-//{ 
-//    return randDblExc() * n; 
-//}
-//
-//inline double MTRand::rand53()
-//{
-//	uint32 a = randInt() >> 5, b = randInt() >> 6;
-//	return ( a * 67108864.0 + b ) * (1.0/9007199254740992.0);  // by Isaku Wada
-//}
-
 inline double MTRand::randNorm( const double mean, const double stddev )
 {
 	// Return a real number from a normal (Gaussian) distribution with given
 	// mean and standard deviation by polar form of Box-Muller transformation
-	/*double x, y, r;
-	do
-	{
-		x = 2.0 * rand() - 1.0;
-		y = 2.0 * rand() - 1.0;
-		r = x * x + y * y;
-	}
-	while ( r >= 1.0 || r == 0.0 );
-	double s = sqrt( -2.0 * log(r) / r );
-	return mean + x * s * stddev;*/
 
     return mean + normal_distribution(random_generator) * stddev;
 }
@@ -530,3 +445,6 @@ inline MTRand& MTRand::operator=( const MTRand& o )
 //      - Revised twist() operator to work on ones'-complement machines
 //      - Fixed reload() function to work when N and M are unsigned
 //      - Added copy constructor and copy operator from Salvador Espana
+//
+// v3.1 - Switched to C++ library random sampling algorithms, removed
+//        unused code.

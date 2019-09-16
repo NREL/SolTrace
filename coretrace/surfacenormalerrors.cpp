@@ -151,9 +151,6 @@ Label_9:
 	phi = RANGEN()*2.0*3.1415926535897932385; // Therefore have chosen to randomize phi rather than calculate from randomized theta components
                                                       //  obtained from the distribution. The two approaches are equivalent save for this issue with
                                                       //  arctan2.      wendelin 01-12-11 
-    //FILE* fout = fopen("C:/Users/mwagner/Documents/NREL/SolarPaces/Optical model comparison/rerun-all-2019/A/raylog.txt", "a");
-    //fprintf(fout, "%f,%f\n", theta, phi);
-    //fclose(fout);
 
 	CosOut[0] = sin(theta)*cos(phi);
 	CosOut[1] = sin(theta)*sin(phi);
