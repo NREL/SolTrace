@@ -80,7 +80,7 @@
   <PropertyGroup Label="Globals">
     <ProjectName>soltrace</ProjectName>
     <ProjectGuid>{9E628EDB-737F-492C-9218-932DEAB14B2A}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
