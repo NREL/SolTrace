@@ -343,7 +343,7 @@ enum { __idFirst = wxID_HIGHEST+31,
 	ID_ELEMENT_SEL_ALL, ID_ELEMENT_SEL_NONE, ID_ELEMENT_SEL_SOME,
 	ID_STAGE_LIST, ID_ELEMENT_LIST,
 	ID_FINAL_ONLY, ID_POINT_COLOR, ID_DNI, ID_PLOT_RAYS, ID_RAY_NUMBERS, ID_INCL_MISSED,
-	ID_SHOW_AXES, ID_SHOW_TICKS, ID_AXIS_TEXT_SIZE,
+	ID_SHOW_AXES, ID_SHOW_TICKS, ID_AXIS_TEXT_SIZE, ID_AXIS_ZOOM_RATE,
 	ID_SCALE_X, ID_SCALE_Y, ID_SCALE_Z
 };
 
@@ -375,6 +375,7 @@ BEGIN_EVENT_TABLE( IntersectionForm, wxWindow )
 	EVT_NUMERIC( ID_SCALE_X, IntersectionForm::OnCommand )
 	EVT_NUMERIC( ID_SCALE_Y, IntersectionForm::OnCommand )
 	EVT_NUMERIC( ID_SCALE_Z, IntersectionForm::OnCommand )
+    EVT_TEXT_ENTER(ID_AXIS_ZOOM_RATE, IntersectionForm::OnCommand )
 END_EVENT_TABLE()
 
 IntersectionForm::IntersectionForm( wxWindow *parent, Project &prj )
@@ -459,6 +460,8 @@ IntersectionForm::IntersectionForm( wxWindow *parent, Project &prj )
 	sizer9->Add( m_scaleY = new wxNumericCtrl( panel, ID_SCALE_Y, 1.0 ), wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 5 );
 	sizer9->Add( new wxStaticText( panel, wxID_ANY, "Z axis scale factor:" ), wxALIGN_RIGHT|wxLEFT|wxRIGHT|wxALIGN_CENTER_VERTICAL, 5 );
 	sizer9->Add( m_scaleZ = new wxNumericCtrl( panel, ID_SCALE_Z, 1.0 ), wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 5 );
+    sizer9->Add( new wxStaticText( panel, wxID_ANY, "Plot zoom rate (lower faster):"), wxALIGN_RIGHT|wxLEFT|wxRIGHT|wxALIGN_CENTER_VERTICAL, 5);
+    sizer9->Add( m_scaleZoom = new wxNumericCtrl( panel, ID_AXIS_ZOOM_RATE, 10.), wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 5 );
 
 	wxBoxSizer *panel_sizer = new wxBoxSizer( wxVERTICAL );
 	panel_sizer->Add( sizer1, 0, wxALL|wxEXPAND, 0 );
@@ -667,6 +670,10 @@ void IntersectionForm::OnCommand( wxCommandEvent &evt )
 		m_3d->SetScaleZ( m_scaleZ->Value() );
 		m_3d->Refresh( false );
 		break;
+    case ID_AXIS_ZOOM_RATE:
+        m_3d->SetZoomRate( m_scaleZoom->Value() );
+        m_3d->Refresh( false );
+        break;
 	}
 
 }
@@ -699,7 +706,7 @@ void IntersectionForm::UpdateDetails()
 
 void IntersectionForm::UpdatePlot( )
 {
-	m_3d->SetZoomRate( 100 ); // higher number will be slower zooming in/out.  default was 20
+	m_3d->SetZoomRate( 10 ); // higher number will be slower zooming in/out.  default was 20
 	m_3d->SetViewZ( -10000, 10000 );
 	m_3d->SetCoordSys( m_coordSys->GetSelection() );
 	m_3d->SetPointColourMode( m_pointColors->GetSelection() );
