@@ -146,7 +146,7 @@ void DetermineElementIntersectionNew(
 
 			if (r > Ro) //ray falls outside circular circumference aperture
 			{
-			   Intercept = false;
+			   *Intercept = false;
 			   PosRayOut[0] = 0.0;
 			   PosRayOut[1] = 0.0;
 			   PosRayOut[2] = 0.0;
