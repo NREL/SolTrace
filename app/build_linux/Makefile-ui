@@ -2,9 +2,9 @@ VPATH = ../src/
 
 
 WEXDIR = ../../../wex
-WEXLIB = $(WEXDIR)/wexuxwx3.a
+WEXLIB = $(WEXDIR)/build/wex.a
 LKDIR = ../../../lk
-LKLIB = $(LKDIR)/lkuxwx3.a
+LKLIB = $(LKDIR)/build/lk.a
 CORETRACEDIR = ../../coretrace
 CORETRACELIB = $(CORETRACEDIR)/build_linux/coretrace.a
 
