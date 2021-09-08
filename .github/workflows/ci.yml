@@ -35,44 +35,6 @@ jobs:
         sudo apt-get install -y libwxgtk*-dev
         sudo ln -s $(which wx-config) /usr/local/bin/wx-config-3
         wx-config-3 --cflags | grep I
-    # - name: Clone dependency wxWidgets
-    #   uses: actions/checkout@v2
-    #   with:
-    #     ref: v3.1.0
-    #     path: wxWidgets
-    #     repository: wxWidgets/wxWidgets
-    # - name: Install wxWidgets-3.1.0
-    #   run: |
-    #     cd wxWidgets
-    #     mkdir release-build
-    #     ./configure --prefix=$PWD/release-build \
-    #       --enable-shared=no \
-    #       --enable-stl=yes \
-    #       --enable-debug=no \
-    #       --with-gtk=2 \
-    #       --with-libjpeg=builtin \
-    #       --with-libpng=builtin \
-    #       --with-regex=builtin \
-    #       --with-libtiff=builtin \
-    #       --with-zlib=builtin \
-    #       --with-expat=builtin \
-    #       --without-libjbig \
-    #       --without-liblzma \
-    #       --without-gtkprint \
-    #       --with-libnotify=no \
-    #       --with-libmspack=no \
-    #       --with-gnomevfs=no \
-    #       --with-opengl=yes \
-    #       --with-sdl=no \
-    #       --with-cxx=11
-    #     make -j
-    #     make install
-    #     ls -lha bin/   ###############
-    #     ls bin/ | grep wx-config   ###############
-    #     sudo ln -s $(ls bin/ | grep wx-config) /usr/bin/wx-config-3
-    #     wx-config-3 --cflags   ###############
-    #     wx-config-3 --cflags | grep I
-    #     cd $GITHUB_WORKSPACE
 
     - name: Get git ref of sibling dependency LK
       run: |
@@ -123,15 +85,6 @@ jobs:
       if: steps.cachedwex.outputs.cache-hit != 'true'
       run: |
         cd $GITHUB_WORKSPACE/wex
-
-        # [100%] Linking CXX executable wexsandboxd
-        # /usr/bin/ld: ../wexd.a(pdffontmanager.cpp.o): undefined reference to symbol 'FcPatternAddInteger'
-        # //usr/lib/x86_64-linux-gnu/libfontconfig.so.1: error adding symbols: DSO missing from command line
-        # collect2: error: ld returned 1 exit status
-        # tools/CMakeFiles/wexsandbox.dir/build.make:98: recipe for target 'tools/wexsandboxd' failed
-        cat tools/CMakeLists.txt | sed 's%target_link_libraries(wexsandbox wex ${wxWidgets_LIBRARIES})%if (UNIX AND NOT APPLE)\n    target_link_libraries(wexsandbox wex ${wxWidgets_LIBRARIES} ${FONTCONFIG_LIBRARY})\nelse ()\n    target_link_libraries(wexsandbox wex ${wxWidgets_LIBRARIES})\nendif ()\n%' >tools/CMakeLists.txt~
-        mv tools/CMakeLists.txt~ tools/CMakeLists.txt
-
         cmake -Bbuild_linux -DCMAKE_BUILD_TYPE=Debug
         cmake --build build_linux
     - name: Set WEXDIR env
@@ -243,15 +196,6 @@ jobs:
       if: steps.cachedwex.outputs.cache-hit != 'true'
       run: |
         cd $GITHUB_WORKSPACE/wex
-
-        # [100%] Linking CXX executable wexsandboxd
-        # /usr/bin/ld: ../wexd.a(pdffontmanager.cpp.o): undefined reference to symbol 'FcPatternAddInteger'
-        # //usr/lib/x86_64-linux-gnu/libfontconfig.so.1: error adding symbols: DSO missing from command line
-        # collect2: error: ld returned 1 exit status
-        # tools/CMakeFiles/wexsandbox.dir/build.make:98: recipe for target 'tools/wexsandboxd' failed
-        cat tools/CMakeLists.txt | sed 's%target_link_libraries(wexsandbox wex ${wxWidgets_LIBRARIES})%if (UNIX AND NOT APPLE)\n    target_link_libraries(wexsandbox wex ${wxWidgets_LIBRARIES} ${FONTCONFIG_LIBRARY})\nelse ()\n    target_link_libraries(wexsandbox wex ${wxWidgets_LIBRARIES})\nendif ()\n%' >tools/CMakeLists.txt~
-        mv tools/CMakeLists.txt~ tools/CMakeLists.txt
-
         cmake -Bbuild_linux -DCMAKE_BUILD_TYPE=Debug
         cmake --build build_linux
     - name: Set WEXDIR env
