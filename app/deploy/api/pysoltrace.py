@@ -1,23 +1,16 @@
+from selectors import PollSelector
 import sys, os
 import pandas as pd
 from ctypes import *
 c_number = c_double   #must be either c_double or c_float depending on copilot.h definition
 
-# @CFUNCTYPE(c_int, c_number, c_char_p)
-# def api_callback(fprogress, msg):
-#     """Callback function for API -> prints message from SolarPILOT DLL"""
-#     newline = False
-#     if fprogress != 0:
-#         print("Progress is {:.2f} %".format(fprogress*100))
-#         newline = True
-#     if msg.decode() != '':
-#         if newline:
-#             print("\n")
-#         print("C++ API message -> {:s}".format(msg.decode()))
-#     return 1
+# Callback to print command line progress messages
+@CFUNCTYPE(c_int, c_uint32, c_uint32, c_uint32, c_uint32, c_uint32, c_void_p)
+def api_callback(ntracedtotal, ntraced, ntotrace, curstage, nstages, data):
+    print("\tProgress: Stage ({:d}/{:d}) - Complete {:.2f}%".format(curstage, nstages, 100.*float(ntraced)/float(ntotrace)) )
+    return 1
 
 # ==========================================================================================
-
 class Point:
     def __init__(self, x=0, y=0, z=0):
         self.x = x
@@ -28,7 +21,7 @@ class Point:
 # ----------------------------------------------------------------------
 class PySolTrace:
     """
-    A class to access PyTrace (SolTrace's Python API)
+    A class to access PySolTrace (SolTrace's Python API)
 
     Attributes
     ----------
@@ -412,7 +405,7 @@ class PySolTrace:
         self.pdll.st_sim_params(c_void_p(self.p_data), c_int(int(self.num_ray_hits)), c_int(int(self.max_rays_traced)))
 
         self.pdll.st_sim_run.restype = c_int 
-        self.pdll.st_sim_run( c_void_p(self.p_data), c_bool(as_power_tower), c_void_p(0))
+        self.pdll.st_sim_run( c_void_p(self.p_data), c_uint16(seed), c_bool(as_power_tower), api_callback)
 
 
     # STCORE_API int st_num_intersections(st_context_t pcxt);
@@ -535,15 +528,122 @@ class PySolTrace:
         return pd.DataFrame(data)
 
 
+    # /* utility transform/math functions */
+    def util_calc_euler_angles(self, origin, aimpoint, zrot):
 
+        a_origin = (c_number*3)()
+        a_aimpoint = (c_number*3)()
+        a_euler = (c_number*3)()
+        a_origin[:] = origin
+        a_aimpoint[:] = aimpoint
 
-    # def process_simulation(self):
+        self.pdll.st_calc_euler_angles.restype = c_void_p
+        self.pdll.st_calc_euler_angles(pointer(a_origin), pointer(a_aimpoint), c_number(zrot), pointer(a_euler))
 
-    #     # void sim_result::process_raytrace_simulation(SolarField &SF, sim_params &P, int nsim_type, double sun_az_zen[2], Hvector &helios, double qray, int *emap, int *smap, int *rnum, int ntot, double *boxinfo)
-    #     n_int = self.get_num_intersections()
+        return list(a_euler)
+
+    # STCORE_API void st_transform_to_local( double posref[3], double cosref[3], double origin[3], double rreftoloc[3][3], double posloc[3], double cosloc[3]);
+    def util_transform_to_local(self, posref, cosref, origin, rreftoloc):
+        a_posref = (c_number*3)()
+        a_cosref = (c_number*3)()
+        a_origin = (c_number*3)() 
+        a_rreftoloc = (c_number*9)() 
+        #output
+        posloc = (c_number*3)()
+        cosloc = (c_number*3)()
         
-    #     emap = self.get_intersect_elementmap()
-    #     smap = self.get_intersect_stagemap()
-    #     rnum = self.get_intersect_raynumbers()
+        a_posref[:] = posref
+        a_cosref[:] = cosref
+        a_origin[:] = origin
+        a_rreftoloc[:] = sum([], rreftoloc)
+
+        self.pdll.st_transform_to_local.restype = c_void_p
+        self.pdll.st_transform_to_local(pointer(a_posref), pointer(a_cosref), pointer(a_origin), pointer(a_rreftoloc), pointer(posloc), pointer(cosloc))
+
+        return {'cosloc':list(cosloc), 'posloc':list(posloc)}
+
+    # STCORE_API void st_transform_to_reference( double posloc[3], double cosloc[3], double origin[3], double rloctoref[3][3], double posref[3], double cosref[3]);
+    def util_transform_to_reference(self, posloc, cosloc, origin, rloctoref):
+        a_posloc = (c_number*3)()
+        a_cosloc = (c_number*3)()
+        a_origin = (c_number*3)() 
+        a_rloctoref = (c_number*9)() 
+        #output
+        posref = (c_number*3)()
+        cosref = (c_number*3)()
+        
+        a_posloc[:] = posloc
+        a_cosloc[:] = cosloc
+        a_origin[:] = origin
+        a_rloctoref[:] = sum([], rloctoref)
+
+        self.pdll.st_transform_to_reference.restype = c_void_p
+        self.pdll.st_transform_to_reference(pointer(a_posloc), pointer(a_cosloc), pointer(a_origin), pointer(a_rloctoref), pointer(posref), pointer(cosref))
+
+        return {'cosref':list(cosref), 'posref':list(posref)}
+
+    # STCORE_API void st_matrix_vector_mult( double m[3][3], double v[3], double mxv[3] );
+    def util_matrix_vector_mult(self, m, v):
+        """
+        Arguments:
+            m[3][3] - a 3x3 list
+            v[3] - a list, length 3
+
+        Returns:
+            m x v [3]
+        """
+
+        a_m = (c_number*9)()
+        a_v = (c_number*3)()
+        a_mv = (c_number*3)()
+        a_m[:] = sum([], m)
+        a_v[:] = v 
+
+        self.pdll.st_matrix_vector_mult.restype = c_void_p
+        self.pdll.st_matrix_vector_mult(pointer(a_m), pointer(a_v), pointer(a_mv))
+
+        return list(a_mv)
+
+    # STCORE_API void st_calc_transform_matrices( double euler[3], double rreftoloc[3][3], double rloctoref[3][3] );
+    def util_calc_transform_matrices(self, euler):
+        """
+        input:  Euler = Euler angles
+        output: RRefToLoc = Transformation matrix from Reference to Local system
+        RLocToRef = ""             ""     ""   Local to Reference system (transpose of above)}
+        """
+
+        a_euler = (c_number*3)()
+        rreftoloc = (c_number*9)()
+        rloctoref = (c_number*9)()
+
+        a_euler[:] = euler
+
+        self.pdll.st_calc_transform_matrices.restype = c_void_p
+        self.pdll.st_calc_transform_matrices(pointer(a_euler), pointer(rreftoloc), pointer(rloctoref))
+
+        # reshape
+        a_rreftoloc = []
+        a_rloctoref = []
+        for i in range(0,10,3):
+            a_rreftoloc.append(rreftoloc[i:i+3])
+            a_rloctoref.append(rloctoref[i:i+3])
+
+        return {'rreftoloc':a_rreftoloc, 'rloctoref':a_rloctoref}
+
+    # STCORE_API void st_matrix_transpose( double input[3][3], double output[3][3] );
+    def util_matrix_transpose(self, m):
+
+        a_m = (c_number*9)()
+        a_m[:] = sum([], m)
+        output = (c_number*9)()
+
+        self.pdll.st_matrix_transpose.restype = c_void_p
+        self.pdll.st_matrix_transpose(pointer(a_m), pointer(output))
+
+        a_output = []
+        for i in range(0,10,3):
+            a_output.append(output[i:i+3])
+
+        return a_output
 
         
