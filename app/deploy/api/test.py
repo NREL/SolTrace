@@ -1,4 +1,5 @@
 from pysoltrace import PySolTrace
+import random
 
 # Create API class instance
 PT = PySolTrace()
@@ -31,16 +32,17 @@ st.Create()
 # el.optic = opt_ref
 # el.Create()
 
-abs_z = 10.  #absorber element height
+abs_pos = [0., 0., 10.]  #absorber element height
 
-# Create a heliostat at some x,y,z position, reflecting to the receiver
-for hpos in [[5,5], [5,-5], [-5,5], [-5,-5]]:   # picking some positions to test
+# Create a heliostat at some random x,y position, reflecting to the receiver
+for i in range(5):
+    hpos = [random.uniform(-10,10), random.uniform(-10,10)]
     st.add_elements()
     el = st.elements[-1]
     el.position.x = hpos[0]
     el.position.y = hpos[1]
     # calculate the vectors - receiver, sun, and aim
-    rvec = PT.util_calc_unitvect([-el.position.x,-el.position.x, abs_z])
+    rvec = PT.util_calc_unitvect([abs_pos[0]-el.position.x,abs_pos[1]-el.position.y, abs_pos[2]-el.position.z])
     svec = PT.util_calc_unitvect([sun.position.x, sun.position.y, sun.position.z])
     avec = [(rvec[0]+svec[0])/2., (rvec[1]+svec[1])/2., (rvec[2]+svec[2])/2.]
     # assign the aim vector. scale by a large number
@@ -59,10 +61,10 @@ sta.Create()
 
 sta.add_elements()
 ela = sta.elements[-1]
-ela.position.z = abs_z
+ela.position.z = abs_pos[2]
 ela.aim.z = 0.
 ela.optic = opt_abs
-ela.aperture_rectangle(5,5)  #receiver is 5x5 
+ela.aperture_rectangle(5,5)  #target is 5x5 
 ela.Create()
 
 # set simulation parameters
@@ -76,11 +78,33 @@ df = PT.get_ray_dataframe()
 
 PT.clear_context()
 
+
+# ---------------------------------------------
+# create plots of the ray data
 import matplotlib.pyplot as plt 
 fig,axs = plt.subplots(1,3, figsize=(12,4))
-df[df.element < 0].plot('loc_x', 'loc_y', style='k.',ax=axs[0])
-df[df.element < 0].plot('loc_x', 'loc_z', style='k.',ax=axs[1])
-df[df.element < 0].plot('loc_y', 'loc_z', style='k.',ax=axs[2])
+dfe = df #[df.element < 0].reindex()      # rays that are absorbed have element<0
+dfes1 = dfe[df.stage == 1].reindex()    # rays in stage 1
+dfes2 = dfe[df.stage == 2].reindex()    # rays in stage 2
+
+# Scatter plot in each plane
+dfes1.plot('loc_x', 'loc_y', style='k.',ax=axs[0], markersize=0.05)
+dfes2.plot('loc_x', 'loc_y', style='r.',ax=axs[0], markersize=0.05)
+dfes1.plot('loc_x', 'loc_z', style='k.',ax=axs[1], markersize=0.05)
+dfes2.plot('loc_x', 'loc_z', style='r.',ax=axs[1], markersize=0.05)
+dfes1.plot('loc_y', 'loc_z', style='k.',ax=axs[2], markersize=0.05)
+dfes2.plot('loc_y', 'loc_z', style='r.',ax=axs[2], markersize=0.05)
+
+# Plot trace of selected rays, by number
+for i in range(50,70):
+    dfi = df[df.number == i]
+    dfi.plot('loc_x', 'loc_y', style='b-', ax=axs[0], linewidth=0.1)
+    dfi.plot('loc_x', 'loc_z', style='b-', ax=axs[1], linewidth=0.1)
+    dfi.plot('loc_y', 'loc_z', style='b-', ax=axs[2], linewidth=0.1)
+# no legend
+for ax in axs:
+    ax.get_legend().remove()
+
 plt.show()
 
 
