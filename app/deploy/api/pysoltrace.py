@@ -18,6 +18,19 @@ class Point:
         self.z = z 
         return 
 
+# class _SurfaceType:
+#     def __init__(self):
+#         self.coefs = [0. for i in range(8)]
+
+#     def ComputeCoefs(self):
+#         return None 
+
+# class S_Cylindrical(_SurfaceType):
+#     def __init__(self):
+#         self.radius = 0.
+    
+#     def 
+
 # ----------------------------------------------------------------------
 class PySolTrace:
     """
@@ -297,6 +310,8 @@ class PySolTrace:
                                 |       *.fed --> 'e' / Finite element data
             Methods:
                 Create          | Calls methods to instantiate and construct element in the SolTrace context
+                surface_xxxx    | Family of methods that compute surface coefficients
+
             """
             
             # STCORE_API int st_element_surface_file(st_context_t pcxt, st_uint_t stage, st_uint_t idx, const char *file);
@@ -356,6 +371,301 @@ class PySolTrace:
                 self.pdll.st_element_optic(c_void_p(self.p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_char_p(self.optic.name.encode()));
 
                 return 1
+
+            def surface_spherical(self, radius):
+                """
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface_params[0] = 1. / radius
+                self.surface = 's'
+                return True
+            def surface_parabolic(self, focal_len_x, focal_len_y):
+                """
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface_params[0] = 1. / (2.*focal_len_x)
+                self.surface_params[1] = 1. / (2.*focal_len_y)
+                self.surface = 'p'
+                return True
+            def surface_flat(self):
+                """
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface = 'f'
+                return True
+            def surface_hypellip(self, vertex_curv, kappa):
+                """
+                Surface described by equation:
+                    Z(x,y) = ( vertex_curv*(x^2 + y^2) ) / 
+                                (1 + sqrt(1-kappa*vertex_curv^2*(x^2 + y^2)))
+
+                vertex_curv     | Curvature parameter
+                kappa           | Form parameter. 
+                                |   kappa < 0 --> tall hyperboloid
+                                |   kappa 0..1 --> ellipsoid 
+                                |   kappa > 1 --> stout ellipsoid
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface_params[0] = vertex_curv
+                self.surface_params[1] = kappa
+                self.surface = 'o'
+                return True
+            def surface_conical(self, theta):
+                """
+                Surface described by cone with half-angle theta. 
+                    theta       | (deg) half-angle of cone
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface_params[0] = theta
+                self.surface = 'c'
+                return True
+            def surface_cylindrical(self, radius):
+                """
+                Surface is cylindrical.
+                    radius      | Radius of the cylinder
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface_params[0] = 1./radius
+                self.surface = 't'
+                return True
+            def surface_toroid(self, rad_annulus, rad_ring):
+                """
+                Surface is a toroid "donut". 
+
+                    rad_annulus     | Radius of the 'tube', the distance between the min and 
+                                    | max radii of the torus
+                    rad_ring        | The radius of the centerpoint of the annular tube
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface_params[0] = rad_annulus
+                self.surface_params[1] = rad_ring
+                self.surface = 'd'
+                return True
+            def surface_zernicke(self, file_path):
+                """
+                Zernicke surface, where the surface is described by the equation:
+                Z(x,y) = sum_i=0^N
+                            sum_j=0^i  Bi,j * x^j * y^(i-j) 
+
+                Accepts *mon file extension specifying the Zernicke coefficients. 
+                File format should be a single data column:
+                    N
+                    B0,0
+                    B1,0
+                    B1,1
+                    B2,1
+                    B2,2
+                    B2,3
+                    ...
+                    BN,N
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface = 'm'
+                self.surface_file = file_path
+                return True
+            def surface_polynomialrev(self, file_path):
+                """
+                Rotationally symmetric polynomial file, where the surface is described by
+                the equation:
+                Z(r) = sum_i=0^N  C_i * r^i,  where r=sqrt(x^2 + y^2)
+
+                Accepts *ply file extension specifying equation coefficients.
+                File format should be a single data column:
+                    N
+                    C0
+                    C1
+                    C2
+                    ...
+                    C,N
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface = 'r'
+                self.surface_file = file_path
+                return True
+            def surface_cubicspline(self, file_path):
+                """
+                Rotationally symmetric cubic spline file. Accepts *csi file extension. 
+                File format should be two tab-separated columns:
+                    N
+                    r1      Z1
+                    r2      Z2
+                    r3      Z3
+                    ...
+                    rN      ZN
+                    dZ/dr1  dZ/drN
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface = 'i'
+                self.surface_file = file_path
+                return True
+            def surface_finiteelement(self, file_path):
+                """
+                Finite element data file specifying the vertices of the elements in 
+                x,y,z coordinates. 
+
+                Accepts the *.fed file extension. File format should be 3 tab-separated
+                columns:
+                    N
+                    x1      y1      z1
+                    x2      y2      z2
+                    x3      y3      z3
+                    ...
+                    xN      yN      zN
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface = 'e'
+                self.surface_file = file_path
+                return True
+            def surface_vshot(self, file_path):
+                """
+                VSHOT data file specifying matrix coefficients generated by a VSHOT test.
+
+                Accepts the *.sht file extension. File format should be:
+                    First line - file name (skipped)
+                    Radius      Focal length        Target-dist
+                    0           order               num points
+                    rmsslope    rmsscale
+                    b00
+                    b10
+                    b11
+                    b20
+                    b21
+                    b22
+                    ...
+                    bDD    || where 'D' is order
+                    a1      b1      c1      d1      e1
+                    a2      b2      c2      d2      e2
+                    a3      b3      c3      d3      e3
+                    ...
+                    aN      bN      cN      dN      eN  || where 'N' is num points
+                """
+                self.surface_params = [0. for i in range(8)]
+                self.surface = 'v'
+                self.surface_file = file_path
+                return True
+            # ---------------------
+            def aperture_circle(self, diameter):
+                """
+                Aperture is circular with 'diameter'. 
+
+                diameter    | Diameter of the circle
+                """
+                self.aperture_params = [0. for i in range(8)]
+                self.aperture_params[0] = diameter
+                self.aperture = 'c'
+                return True
+            def aperture_hexagon(self, diameter):
+                """
+                Aperture is a hexagon centered at x=0,y=0. The hexagon is circumscribed
+                by a circle of 'diameter'.
+
+                    diameter    | Diameter of the circumscribing circle.
+                """
+                self.aperture_params = [0. for i in range(8)]
+                self.aperture_params[0] = diameter
+                self.aperture = 'h'
+                return True
+            def aperture_triangle(self, diameter):
+                """
+                Aperture is an equilateral triangle with centroid at x=0,y=0. The triangle
+                is circumscribed by a circle of 'diameter'.
+
+                    diameter    | Diameter of the circumscribing circle.
+                """
+                self.aperture_params = [0. for i in range(8)]
+                self.aperture_params[0] = diameter
+                self.aperture = 't'
+                return True
+            def aperture_rectangle(self, length_x, length_y):
+                """
+                Aperture is a rectangle with the centroid at x=0,y=0. 
+
+                    length_x    | Width in x-coordinate direction
+                    length_y    | Height in y-coordinate direction
+                """
+                self.aperture_params = [0. for i in range(8)]
+                self.aperture_params[0] = length_x
+                self.aperture_params[1] = length_y
+                self.aperture = 'r'
+                return True
+            def aperture_annulus(self, r_inner, r_outer, theta):
+                """
+                Annular aperture, where aperture is the annulus between to specified radii
+                and within an angular slice 'theta' which is centered around the x-axis.
+
+                    r_inner     | Inner radius of annular region
+                    r_outer     | Outer radius of annular region
+                    theta       | (deg) Slice of the circle contained, centered around x-axis
+                """
+                self.aperture_params = [0. for i in range(8)]
+                self.aperture_params[0] = r_inner
+                self.aperture_params[1] = r_outer
+                self.aperture_params[2] = theta
+                self.aperture = 'a'
+                return True
+            def aperture_singleax_curve(self, x1, x2, L):
+                """
+                Aperture revolved around a single axis. Revolved window is between two
+                coordinates x1->x1, both non-negative and with x2 > x1. The aperture has 
+                length 'L' in the y-direction. 
+
+                This aperture is often used with a cylindrical surface. In this case, 
+                both x1 and x2 should be zero, and the cylinder height specified with 'L'.
+
+                    x1          | inner coordinate of revolved section
+                    x2          | outer coordinate of revolved section
+                    L           | length of revolved section along axis of revolution
+                """
+                self.aperture_params = [0. for i in range(8)]
+                self.aperture_params[0] = x1
+                self.aperture_params[1] = x2
+                self.aperture_params[2] = L
+                self.aperture = 'l'
+                return True
+            def aperture_irr_triangle(self, x1, y1, x2, y2, x3, y3):
+                """
+                Aperture is a triangle given by three (x,y) coordinate pairs.
+
+                    x1          | x-coordinate, point 1
+                    y1          | y-coordinate, point 1
+                    x2          | x-coordinate, point 2
+                    y2          | y-coordinate, point 2
+                    x3          | x-coordinate, point 3
+                    y3          | y-coordinate, point 3
+                """
+                self.aperture_params = [0. for i in range(8)]
+                self.aperture_params[0] = x1
+                self.aperture_params[1] = y1
+                self.aperture_params[2] = x2
+                self.aperture_params[3] = y2
+                self.aperture_params[4] = x3
+                self.aperture_params[5] = y3
+                self.aperture = 'i'
+                return True
+            def aperture_quadrilateral(self, x1, y1, x2, y2, x3, y3, x4, y4):
+                """
+                Aperture is a quadrilateral given by four (x,y) coordinate pairs.
+
+                    x1          | x-coordinate, point 1
+                    y1          | y-coordinate, point 1
+                    x2          | x-coordinate, point 2
+                    y2          | y-coordinate, point 2
+                    x3          | x-coordinate, point 3
+                    y3          | y-coordinate, point 3
+                    x4          | x-coordinate, point 4
+                    y4          | y-coordinate, point 4
+                """
+                self.aperture_params = [0. for i in range(8)]
+                self.aperture_params[0] = x1
+                self.aperture_params[1] = y1
+                self.aperture_params[2] = x2
+                self.aperture_params[3] = y2
+                self.aperture_params[4] = x3
+                self.aperture_params[5] = y3
+                self.aperture_params[6] = x4
+                self.aperture_params[7] = y4
+                self.aperture = 'q'
+                return True
         # -------------------------- end Element class ---------------------------------
 
 
