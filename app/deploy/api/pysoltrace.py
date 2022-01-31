@@ -1,9 +1,8 @@
-from cmath import pi
 import sys, os
 import math
 import pandas as pd
 from ctypes import *
-c_number = c_double   #must be either c_double or c_float depending on copilot.h definition
+c_number = c_double   #must be either c_double or c_float depending on coretrace definition
 
 # Callback to print command line progress messages
 @CFUNCTYPE(c_int, c_uint32, c_uint32, c_uint32, c_uint32, c_uint32, c_void_p)
@@ -1626,7 +1625,6 @@ class PySolTrace:
 
         vect_i, vect_j, vect_k = vect
 
-        #double Pi = PI;
         az = math.atan2(vect_i,vect_j)
         az = (az + 2.*math.pi) if az < 0. else az 
 
