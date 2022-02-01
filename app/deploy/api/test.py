@@ -1,4 +1,4 @@
-from pysoltrace import PySolTrace
+from pysoltrace import PySolTrace, Point
 import random
 
 # Create API class instance
@@ -32,23 +32,21 @@ st.Create()
 # el.optic = opt_ref
 # el.Create()
 
-abs_pos = [0., 0., 10.]  #absorber element height
+#absorber element height
+abs_pos = Point(0., 0., 10.)
 
 # Create a heliostat at some random x,y position, reflecting to the receiver
 for i in range(5):
     hpos = [random.uniform(-10,10), random.uniform(-10,10)]
-    st.add_elements()
-    el = st.elements[-1]
+    el = st.add_element()
     el.position.x = hpos[0]
     el.position.y = hpos[1]
     # calculate the vectors - receiver, sun, and aim
-    rvec = PT.util_calc_unitvect([abs_pos[0]-el.position.x,abs_pos[1]-el.position.y, abs_pos[2]-el.position.z])
-    svec = PT.util_calc_unitvect([sun.position.x, sun.position.y, sun.position.z])
-    avec = [(rvec[0]+svec[0])/2., (rvec[1]+svec[1])/2., (rvec[2]+svec[2])/2.]
+    rvec = (abs_pos - el.position).unitize()
+    svec = sun.position.unitize()
+    avec = (rvec + svec)/2.
     # assign the aim vector. scale by a large number
-    el.aim.x = el.position.x + avec[0]*100.
-    el.aim.y = el.position.y + avec[1]*100.
-    el.aim.z = el.position.z + avec[2]*100.
+    el.aim = el.position + avec*100.
     # compute surface z rotation to align with plane of the ground
     el.zrot = PT.util_calc_zrot_azel(avec)
     
@@ -59,9 +57,8 @@ for i in range(5):
 sta = PT.add_stage()
 sta.Create()
 
-sta.add_elements()
-ela = sta.elements[-1]
-ela.position.z = abs_pos[2]
+ela = sta.add_element()
+ela.position = abs_pos
 ela.aim.z = 0.
 ela.optic = opt_abs
 ela.aperture_rectangle(5,5)  #target is 5x5 

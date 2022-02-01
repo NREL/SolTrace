@@ -1,6 +1,11 @@
-import sys, os
+import random
+import sys, os, copy
+from typing import List
 import math
+from numpy import isin
 import pandas as pd
+from multiprocessing.sharedctypes import Value
+import multiprocessing 
 from ctypes import *
 c_number = c_double   #must be either c_double or c_float depending on coretrace definition
 
@@ -17,7 +22,51 @@ class Point:
         self.y = y
         self.z = z 
         return 
-
+    def __str__(self):
+        return "[{:f}, {:f}, {:f}]".format(self.x, self.y, self.z)
+    def __add__(self, obj):
+        if isinstance(obj, Point):
+            return Point(self.x + obj.x, self.y + obj.y, self.z + obj.z)
+        elif isinstance(obj, float):
+            return Point(self.x + obj, self.y + obj, self.z + obj)
+        else:
+            raise ValueError("Invalid addition operator object")
+        return self
+    def __sub__(self, obj):
+        if isinstance(obj, Point):
+            return Point(self.x - obj.x, self.y - obj.y, self.z - obj.z)
+        elif isinstance(obj, float):
+            return Point(self.x - obj, self.y - obj, self.z - obj)
+        else:
+            raise ValueError("Invalid subtraction operator object")
+        return self
+    def __mul__(self, obj):
+        if isinstance(obj, (float,int)):
+            return Point(self.x*obj, self.y*obj, self.z*obj)
+        else:
+            raise ValueError("Invalid multiplication operator object")
+    def __floordiv__(self, obj):
+        if isinstance(obj, (float,int)):
+            return Point(self.x//obj, self.y//obj, self.z//obj)
+        else:
+            raise ValueError("Invalid division operator object")
+    def __truediv__(self, obj):
+        if isinstance(obj, (float,int)):
+            return Point(self.x/obj, self.y/obj, self.z/obj)
+        else:
+            raise ValueError("Invalid division operator object")
+    def radius(self):
+        mag = (self.x*self.x + self.y*self.y + self.z*self.z)**0.5
+        return mag
+    def unitize(self, inplace : bool = False):
+        mag = self.radius()
+        if mag > 0:
+            if inplace:
+                self.x /= mag
+                self.y /= mag 
+                self.z /= mag
+            else:
+                return Point(self.x/mag, self.y/mag, self.z/mag)
 # ----------------------------------------------------------------------
 class PySolTrace:
     """
@@ -878,33 +927,25 @@ class PySolTrace:
             self.pdll.st_num_elements.restype = c_int
             return self.pdll.st_num_elements(c_void_p(self.p_data), c_uint32(self.id))
 
-        def add_elements(self, n_to_add = 1) -> int:
+        def add_element(self) -> int:
             """
-            Add one or more elements to the stage. This method appends an Element object to the
-            stage's Stage.elements list and adds the element(s) to the SolTrace context. 
-            To update element properties and settings, call the Element.Create method on each element.
-
-            Parameters
-            ----------
-            n_to_add = 1 : int
-                Number of elements to add
+            Add one element to the stage. This method appends an Element object to the
+            stage's Stage.elements list and adds the element to the SolTrace context. 
+            To update element properties and settings, call the Element.Create method 
+            on each element.
 
             Returns
             ----------
-            int 
-                1 if successful, 0 otherwise
+            PySolTrace.Stage.Element 
+                Reference to the newly created element
             """
 
-            for i in range(n_to_add):
-                self.elements.append(  PySolTrace.Stage.Element(self, len(self.elements) ) )
-
-            # Call the appropriate method depending on number of elements to add
-            if n_to_add > 1:
-                self.pdll.st_add_elements.restype = c_int 
-                return self.pdll.st_add_elements(c_void_p(self.p_data), c_uint32(self.id), c_int(n_to_add))
-            else:
-                self.pdll.st_add_element.restype = c_int 
-                return self.pdll.st_add_element(c_void_p(self.p_data), c_uint32(self.id))
+            self.pdll.st_add_element.restype = c_int 
+            self.pdll.st_add_element(c_void_p(self.p_data), c_uint32(self.id))
+            
+            new_e = PySolTrace.Stage.Element(self, len(self.elements) )
+            self.elements.append( new_e )
+            return new_e
 
     # ---------- methods of the PySolTrace class --------------------------------------------
     def __init__(self):
@@ -1607,14 +1648,14 @@ class PySolTrace:
         else:
             return nvect
 
-    def util_calc_zrot_azel(self, vect : list) -> float:
+    def util_calc_zrot_azel(self, vect) -> float:
         """
         Compute the z-rotation of a vector, assuming the vector's deviation from (0,0,1) 
         has been realized using azimuth-elevation transforms.
 
         Parameters
         ----------
-        vect : list
+        vect : (list OR Point)
             i,j,k components of a vector
 
         Returns
@@ -1622,8 +1663,14 @@ class PySolTrace:
         float
             Computed z-rotation (degrees)
         """
-
-        vect_i, vect_j, vect_k = vect
+        if isinstance(vect, List):
+            vect_i, vect_j, vect_k = vect
+        elif isinstance(vect, Point):
+            vect_i = vect.x 
+            vect_j = vect.y 
+            vect_k = vect.z 
+        else:
+            raise TypeError("Function expects 'vect' of type List or Point")
 
         az = math.atan2(vect_i,vect_j)
         az = (az + 2.*math.pi) if az < 0. else az 
@@ -1637,43 +1684,30 @@ class PySolTrace:
                         max(math.sqrt(math.pow(vect_i,2) + math.pow(vect_k,2)), 1.e-8) )    #Rotation about the modified X axis
 
         #Calculate the modified axis vector
-        modax = Point() #Vect 
-        modax.x = math.cos(alpha)
-        modax.y = 0.
-        modax.z = - math.sin(alpha)
+        modax = Point(math.cos(alpha), 0., - math.sin(alpha))  
 
-        #Rotation references - axis point
-        axpos = Point()
-        #Set as origin
-        axpos.x = 0.
-        axpos.y = 0.
-        axpos.z = 0.
-        #sp_point to rotate
-        pbase = Point()
-        #lower edge of heliostat
-        pbase.x = 0.
-        pbase.y = -1.
-        pbase.z = 0.
+        #Rotation references - axis point. Set as origin
+        axpos = Point(0., 0., 0.)
+        #sp_point to rotate. lower edge of heliostat
+        pbase = Point(0., -1., 0.)
         
         #Rotated point
-        prot = self.util_rotation_arbitrary(beta, modax, axpos, pbase)
+        protv = self.util_rotation_arbitrary(beta, modax, axpos, pbase).unitize()
 
         #Azimuth/elevation reference vector (vector normal to where the base of the heliostat should be)
-        azelref = Point()  #Vect 
+        azelref = Point()   
         azelref.x = math.sin(az)*math.sin(el)
         azelref.y = math.cos(az)*math.sin(el)
         azelref.z = -math.cos(el)
 
         # the sign of the rotation angle is determined by whether the 'k' component of the cross product
         # vector is positive or negative. 
-        protv = self.util_calc_unitvect(prot)
-
         cp = Point()
         cp.x = protv.y*azelref.z - protv.z*azelref.y
         cp.y = protv.z*azelref.x - protv.x*azelref.z
         cp.z = protv.x*azelref.y - protv.y*azelref.x
 
-        gamma = math.asin( math.sqrt(cp.x*cp.x + cp.y*cp.y + cp.z*cp.z) )
+        gamma = math.asin( cp.radius() )
         gsign = (1 if cp.z > 0. else -1.) * (1 if vect_j > 0. else -1.)
 
         return gamma * gsign * 180./math.pi
