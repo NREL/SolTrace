@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27004.2005
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30413.136
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "coretracelib_vs2017", "coretracelib_vs2017.vcxproj", "{43F1B7E5-75E9-482B-893D-44D55A9A7DCF}"
 EndProject
@@ -31,7 +31,6 @@ Global
 		{BB27035C-A62B-4EC7-BEFA-CD429A783707}.Debug|x86.ActiveCfg = Debug|Win32
 		{BB27035C-A62B-4EC7-BEFA-CD429A783707}.Debug|x86.Build.0 = Debug|Win32
 		{BB27035C-A62B-4EC7-BEFA-CD429A783707}.Release|x64.ActiveCfg = Release|x64
-		{BB27035C-A62B-4EC7-BEFA-CD429A783707}.Release|x64.Build.0 = Release|x64
 		{BB27035C-A62B-4EC7-BEFA-CD429A783707}.Release|x86.ActiveCfg = Release|Win32
 		{BB27035C-A62B-4EC7-BEFA-CD429A783707}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection

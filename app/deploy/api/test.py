@@ -78,31 +78,54 @@ PT.clear_context()
 
 # ---------------------------------------------
 # create plots of the ray data
-import matplotlib.pyplot as plt 
-fig,axs = plt.subplots(1,3, figsize=(12,4))
-dfe = df #[df.element < 0].reindex()      # rays that are absorbed have element<0
-dfes1 = dfe[df.stage == 1].reindex()    # rays in stage 1
-dfes2 = dfe[df.stage == 2].reindex()    # rays in stage 2
+# import matplotlib.pyplot as plt 
+# fig,axs = plt.subplots(1,3, figsize=(12,4))
+# dfe = df #[df.element < 0].reindex()      # rays that are absorbed have element<0
+# dfes1 = dfe[df.stage == 1].reindex()    # rays in stage 1
+# dfes2 = dfe[df.stage == 2].reindex()    # rays in stage 2
 
-# Scatter plot in each plane
-dfes1.plot('loc_x', 'loc_y', style='k.',ax=axs[0], markersize=0.05)
-dfes2.plot('loc_x', 'loc_y', style='r.',ax=axs[0], markersize=0.05)
-dfes1.plot('loc_x', 'loc_z', style='k.',ax=axs[1], markersize=0.05)
-dfes2.plot('loc_x', 'loc_z', style='r.',ax=axs[1], markersize=0.05)
-dfes1.plot('loc_y', 'loc_z', style='k.',ax=axs[2], markersize=0.05)
-dfes2.plot('loc_y', 'loc_z', style='r.',ax=axs[2], markersize=0.05)
+# # Scatter plot in each plane
+# dfes1.plot('loc_x', 'loc_y', style='k.',ax=axs[0], markersize=0.05)
+# dfes2.plot('loc_x', 'loc_y', style='r.',ax=axs[0], markersize=0.05)
+# dfes1.plot('loc_x', 'loc_z', style='k.',ax=axs[1], markersize=0.05)
+# dfes2.plot('loc_x', 'loc_z', style='r.',ax=axs[1], markersize=0.05)
+# dfes1.plot('loc_y', 'loc_z', style='k.',ax=axs[2], markersize=0.05)
+# dfes2.plot('loc_y', 'loc_z', style='r.',ax=axs[2], markersize=0.05)
 
-# Plot trace of selected rays, by number
-for i in range(50,70):
-    dfi = df[df.number == i]
-    dfi.plot('loc_x', 'loc_y', style='b-', ax=axs[0], linewidth=0.1)
-    dfi.plot('loc_x', 'loc_z', style='b-', ax=axs[1], linewidth=0.1)
-    dfi.plot('loc_y', 'loc_z', style='b-', ax=axs[2], linewidth=0.1)
-# no legend
-for ax in axs:
-    ax.get_legend().remove()
+# # Plot trace of selected rays, by number
+# for i in range(50,70):
+#     dfi = df[df.number == i]
+#     dfi.plot('loc_x', 'loc_y', style='b-', ax=axs[0], linewidth=0.1)
+#     dfi.plot('loc_x', 'loc_z', style='b-', ax=axs[1], linewidth=0.1)
+#     dfi.plot('loc_y', 'loc_z', style='b-', ax=axs[2], linewidth=0.1)
+# # no legend
+# for ax in axs:
+#     ax.get_legend().remove()
 
-plt.show()
+# plt.show()
 
 
 
+# Data for a three-dimensional line
+loc_x = df.loc_x.values
+loc_y = df.loc_y.values
+loc_z = df.loc_z.values
+
+
+import plotly.express as px 
+import plotly.graph_objects as go
+
+# fig = px.scatter_3d(df, x='loc_x', y='loc_y', z='loc_z', color='stage', size='element') 
+
+fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ) )
+
+for i in range(50,100):
+    dfr = df[df.number == i]
+    ray_x = dfr.loc_x 
+    ray_y = dfr.loc_y
+    ray_z = dfr.loc_z
+    raynum = dfr.number
+    fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+
+fig.update_layout(showlegend=False)
+fig.show()
