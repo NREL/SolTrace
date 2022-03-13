@@ -99,8 +99,10 @@ STCORE_API int st_optic(st_context_t pcxt, st_uint_t idx, int fb, /* 1=front,2=b
 				double ref, double tra,
 				double gratingab12[3],
 				double rmsslope, double rmsspec,
-				int userefltable, int npoints,
-				double *angles, double *refls );
+				int userefltable, int refl_npoints,
+				double *refl_angles, double *refls,
+				int usetranstable, int trans_npoints,
+				double* trans_angles, double* transs);
 
 /* functions to add/remove stages */
 STCORE_API int st_num_stages(st_context_t pcxt);

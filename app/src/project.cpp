@@ -193,7 +193,7 @@ bool SurfaceOptic::Write(FILE *fp)
 		"%lg\t%lg\t%lg\t%lg\t"
 		"%lg\t%lg\t"
 		"%lg\t%lg\t%lg\t%lg\t"
-		"%d\t%d\t",
+		"%d\t%d\t"
 		"%d\t%d\n",
 
 		ErrorDistribution,
@@ -291,14 +291,14 @@ bool SurfaceOptic::Read(FILE *fp, bool oldfmt)
 		
 		int refl_count = 0;
 		int trans_count = 0;
-		if (parts.size() > 16)
+		if (parts.size() > 15)
 		{
 			UseReflectivityTable = (wxAtoi( parts[15] ) > 0);
-			int count = wxAtoi( parts[16] );
-			if (parts.size() > 18)
+			refl_count = wxAtoi( parts[16] );
+			if (parts.size() > 17)
 			{
-				UseReflectivityTable = (wxAtoi(parts[17]) > 0);
-				int count = wxAtoi(parts[18]);
+				UseTransmissivityTable = (wxAtoi(parts[17]) > 0);
+				trans_count = wxAtoi(parts[18]);
 			}
 		}
 

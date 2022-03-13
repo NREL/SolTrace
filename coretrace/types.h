@@ -95,6 +95,9 @@ public:
 	bool UseReflectivityTable;
 	struct refldat { double angle; double refl; };
 	std::vector<refldat> ReflectivityTable;
+	bool UseTransmissivityTable;
+	struct transdat { double angle; double trans; };
+	std::vector<transdat> TransmissivityTable;
 };
 
 class TOpticalPropertySet

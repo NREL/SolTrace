@@ -70,6 +70,7 @@ TOpticalProperties::TOpticalProperties()
 	RMSSpecError = 0;
 	DistributionType = 'g';
 	UseReflectivityTable = false;
+	UseTransmissivityTable = false;
 }
 
 TOpticalProperties &TOpticalProperties::operator=(const TOpticalProperties &rhs)
@@ -83,6 +84,8 @@ TOpticalProperties &TOpticalProperties::operator=(const TOpticalProperties &rhs)
 	RMSSlopeError = rhs.RMSSlopeError;
 	RMSSpecError = rhs.RMSSpecError;
 	UseReflectivityTable = rhs.UseReflectivityTable;
+	UseTransmissivityTable = rhs.UseTransmissivityTable;
+	
 	
 	for (int i=0;i<4;i++)
 	{
@@ -95,6 +98,12 @@ TOpticalProperties &TOpticalProperties::operator=(const TOpticalProperties &rhs)
 	{
 		ReflectivityTable[i].angle = rhs.ReflectivityTable[i].angle;
 		ReflectivityTable[i].refl = rhs.ReflectivityTable[i].refl;
+	}
+	TransmissivityTable.resize(rhs.TransmissivityTable.size());
+	for (size_t i = 0; i < rhs.TransmissivityTable.size(); i++)
+	{
+		TransmissivityTable[i].angle = rhs.TransmissivityTable[i].angle;
+		TransmissivityTable[i].trans = rhs.TransmissivityTable[i].trans;
 	}
 
 	return *this;

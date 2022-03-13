@@ -176,25 +176,46 @@ bool read_optic_surface(FILE *fp, st_context_t cxt, int iopt, int fb)
 	GratingCoeffs[3] = atof( parts[14].c_str() );
 
 	bool UseReflectivityTable = false;
-
-	int npoints = 0;
-	double *angles = 0;
+	int refl_npoints = 0;
+	double *refl_angles = 0;
 	double *refls = 0;
+
+	bool UseTransmissivityTable = false;
+	int trans_npoints = 0;
+	double* trans_angles = 0;
+	double* transs = 0;
 
 	if (parts.size() >= 17)
 	{
 		UseReflectivityTable = (atoi( parts[15].c_str() ) > 0);
-		npoints = atoi( parts[16].c_str() );
-		if (UseReflectivityTable)
+		refl_npoints = atoi( parts[16].c_str() );
+		if (parts.size() >= 19)
 		{
-			angles = new double[npoints];
-			refls = new double[npoints];
+			UseTransmissivityTable = (atoi(parts[17].c_str()) > 0);
+			trans_npoints = atoi(parts[18].c_str());
+		}
+	}
 
-			for (int i=0;i<npoints;i++)
-			{
-				read_line(buf,1023,fp);
-				sscanf(buf, "%lg %lg", &angles[i], &refls[i]);
-			}
+	if (UseReflectivityTable)
+	{
+		refl_angles = new double[refl_npoints];
+		refls = new double[refl_npoints];
+
+		for (int i=0;i<refl_npoints;i++)
+		{
+			read_line(buf,1023,fp);
+			sscanf(buf, "%lg %lg", &refl_angles[i], &refls[i]);
+		}
+	}
+	if (UseTransmissivityTable)
+	{
+		trans_angles = new double[trans_npoints];
+		transs = new double[trans_npoints];
+
+		for (int i = 0; i < trans_npoints; i++)
+		{
+			read_line(buf, 1023, fp);
+			sscanf(buf, "%lg %lg", &trans_angles[i], &transs[i]);
 		}
 	}
 
@@ -204,12 +225,16 @@ bool read_optic_surface(FILE *fp, st_context_t cxt, int iopt, int fb)
 		RefractionIndexReal, RefractionIndexImag,
 		Reflectivity, Transmissivity,
 		GratingCoeffs, RMSSlope, RMSSpecularity,
-		UseReflectivityTable ? 1 : 0, npoints,
-		angles, refls);
+		UseReflectivityTable ? 1 : 0, refl_npoints,
+		refl_angles, refls,
+		UseTransmissivityTable? 1 : 0, trans_npoints,
+		trans_angles, transs
+		);
 
-	if (angles != 0) delete [] angles;
+	if (refl_angles != 0) delete [] refl_angles;
 	if (refls != 0) delete [] refls;
-
+	if (trans_angles != 0) delete[] trans_angles;
+	if (transs != 0) delete[] transs;
 	return true;
 }
 
