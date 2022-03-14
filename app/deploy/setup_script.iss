@@ -26,8 +26,8 @@ ArchitecturesInstallIn64BitMode=x64
 
 
 ; UPDATE THESE TO MATCH THE VERSION
-AppVerName=SolTrace 3.1.0
-DefaultDirName={sd}\SolTrace\3.1.0
+AppVerName=SolTrace 3.2.0
+DefaultDirName={sd}\SolTrace\3.2.0
 
 AppPublisher=National Renewable Energy Laboratory
 AppPublisherURL=http://www.nrel.gov/csp/soltrace
@@ -54,16 +54,7 @@ Source: "help/*"; DestDir: "{app}/help"; Excludes: ".svn,*.map"; Flags: ignoreve
 Source: "images/*"; DestDir: "{app}/images"; Excludes: ".svn,*.map"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "samples/*"; DestDir: "{app}/samples"; Excludes: ".svn,*.map"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "scripts/*"; DestDir: "{app}/scripts"; Excludes: ".svn,*.map"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-Source: "win32/ssleay32.dll"; DestDir: "{app}/win32"; Excludes: ".svn,*.map"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "win32/msvcr120.dll"; DestDir: "{app}/win32"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "win32/msvcp120.dll"; DestDir: "{app}/win32"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "win32/dbghelp.dll"; DestDir: "{app}/win32"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "win32/libssh2.dll"; DestDir: "{app}/win32"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "win32/libeay32.dll"; DestDir: "{app}/win32"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "win32/libcurl.dll"; DestDir: "{app}/win32"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "win32/soltrace.exe"; DestDir: "{app}/win32"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "win32/soltrace.pdb"; DestDir: "{app}/win32"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "api/*"; DestDir: "{app}/api"; Excludes: ".svn,*.map"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 Source: "x64/ssleay32.dll"; DestDir: "{app}/x64"; Excludes: ".svn,*.map"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "x64/msvcr120.dll"; DestDir: "{app}/x64"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
@@ -75,14 +66,11 @@ Source: "x64/libcurl.dll"; DestDir: "{app}/x64"; Excludes: ".svn,*.map";  Flags:
 Source: "x64/soltrace.exe"; DestDir: "{app}/x64"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "x64/soltrace.pdb"; DestDir: "{app}/x64"; Excludes: ".svn,*.map";  Flags: ignoreversion recursesubdirs createallsubdirs
 
-
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 [Icons]
-Name: "{group}\SolTrace"; Filename: "{app}\win32\soltrace.exe" ; Check: not Is64BitInstallMode
 Name: "{group}\SolTrace"; Filename: "{app}\x64\soltrace.exe"  ; Check: Is64BitInstallMode
 ;Name: "{group}\{cm:ProgramOnTheWeb,SolTrace}"; Filename: "http://soltrace.nrel.gov"
 ;Name: "{group}\{cm:UninstallProgram,SolTrace}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\SolTrace (win32)"; Filename: "{app}\win32\soltrace.exe"; Tasks: desktopicon ; Check: not Is64BitInstallMode
 Name: "{commondesktop}\SolTrace (x64)"; Filename: "{app}\x64\soltrace.exe"; Tasks: desktopicon; Check: Is64BitInstallMode
 
 [Registry]
@@ -100,16 +88,11 @@ Root: HKCR; Subkey: "NREL.SolTrace\shell\open\command"; ValueType: string; Value
 ; 12/4/08 for non-admin privileges -see Documentation\InnoSetup\AdminPrivileges
 Root: HKCU; Subkey: "Software\Classes\.sam"; ValueType: string; ValueName: ; ValueData: "NREL.SolTrace"; Flags: uninsdeletevalue; Check: not IsAdminLoggedOn
 Root: HKCU; Subkey: "Software\Classes\NREL.SolTrace"; ValueType: string; ValueName: ; ValueData: "SolTrace Project File"; Flags: uninsdeletekey; Check: not IsAdminLoggedOn            
-Root: HKCU; Subkey: "Software\Classes\NREL.SolTrace\DefaultIcon"; ValueType: string; ValueName: ; ValueData: "{app}\win32\soltrace.exe,0"; Check: not IsAdminLoggedOn  and not Is64BitInstallMode
-Root: HKCU; Subkey: "Software\Classes\NREL.SolTrace\shell\open\command"; ValueType: string; ValueName: ; ValueData: """{app}\win32\soltrace.exe"" ""%1"""; Check: not IsAdminLoggedOn  and not Is64BitInstallMode
 Root: HKCU; Subkey: "Software\Classes\NREL.SolTrace\DefaultIcon"; ValueType: string; ValueName: ; ValueData: "{app}\x64\soltrace.exe,0"; Check: not IsAdminLoggedOn  and Is64BitInstallMode
 Root: HKCU; Subkey: "Software\Classes\NREL.SolTrace\shell\open\command"; ValueType: string; ValueName: ; ValueData: """{app}\x64\soltrace.exe"" ""%1"""; Check: not IsAdminLoggedOn  and Is64BitInstallMode
 
 [Run]
-Filename: "{app}\win32\soltrace.exe"; Flags: postinstall skipifsilent unchecked; Description: "{cm:LaunchProgram,SolTrace}"; Check: not Is64BitInstallMode
 Filename: "{app}\x64\soltrace.exe"; Flags: postinstall skipifsilent unchecked; Description: "{cm:LaunchProgram,SolTrace}"; Check: Is64BitInstallMode
-
-
 
 ; added 9/19/07 to check for running instances on install and uninstall
 
