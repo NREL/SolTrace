@@ -886,7 +886,31 @@ Label_FlagMiss:
 			switch(optelm->InteractionType )
 			{
 			case 1: // refraction
-				TestValue = optics->Transmissivity; 
+				if (optics->UseTransmissivityTable)
+				{
+					int npoints = optics->TransmissivityTable.size();
+					int m = 0;
+					UnitLastDFXYZ[0] = -LastDFXYZ[0] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
+					UnitLastDFXYZ[1] = -LastDFXYZ[1] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
+					UnitLastDFXYZ[2] = -LastDFXYZ[2] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
+					IncidentAngle = acos(DOT(LastCosRaySurfElement, UnitLastDFXYZ))*1000.;  //[mrad]
+					if (IncidentAngle >= optics->TransmissivityTable[npoints - 1].angle)
+					{
+						TestValue = optics->TransmissivityTable[npoints - 1].trans;
+					}
+					else
+					{
+						while (optics->TransmissivityTable[m].angle < IncidentAngle)
+							m++;
+
+						if (m == 0)
+							TestValue = optics->TransmissivityTable[m].trans;
+						else
+							TestValue = (optics->TransmissivityTable[m].trans + optics->TransmissivityTable[m - 1].trans) / 2.0;
+					}
+				}
+				else
+					TestValue = optics->Transmissivity; 
 				break;
 			case 2: // reflection
 
@@ -897,7 +921,7 @@ Label_FlagMiss:
 					UnitLastDFXYZ[0] = -LastDFXYZ[0]/sqrt(DOT(LastDFXYZ,LastDFXYZ));
 					UnitLastDFXYZ[1] = -LastDFXYZ[1]/sqrt(DOT(LastDFXYZ,LastDFXYZ));
 					UnitLastDFXYZ[2] = -LastDFXYZ[2]/sqrt(DOT(LastDFXYZ,LastDFXYZ));
-					IncidentAngle = acos(DOT(LastCosRaySurfElement,UnitLastDFXYZ));
+					IncidentAngle = acos(DOT(LastCosRaySurfElement,UnitLastDFXYZ)) * 1000.;  //[mrad]
 					if (IncidentAngle >= optics->ReflectivityTable[ npoints-1 ].angle )
 					{
 						TestValue = optics->ReflectivityTable[ npoints-1 ].refl;

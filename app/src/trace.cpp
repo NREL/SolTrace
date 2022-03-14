@@ -314,19 +314,19 @@ static int LoadSystemIntoContext( Project *System, st_context_t spcxt, wxArraySt
 
 	st_sun_xyz(spcxt, x, y, z );
 
-	int npoints = System->Sun.UserShapeData.size();
-	if ( npoints > 0)
+	int refl_npoints = System->Sun.UserShapeData.size();
+	if ( refl_npoints > 0)
 	{
-		double *angle = new double[npoints];
-		double *intensity = new double[npoints];
+		double *angle = new double[refl_npoints];
+		double *intensity = new double[refl_npoints];
 
-		for (int i=0;i<npoints;i++)
+		for (int i=0;i<refl_npoints;i++)
 		{
 			angle[i] = System->Sun.UserShapeData[i].x;
 			intensity[i] = System->Sun.UserShapeData[i].y;
 		}
 
-		st_sun_userdata(spcxt, npoints, angle, intensity );
+		st_sun_userdata(spcxt, refl_npoints, angle, intensity );
 
 		delete [] angle;
 		delete [] intensity;
@@ -337,69 +337,66 @@ static int LoadSystemIntoContext( Project *System, st_context_t spcxt, wxArraySt
 	{
 		int idx = st_add_optic(spcxt, (const char*)System->OpticsList[nopt]->Name.c_str() );
 
-		// FRONT SIDE
-		SurfaceOptic *f = &System->OpticsList[nopt]->Front;
+		// iterate over the front and back surfaces using a pointer to each
+		SurfaceOptic* surfs[2] = { &System->OpticsList[nopt]->Front, &System->OpticsList[nopt]->Back };
 
-		double *angles = 0;
-		double *refls = 0;
-		int npoints = f->ReflectivityTable.size();
-
-		if (f->UseReflectivityTable && npoints > 0)
+		for (size_t si = 0; si < 2; si++)
 		{
-			angles = new double[npoints];
-			refls = new double[npoints];
-			for (int k=0;k<npoints;k++)
+			//si==0 -> Front, si==1 -> Back
+			SurfaceOptic* f = surfs[si];
+
+			double *refl_angles = 0;
+			double *refls = 0;
+			int refl_npoints = f->ReflectivityTable.size();
+
+			if (f->UseReflectivityTable && refl_npoints > 0)
 			{
-				angles[k] = f->ReflectivityTable[k].x;
-				refls[k] = f->ReflectivityTable[k].y;
+				refl_angles = new double[refl_npoints];
+				refls = new double[refl_npoints];
+				for (int k = 0; k < refl_npoints; k++)
+				{
+					refl_angles[k] = f->ReflectivityTable[k].x;
+					refls[k] = f->ReflectivityTable[k].y;
+				}
 			}
 
-		}
+			double* trans_angles = 0;
+			double* transs = 0;
+			int trans_npoints = f->TransmissivityTable.size();
 
-		st_optic(spcxt, idx, 1, f->ErrorDistribution,
-			f->OpticalSurfaceNumber, f->ApertureStopOrGratingType, f->DiffractionOrder,
-			f->RefractionIndexReal, f->RefractionIndexImag,
-			f->Reflectivity, f->Transmissivity,
-			f->GratingCoeffs, f->RMSSlope, f->RMSSpecularity,
-			f->UseReflectivityTable ? 1 : 0, npoints,
-			angles, refls);
-
-		if (angles) delete [] angles;
-		if (refls) delete [] refls;
-
-		angles = 0;
-		refls = 0;
-
-		// BACK SIDE
-
-
-		f = &System->OpticsList[nopt]->Back;
-		npoints = f->ReflectivityTable.size();
-
-		if (f->UseReflectivityTable && npoints > 0)
-		{
-			angles = new double[npoints];
-			refls = new double[npoints];
-			for (int k=0;k<npoints;k++)
+			if (f->UseTransmissivityTable && trans_npoints > 0)
 			{
-				angles[k] = f->ReflectivityTable[k].x;
-				refls[k] = f->ReflectivityTable[k].y;
+				trans_angles = new double[trans_npoints];
+				transs = new double[trans_npoints];
+				for (int k = 0; k < trans_npoints; k++)
+				{
+					trans_angles[k] = f->TransmissivityTable[k].x;
+					transs[k] = f->TransmissivityTable[k].y;
+				}
+
 			}
 
+			st_optic(spcxt, idx, si+1, f->ErrorDistribution,
+				f->OpticalSurfaceNumber, f->ApertureStopOrGratingType, f->DiffractionOrder,
+				f->RefractionIndexReal, f->RefractionIndexImag,
+				f->Reflectivity, f->Transmissivity,
+				f->GratingCoeffs, f->RMSSlope, f->RMSSpecularity,
+				f->UseReflectivityTable ? 1 : 0, refl_npoints,
+				refl_angles, refls,
+				f->UseTransmissivityTable ? 1 : 0, trans_npoints,
+				trans_angles, transs
+			);
+
+			if (refl_angles) delete[] refl_angles;
+			if (refls) delete[] refls;
+			if (trans_angles) delete[] trans_angles;
+			if (transs) delete[] transs;
+
+			refl_angles = 0;
+			refls = 0;
+			trans_angles = 0;
+			transs = 0;
 		}
-		st_optic(spcxt, idx, 2, f->ErrorDistribution,
-			f->OpticalSurfaceNumber, f->ApertureStopOrGratingType, f->DiffractionOrder,
-			f->RefractionIndexReal, f->RefractionIndexImag,
-			f->Reflectivity, f->Transmissivity,
-			f->GratingCoeffs, f->RMSSlope, f->RMSSpecularity,
-			f->UseReflectivityTable ? 1 : 0, npoints,
-			angles, refls );
-
-		if (angles) delete [] angles;
-		if (refls) delete [] refls;
-
-		angles = 0;
-		refls = 0;
 	}
 
 	st_clear_stages(spcxt);

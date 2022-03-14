@@ -181,6 +181,7 @@ SurfaceOptic::SurfaceOptic()
 	GratingCoeffs[2] = 1.3;
 	GratingCoeffs[3] = 1.4;
 	UseReflectivityTable = false;
+	UseTransmissivityTable = false;
 }
 
 bool SurfaceOptic::Write(FILE *fp)
@@ -192,6 +193,7 @@ bool SurfaceOptic::Write(FILE *fp)
 		"%lg\t%lg\t%lg\t%lg\t"
 		"%lg\t%lg\t"
 		"%lg\t%lg\t%lg\t%lg\t"
+		"%d\t%d\t"
 		"%d\t%d\n",
 
 		ErrorDistribution,
@@ -199,11 +201,16 @@ bool SurfaceOptic::Write(FILE *fp)
 		Reflectivity, Transmissivity, RMSSlope, RMSSpecularity,
 		RefractionIndexReal, RefractionIndexImag,
 		GratingCoeffs[0], GratingCoeffs[1], GratingCoeffs[2], GratingCoeffs[3],
-		UseReflectivityTable ? 1 : 0, (int)ReflectivityTable.size());
+		UseReflectivityTable ? 1 : 0, (int)ReflectivityTable.size(),
+		UseTransmissivityTable ? 1 : 0, (int)TransmissivityTable.size()
+		);
 
 	if (UseReflectivityTable)
 		for (size_t i=0;i<ReflectivityTable.size();i++)
 			fprintf(fp, "%lg %lg\n", ReflectivityTable[i].x, ReflectivityTable[i].y );
+	if (UseTransmissivityTable)
+		for (size_t i = 0; i < TransmissivityTable.size(); i++)
+			fprintf(fp, "%lg %lg\n", TransmissivityTable[i].x, TransmissivityTable[i].y);
 
 	return true;
 }
@@ -243,6 +250,10 @@ bool SurfaceOptic::Read(FILE *fp, bool oldfmt)
 		read_line( buf, 1023, fp ); if (strlen(buf) > 0) ErrorDistribution = buf[0];
 		UseReflectivityTable = false;
 		ReflectivityTable.clear();
+		/*
+		>> not sure this is needed for old format?? mjw
+		UseTransmissivityTable= false;
+		TransmissivityTable.clear();*/
 	}
 	else
 	{
@@ -275,23 +286,45 @@ bool SurfaceOptic::Read(FILE *fp, bool oldfmt)
 
 		UseReflectivityTable = false;
 		ReflectivityTable.clear();
-
-		if (parts.size() >= 17)
+		UseTransmissivityTable = false;
+		TransmissivityTable.clear();
+		
+		int refl_count = 0;
+		int trans_count = 0;
+		if (parts.size() > 15)
 		{
 			UseReflectivityTable = (wxAtoi( parts[15] ) > 0);
-			int count = wxAtoi( parts[16] );
-			if (UseReflectivityTable)
+			refl_count = wxAtoi( parts[16] );
+			if (parts.size() > 17)
 			{
-				ReflectivityTable.clear();
-				for (int i=0;i<count;i++)
-				{
-					read_line(buf,1023,fp);
-					double x = 0.0, y = 0.0;
-					sscanf(buf, "%lg %lg", &x, &y);
-					ReflectivityTable.push_back( PointF(x, y) );
-				}
+				UseTransmissivityTable = (wxAtoi(parts[17]) > 0);
+				trans_count = wxAtoi(parts[18]);
 			}
 		}
+
+		if (UseReflectivityTable)
+		{
+			ReflectivityTable.clear();
+			for (int i=0;i< refl_count;i++)
+			{
+				read_line(buf,1023,fp);
+				double x = 0.0, y = 0.0;
+				sscanf(buf, "%lg %lg", &x, &y);
+				ReflectivityTable.push_back( PointF(x, y) );
+			}
+		}
+		if (UseTransmissivityTable)
+		{
+			TransmissivityTable.clear();
+			for (int i = 0; i < trans_count; i++)
+			{
+				read_line(buf, 1023, fp);
+				double x = 0.0, y = 0.0;
+				sscanf(buf, "%lg %lg", &x, &y);
+				TransmissivityTable.push_back(PointF(x, y));
+			}
+		}
+
 	}
 
 	return true;

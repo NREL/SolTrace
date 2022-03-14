@@ -106,7 +106,9 @@ public:
 	double RefractionIndexImag;
 	double GratingCoeffs[4];
 	bool UseReflectivityTable;
+	bool UseTransmissivityTable;
 	std::vector<PointF> ReflectivityTable;
+	std::vector<PointF> TransmissivityTable;
 };
 
 class Optical

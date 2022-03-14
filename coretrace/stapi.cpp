@@ -163,8 +163,10 @@ STCORE_API int st_optic(st_context_t pcxt, st_uint_t idx, int fb, /* 1=front,2=b
 				double ref, double tra,
 				double gratingab12[3],
 				double rmsslope, double rmsspec,
-				int userefltable, int npoints,
-				double *angles, double *refls  )
+				int userefltable, int refl_npoints,
+				double* refl_angles, double* refls,
+				int usetranstable, int trans_npoints,
+				double* trans_angles, double* transs)
 {
 	SYSTEM(pcxt,-1);
 
@@ -191,14 +193,24 @@ STCORE_API int st_optic(st_context_t pcxt, st_uint_t idx, int fb, /* 1=front,2=b
 	topt->RMSSlopeError = rmsslope;
 	topt->RMSSpecError = rmsspec;
 
-	if (userefltable && npoints > 0 && angles != 0 && refls != 0)
+	if (userefltable && refl_npoints > 0 && refl_angles != 0 && refls != 0)
 	{
 		topt->UseReflectivityTable = true;
-		topt->ReflectivityTable.resize( npoints );
-		for (int i=0;i<npoints;i++)
+		topt->ReflectivityTable.resize( refl_npoints );
+		for (int i=0;i<refl_npoints;i++)
 		{
-			topt->ReflectivityTable[i].angle = angles[i];
+			topt->ReflectivityTable[i].angle = refl_angles[i];
 			topt->ReflectivityTable[i].refl = refls[i];
+		}
+	}
+	if (usetranstable && trans_npoints > 0 && trans_angles != 0 && transs != 0)
+	{
+		topt->UseTransmissivityTable = true;
+		topt->TransmissivityTable.resize(trans_npoints);
+		for (int i = 0; i < trans_npoints; i++)
+		{
+			topt->TransmissivityTable[i].angle = trans_angles[i];
+			topt->TransmissivityTable[i].trans = transs[i];
 		}
 	}
 
