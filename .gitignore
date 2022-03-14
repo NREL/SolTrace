@@ -300,8 +300,8 @@ __pycache__/
 *.bin
 *.mod
 
-*.html
-*.png
-*.js
-*.css
-*.tex
+#*.html
+#*.png
+#*.js
+#*.css
+#*.tex
