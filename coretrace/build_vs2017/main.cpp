@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+#include <iomanip>
+#include <fstream>
 
 #include <string>
 #include <vector>
@@ -378,8 +381,15 @@ bool read_system(FILE *fp, st_context_t cxt)
 
 bool write_data_file(const char *file, st_context_t cxt)
 {
-	FILE *fp = fopen(file, "wb" );
-	if (!fp) return false;
+	std::ofstream fout;
+	try
+	{
+		fout.open(file);
+	}
+	catch (...)
+	{
+		return false;
+	}
 
 	double buf[9];
 	double SunXMin, SunXMax, SunYMin, SunYMax;
@@ -411,8 +421,12 @@ bool write_data_file(const char *file, st_context_t cxt)
 	buf[4] = SunRayCount;
 	buf[5] = Length;
 
-	fwrite( (void*)buf, sizeof(double), 6,fp );
-
+	fout << "#       SunXMin        SunXMax        SunYMin        SunYMax    SunRayCount         Length\n";
+	for (int i = 0; i < 6; i++)
+		fout << std::scientific << std::setw(15) << std::setprecision(6) << buf[i];
+	fout << "\n";
+	
+	fout << "#             X              Y              Z           Xcos           Ycos           Zcos       Stagemap     Elementmap      Raynumber\n";
 	for (size_t i=0;i<Length;i++)
 	{
 		buf[0] = Xi[i];
@@ -425,7 +439,12 @@ bool write_data_file(const char *file, st_context_t cxt)
 		buf[7] = Em[i];
 		buf[8] = Rn[i];
 
-		fwrite( (void*)buf, sizeof(double), 9, fp );
+		//fwrite( (void*)buf, sizeof(double), sizeof(buf), fp );
+		for (int j = 0; j < 6; j++)
+			fout << std::scientific << std::setw(15) << std::setprecision(6) << buf[j];
+		for (int j = 6; j < 9; j++)
+			fout << std::fixed << std::setw(15) << std::setprecision(0) << (int)buf[j];
+		fout << "\n";
 	}
 	
 	delete [] Xi;
@@ -440,7 +459,8 @@ bool write_data_file(const char *file, st_context_t cxt)
 	delete [] Sm;
 	delete [] Rn;
 
-	fclose(fp);
+	//fclose(fp);
+	fout.close();
 
 	return true;
 }
@@ -471,6 +491,9 @@ int main(int argc, char *argv[])
 			"strace.exe <system.stinput> <number of rays> <max rays> <seed> <sunshape? 0/1> <errors? 0/1> <pointfocus? 0/1>\n");
 		return -1;
 	}
+
+	//printf("Hit enter to continue...\n");
+	//getchar();
 	
 	const char *file = argv[1];
 	int nrays = atoi( argv[2] );

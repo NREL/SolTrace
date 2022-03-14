@@ -80,30 +80,30 @@
   <PropertyGroup Label="Globals">
     <ProjectName>soltrace</ProjectName>
     <ProjectGuid>{9E628EDB-737F-492C-9218-932DEAB14B2A}</ProjectGuid>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -230,10 +230,10 @@
       <AdditionalIncludeDirectories>$(WXMSW3)\lib\vc_lib\mswud;$(WXMSW3)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>wxbase31ud_net.lib;wxbase31ud_xml.lib;wxmsw31ud_webview.lib;wxmsw31ud_adv.lib;wxmsw31ud_html.lib;wxmsw31ud_aui.lib;wxmsw31ud_stc.lib;wxmsw31ud_richtext.lib;wxmsw31ud_core.lib;wxmsw31ud_gl.lib;wxbase31ud.lib;wxscintillad.lib;wxtiffd.lib;wxjpegd.lib;wxpngd.lib;wxzlibd.lib;wxregexud.lib;wxexpatd.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;winhttp.lib;libcurl.lib;wexx64d.lib;lkx64d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wxbase31ud_net.lib;wxbase31ud_xml.lib;wxmsw31ud_webview.lib;wxmsw31ud_adv.lib;wxmsw31ud_html.lib;wxmsw31ud_aui.lib;wxmsw31ud_stc.lib;wxmsw31ud_richtext.lib;wxmsw31ud_core.lib;wxmsw31ud_gl.lib;wxbase31ud.lib;wxscintillad.lib;wxtiffd.lib;wxjpegd.lib;wxpngd.lib;wxzlibd.lib;wxregexud.lib;wxexpatd.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;winhttp.lib;libcurl.lib;wexd.lib;lkd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(TargetPath)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>$(LKDIR);$(WEXDIR);$(WEXDIR)\build_vs2017\libcurl_ssl_x64\lib;$(WXMSW3)\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(LKDIR)\build\$(Configuration);$(WEXDIR)\build\$(Configuration);$(WEXDIR)\build_resources\libcurl_ssl_x64\lib;$(WXMSW3)\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)\$(TargetName).pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
@@ -327,10 +327,10 @@
       <AdditionalIncludeDirectories>$(WXMSW3)\lib\vc_lib\mswu;$(WXMSW3)\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>wxbase31u_net.lib;wxbase31u_xml.lib;wxmsw31u_webview.lib;wxmsw31u_adv.lib;wxmsw31u_html.lib;wxmsw31u_aui.lib;wxmsw31u_stc.lib;wxmsw31u_richtext.lib;wxmsw31u_core.lib;wxmsw31u_gl.lib;wxbase31u.lib;wxscintilla.lib;wxtiff.lib;wxjpeg.lib;wxpng.lib;wxzlib.lib;wxregexu.lib;wxexpat.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;winhttp.lib;libcurl.lib;wexx64.lib;lkx64.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wxbase31u_net.lib;wxbase31u_xml.lib;wxmsw31u_webview.lib;wxmsw31u_adv.lib;wxmsw31u_html.lib;wxmsw31u_aui.lib;wxmsw31u_stc.lib;wxmsw31u_richtext.lib;wxmsw31u_core.lib;wxmsw31u_gl.lib;wxbase31u.lib;wxscintilla.lib;wxtiff.lib;wxjpeg.lib;wxpng.lib;wxzlib.lib;wxregexu.lib;wxexpat.lib;kernel32.lib;user32.lib;gdi32.lib;comdlg32.lib;winspool.lib;winmm.lib;shell32.lib;comctl32.lib;ole32.lib;oleaut32.lib;uuid.lib;rpcrt4.lib;advapi32.lib;wsock32.lib;wininet.lib;winhttp.lib;libcurl.lib;wex.lib;lk.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(TargetPath)</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>$(LKDIR);$(WEXDIR);$(WEXDIR)\build_vs2017\libcurl_ssl_x64\lib;$(WEXDIR);$(LKDIR);$(WXMSW3)\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(LKDIR)\build\$(Configuration);$(WEXDIR)\build\$(Configuration);$(WEXDIR)\build_resources\libcurl_ssl_x64\lib;$(WXMSW3)\lib\vc_x64_lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)\$(TargetName).pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
