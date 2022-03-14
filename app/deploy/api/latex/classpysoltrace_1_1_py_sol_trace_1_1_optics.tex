@@ -1,0 +1,81 @@
+\hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics}{}\doxysection{pysoltrace.\+Py\+Sol\+Trace.\+Optics Class Reference}
+\label{classpysoltrace_1_1_py_sol_trace_1_1_optics}\index{pysoltrace.PySolTrace.Optics@{pysoltrace.PySolTrace.Optics}}
+\doxysubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_optics_1_1_face}{Face}}
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a11a6a24d73dd326891408174ed172c91}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a11a6a24d73dd326891408174ed172c91}} 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, p\+\_\+dll, int p\+\_\+data, int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_optics_a53caf38b24415bc9f8bdf8671df628e8}{id}})
+\item 
+int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_optics_a8c5d307f18b952d184c8d0a4c40e7756}{Create}} (self)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a180dde54e6829dc94d2a7a9d7f2caf05}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a180dde54e6829dc94d2a7a9d7f2caf05}} 
+{\bfseries name}
+\begin{DoxyCompactList}\small\item\em Unique name for the optical property set. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a53caf38b24415bc9f8bdf8671df628e8}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a53caf38b24415bc9f8bdf8671df628e8}} 
+{\bfseries id}
+\begin{DoxyCompactList}\small\item\em Identifying integer associated with the property set. \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a1dd375a52b06373e59d77755522ae198}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a1dd375a52b06373e59d77755522ae198}} 
+{\bfseries front}
+\begin{DoxyCompactList}\small\item\em properties associated with the front of the optical surface \end{DoxyCompactList}\item 
+\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a76abc7d59546a01954d7f6af8409c6b0}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a76abc7d59546a01954d7f6af8409c6b0}} 
+{\bfseries back}
+\begin{DoxyCompactList}\small\item\em properties associated with the back of the optical surface \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb} *Optics* is a subclass of PySolTrace, and represents an optical property set. 
+A PySolTrace instance may have multiple Optics member instances, which are stored in 
+the PySolTrace.optics list.
+
+Optics contains a subclass *Face*, which collects properties associated with the front 
+or back face of an optical surface.
+
+Attributes
+----------
+p_dll 
+    Reference for API DLL, managed by PySolTrace
+p_data 
+    Memory location for soltrace context, managed by PySolTrace
+name : str
+    Unique name for the optical property set
+id : int
+    Identifying integer associated with the property set
+front : Face
+    properties associated with the front of the optical surface
+back : Face
+    properties associated with the back of the optical surface
+
+Methods
+----------
+Create 
+    Calls methods to instantiate and construct optical surface in the SolTrace context.
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a8c5d307f18b952d184c8d0a4c40e7756}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a8c5d307f18b952d184c8d0a4c40e7756}} 
+\index{pysoltrace.PySolTrace.Optics@{pysoltrace.PySolTrace.Optics}!Create@{Create}}
+\index{Create@{Create}!pysoltrace.PySolTrace.Optics@{pysoltrace.PySolTrace.Optics}}
+\doxysubsubsection{\texorpdfstring{Create()}{Create()}}
+{\footnotesize\ttfamily  int pysoltrace.\+Py\+Sol\+Trace.\+Optics.\+Create (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Create Optics instance in the SolTrace context.
+
+Returns
+----------
+int 
+    1 if successful, 0 otherwise
+\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+pysoltrace.\+py\end{DoxyCompactItemize}
