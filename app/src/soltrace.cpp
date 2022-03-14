@@ -555,8 +555,15 @@ void MainWindow::UpdateResults()
 
 void MainWindow::ShowHelpTopic( const wxString &topic )
 {
-	wxFileName fn( MainWindow::Instance().GetAppDataDir() + "/help/59163.pdf" );
-	fn.Normalize( );
-	wxLaunchDefaultBrowser( "file:///" + fn.GetFullPath( ) );
+	
+	wxFileName help_dir;
+	help_dir.SetPath(wxPathOnly(wxStandardPaths::Get().GetExecutablePath() + "/.."));
+	help_dir.AppendDir("help");
+	wxString help = wxString::Format("HH.EXE \"ms-its:%s/SolTrace.chm::/%s.htm\"", help_dir.GetPath().ToStdString(), topic);
+	wxExecute(help);
+
+	//wxFileName fn( MainWindow::Instance().GetAppDataDir() + "/help/59163.pdf" );
+	//fn.Normalize( );
+	//wxLaunchDefaultBrowser( "file:///" + fn.GetFullPath( ) );
 	//wxMessageBox("Sorry, help is not available right now.");
 }
