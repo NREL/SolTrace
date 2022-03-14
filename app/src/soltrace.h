@@ -127,6 +127,7 @@ private:
 	bool m_modified;
 	Project m_project;
 	wxString m_fileName;
+	wxString m_currentpage;
 	
 	DECLARE_EVENT_TABLE();
 };

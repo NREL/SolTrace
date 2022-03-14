@@ -282,6 +282,7 @@ MainWindow::MainWindow()
 	m_notebook->AddPage( m_rayDataForm, "Data" );
 
 	m_modified = false;
+	m_currentpage = "Sun";
 
 	UpdateFrameTitle();
 }
@@ -509,7 +510,7 @@ void MainWindow::OnCommand( wxCommandEvent &evt )
 		Close();
 		break;
 	case wxID_HELP:
-		ShowHelpTopic( "home" );
+		ShowHelpTopic( m_currentpage );
 		break;
 
 	};
@@ -518,6 +519,7 @@ void MainWindow::OnCommand( wxCommandEvent &evt )
 void MainWindow::OnCaseTabChange( wxCommandEvent &evt )
 {
 	m_notebook->SetSelection( evt.GetSelection() );
+	m_currentpage = m_notebook->GetPageText(evt.GetSelection());
 }
 
 void MainWindow::OnCaseTabButton( wxCommandEvent & )
@@ -555,8 +557,42 @@ void MainWindow::UpdateResults()
 
 void MainWindow::ShowHelpTopic( const wxString &topic )
 {
-	wxFileName fn( MainWindow::Instance().GetAppDataDir() + "/help/59163.pdf" );
-	fn.Normalize( );
-	wxLaunchDefaultBrowser( "file:///" + fn.GetFullPath( ) );
-	//wxMessageBox("Sorry, help is not available right now.");
+	wxString topic_map;
+	if (topic == "Sun")
+		topic_map = "Sun";
+	else if (topic == "Optics")
+		topic_map = "OpticalProperties";
+	else if (topic == "Geometry")
+		topic_map == "Geometry";
+	else if (topic == "Trace")
+		topic_map = "Tracing";
+	else if ((topic == "Intersections (3D)") || (topic == "Flux maps"))
+		topic_map = "Visualization";
+	else if (topic == "Data")
+		topic_map = "ExportingData";
+	else
+		topic_map = "Introduction";
+	
+	try
+	{
+		wxFileName help_dir;
+		help_dir.SetPath(wxPathOnly(wxStandardPaths::Get().GetExecutablePath()) + "/..");
+		help_dir.AppendDir("help");
+		try
+		{
+			wxString help = wxString::Format("HH.EXE \"ms-its:%s/SolTrace.chm::/%s.htm\"", help_dir.GetPath().ToStdString(), topic_map);
+			wxExecute(help);
+		}
+		catch (...)
+		{
+			//wxFileName fn(MainWindow::Instance().GetAppDataDir() + "/help/59163.pdf");
+			wxFileName fn( MainWindow::Instance().GetAppDataDir() + "SolTrace.pdf" );
+			fn.Normalize( );
+			wxLaunchDefaultBrowser( "file:///" + fn.GetFullPath( ) );
+		}
+	}
+	catch (...)
+	{
+		wxMessageBox("Sorry, help is not available right now.");
+	}
 }
