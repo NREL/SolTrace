@@ -1467,21 +1467,21 @@ class PySolTrace:
             'ymax' --> Maximum y extent of the bounding box for hit testing 
             'nsunrays' --> Number of sun rays simulated
         """
-        xmin = c_number
-        xmax = c_number
-        ymin = c_number
-        ymax = c_number
-        nsunrays = c_int
+        xmin = (c_number)()
+        xmax = (c_number)()
+        ymin = (c_number)()
+        ymax = (c_number)()
+        nsunrays = (c_int)()
 
         self._pdll.st_sun_stats.restype = c_int 
         self._pdll.st_sun_stats(c_void_p(self._p_data), pointer(xmin), pointer(xmax), pointer(ymin), pointer(ymax), pointer(nsunrays))
 
         return {
-            'xmin':float(xmin),
-            'xmax':float(xmax),
-            'ymin':float(ymin),
-            'ymax':float(ymax),
-            'nsunrays':int(nsunrays),
+            'xmin':float(xmin.value),
+            'xmax':float(xmax.value),
+            'ymin':float(ymin.value),
+            'ymax':float(ymax.value),
+            'nsunrays':int(nsunrays.value),
         }
 
     def get_ray_dataframe(self):
