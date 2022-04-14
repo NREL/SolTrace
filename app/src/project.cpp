@@ -1140,9 +1140,11 @@ bool ElementStatistics::Compute(
 
 	Element *elm = m_prj.StageList[stageIdx]->ElementList[elementIdx];
 	char surf = tolower(elm->SurfaceIndex);
+	char aper = tolower(elm->ApertureIndex);
 	if (surf != 't' && surf != 'f')
 	{
-		return false;
+		if (aper !='l' || surf !='s')
+			return false;
 	}
 
 	RayData *rd = &m_prj.Results;
@@ -1193,12 +1195,24 @@ bool ElementStatistics::Compute(
 	double gridszx = maxx - minx;
 	double gridszy = maxy - miny;
 
-	if (tolower(elm->SurfaceIndex)=='t')
+	if (tolower(elm->SurfaceIndex)=='t' || tolower(elm->SurfaceIndex)=='s')
 	{
 		Radius = 1.0/elm->SurfaceParams[0]; // CurvOfRev
-		minx = -M_PI*Radius;
-		maxx = M_PI*Radius;
-		gridszx = 2.0*M_PI*Radius;
+		if (tolower(elm->SurfaceIndex) == 't') // Full cylinder
+		{
+			minx = -M_PI * Radius;
+			maxx = M_PI * Radius;
+			gridszx = 2.0 * M_PI * Radius;
+		}
+		else  // Partial cylinder
+		{
+			double angle_min, angle_max;
+			angle_min = asin(elm->ApertureParams[0] / Radius);
+			angle_max = asin(elm->ApertureParams[1] / Radius);
+			minx = Radius * angle_min;
+			maxx = Radius * angle_max;
+			gridszx = (angle_max - angle_min) * Radius;
+		}
 	}
 
 	binszx = gridszx / nbinsx;
@@ -1312,6 +1326,7 @@ void ElementStatistics::BinRaysXY( Element *elm,
 	Origin[2] = elm->Z;
 
 	bool iscylinder = (tolower(elm->SurfaceIndex)=='t');
+	bool ispartialcylinder = (tolower(elm->SurfaceIndex) == 's' && tolower(elm->ApertureIndex) == 'l');
 
 	for (size_t j=0;j<ElementIndexArray.size();j++)
 	{
@@ -1354,6 +1369,11 @@ void ElementStatistics::BinRaysXY( Element *elm,
 					if (x < 0) x = -(M_PI*Radius/2.0 + Radius*acos(fabs(x)/Radius));
 					if (x >= 0) x = M_PI*Radius/2.0 + Radius*acos(x/Radius);
 				}
+			}
+			else if (ispartialcylinder)
+			{
+				ZVal = Radius;
+				x = Radius * asin(x / Radius);
 			}
 			else
 			{
