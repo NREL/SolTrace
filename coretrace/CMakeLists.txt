@@ -85,6 +85,20 @@ endif(MSVC)
 #
 #####################################################################################################################
 
+add_library(coretrace_api SHARED ${CORETRACE_SRC})
+set_target_properties(coretrace_api
+    PROPERTIES
+    DEBUG_POSTFIX "d"
+	PREFIX ""
+	)
+target_compile_definitions(coretrace_api PRIVATE STCORE_API_EXPORTS _STCOREDLL_)
+add_custom_command(
+	TARGET coretrace_api
+	POST_BUILD
+	COMMAND ${CMAKE_COMMAND}
+	ARGS -E copy $<TARGET_FILE:coretrace_api> ${CMAKE_CURRENT_SOURCE_DIR}/../app/deploy/api
+	)
+	
 add_library(coretrace STATIC ${CORETRACE_SRC})
 set_target_properties(coretrace
     PROPERTIES

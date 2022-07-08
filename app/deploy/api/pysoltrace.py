@@ -291,6 +291,10 @@ class PySolTrace:
                 Flag specifying use of user reflectivity table to modify reflectivity as a function of incidence angle
             refltable : [[float,float],]
                 [mrad,0..1] 2D list containing pairs of [angle,reflectivity] values.              
+            usetranstable : bool
+                Flag specifying use of user transmissivity table to modify transmissivity as a function of incidence angle
+            transtable : [[float,float],]
+                [mrad,0..1] 2D list containing pairs of [angle,transmissivity] values.    
             """
             def __init__(self):
                 ## Distribution type for surface interactions. One of:
@@ -310,6 +314,10 @@ class PySolTrace:
                 self.userefltable = False             #Flag [bool] use reflectivity table 
                 ## [mrad,0..1] 2D list containing pairs of [angle,reflectivity] values.      
                 self.refltable = []  #[[angle1,refl1],[...]] 
+                ## Flag specifying use of user transmissivity table to modify transmissivity as a function of incidence angle
+                self.usetranstable = False             #Flag [bool] use transmissivity table 
+                ## [mrad,0..1] 2D list containing pairs of [angle,transmissivity] values.      
+                self.transtable = []  #[[angle1,trans1],[...]] 
 
         # -------- methods of the Optics class -----------------------------------------
         def __init__(self, p_dll, p_data : int, id : int):
@@ -346,11 +354,17 @@ class PySolTrace:
             # for each face -- front or back
             for i,opt in enumerate([self.front, self.back]):
 
-                user_angles = (c_number*len(opt.refltable))()
+                user_refl_angles = (c_number*len(opt.refltable))()
                 user_refls = (c_number*len(opt.refltable))()
                 if len(opt.refltable) > 1:
-                    user_angles[:] = list(list(zip(*opt.refltable))[0])
+                    user_refl_angles[:] = list(list(zip(*opt.refltable))[0])
                     user_refls[:] = list(list(zip(*opt.refltable))[1])
+
+                user_trans_angles = (c_number*len(opt.transtable))()
+                user_trans = (c_number*len(opt.transtable))()
+                if len(opt.transtable) > 1:
+                    user_trans_angles[:] = list(list(zip(*opt.transtable))[0])
+                    user_trans[:] = list(list(zip(*opt.transtable))[1])
 
                 # Create surface optic
                 resok = resok and self._pdll.st_optic( \
@@ -370,8 +384,12 @@ class PySolTrace:
                     c_number(opt.spec_error),
                     c_int(1 if opt.userefltable else 0),
                     c_int(len(opt.refltable)),
-                    pointer(user_angles),
+                    pointer(user_refl_angles),
                     pointer(user_refls),
+                    c_int(1 if opt.usetranstable else 0),
+                    c_int(len(opt.transtable)),
+                    pointer(user_trans_angles),
+                    pointer(user_trans),
                     )
 
             return 1 if resok else 0
@@ -1122,7 +1140,7 @@ class PySolTrace:
         cwd = os.getcwd()
         if sys.platform == 'win32' or sys.platform == 'cygwin':
             ## loaded SolTrace library of exported functions
-            self._pdll = CDLL(cwd + "/coretrace.dll")
+            self._pdll = CDLL(cwd + "/coretrace_apid.dll")
             # print("Loaded win32")
             #self._pdll = CDLL(cwd + "/coretraced.dll") # for debugging
         elif sys.platform == 'darwin':

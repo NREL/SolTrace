@@ -63,7 +63,7 @@ These are the general quick steps you need to follow to set up your computer for
     
     7. Build all files. The output is stored in the soltrace repository folder, e.g., ```C:/stdev/soltrace/app/deploy/soltrace.exe```. 
 
-    Note that output is NOT stored in the ```build-soltrace/``` directory!
+        Note that output is NOT stored in the ```build-soltrace/``` directory!
 
 ## Contributing
 
