@@ -102,3 +102,5 @@ set_target_properties(coretrace
 if (MSVC)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS")
 endif()
+
+add_subdirectory(strace)

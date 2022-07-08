@@ -24,22 +24,46 @@ These are the general quick steps you need to follow to set up your computer for
 
 1. Set up your development tools:
 
-    * Windows: Visual Studio 2017 Community or other editions available at [https://www.visualstudio.com/](https://www.visualstudio.com/).
+    * Windows: Visual Studio 2019 Community or other editions available at [https://www.visualstudio.com/](https://www.visualstudio.com/).
     * Linux: g++ compiler available at [http://www.cprogramming.com/g++.html](http://www.cprogramming.com/g++.html) or as part of the Linux distribution.
 
-2. Download the wxWidgets 3.1.0 source code for your operating system from [https://www.wxwidgets.org/downloads/](https://www.wxwidgets.org/downloads/).
+2. Download and install CMake 3.19 or higher from [https://cmake.org/download/](https://cmake.org/download/) with the ```Add CMake to the System Path for ...``` option selected.
 
-3. Build wxWidgets.
+3. Download the wxWidgets 3.1.5 source code for your operating system from [https://www.wxwidgets.org/downloads/](https://www.wxwidgets.org/downloads/).
 
-4. In Windows, create the WXMSW3 environment variable on your computer to point to the wxWidgets installation folder, or Linux, create the dynamic link `/usr/<USERNAME>/local/bin/wx-config-3` to point to `/path/to/wxWidgets/bin/wx-config`.
+4. Build wxWidgets.
 
-5. As you did for wxWidgets, for each of the following projects, clone (download) the repository, build the project, and then (Windows only) create an environment variable pointing to the project folder. Build the projects in the following order, and assign the environment variable for each project before you build the next one:
+5. In Windows, create the WXMSW3 environment variable on your computer to point to the wxWidgets installation folder, or Linux, create the dynamic link `/usr/<USERNAME>/local/bin/wx-config-3` to point to `/path/to/wxWidgets/bin/wx-config`.
+
+6. As you did for wxWidgets, for each of the following projects, clone (download) the repository and then (Windows only) create an environment variable pointing to the project folder. 
 
 <table>
 <tr><th>Project</th><th>Repository URL</th><th>Windows Environment Variable</th></tr>
 <tr><td>LK</td><td>https://github.com/NREL/lk</td><td>LKDIR</td></tr>
 <tr><td>WEX</td><td>https://github.com/NREL/wex</td><td>WEXDIR</td></tr>
 </table>
+
+7. Run CMake to create the project build files
+    1. Copy the file ```parent-dir-CMakeLists.txt``` into the parent directory also containing ```soltrace/ lk/ wex/``` and ```wxwidgets-3.x.x/``` folders.
+    
+    2. Rename this file to ```CMakeLists.txt``` before running cmake. You may need to temporarily rename any other file in this directory with the same name. 
+    
+        E.g., the file should be at ```C:/stdev/CMakeLists.txt```
+
+    3. Create a directory in the main parent folder to store the build files. 
+    E.g., ```C:/stdev/build-soltrace/```
+    
+    4. Open a shell or command window in the build folder from step 3
+
+    5. Copy the following cmake command to the shell and run. Replace the cmake target with a [supported generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#manual:cmake-generators(7))
+    
+        ```> cmake -G "Visual Studio 16 2019" -DCMAKE_CONFIGURATION_TYPES="Debug;Release" -DCMAKE_SYSTEM_VERSION=10.0 -DSAM_SKIP_TOOLS=1 .. ```
+
+    6. Confirm the project files built. If running visual studio, you should see a ```soltrace_ui.sln``` file in the build-soltrace/ directory.
+    
+    7. Build all files. The output is stored in the soltrace repository folder, e.g., ```C:/stdev/soltrace/app/deploy/soltrace.exe```. 
+
+    Note that output is NOT stored in the ```build-soltrace/``` directory!
 
 ## Contributing
 
