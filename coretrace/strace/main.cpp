@@ -5,6 +5,8 @@
 #include <fstream>
 
 #include <string>
+#include <cstring>
+#include <math.h>
 #include <vector>
 #include <exception>
 

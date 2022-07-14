@@ -91,7 +91,9 @@ set_target_properties(coretrace_api
     DEBUG_POSTFIX "d"
 	PREFIX ""
 	)
-target_compile_definitions(coretrace_api PRIVATE STCORE_API_EXPORTS _STCOREDLL_)
+if(MSVC)
+	target_compile_definitions(coretrace_api PRIVATE STCORE_API_EXPORTS _STCOREDLL_)
+endif()
 add_custom_command(
 	TARGET coretrace_api
 	POST_BUILD
