@@ -528,6 +528,10 @@ private:
 	st_context_t m_contextId;
 	bool m_cancelFlag;
     bool m_asPowerTower;
+	bool m_sunshape;
+	bool m_opterrs;
+	int m_nrays;
+	int m_nmaxrays;
 
 	size_t m_nTraceTotal;
 	size_t m_nTraced;
@@ -538,9 +542,12 @@ private:
 	int m_seedVal;
 	int m_resultCode;
 
+	Project* m_system;
+	wxArrayString* m_errmsg;
+
 	wxMutex m_statusLock;
 public:
-	TraceThread( st_context_t spcxt, int ithread, int seed, bool aspowertower )
+	TraceThread( Project* system, st_context_t spcxt, wxArrayString* errmsg, int ithread, int seed, bool aspowertower, int nrays, int nmaxrays, bool sunshape, bool opterrs )
 		: wxThread( wxTHREAD_JOINABLE ), m_cancelFlag( false )
 	{
 		m_iThread = ithread;
@@ -548,6 +555,13 @@ public:
 		m_seedVal = seed;
 		m_resultCode = -1;
         m_asPowerTower = aspowertower;
+		m_nrays = nrays;
+		m_nmaxrays = nmaxrays;
+		m_sunshape = sunshape;
+		m_opterrs = opterrs;
+		m_errmsg = errmsg;
+
+		m_system = system;
 
 		m_nTraceTotal = m_nTraced = m_nToTrace = m_curStage = m_nStages = 0;
 	}
@@ -601,6 +615,19 @@ public:
 	
 	virtual ExitCode Entry()
 	{
+		int result = LoadSystemIntoContext(m_system, m_contextId, *m_errmsg);
+		
+		if (result < 0)
+		{
+			m_errmsg->Add("error loading system into simulation context");
+			return;
+			//ok = false;
+			//continue;
+		}
+
+		::st_sim_errors(m_contextId, m_sunshape ? 1 : 0, m_opterrs ? 1 : 0);
+		::st_sim_params(m_contextId, m_nrays, m_nmaxrays);
+
 		m_resultCode = ::st_sim_run( m_contextId, 
 			(unsigned int) m_seedVal,
             m_asPowerTower,
@@ -652,12 +679,16 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	size_t i;
 
 	int SeedVal = *seed;
+	wxStopWatch sw;
 
 	for (i=0;i<ncpus && ok==true; i++)
 	{
 		st_context_t spcxt = ::st_create_context();
 
-		int result = LoadSystemIntoContext( System, spcxt, errors );
+		int rays_this_thread = nrays/ncpus;
+		if (i==0) rays_this_thread += (nrays%ncpus);
+
+		/*int result = LoadSystemIntoContext( System, spcxt, errors );
 		if (result < 0)
 		{
 			errors.Add( "error loading system into simulation context" );
@@ -665,27 +696,24 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 			continue;
 		}
 
-		int rays_this_thread = nrays/ncpus;
-		if (i==0) rays_this_thread += (nrays%ncpus);
-
 		::st_sim_errors( spcxt, sunshape?1:0, opterrs?1:0 );
 		::st_sim_params( spcxt, rays_this_thread, nmaxrays );
+		*/
 		SeedVal += i*123;
 
-		ThreadList.push_back( new TraceThread( spcxt, i, SeedVal, aspowertower ) );
+		ThreadList.push_back( new TraceThread( System, spcxt, &errors, i, SeedVal, aspowertower, rays_this_thread, nmaxrays, sunshape, opterrs ) );
 	}
 
-	if (!ok)
-	{
-		for (i=0;i<ThreadList.size();i++)
-			delete ThreadList[i];
-		
-		return -777;
-	}
+	//if (!ok)
+	//{
+	//	for (i=0;i<ThreadList.size();i++)
+	//		delete ThreadList[i];
+	//	
+	//	return -777;
+	//}
 
 	
 	g_currentThreadProgress = tpd;
-	wxStopWatch sw;
 	for (i=0;i<ThreadList.size();i++)
 	{
 		ThreadList[i]->Create();
