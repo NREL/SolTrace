@@ -56,6 +56,7 @@
 
 #include "types.h"
 #include "procs.h"
+#include "interpolate.h"
 
 #define sqr(x) ((x)*(x))
 
@@ -512,15 +513,18 @@ bool ReadSurfaceFile( const char *file, TElement *elm , TSystem *sys)
 		READLN; // skip FE file name
 		READLN; NumPoints = atoi(line);
 
-		elm->FEData.resize( NumPoints, 3 );
+		elm->FEData.x.resize(NumPoints, VectDoub(2, 0.));
+		elm->FEData.y.resize(NumPoints, 0.);
+		
 		for (int i=0;i<NumPoints;i++)
 		{
-			double a,b,c;
-			READLN; sscanf(line, "%lg %lg %lg", &a, &b, &c );
-			elm->FEData.at(i,0) = a;
-			elm->FEData.at(i,1) = b;
-			elm->FEData.at(i,2) = c;
+			//double a,b,c;
+			VectDoub* vx = &elm->FEData.x.at(i);
+			READLN; sscanf(line, "%lg %lg %lg", &vx->at(0), &vx->at(1), &elm->FEData.y.at(i) );
 		}
+
+		//construct the interpolation matrix
+		elm->FEData.setup();
 
 		elm->SurfaceIndex = 'e';
 		elm->SurfaceType = 4;

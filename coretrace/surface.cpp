@@ -223,13 +223,16 @@ Label_160:
 		}
 		
 		//Interpolate to find the z
-		density = Element->FEData.nrows()/Element->ApertureArea;
+		density = Element->FEData.x.size()/Element->ApertureArea;
 		delta = 0.1/sqrt(density);
-		FEInterpNew(X, Y, density, Element->FEData, Element->FEData.nrows(), &zr);
+		//FEInterpNew(X, Y, density, Element->FEData, Element->FEData.nrows(), &zr);
+		FEInterpGM(X, Y, density, &Element->FEData, Element->FEData.x.size(), &zr);
 		
 		//Now evaluate the slopes
-		FEInterpNew(X+delta, Y, density, Element->FEData, Element->FEData.nrows(), &zx);
-		FEInterpNew(X, Y+delta, density, Element->FEData, Element->FEData.nrows(), &zy);
+		//FEInterpNew(X+delta, Y, density, Element->FEData, Element->FEData.nrows(), &zx);
+		//FEInterpNew(X, Y+delta, density, Element->FEData, Element->FEData.nrows(), &zy);
+		FEInterpGM(X+delta, Y, density, &Element->FEData, Element->FEData.x.size(), &zx);
+		FEInterpGM(X, Y+delta, density, &Element->FEData, Element->FEData.x.size(), &zy);
 		dzrdx = (zx-zr)/delta;
 		dzrdy = (zy-zr)/delta;
 		

@@ -53,7 +53,7 @@
 
 #include "types.h"
 #include "procs.h"
-
+#include "interpolate.h"
 
 void EvalMono(double ax, double ay, HPM2D &B, int order, double DeltaX, double DeltaY, double *az)
 {
@@ -109,69 +109,6 @@ void EvalMono(double ax, double ay, HPM2D &B, int order, double DeltaX, double D
 	*az = z;
 }
 //End of Procedure--------------------------------------------------------------
-void FEInterpolate(double Xray, double Yray, double Delta, double Density, 
-			double *FEData[5], int NumFEPoints, 
-			double *z, double *zx, double *zy)
-{
-/* {Interpolation scheme for random finite element data. Given a location defined by
-xray and yray, interpolates to find the best guess for the corresponding residual z.
-    Input - Xray = x coordinate of incoming ray
-            Yray = y coordinate of incoming ray
-            Delta = change in x-y coordinates used to calculate the corresponding slopes.
-            Density = density of surface data points (np/pi*radish^2)
-            FEData = array of FE data
-                        (in the form of FEData[1] = x location of data point
-                                        FEData[2] = y  location of data point
-                                        FEData[3] = Residual z (displacement in z)) ???
-            NumFEPoints = number of FE datum points
-
-    Output - z = best residual z
-             zx = best residual z at point Delta away in x-direction
-             zy = best residual z at point delta away in y-direction}*/
-
-	double SUMRR2 = 0.0, SUMWHT = 0.0, sumrx2 = 0.0, sumry2 = 0.0, sumwtx = 0.0, sumwty = 0.0, Delta2 = 0.0;
-	int i=0;
-	double XX = 0.0, YY = 0.0, rx2 = 0.0, ry2 = 0.0, R2 = 0.0;
-	
-    //initialize
-    Delta2 = Delta*Delta;
-    SUMRR2 = 0.0;
-    SUMWHT = 0.0;
-    sumrx2 = 0.0;
-    sumry2 = 0.0;
-    sumwtx = 0.0;
-    sumwty = 0.0;
-
-	for (i = 0;i< NumFEPoints;i++)
-	{
-		XX = FEData[i][0] - Xray;
-		YY = FEData[i][1] - Yray;
-
-		//test to see if ray coincides with datum point
-		if (XX == 0.0 && YY == 0.0)
-		{
-			*z = FEData[i][2];
-			*zx = *z;
-			*zy = *z;
-			return;
-		}
-
-		R2 = XX*XX + YY*YY;
-		rx2 = R2 - 2.0*Delta*XX + Delta2;
-		ry2 = R2 - 2.0*Delta*YY + Delta2;
-		SUMRR2 = SUMRR2 + 1.0/R2;
-		sumrx2 = sumrx2 + 1.0/rx2;
-		sumry2 = sumry2 + 1.0/ry2;
-		SUMWHT = SUMWHT + FEData[i][2]/R2;
-		sumwtx = sumwtx + FEData[i][2]/rx2;
-		sumwty = sumwty + FEData[i][2]/ry2;
-	}
-
-    *z = SUMWHT/(Density + SUMRR2);
-    *zx = sumwtx/(Density + sumrx2);
-    *zy = sumwty/(Density + sumry2);
-}
-//End of Procedure--------------------------------------------------------------
 
 void MonoSlope(HPM2D &B, int order, double sxp, double syp, double *dzdx, double *dzdy)
 {
@@ -201,6 +138,16 @@ void MonoSlope(HPM2D &B, int order, double sxp, double syp, double *dzdx, double
 }
 
 //End of Procedure--------------------------------------------------------------
+
+void FEInterpGM(double Xray, double Yray, double Density, GaussMarkov* gm, int NumFEPoints, double* zr)
+{
+	/*
+	
+	*/
+	VectDoub xy = { Xray, Yray };
+
+	*zr = gm->interp(xy);
+}
 
 void FEInterpNew(double Xray, double Yray, double Density,
 			HPM2D &FEData, int NumFEPoints,

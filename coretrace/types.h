@@ -58,12 +58,12 @@
 #include "stapi.h"
 #include "mtrand.h"
 #include "hpvm.h"
+#include "interpolate.h"
 
 #define ACOSM1O180 0.017453292519943295 // acos(-1)/180.0
 #ifndef M_PI
 	#define M_PI 3.141592653589793238462643
 #endif
-
 
 class nanexcept : public std::exception
 {
@@ -177,7 +177,9 @@ struct TElement
 	double VSHOTTarDis;
 	
 	// Finite Element data coeffs
-	HPM2D FEData;	
+	//HPM2D FEData;	
+	//GaussMarkov* FEMeshInterp;
+	GaussMarkov FEData;
 	
 	/////////// OPTICAL PARAMETERS ///////////////
 	int InteractionType;
