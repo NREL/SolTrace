@@ -620,7 +620,7 @@ public:
 		if (result < 0)
 		{
 			m_errmsg->Add("error loading system into simulation context");
-			return;
+			return (ExitCode)result;
 			//ok = false;
 			//continue;
 		}
@@ -675,46 +675,23 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 		
 	std::vector<TraceThread*> ThreadList;
 
-	bool ok = true;
-	size_t i;
-
 	int SeedVal = *seed;
 	wxStopWatch sw;
 
-	for (i=0;i<ncpus && ok==true; i++)
+	for (size_t i=0;i<ncpus; i++)
 	{
 		st_context_t spcxt = ::st_create_context();
 
 		int rays_this_thread = nrays/ncpus;
 		if (i==0) rays_this_thread += (nrays%ncpus);
 
-		/*int result = LoadSystemIntoContext( System, spcxt, errors );
-		if (result < 0)
-		{
-			errors.Add( "error loading system into simulation context" );
-			ok = false;
-			continue;
-		}
-
-		::st_sim_errors( spcxt, sunshape?1:0, opterrs?1:0 );
-		::st_sim_params( spcxt, rays_this_thread, nmaxrays );
-		*/
 		SeedVal += i*123;
 
 		ThreadList.push_back( new TraceThread( System, spcxt, &errors, i, SeedVal, aspowertower, rays_this_thread, nmaxrays, sunshape, opterrs ) );
 	}
 
-	//if (!ok)
-	//{
-	//	for (i=0;i<ThreadList.size();i++)
-	//		delete ThreadList[i];
-	//	
-	//	return -777;
-	//}
-
-	
 	g_currentThreadProgress = tpd;
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 	{
 		ThreadList[i]->Create();
 		ThreadList[i]->Run();
@@ -725,7 +702,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	while (1)
 	{
 		size_t num_finished = 0;
-		for (i=0;i<ThreadList.size();i++)
+		for (size_t i=0;i<ThreadList.size();i++)
 			if ( !ThreadList[i]->IsRunning() )
 				num_finished++;
 
@@ -735,7 +712,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 		int ntotaltraces = 0;
         wxString cmd_threadstate; cmd_threadstate.clear();
 		
-        for (i=0;i<ThreadList.size();i++)
+        for (size_t i=0;i<ThreadList.size();i++)
 		{
 			ThreadList[i]->status(&ntotal, &ntraced, &ntotrace, &stagenum, &nstages);
 			if( is_cmd )
@@ -759,7 +736,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
         {
 		    if (tpd->IsCanceled())
 		    {
-			    for (i=0;i<ThreadList.size();i++)
+			    for (size_t i=0;i<ThreadList.size();i++)
 				    ThreadList[i]->cancelTrace();
 		    }
         }
@@ -770,11 +747,11 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	
 	// wait on the joinable threads
 	// make sure all have finished before continuing
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 		ThreadList[i]->Wait();
 
 	bool errors_found = false;
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 	{
 		st_context_t cxt = ThreadList[i]->contextId();
 		int code = ThreadList[i]->resultCode();
@@ -798,7 +775,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	if (!errors_found)
 	{
 		std::vector<st_context_t> ContextList;
-		for (i=0;i<ThreadList.size();i++)
+		for (size_t i=0;i<ThreadList.size();i++)
 			ContextList.push_back( ThreadList[i]->contextId() );
 
 		if (!System->Results.ReadResultsFromContextList( ContextList ))
@@ -812,7 +789,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	else
 		System->Results.FreeMemory();
 
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 		delete ThreadList[i];
 
 	ThreadList.clear();
