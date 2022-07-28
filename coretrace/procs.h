@@ -246,7 +246,7 @@ void VSHOTInterpolateModShepard( double Xray, double Yray, double Density,
 void FEInterpNew(double Xray, double Yray, double Density,
 			HPM2D &FEData, int NumFEPoints,
 			double *zr);
-void FEInterpGM(double Xray, double Yray, double Density, GaussMarkov* gm, int NumFEPoints, double* zr);
+void FEInterpGM(double Xray, double Yray, GaussMarkov* gm, double* zr);
 			
 void Root_432(int order, double Coeffs[5][5], double RealRoots[5], double *ImRoot1, double *ImRoot2);
 

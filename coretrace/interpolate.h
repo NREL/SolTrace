@@ -28,20 +28,6 @@ struct LUdcmp
 	void mprove(VectDoub& b, VectDoub& x);
 };
 
-
-
-//struct Powvargram {
-//	double alph, bet, nugsq;
-//
-//	double SQR(const double a);  // a squared
-//
-//	Powvargram();
-//
-//	Powvargram(MatDoub& x, VectDoub& y, const double beta = 1.5, const double nug = 0.);
-//
-//	double operator() (const double r) const;
-//};
-
 class GaussMarkov 
 {
 protected:

@@ -139,7 +139,7 @@ void MonoSlope(HPM2D &B, int order, double sxp, double syp, double *dzdx, double
 
 //End of Procedure--------------------------------------------------------------
 
-void FEInterpGM(double Xray, double Yray, double Density, GaussMarkov* gm, int NumFEPoints, double* zr)
+void FEInterpGM(double Xray, double Yray, GaussMarkov* gm, double* zr)
 {
 	/*
 	
