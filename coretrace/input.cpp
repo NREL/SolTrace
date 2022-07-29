@@ -542,7 +542,7 @@ bool ReadSurfaceFile( const char *file, TElement *elm , TSystem *sys)
 		node_ld.xlim[1] = xmax;
 		node_ld.ylim[0] = ymin;
 		node_ld.ylim[1] = ymax;
-		double rapprox = 2*std::sqrt(((xmax - xmin) * (ymax - ymin)) / (double)NumPoints);
+		double rapprox = 1.5*std::sqrt(((xmax - xmin) * (ymax - ymin)) / (double)NumPoints);
 		node_ld.min_unit_dx = node_ld.min_unit_dy = rapprox;
 
 		elm->FEData.create_mesh(node_ld);

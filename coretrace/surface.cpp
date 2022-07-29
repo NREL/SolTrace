@@ -224,8 +224,8 @@ Label_160:
 		
 		//Interpolate to find the z
 		density = Element->FEData.nodes.size()/Element->ApertureArea;
-		delta = 0.1/sqrt(density);
-		FEInterpKD(X, Y, &Element->FEData, &zr, &dzrdx, &dzrdy);
+		delta = 0.001/sqrt(density);
+		FEInterpKD(X, Y, &Element->FEData, delta, &zr, &dzrdx, &dzrdy);
 		
 		PosXYZ[2] = zr;
 		*FXYZ = Z - zr;

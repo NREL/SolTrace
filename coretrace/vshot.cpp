@@ -162,9 +162,13 @@ bool __rcomp(__r_el &a, __r_el &b)
 	return a.r < b.r;
 }
 
-void FEInterpKD(double Xray, double Yray, FEDataObj* kd, double* zr, double* dzrdx, double* dzrdy)
+void FEInterpKD(double Xray, double Yray, FEDataObj* kd, double step, double* zr, double* dzrdx, double* dzrdy)
 {
-
+	/*
+	Interpolate using a local kriging model of the surface. The model is constructed using adjacent nodes to the 
+	ray position {Xray,Yray} determined using a K-d tree. The derivatives of the surface in x and y are also
+	computed numerically using the kriging model.
+	*/
 
 	// Retrieve ND nearest neighbors and linearly interpolate 
 	std::vector<void*> nearby_nodes;
@@ -185,28 +189,53 @@ void FEInterpKD(double Xray, double Yray, FEDataObj* kd, double* zr, double* dzr
 
 		ndist.push_back(__r_el(r, v));
 	}
+
+	// Find the nearest points
 	std::sort(ndist.begin(), ndist.end(), __rcomp);
 
-	//Express in barycentric coordinates
-	VectDoub* p1 = ndist.at(0).v;
-	VectDoub* p2 = ndist.at(1).v;
-	VectDoub* p3 = ndist.at(2).v;
-	
-	double det = (p2->at(1) - p3->at(1)) * (p1->at(0) - p3->at(0)) + (p3->at(0) - p2->at(0)) * (p1->at(1) - p3->at(1));
-	double u = ((p2->at(1) - p3->at(1)) * (Xray - p3->at(0)) + (p3->at(0) - p2->at(0)) * (Yray - p3->at(1))) / det;
-	double v = ((p3->at(1) - p1->at(1)) * (Xray - p3->at(0)) + (p1->at(0) - p3->at(0)) * (Yray - p3->at(1))) / det;
-	double w = (1 - u - v);
+	// build a local model of the surface using kriging. Use nearest 7 points max (number selected based on limited testing)
+	GaussMarkov gm;
+	for (int i = 0; i < (nn > 7 ? 7 : nn); i++)
+	{
+		gm.x.push_back({ ndist.at(i).v->at(0), ndist.at(i).v->at(1) });
+		gm.y.push_back(ndist.at(i).v->at(2));
+	}
 
-	*zr = u * p1->at(2) + v * p2->at(2) + w * p3->at(2);
-	// slopes
-	VectDoub r_12 = { p2->at(0) - p1->at(0), p2->at(1) - p1->at(1), p2->at(2) - p1->at(2) };
-	VectDoub r_13 = { p3->at(0) - p1->at(0), p3->at(1) - p1->at(1), p3->at(2) - p1->at(2) };
-	double a = r_12.at(1) * r_13.at(2) - r_12.at(2) * r_13.at(1);
-	double b = r_12.at(2) * r_13.at(0) - r_12.at(0) * r_13.at(2);
-	//double c = r_12.at(0) * r_13.at(1) - r_12.at(1) * r_13.at(0);
-	double tiny = 1e-19;
-	*dzrdx = a / (det == 0 ? tiny : det);
-	*dzrdy = b / (det == 0 ? tiny : det);
+	gm.setup(1.999,0);
+
+	VectDoub xy = { Xray,Yray };
+	*zr = gm.interp(xy);
+
+	// evaluate the slopes using numerical derivative
+	xy.at(0) += step;
+	double za = gm.interp(xy);
+	xy.at(0) -= step;
+	xy.at(1) += step;
+	double zb = gm.interp(xy);
+	*dzrdx = (*zr - za) / step;
+	*dzrdy = (*zr - zb) / step;
+
+	//--> the following was also tried. Barycentric interpolation doesn't work very well for low-quality meshes.
+	//keep this code for now as a reference.
+	//VectDoub* p1 = ndist.at(0).v;
+	//VectDoub* p2 = ndist.at(1).v;
+	//VectDoub* p3 = ndist.at(2).v;
+	//
+	//double det = (p2->at(1) - p3->at(1)) * (p1->at(0) - p3->at(0)) + (p3->at(0) - p2->at(0)) * (p1->at(1) - p3->at(1));
+	//double u = ((p2->at(1) - p3->at(1)) * (Xray - p3->at(0)) + (p3->at(0) - p2->at(0)) * (Yray - p3->at(1))) / det;
+	//double v = ((p3->at(1) - p1->at(1)) * (Xray - p3->at(0)) + (p1->at(0) - p3->at(0)) * (Yray - p3->at(1))) / det;
+	//double w = (1 - u - v);
+	//*zr = u * p1->at(2) + v * p2->at(2) + w * p3->at(2);
+	//// slopes
+	//VectDoub r_12 = { p2->at(0) - p1->at(0), p2->at(1) - p1->at(1), p2->at(2) - p1->at(2) };
+	//VectDoub r_13 = { p3->at(0) - p1->at(0), p3->at(1) - p1->at(1), p3->at(2) - p1->at(2) };
+	//double a = r_12.at(1) * r_13.at(2) - r_12.at(2) * r_13.at(1);
+	//double b = r_12.at(2) * r_13.at(0) - r_12.at(0) * r_13.at(2);
+	////double c = r_12.at(0) * r_13.at(1) - r_12.at(1) * r_13.at(0);
+	//double tiny = 1e-19;
+	//*dzrdx = a / (det == 0 ? tiny : det);
+	//*dzrdy = b / (det == 0 ? tiny : det);
+	//<---
 
 	return;
 }
