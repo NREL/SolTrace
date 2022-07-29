@@ -513,18 +513,48 @@ bool ReadSurfaceFile( const char *file, TElement *elm , TSystem *sys)
 		READLN; // skip FE file name
 		READLN; NumPoints = atoi(line);
 
-		elm->FEData.x.resize(NumPoints, VectDoub(2, 0.));
-		elm->FEData.y.resize(NumPoints, 0.);
+		//elm->FEData.x.resize(NumPoints, VectDoub(2, 0.));
+		//elm->FEData.y.resize(NumPoints, 0.);
+		elm->FEData.nodes.resize(NumPoints, VectDoub(3));
+
+		double xmax, xmin, ymax, ymin;
+		xmax = ymax = -HUGE;
+		xmin = ymin = HUGE;
+
 		
 		for (int i=0;i<NumPoints;i++)
 		{
-			//double a,b,c;
-			VectDoub* vx = &elm->FEData.x.at(i);
-			READLN; sscanf(line, "%lg %lg %lg", &vx->at(0), &vx->at(1), &elm->FEData.y.at(i) );
+			double x,y,z;
+			READLN; sscanf(line, "%lg %lg %lg", &x, &y, &z);
+			elm->FEData.nodes.at(i).at(0) = x;
+			elm->FEData.nodes.at(i).at(1) = y;
+			elm->FEData.nodes.at(i).at(2) = z;
+
+			//track largest/smallest
+			xmax = x > xmax ? x : xmax;
+			ymax = y > ymax ? y : ymax;
+			xmin = x < xmin ? x : xmin;
+			ymin = y < ymin ? y : ymin;
 		}
 
-		//construct the interpolation matrix
-		elm->FEData.setup();
+		KDLayoutData node_ld;
+		node_ld.xlim[0] = xmin;
+		node_ld.xlim[1] = xmax;
+		node_ld.ylim[0] = ymin;
+		node_ld.ylim[1] = ymax;
+		double rapprox = 2*std::sqrt(((xmax - xmin) * (ymax - ymin)) / (double)NumPoints);
+		node_ld.min_unit_dx = node_ld.min_unit_dy = rapprox;
+
+		elm->FEData.create_mesh(node_ld);
+
+		//Load node objects into the mesh
+		for (int i = 0; i < NumPoints; i++)
+		{
+			VectDoub* v = &elm->FEData.nodes.at(i);
+			elm->FEData.add_object((void*)v, v->at(0), v->at(1));
+		}
+		elm->FEData.add_neighborhood_data();
+
 
 		elm->SurfaceIndex = 'e';
 		elm->SurfaceType = 4;

@@ -460,9 +460,9 @@ bool AperturePlane(
                     //assumes that finite element surface has vertex at element origin and that
                     //finite element coordinate coincides with element coordinate system
 			lastz = 0.0;
-			for (st_uint_t i = 0; i < Element->FEData.x.size(); i++)
+			for (st_uint_t i = 0; i < Element->FEData.nodes.size(); i++)
 			{
-				double newz = Element->FEData.y.at(i);
+				double newz = Element->FEData.nodes.at(i).at(1);
 				if (newz > lastz)
 					lastz = newz;
 			}

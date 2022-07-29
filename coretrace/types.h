@@ -59,6 +59,7 @@
 #include "mtrand.h"
 #include "hpvm.h"
 #include "interpolate.h"
+#include "treemesh.h"
 
 #define ACOSM1O180 0.017453292519943295 // acos(-1)/180.0
 #ifndef M_PI
@@ -73,6 +74,13 @@ public:
 	virtual ~nanexcept() throw() {  }
 	virtual const char *what() const throw() { return m_text.c_str(); }
 };
+
+class FEDataObj : public st_hash_tree
+{
+public:
+	MatDoub nodes;
+};
+
 
 class TOpticalProperties
 {
@@ -179,7 +187,8 @@ struct TElement
 	// Finite Element data coeffs
 	//HPM2D FEData;	
 	//GaussMarkov* FEMeshInterp;
-	GaussMarkov FEData;
+	//GaussMarkov FEData;
+	FEDataObj FEData;
 	
 	/////////// OPTICAL PARAMETERS ///////////////
 	int InteractionType;

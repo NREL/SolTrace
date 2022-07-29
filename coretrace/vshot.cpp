@@ -149,6 +149,69 @@ void FEInterpGM(double Xray, double Yray, GaussMarkov* gm, double* zr)
 	*zr = gm->interp(xy);
 }
 
+struct __r_el
+{
+	double r;
+	VectDoub* v;
+	__r_el() {};
+	__r_el(double _r, VectDoub* _v) { r = _r; v = _v; };
+};
+
+bool __rcomp(__r_el &a, __r_el &b)
+{
+	return a.r < b.r;
+}
+
+void FEInterpKD(double Xray, double Yray, FEDataObj* kd, double* zr, double* dzrdx, double* dzrdy)
+{
+
+
+	// Retrieve ND nearest neighbors and linearly interpolate 
+	std::vector<void*> nearby_nodes;
+	bool ok = kd->get_all_data_at_loc(nearby_nodes, Xray, Yray);
+	if (!ok || nearby_nodes.size() < 3)
+		throw std::runtime_error("Interpolation failed to find nearby nodes to ray hit in FEA surface.");
+	
+	int nn = (int)nearby_nodes.size();
+	
+	std::vector<__r_el> ndist;
+
+	//sort to find nearest neighbors
+	for (int i = 0; i < nn; i++)
+	{
+		VectDoub* v = static_cast<VectDoub*>(nearby_nodes.at(i));
+
+		double r = std::sqrt(std::pow(Xray - v->at(0), 2) + std::pow(Yray - v->at(1), 2));
+
+		ndist.push_back(__r_el(r, v));
+	}
+	std::sort(ndist.begin(), ndist.end(), __rcomp);
+
+	//Express in barycentric coordinates
+	VectDoub* p1 = ndist.at(0).v;
+	VectDoub* p2 = ndist.at(1).v;
+	VectDoub* p3 = ndist.at(2).v;
+	
+	double det = (p2->at(1) - p3->at(1)) * (p1->at(0) - p3->at(0)) + (p3->at(0) - p2->at(0)) * (p1->at(1) - p3->at(1));
+	double u = ((p2->at(1) - p3->at(1)) * (Xray - p3->at(0)) + (p3->at(0) - p2->at(0)) * (Yray - p3->at(1))) / det;
+	double v = ((p3->at(1) - p1->at(1)) * (Xray - p3->at(0)) + (p1->at(0) - p3->at(0)) * (Yray - p3->at(1))) / det;
+	double w = (1 - u - v);
+
+	*zr = u * p1->at(2) + v * p2->at(2) + w * p3->at(2);
+	// slopes
+	VectDoub r_12 = { p2->at(0) - p1->at(0), p2->at(1) - p1->at(1), p2->at(2) - p1->at(2) };
+	VectDoub r_13 = { p3->at(0) - p1->at(0), p3->at(1) - p1->at(1), p3->at(2) - p1->at(2) };
+	double a = r_12.at(1) * r_13.at(2) - r_12.at(2) * r_13.at(1);
+	double b = r_12.at(2) * r_13.at(0) - r_12.at(0) * r_13.at(2);
+	//double c = r_12.at(0) * r_13.at(1) - r_12.at(1) * r_13.at(0);
+	double tiny = 1e-19;
+	*dzrdx = a / (det == 0 ? tiny : det);
+	*dzrdy = b / (det == 0 ? tiny : det);
+
+	return;
+}
+
+
 void FEInterpNew(double Xray, double Yray, double Density,
 			HPM2D &FEData, int NumFEPoints,
 			double *zr)
