@@ -1,4 +1,4 @@
-from pysoltrace import PySolTrace, Point
+from pysoltrace import PySolTrace, Point, thread_helper
 import random
 import pandas as pd
 import copy
@@ -71,7 +71,9 @@ PT.is_surface_errors = True
 
 if __name__ == "__main__":
 
-
+    # h = thread_helper()
+    # h.thread_id = 4
+    # df = PT.run(-1, True, 1, mt_handler=h)
     df = PT.run(-1, True, 2)
     x=1
 

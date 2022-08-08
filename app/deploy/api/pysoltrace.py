@@ -1,12 +1,25 @@
+from concurrent.futures import thread
+import ctypes
 from datetime import datetime
-from optparse import Option
+from tqdm import tqdm
 import sys, os, copy
+from time import sleep
 from typing import List
-import math
 import pandas as pd
 from ctypes import *
 c_number = c_double   #must be either c_double or c_float depending on coretrace definition
 import multiprocessing
+
+
+class thread_helper(Structure):
+    _fields_ = [
+        ('thread_id',c_uint32),
+        ('ntraced',c_uint32),
+        ('ntotrace',c_uint32),
+        ('curstage',c_uint32),
+        ('nstages',c_uint32),
+        ('resultcode',c_uint32), #Returns -1 if error; otherwise, number of rays traced. 0 while tracing
+        ]
 
 # Callback to print command line progress messages
 @CFUNCTYPE(c_int, c_uint32, c_uint32, c_uint32, c_uint32, c_uint32, c_void_p)
@@ -16,27 +29,23 @@ def api_callback(ntracedtotal, ntraced, ntotrace, curstage, nstages, data):
 
 # Callback to print command line progress messages
 @CFUNCTYPE(c_int, c_uint32, c_uint32, c_uint32, c_uint32, c_uint32, c_void_p)
-def api_callback_mt(ntracedtotal, ntraced, ntotrace, curstage, nstages, data):
-    data.ntraced = ntraced 
-    data.ntotrace = ntotrace
-    data.curstage = curstage
-    data.nstages = nstages
+def api_callback_mt(ntracedtotal, ntraced, ntotrace, curstage, nstages, data_i):
+    if data_i:
+        data = cast(data_i, POINTER(thread_helper)).contents
+        data.ntraced += ntraced 
+        data.ntotrace = ntotrace
+        data.curstage = curstage
+        data.nstages = nstages
+    print("\tProgress (thread {:d}): Stage ({:d}/{:d}) - Complete {:.2f}%".format(data.thread_id, curstage, nstages, 100.*float(ntraced)/float(ntotrace)) )
     return 1
 
 
 def _thread_func(pobj, id, gh):
     print(f"starting thread {id}")
-    pobj.run(-1,True, 1, api_callback, gh)
+    gh.resultcode = pobj.run(-1,True, 1, api_callback_mt, gh)
     print(f"thread {id} complete")
     return copy.deepcopy(pobj.raydata)
 
-class thread_helper:
-    def __init__(self,id):
-        self.thread_id = 0
-        self.ntraced = 0
-        self.ntotrace = 0
-        self.curstage = 0
-        self.nstages = 0
     
 
 
@@ -1382,9 +1391,10 @@ class PySolTrace:
 
         if nthread == 1:
             cwd = os.getcwd()
+            print(os.getpid()) 
             if sys.platform == 'win32' or sys.platform == 'cygwin':
                 ## loaded SolTrace library of exported functions
-                pdll = CDLL(cwd + "/coretrace_api.dll")
+                pdll = CDLL(cwd + "/coretrace_apid.dll")
                 # print("Loaded win32")
                 #pdll = CDLL(cwd + "/coretraced.dll") # for debugging
             elif sys.platform == 'darwin':
@@ -1406,7 +1416,9 @@ class PySolTrace:
             pdll.st_sim_params(c_void_p(p_data), c_int(int(self.num_ray_hits)), c_int(int(self.max_rays_traced)))
 
             pdll.st_sim_run.restype = c_int 
-            res = pdll.st_sim_run( c_void_p(p_data), c_uint16(seed), c_bool(as_power_tower), callback_func) #, mt_handler)
+            res = pdll.st_sim_run( c_void_p(p_data), c_uint16(seed), 
+                    c_bool(as_power_tower), api_callback_mt, 
+                    pointer(mt_handler) if mt_handler else 0)
 
             self.raydata = self.get_ray_dataframe(pdll,p_data)
 
@@ -1415,8 +1427,8 @@ class PySolTrace:
 
             return res
         else:
-            thread_helpers = [thread_helper(i) for i in range(nthread)]
-            P = [[self.copy(), i, thread_helpers[i]] for i in range(nthread)]
+            thread_helpers = [thread_helper(i+5) for i in range(nthread)]
+            P = [[self.copy(), thread_helpers[i].thread_id, thread_helpers[i]] for i in range(nthread)]
 
             # modify the number of rays to match the required totals
             nrpt = int(float(self.num_ray_hits)/float(nthread))
@@ -1432,12 +1444,35 @@ class PySolTrace:
 
             pool = multiprocessing.Pool(nthread)
             res = pool.starmap(_thread_func, P)
-
             # res = pool.starmap_async(_thread_func, P)
 
-            
-            # res.get()
-            x=1
+            # all_threads_done = False
+
+            # with tqdm(total=100) as pbar:
+
+            #     while not all_threads_done:
+            #         sleep(0.2)
+
+            #         ntraced_tot = 0
+            #         ntotrace_tot = 0
+            #         curstage_tot = 0
+            #         nstages_tot = 0
+            #         thrtest = True
+            #         for pst,ind,ghobj in P:
+            #             resultcode = ghobj.resultcode
+            #             if resultcode < 0:
+            #                 raise("Trace error in thread {:d}".format(ind))
+            #             thrtest = thrtest and (resultcode > 0)
+
+            #             ntraced_tot += ghobj.ntraced
+            #             ntotrace_tot += ghobj.ntotrace
+            #             curstage_tot += ghobj.curstage
+            #             nstages_tot += ghobj.nstages
+
+            #         all_threads_done = thrtest
+            #         ntotrace_tot = max(ntotrace_tot,1)
+            #         pbar.update(float(ntraced_tot)/float(ntotrace_tot)*100.)
+            #         pbar.set_description("Stage {:d}/{:d}".format(int(curstage_tot/nthread), int(nstages_tot/nthread)))
 
             return pd.concat(res)
 
