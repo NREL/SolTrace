@@ -1,5 +1,3 @@
-from concurrent.futures import thread
-import ctypes
 from datetime import datetime
 from tqdm import tqdm
 import sys, os, copy
@@ -40,9 +38,9 @@ def api_callback_mt(ntracedtotal, ntraced, ntotrace, curstage, nstages, data_i):
     return 1
 
 
-def _thread_func(pobj, id, gh):
+def _thread_func(pobj, id, p_handler):
     print(f"starting thread {id}")
-    gh.resultcode = pobj.run(-1,True, 1, api_callback_mt, gh)
+    pobj.run(-1,True, 1, api_callback_mt, p_handler)
     print(f"thread {id} complete")
     return copy.deepcopy(pobj.raydata)
 
@@ -1365,7 +1363,7 @@ class PySolTrace:
         # If reaching this point, the stage id was not found
         return 0
 
-    def run(self, seed : int = -1, as_power_tower = False, nthread=1, callback_func = api_callback, mt_handler=None):
+    def run(self, seed : int = -1, as_power_tower = False, nthread=1, callback_func = api_callback, mt_handler=0):
         """
         Run SolTrace simulation. 
 
@@ -1417,8 +1415,7 @@ class PySolTrace:
 
             pdll.st_sim_run.restype = c_int 
             res = pdll.st_sim_run( c_void_p(p_data), c_uint16(seed), 
-                    c_bool(as_power_tower), api_callback_mt, 
-                    pointer(mt_handler) if mt_handler else 0)
+                    c_bool(as_power_tower), api_callback_mt, pointer(mt_handler))
 
             self.raydata = self.get_ray_dataframe(pdll,p_data)
 
@@ -1435,16 +1432,18 @@ class PySolTrace:
             mrpt = int(float(self.max_rays_traced)/float(nthread))
 
             for p in P:
-                if p==P[0]:
-                    p[0].num_ray_hits = nrpt + (self.num_ray_hits % nthread)
-                    p[0].max_rays_traced = nrpt + (self.max_rays_traced % nthread)
-                else:
-                    p[0].num_ray_hits = nrpt
-                    p[0].max_rays_traced = mrpt
+                # if p==P[0]:
+                #     p[0].num_ray_hits = nrpt + (self.num_ray_hits % nthread)
+                #     p[0].max_rays_traced = nrpt + (self.max_rays_traced % nthread)
+                # else:
+                p[0].num_ray_hits = nrpt
+                p[0].max_rays_traced = mrpt
 
             pool = multiprocessing.Pool(nthread)
-            res = pool.starmap(_thread_func, P)
-            # res = pool.starmap_async(_thread_func, P)
+            # res = pool.starmap(_thread_func, P)
+            res = pool.starmap_async(_thread_func, P)
+            pool.close()
+            pool.join()
 
             # all_threads_done = False
 
@@ -1474,7 +1473,8 @@ class PySolTrace:
             #         pbar.update(float(ntraced_tot)/float(ntotrace_tot)*100.)
             #         pbar.set_description("Stage {:d}/{:d}".format(int(curstage_tot/nthread), int(nstages_tot/nthread)))
 
-            return pd.concat(res)
+            # return pd.concat(res)
+            return pd.concat(res.get())
 
     def get_num_intersections(self, pdll, p_data) -> int:
         """
