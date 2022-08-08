@@ -1,20 +1,44 @@
 from datetime import datetime
-import random
+from optparse import Option
 import sys, os, copy
 from typing import List
 import math
-from numpy import isin
 import pandas as pd
-from multiprocessing.sharedctypes import Value
-import multiprocessing 
 from ctypes import *
 c_number = c_double   #must be either c_double or c_float depending on coretrace definition
+import multiprocessing
 
 # Callback to print command line progress messages
 @CFUNCTYPE(c_int, c_uint32, c_uint32, c_uint32, c_uint32, c_uint32, c_void_p)
 def api_callback(ntracedtotal, ntraced, ntotrace, curstage, nstages, data):
     print("\tProgress: Stage ({:d}/{:d}) - Complete {:.2f}%".format(curstage, nstages, 100.*float(ntraced)/float(ntotrace)) )
     return 1
+
+# Callback to print command line progress messages
+@CFUNCTYPE(c_int, c_uint32, c_uint32, c_uint32, c_uint32, c_uint32, c_void_p)
+def api_callback_mt(ntracedtotal, ntraced, ntotrace, curstage, nstages, data):
+    data.ntraced = ntraced 
+    data.ntotrace = ntotrace
+    data.curstage = curstage
+    data.nstages = nstages
+    return 1
+
+
+def _thread_func(pobj, id, gh):
+    print(f"starting thread {id}")
+    pobj.run(-1,True, 1, api_callback, gh)
+    print(f"thread {id} complete")
+    return copy.deepcopy(pobj.raydata)
+
+class thread_helper:
+    def __init__(self,id):
+        self.thread_id = 0
+        self.ntraced = 0
+        self.ntotrace = 0
+        self.curstage = 0
+        self.nstages = 0
+    
+
 
 # ==========================================================================================
 class Point:
@@ -39,6 +63,12 @@ class Point:
         ## (float) z-coordinate
         self.z = z  
         return 
+    def copy(self):
+        pnew = Point()
+        c = self.__dict__.copy()
+        for attr in self.__dict__.keys():
+            pnew.__setattr__(attr, c[attr])
+        return pnew
     def __str__(self):
         return "[{:f}, {:f}, {:f}]".format(self.x, self.y, self.z)
     def __add__(self, obj):
@@ -194,16 +224,12 @@ class PySolTrace:
     -------
     clear_context 
         Frees SolTrace instance from memory at p_data
-    get_num_optics 
-        Get number of optical elements in the SolTrace context
     add_optics 
         Instantiates a new PySolTrace.Optics object
     delete_optic 
         Delete Optics instance
     add_sun 
         Adds Sun instance
-    get_num_stages 
-        Get number of Stages
     add_stage 
         Adds Stage instance
     validate 
@@ -319,12 +345,14 @@ class PySolTrace:
                 ## [mrad,0..1] 2D list containing pairs of [angle,transmissivity] values.      
                 self.transtable = []  #[[angle1,trans1],[...]] 
 
+            def copy(self, fnew):
+                c = self.__dict__.copy()
+                for attr in self.__dict__.keys():
+                    fnew.__setattr__(attr, copy.deepcopy(c[attr]))
+                return
+
         # -------- methods of the Optics class -----------------------------------------
-        def __init__(self, p_dll, p_data : int, id : int):
-            ## Reference for API DLL, managed by PySolTrace
-            self._pdll = p_dll
-            ## Memory location for soltrace context, managed by PySolTrace
-            self._p_data = p_data #pointer to data context
+        def __init__(self, id : int):
             
             ## Unique name for the optical property set
             self.name = "new optic"
@@ -336,7 +364,16 @@ class PySolTrace:
             ## properties associated with the back of the optical surface
             self.back = PySolTrace.Optics.Face()
 
-        def Create(self) -> int:
+        def copy(self, onew):
+            onew.name = copy.copy(self.name)
+            onew.id = copy.copy(self.id)
+
+            self.front.copy(onew.front)
+            self.back.copy(onew.back)
+
+            return 
+
+        def Create(self, pdll, p_data) -> int:
             """
             Create Optics instance in the SolTrace context.
 
@@ -345,7 +382,10 @@ class PySolTrace:
             int 
                 1 if successful, 0 otherwise
             """
-            self._pdll.st_optic.restype = c_int
+            pdll.st_add_optic.restype = c_int
+            pdll.st_add_optic(c_void_p(p_data), c_char_p(self.name.encode()))
+
+            pdll.st_optic.restype = c_int
 
             dummy_grating = (c_number*3)()
 
@@ -367,8 +407,8 @@ class PySolTrace:
                     user_trans[:] = list(list(zip(*opt.transtable))[1])
 
                 # Create surface optic
-                resok = resok and self._pdll.st_optic( \
-                    c_void_p(self._p_data),
+                resok = resok and pdll.st_optic( \
+                    c_void_p(p_data),
                     c_uint32(self.id),
                     c_int(i+1),   #front
                     c_wchar(opt.dist_type[0]),
@@ -428,11 +468,7 @@ class PySolTrace:
             Calls methods to instantiate and construct optical surface in the SolTrace context.
 
         """
-        def __init__(self, pdll, p_data):
-            ## Reference for API DLL, managed by PySolTrace
-            self._pdll = pdll
-            ## Memory location for soltrace context, managed by PySolTrace
-            self._p_data = p_data 
+        def __init__(self):
 
             ## Flag indicating whether the sun is modeled as a point source at a finite distance.
             self.point_source = False 
@@ -451,7 +487,16 @@ class PySolTrace:
             # contain at least 2 entries.    
             self.user_intensity_table = []   
 
-        def Create(self):
+        def copy(self, snew):
+            snew.position = self.position.copy() 
+            c = self.__dict__.copy()
+            for attr in self.__dict__.keys():
+                if attr in ['_pdll','_p_data','position']:
+                    continue
+                snew.__setattr__(attr, copy.deepcopy(c[attr]))
+            return 
+
+        def Create(self, pdll, p_data):
             """
             Create Sun instance in the SolTrace context.
 
@@ -461,11 +506,11 @@ class PySolTrace:
                 1 if successful, 0 otherwise
             """
 
-            self._pdll.st_sun.restype = c_int 
-            self._pdll.st_sun_xyz.restype = c_int 
+            pdll.st_sun.restype = c_int 
+            pdll.st_sun_xyz.restype = c_int 
 
-            self._pdll.st_sun(c_void_p(self._p_data), c_int(int(self.point_source)), c_wchar(self.shape[0]), c_number(self.sigma))
-            self._pdll.st_sun_xyz(c_void_p(self._p_data), c_number(self.position.x), c_number(self.position.y), c_number(self.position.z))
+            pdll.st_sun(c_void_p(p_data), c_int(int(self.point_source)), c_wchar(self.shape[0]), c_number(self.sigma))
+            pdll.st_sun_xyz(c_void_p(p_data), c_number(self.position.x), c_number(self.position.y), c_number(self.position.z))
 
             # If a user intensity table is provided, and the shape is specified accordingly as 'd', load the data table into context
             if len(self.user_intensity_table) > 2 and self.shape.lower()[0] == 'd':
@@ -474,8 +519,8 @@ class PySolTrace:
                 user_angles[:] = list(list(zip(*self.user_intensity_table))[0])
                 user_ints[:] = list(list(zip(*self.user_intensity_table))[1])
 
-                self._pdll.st_sun_userdata.restype = c_int 
-                return self._pdll.st_sun_userdata(c_void_p(self._p_data), c_uint32(len(self.user_intensity_table)), pointer(user_angles), pointer(user_ints))
+                pdll.st_sun_userdata.restype = c_int 
+                return pdll.st_sun_userdata(c_void_p(p_data), c_uint32(len(self.user_intensity_table)), pointer(user_angles), pointer(user_ints))
 
             return 1
     # ===========end of the Sun class===========================================================
@@ -518,10 +563,8 @@ class PySolTrace:
         ----------
         Create 
             Calls methods to instantiate and construct a stage in the context.
-        get_num_elements 
-            Returns number of elements associated with this stage (from context).
         add_elements 
-            Creates new element in Stage.element[] list, and adds to context
+            Creates new element in Stage.element[] list
         """
 
         class Element:
@@ -584,10 +627,6 @@ class PySolTrace:
             
             # STCORE_API int st_element_surface_file(st_context_t pcxt, st_uint_t stage, st_uint_t idx, const char *file);
             def __init__(self, parent_stage, element_id : int):
-                ## Reference for API DLL, managed by PySolTrace
-                self._pdll = parent_stage._pdll
-                ## Memory location for soltrace context, managed by PySolTrace
-                self._p_data = parent_stage._p_data
                 ## Identifying integer associated with the containing stage
                 self.stage_id = parent_stage.id
                 ## Identifying integer associated with element
@@ -616,7 +655,16 @@ class PySolTrace:
                 ## Reference to *Optics* instance associated with this element
                 self.optic = None
 
-            def Create(self) -> int:
+            def copy(self, enew):
+                c = self.__dict__.copy()
+                for attr in self.__dict__.keys():
+                    if attr in ['_pdll','_p_data','optic']:
+                        continue
+                    else:
+                        enew.__setattr__(attr, copy.deepcopy(c[attr]))
+                return
+
+            def Create(self, pdll, p_data) -> int:
                 """
                 Create Element instance in the SolTrace context.
 
@@ -625,35 +673,39 @@ class PySolTrace:
                 int 
                     1 if successful, 0 otherwise
                 """
-                self._pdll.st_element_enabled.restype = c_int
-                self._pdll.st_element_xyz.restype = c_int
-                self._pdll.st_element_aim.restype = c_int
-                self._pdll.st_element_zrot.restype = c_int
-                self._pdll.st_element_aperture.restype = c_int
-                self._pdll.st_element_aperture_params.restype = c_int
-                self._pdll.st_element_surface.restype = c_int
-                self._pdll.st_element_surface_params.restype = c_int
-                self._pdll.st_element_surface_file.restype = c_int
-                self._pdll.st_element_interaction.restype = c_int
-                self._pdll.st_element_optic.restype = c_int
+
+                pdll.st_add_element.restype = c_int 
+                pdll.st_add_element(c_void_p(p_data), c_uint32(self.stage_id))
+
+                pdll.st_element_enabled.restype = c_int
+                pdll.st_element_xyz.restype = c_int
+                pdll.st_element_aim.restype = c_int
+                pdll.st_element_zrot.restype = c_int
+                pdll.st_element_aperture.restype = c_int
+                pdll.st_element_aperture_params.restype = c_int
+                pdll.st_element_surface.restype = c_int
+                pdll.st_element_surface_params.restype = c_int
+                pdll.st_element_surface_file.restype = c_int
+                pdll.st_element_interaction.restype = c_int
+                pdll.st_element_optic.restype = c_int
 
                 aperture_params = (c_number*len(self.aperture_params))()
                 surface_params = (c_number*len(self.surface_params))()
                 aperture_params[:] = self.aperture_params
                 surface_params[:] = self.surface_params
 
-                self._pdll.st_element_enabled(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_int(int(self.enabled)));
-                self._pdll.st_element_xyz(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_number(self.position.x),  c_number(self.position.y), c_number(self.position.z));
-                self._pdll.st_element_aim(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_number(self.aim.x),  c_number(self.aim.y), c_number(self.aim.z));
-                self._pdll.st_element_zrot(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_number(self.zrot) );
-                self._pdll.st_element_aperture(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_wchar(self.aperture[0]));
-                self._pdll.st_element_aperture_params(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), pointer(aperture_params));
-                self._pdll.st_element_surface(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_wchar(self.surface[0]));
-                self._pdll.st_element_surface_params(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), pointer(surface_params));
+                pdll.st_element_enabled(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_int(int(self.enabled)));
+                pdll.st_element_xyz(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_number(self.position.x),  c_number(self.position.y), c_number(self.position.z));
+                pdll.st_element_aim(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_number(self.aim.x),  c_number(self.aim.y), c_number(self.aim.z));
+                pdll.st_element_zrot(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_number(self.zrot) );
+                pdll.st_element_aperture(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_wchar(self.aperture[0]));
+                pdll.st_element_aperture_params(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), pointer(aperture_params));
+                pdll.st_element_surface(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_wchar(self.surface[0]));
+                pdll.st_element_surface_params(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), pointer(surface_params));
                 if self.surface_file:
-                    self._pdll.st_element_surface_file(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_char_p(self.surface_file.encode()));
-                self._pdll.st_element_interaction(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_int(self.interaction)); #/* 1=refract, 2=reflect */
-                self._pdll.st_element_optic(c_void_p(self._p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_char_p(self.optic.name.encode()));
+                    pdll.st_element_surface_file(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_char_p(self.surface_file.encode()));
+                pdll.st_element_interaction(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_int(self.interaction)); #/* 1=refract, 2=reflect */
+                pdll.st_element_optic(c_void_p(p_data), c_uint32( self.stage_id ), c_uint32( self.id ), c_char_p(self.optic.name.encode()));
 
                 return 1
 
@@ -1050,13 +1102,9 @@ class PySolTrace:
 
 
         # -----------methods of the 'Stage' class --------------------------------------
-        def __init__(self, pdll, p_data : int, id : int):
+        def __init__(self, id : int):
             """
             """
-            ## Reference for API DLL, managed by PySolTrace
-            self._pdll = pdll
-            ## Memory location for soltrace context, managed by PySolTrace
-            self._p_data = p_data 
             ## Identifying integer associated with the stage
             self.id = id
             ## Stage location in global coordinates 
@@ -1079,7 +1127,24 @@ class PySolTrace:
             self.elements = []
             return 
 
-        def Create(self) -> int:
+        def copy(self, snew):
+            c = self.__dict__.copy()
+            for attr in self.__dict__.keys():
+                if attr in ['elements', '_pdll', '_p_data']:
+                    continue
+                elif attr in ['position','aim']:  #points
+                    snew.__setattr__(attr, c[attr].copy())
+                else:
+                    snew.__setattr__(attr, copy.deepcopy(c[attr]))
+
+            snew.elements = [PySolTrace.Stage.Element(snew, el.id) for el in self.elements]
+            for i in range(len(self.elements)):
+                self.elements[i].copy(snew.elements[i])
+
+            return 
+
+
+        def Create(self, pdll, p_data) -> int:
             """
             Create Stage instance in the SolTrace context. 
             Note: This does not create any associated Elements, which must have their Create method called separately. 
@@ -1090,35 +1155,28 @@ class PySolTrace:
                 1 if successful, 0 otherwise
             """
 
-            self._pdll.st_stage_xyz.restype = c_int 
-            self._pdll.st_stage_aim.restype = c_int 
-            self._pdll.st_stage_zrot.restype = c_int 
-            self._pdll.st_stage_flags.restype = c_int 
+            pdll.st_add_stage.restype = c_int
+            pdll.st_add_stage(c_void_p(p_data) )
 
-            self._pdll.st_stage_xyz(c_void_p(self._p_data), c_uint32(self.id), c_number(self.position.x), c_number(self.position.y), c_number(self.position.z))
-            self._pdll.st_stage_aim(c_void_p(self._p_data), c_uint32(self.id), c_number(self.aim.x), c_number(self.aim.y), c_number(self.aim.z))
-            self._pdll.st_stage_zrot(c_void_p(self._p_data), c_uint32(self.id), c_number(self.zrot))
-            self._pdll.st_stage_flags(c_void_p(self._p_data), c_uint32(self.id), c_int(int(self.is_virtual)), c_int(int(self.is_multihit)), c_int(int(self.is_tracethrough)))
+            pdll.st_stage_xyz.restype = c_int 
+            pdll.st_stage_aim.restype = c_int 
+            pdll.st_stage_zrot.restype = c_int 
+            pdll.st_stage_flags.restype = c_int 
+
+            pdll.st_stage_xyz(c_void_p(p_data), c_uint32(self.id), c_number(self.position.x), c_number(self.position.y), c_number(self.position.z))
+            pdll.st_stage_aim(c_void_p(p_data), c_uint32(self.id), c_number(self.aim.x), c_number(self.aim.y), c_number(self.aim.z))
+            pdll.st_stage_zrot(c_void_p(p_data), c_uint32(self.id), c_number(self.zrot))
+            pdll.st_stage_flags(c_void_p(p_data), c_uint32(self.id), c_int(int(self.is_virtual)), c_int(int(self.is_multihit)), c_int(int(self.is_tracethrough)))
+
+            for element in self.elements:
+                element.Create(pdll,p_data)
 
             return 1
-
-        def get_num_elements(self)->int:
-            """
-            Retrieve the number of elements associated with this stage that are currently created 
-            in the SolTrace context. 
-
-            Returns
-            ----------
-            int 
-                Number of elements
-            """
-            self._pdll.st_num_elements.restype = c_int
-            return self._pdll.st_num_elements(c_void_p(self._p_data), c_uint32(self.id))
 
         def add_element(self) -> int:
             """
             Add one element to the stage. This method appends an Element object to the
-            stage's Stage.elements list and adds the element to the SolTrace context. 
+            stage's Stage.elements list. 
             To update element properties and settings, call the Element.Create method 
             on each element.
 
@@ -1127,9 +1185,6 @@ class PySolTrace:
             PySolTrace.Stage.Element 
                 Reference to the newly created element
             """
-
-            self._pdll.st_add_element.restype = c_int 
-            self._pdll.st_add_element(c_void_p(self._p_data), c_uint32(self.id))
             
             new_e = PySolTrace.Stage.Element(self, len(self.elements) )
             self.elements.append( new_e )
@@ -1137,27 +1192,14 @@ class PySolTrace:
 
     # ---------- methods of the PySolTrace class --------------------------------------------
     def __init__(self):
-        cwd = os.getcwd()
-        if sys.platform == 'win32' or sys.platform == 'cygwin':
-            ## loaded SolTrace library of exported functions
-            self._pdll = CDLL(cwd + "/coretrace_apid.dll")
-            # print("Loaded win32")
-            #self._pdll = CDLL(cwd + "/coretraced.dll") # for debugging
-        elif sys.platform == 'darwin':
-            self._pdll = CDLL(cwd + "/coretrace.dylib")  # Never tested
-        elif sys.platform.startswith('linux'):
-            self._pdll = CDLL(cwd +"/coretrace.so")  # Never tested
-        else:
-            print( 'Platform not supported ', sys.platform)
-
-        ## Memory location for soltrace context
-        self._p_data = None
 
         # Initialize lists for optics and stage instances
         ## List of Optics instances
         self.optics = []
         ## List of Stage instances
         self.stages = []
+        ## sun
+        self.sun = None
 
         # Simulation settings
         ## Minimum number of simulation ray hits 
@@ -1168,45 +1210,48 @@ class PySolTrace:
         self.is_sunshape = True 
         ## Flag indicating whether surface errors should be included
         self.is_surface_errors = True
+        # Placeholder for output ray data
+        self.raydata = None
 
-        # Create an instance of soltrace in memory
-        self._pdll.st_create_context.restype = c_void_p
-        self._p_data = self._pdll.st_create_context()
+    def copy(self):
+        psnew = PySolTrace()
+        for attr in ['num_ray_hits','max_rays_traced','is_sunshape','is_surface_errors']:
+            psnew.__setattr__(attr, copy.deepcopy(self.__getattribute__(attr)))
+        psnew.stages = [PySolTrace.Stage(st.id) for st in self.stages]
+        for i in range(len(self.stages)):
+            self.stages[i].copy(psnew.stages[i])
+        psnew.optics = [PySolTrace.Optics(op.id) for op in self.optics]
+        for i in range(len(self.optics)):
+            self.optics[i].copy(psnew.optics[i])
+        psnew.sun = PySolTrace.Sun()
+        self.sun.copy(psnew.sun)
 
+        #re-link optics and elements
+        opt_map = {}
+        for opt in psnew.optics:
+            opt_map[opt.id] = opt
 
-    def clear_context(self):
+        for i,stage in enumerate(self.stages):
+            for j,element in enumerate(stage.elements):
+                psnew.stages[i].elements[j].optic = opt_map[element.optic.id]
+
+        return psnew
+
+    def Create(self, pdll, p_data):
         """
-        Frees SolTrace instance from memory
-
-        Returns
-        -------
-        bool
-            True if successful, False otherwise
+        Create soltrace context from data structures
         """
 
-        self._pdll.st_free_context.restype = c_bool
-        self._pdll.st_free_context(c_void_p(self._p_data))
-
-        return True
-
-    def get_num_optics(self) -> int:
-        """
-        Get number of optical elements in the SolTrace context
-        
-        Returns
-        ----------
-        int 
-            number of elements
-        """
-        self._pdll.st_num_optics.restype = c_int
-        return self._pdll.st_num_optics(c_void_p(self._p_data))
-
+        self.sun.Create(pdll, p_data)
+        for opt in self.optics:
+            opt.Create(pdll, p_data)
+        for stage in self.stages:
+            stage.Create(pdll, p_data) 
 
     def add_optic(self, optic_name : str):
         """
-        Instantiates a new PySolTrace.Optics object, adding it to the optics list, and
-        creating the optics in the SolTrace context. This method does not set optics
-        properties, which instead is done using the Optics.Create method.
+        Instantiates a new PySolTrace.Optics object, adding it to the optics list. 
+        This method does not set optics properties, which instead is done using the Optics.Create method.
 
         Parameters
         ----------
@@ -1221,11 +1266,8 @@ class PySolTrace:
 
         new_opt_id = len(self.optics)
 
-        self.optics.append( PySolTrace.Optics(self._pdll, self._p_data, new_opt_id ) )
+        self.optics.append( PySolTrace.Optics(new_opt_id ) )
         self.optics[-1].name = optic_name
-
-        self._pdll.st_add_optic.restype = c_int
-        self._pdll.st_add_optic(c_void_p(self._p_data), c_char_p(optic_name.encode()))
 
         return self.optics[-1]  #return the last object in the list, which was the one just created
 
@@ -1251,8 +1293,8 @@ class PySolTrace:
                 # clear it from the optics array 
                 self.optics.remove(opt)
                 # Remove from the soltrace context
-                self._pdll.st_delete_optic.restype = c_int 
-                return self._pdll.st_delete_optic(c_void_p(self._p_data), c_uint32(optic_id) )
+                # self._pdll.st_delete_optic.restype = c_int 
+                # return self._pdll.st_delete_optic(c_void_p(self._p_data), c_uint32(optic_id) )
         
         # If reaching this point, the optic id was not found
         return 0
@@ -1268,26 +1310,12 @@ class PySolTrace:
             Reference to newly created Sun instance.
         """
         ## Object containing Sun class data
-        self.sun = PySolTrace.Sun(self._pdll, self._p_data)
+        self.sun = PySolTrace.Sun()
         return self.sun
-
-
-    def get_num_stages(self) -> int:
-        """
-        Retrieve the number of stages that have been created in the SolTrace context. 
-
-        Returns
-        ----------
-        int 
-            Number of stages.
-        """
-        self._pdll.st_num_stages.restype = c_int
-        return self._pdll.st_num_stages(c_void_p(self._p_data))
 
     def add_stage(self):
         """
-        Adds a new Stage instance to the PySolTrace.stages list and creates the stage in
-        the SolTrace context. The Stage ID is automatically generated based on the number 
+        Adds a new Stage instance to the PySolTrace.stages list. The Stage ID is automatically generated based on the number 
         of current stages.
 
         Returns
@@ -1297,10 +1325,7 @@ class PySolTrace:
         """
         new_st_id = len(self.stages)
 
-        self.stages.append( PySolTrace.Stage(self._pdll, self._p_data, new_st_id ) )
-
-        self._pdll.st_add_stage.restype = c_int
-        self._pdll.st_add_stage(c_void_p(self._p_data) )
+        self.stages.append( PySolTrace.Stage( new_st_id ) )
 
         return self.stages[-1]
 
@@ -1325,15 +1350,21 @@ class PySolTrace:
                 # clear it from the optics array 
                 self.stages.remove(st)
                 # Remove from the soltrace context
-                self._pdll.st_delete_stage.restype = c_int 
-                return self._pdll.st_delete_stage(c_void_p(self._p_data), c_uint32(stage_id) )
+                # self._pdll.st_delete_stage.restype = c_int 
+                # return self._pdll.st_delete_stage(c_void_p(self._p_data), c_uint32(stage_id) )
         
         # If reaching this point, the stage id was not found
         return 0
 
-    def run(self, seed : int = -1, as_power_tower = False):
+    def run(self, seed : int = -1, as_power_tower = False, nthread=1, callback_func = api_callback, mt_handler=None):
         """
-        Run SolTrace simulation.
+        Run SolTrace simulation. 
+
+        If calling this function in multithread mode, note that the run() function
+        **must** be called inside an import guard, e.g.:
+        > if __name__ == "__main__":
+        >    mypst_obj.run(...)
+        Otherwise, you'll receive an error.
 
         Parameters
         ----------
@@ -1349,17 +1380,68 @@ class PySolTrace:
             Simulation return value
         """
 
-        self._pdll.st_sim_errors.restype = c_int 
-        self._pdll.st_sim_errors(c_void_p(self._p_data), c_int(1 if self.is_sunshape else 0), c_int(1 if self.is_surface_errors else 0))
+        if nthread == 1:
+            cwd = os.getcwd()
+            if sys.platform == 'win32' or sys.platform == 'cygwin':
+                ## loaded SolTrace library of exported functions
+                pdll = CDLL(cwd + "/coretrace_api.dll")
+                # print("Loaded win32")
+                #pdll = CDLL(cwd + "/coretraced.dll") # for debugging
+            elif sys.platform == 'darwin':
+                pdll = CDLL(cwd + "/coretrace.dylib")  # Never tested
+            elif sys.platform.startswith('linux'):
+                pdll = CDLL(cwd +"/coretrace.so")  # Never tested
+            else:
+                print( 'Platform not supported ', sys.platform)
+            # Create an instance of soltrace in memory
+            pdll.st_create_context.restype = c_void_p
+            p_data = pdll.st_create_context()
 
-        self._pdll.st_sim_params.restype = c_int 
-        self._pdll.st_sim_params(c_void_p(self._p_data), c_int(int(self.num_ray_hits)), c_int(int(self.max_rays_traced)))
+            self.Create(pdll, p_data)
 
-        self._pdll.st_sim_run.restype = c_int 
-        return self._pdll.st_sim_run( c_void_p(self._p_data), c_uint16(seed), c_bool(as_power_tower), api_callback)
+            pdll.st_sim_errors.restype = c_int 
+            pdll.st_sim_errors(c_void_p(p_data), c_int(1 if self.is_sunshape else 0), c_int(1 if self.is_surface_errors else 0))
 
+            pdll.st_sim_params.restype = c_int 
+            pdll.st_sim_params(c_void_p(p_data), c_int(int(self.num_ray_hits)), c_int(int(self.max_rays_traced)))
 
-    def get_num_intersections(self) -> int:
+            pdll.st_sim_run.restype = c_int 
+            res = pdll.st_sim_run( c_void_p(p_data), c_uint16(seed), c_bool(as_power_tower), callback_func) #, mt_handler)
+
+            self.raydata = self.get_ray_dataframe(pdll,p_data)
+
+            pdll.st_free_context.restype = c_bool
+            pdll.st_free_context(c_void_p(p_data))
+
+            return res
+        else:
+            thread_helpers = [thread_helper(i) for i in range(nthread)]
+            P = [[self.copy(), i, thread_helpers[i]] for i in range(nthread)]
+
+            # modify the number of rays to match the required totals
+            nrpt = int(float(self.num_ray_hits)/float(nthread))
+            mrpt = int(float(self.max_rays_traced)/float(nthread))
+
+            for p in P:
+                if p==P[0]:
+                    p[0].num_ray_hits = nrpt + (self.num_ray_hits % nthread)
+                    p[0].max_rays_traced = nrpt + (self.max_rays_traced % nthread)
+                else:
+                    p[0].num_ray_hits = nrpt
+                    p[0].max_rays_traced = mrpt
+
+            pool = multiprocessing.Pool(nthread)
+            res = pool.starmap(_thread_func, P)
+
+            # res = pool.starmap_async(_thread_func, P)
+
+            
+            # res.get()
+            x=1
+
+            return pd.concat(res)
+
+    def get_num_intersections(self, pdll, p_data) -> int:
         """
         [Post simulation] Get the number of ray intersections detected in the simulation.
 
@@ -1368,8 +1450,12 @@ class PySolTrace:
         int 
             Number of intersections
         """
-        self._pdll.st_num_intersections.restype = c_int 
-        return self._pdll.st_num_intersections(c_void_p(self._p_data))
+
+        if p_data == 0:
+            return 0
+
+        pdll.st_num_intersections.restype = c_int
+        return pdll.st_num_intersections(c_void_p(p_data))
 
     def get_intersect_locations(self):
         """
@@ -1380,19 +1466,10 @@ class PySolTrace:
         [[x,y,z],] 
             2D array of ray positions
         """
-        n_int = self.get_num_intersections()
-
-        # Initialize result arrays
-        loc_x = (c_number*n_int)()
-        loc_y = (c_number*n_int)()
-        loc_z = (c_number*n_int)()
-
-        # Retrieve raw data
-        self._pdll.st_locations.restype = c_int 
-        self._pdll.st_locations(c_void_p(self._p_data), pointer(loc_x), pointer(loc_y), pointer(loc_z))
-        
-        # Combine data and transpose
-        return list(map(list,zip(loc_x, loc_y, loc_z)))
+        if self.raydata:
+            return self.raydata[['loc_x','loc_y','loc_z']].tolist()
+        else:
+            return None
 
     def get_intersect_cosines(self):
         """
@@ -1403,106 +1480,110 @@ class PySolTrace:
         [[cx,cy,cz],]
             2D array of ray vectors associated with the intersection at the same index.
         """
-        n_int = self.get_num_intersections()
+        if self.raydata:
+            return self.raydata[['cos_x','cos_y','cos_z']].tolist()
+        else:
+            return None
 
-        # Initialize data vectors
-        cos_x = (c_number*n_int)()
-        cos_y = (c_number*n_int)()
-        cos_z = (c_number*n_int)()
+    # def get_intersect_elementmap(self):
+    #     """
+    #     [Post simulation] Get the elements associated with the ray intersection. The element numbers are
+    #     interpreted as follows:
+    #         0     | Ray did not hit an element in this stage 
+    #         >= +1 | Ray hit this element ID and was reflected / refracted 
+    #         <= -1 | Ray hit this element ID and was absorbed
 
-        self._pdll.st_cosines.restype = c_int 
-        self._pdll.st_cosines(c_void_p(self._p_data), pointer(cos_x), pointer(cos_y), pointer(cos_z))
+    #     Returns
+    #     ----------
+    #     [int,] 
+    #         2D array of integers associated with the intersection at the same index.
+    #     """
+    #     if self._p_data == 0:
+    #         raise "SolTrace context not assigned"
+        
+    #     n_int = self.get_num_intersections()
+    #     element_map = (c_int*n_int)()
 
-        # Combine data and transpose
-        return list(map(list,zip(cos_x, cos_y, cos_z)))
+    #     self._pdll.st_elementmap.restype = c_int 
+    #     self._pdll.st_elementmap(c_void_p(self._p_data), pointer(element_map))
 
-    def get_intersect_elementmap(self):
-        """
-        [Post simulation] Get the elements associated with the ray intersection. The element numbers are
-        interpreted as follows:
-            0     | Ray did not hit an element in this stage 
-            >= +1 | Ray hit this element ID and was reflected / refracted 
-            <= -1 | Ray hit this element ID and was absorbed
+    #     return list(element_map)
 
-        Returns
-        ----------
-        [int,] 
-            2D array of integers associated with the intersection at the same index.
-        """
-        n_int = self.get_num_intersections()
-        element_map = (c_int*n_int)()
+    # def get_intersect_stagemap(self):
+    #     """
+    #     [Post simulation] Get the stage associated with the ray intersection at the same positional index.
 
-        self._pdll.st_elementmap.restype = c_int 
-        self._pdll.st_elementmap(c_void_p(self._p_data), pointer(element_map))
+    #     Returns
+    #     ----------
+    #     [int,] 
+    #         List of stages associated with the intersection at the same index.
+    #     """
+    #     if self._p_data == 0:
+    #         raise "SolTrace context not assigned"
+        
+    #     n_int = self.get_num_intersections()
+    #     stage_map = (c_int*n_int)()
 
-        return list(element_map)
+    #     self._pdll.st_stagemap.restype = c_int 
+    #     self._pdll.st_stagemap(c_void_p(self._p_data), pointer(stage_map))
 
-    def get_intersect_stagemap(self):
-        """
-        [Post simulation] Get the stage associated with the ray intersection at the same positional index.
+    #     return list(stage_map)
 
-        Returns
-        ----------
-        [int,] 
-            List of stages associated with the intersection at the same index.
-        """
-        n_int = self.get_num_intersections()
-        stage_map = (c_int*n_int)()
+    # def get_intersect_raynumbers(self):
+    #     """
+    #     [Post simulation] Get the ray intersection numbers. 
 
-        self._pdll.st_stagemap.restype = c_int 
-        self._pdll.st_stagemap(c_void_p(self._p_data), pointer(stage_map))
+    #     Returns
+    #     ----------
+    #     [int,]
+    #         List of ray intersection numbers.
+    #     """
+    #     if self._p_data == 0:
+    #         raise "SolTrace context not assigned"
+        
+    #     n_int = self.get_num_intersections()
+    #     raynumbers = (c_int*n_int)()
 
-        return list(stage_map)
+    #     self._pdll.st_raynumbers.restype = c_int 
+    #     self._pdll.st_raynumbers(c_void_p(self._p_data), pointer(raynumbers))
 
-    def get_intersect_raynumbers(self):
-        """
-        [Post simulation] Get the ray intersection numbers. 
+    #     return list(raynumbers)
 
-        Returns
-        ----------
-        [int,]
-            List of ray intersection numbers.
-        """
-        n_int = self.get_num_intersections()
-        raynumbers = (c_int*n_int)()
+    # def get_sun_stats(self):
+    #     """
+    #     Get information on the sun box. 
 
-        self._pdll.st_raynumbers.restype = c_int 
-        self._pdll.st_raynumbers(c_void_p(self._p_data), pointer(raynumbers))
+    #     Returns
+    #     ----------
+    #     dict      
+    #         Keys in the return dictionary are:
+    #         'xmin' --> Minimum x extent of the bounding box for hit testing 
+    #         'xmax' --> Maximum x extent of the bounding box for hit testing 
+    #         'ymin' --> Minimum y extent of the bounding box for hit testing 
+    #         'ymax' --> Maximum y extent of the bounding box for hit testing 
+    #         'nsunrays' --> Number of sun rays simulated
+    #     """
+    #     if self._p_data == 0:
+    #         raise "SolTrace context not assigned"
+        
+    #     xmin = (c_number)()
+    #     xmax = (c_number)()
+    #     ymin = (c_number)()
+    #     ymax = (c_number)()
+    #     nsunrays = (c_int)()
 
-        return list(raynumbers)
+    #     self._pdll.st_sun_stats.restype = c_int 
+    #     self._pdll.st_sun_stats(c_void_p(self._p_data), pointer(xmin), pointer(xmax), pointer(ymin), pointer(ymax), pointer(nsunrays))
 
-    def get_sun_stats(self):
-        """
-        Get information on the sun box. 
+    #     return {
+    #         'xmin':float(xmin.value),
+    #         'xmax':float(xmax.value),
+    #         'ymin':float(ymin.value),
+    #         'ymax':float(ymax.value),
+    #         'nsunrays':int(nsunrays.value),
+    #     }
 
-        Returns
-        ----------
-        dict      
-            Keys in the return dictionary are:
-            'xmin' --> Minimum x extent of the bounding box for hit testing 
-            'xmax' --> Maximum x extent of the bounding box for hit testing 
-            'ymin' --> Minimum y extent of the bounding box for hit testing 
-            'ymax' --> Maximum y extent of the bounding box for hit testing 
-            'nsunrays' --> Number of sun rays simulated
-        """
-        xmin = (c_number)()
-        xmax = (c_number)()
-        ymin = (c_number)()
-        ymax = (c_number)()
-        nsunrays = (c_int)()
-
-        self._pdll.st_sun_stats.restype = c_int 
-        self._pdll.st_sun_stats(c_void_p(self._p_data), pointer(xmin), pointer(xmax), pointer(ymin), pointer(ymax), pointer(nsunrays))
-
-        return {
-            'xmin':float(xmin.value),
-            'xmax':float(xmax.value),
-            'ymin':float(ymin.value),
-            'ymax':float(ymax.value),
-            'nsunrays':int(nsunrays.value),
-        }
-
-    def get_ray_dataframe(self):
+    def get_ray_dataframe(self, pdll, p_data):
         """
         Get a pandas dataframe with all of the ray data from the simulation. 
 
@@ -1520,38 +1601,40 @@ class PySolTrace:
             stage   | Stage associated with ray hit
             number  | Ray number
         """
+        if p_data == 0:
+            raise "SolTrace context not assigned"
         
         data = {}
 
-        n_int = self.get_num_intersections()
+        n_int = self.get_num_intersections(pdll, p_data)
         data['loc_x'] = (c_number*n_int)()
         data['loc_y'] = (c_number*n_int)()
         data['loc_z'] = (c_number*n_int)()
 
-        self._pdll.st_locations.restype = c_int 
-        self._pdll.st_locations(c_void_p(self._p_data), pointer(data['loc_x']), pointer(data['loc_y']), pointer(data['loc_z']))
+        pdll.st_locations.restype = c_int 
+        pdll.st_locations(c_void_p(p_data), pointer(data['loc_x']), pointer(data['loc_y']), pointer(data['loc_z']))
 
         data['cos_x'] = (c_number*n_int)()
         data['cos_y'] = (c_number*n_int)()
         data['cos_z'] = (c_number*n_int)()
 
-        self._pdll.st_cosines.restype = c_int 
-        self._pdll.st_cosines(c_void_p(self._p_data), pointer(data['cos_x']), pointer(data['cos_y']), pointer(data['cos_z']))
+        pdll.st_cosines.restype = c_int 
+        pdll.st_cosines(c_void_p(p_data), pointer(data['cos_x']), pointer(data['cos_y']), pointer(data['cos_z']))
 
         data['element'] = (c_int*n_int)()
 
-        self._pdll.st_elementmap.restype = c_int 
-        self._pdll.st_elementmap(c_void_p(self._p_data), pointer(data['element']))
+        pdll.st_elementmap.restype = c_int 
+        pdll.st_elementmap(c_void_p(p_data), pointer(data['element']))
 
         data['stage'] = (c_int*n_int)()
 
-        self._pdll.st_stagemap.restype = c_int 
-        self._pdll.st_stagemap(c_void_p(self._p_data), pointer(data['stage']))
+        pdll.st_stagemap.restype = c_int 
+        pdll.st_stagemap(c_void_p(p_data), pointer(data['stage']))
 
         data['number'] = (c_int*n_int)()
 
-        self._pdll.st_raynumbers.restype = c_int 
-        self._pdll.st_raynumbers(c_void_p(self._p_data), pointer(data['number']))
+        pdll.st_raynumbers.restype = c_int 
+        pdll.st_raynumbers(c_void_p(p_data), pointer(data['number']))
 
         for key in data.keys():
             data[key] = list(data[key])
@@ -1577,336 +1660,336 @@ class PySolTrace:
 
 
     # /* utility transform/math functions */
-    def util_calc_euler_angles(self, origin, aimpoint, zrot):
-        """
-        Calculate the Euler angles associated with a given origin, aimpoint, and z-axis rotation. 
+    # def util_calc_euler_angles(self, origin, aimpoint, zrot):
+    #     """
+    #     Calculate the Euler angles associated with a given origin, aimpoint, and z-axis rotation. 
 
-        Parameters
-        ----------
-        origin : [float,*3]
-            Origin of the coordinate system
-        aimpoint : [float,*3]
-            Aimpoint of the vector originating at the origin
-        zrot : float
-            Rotation around the z-axis coordinate (degr)
+    #     Parameters
+    #     ----------
+    #     origin : [float,*3]
+    #         Origin of the coordinate system
+    #     aimpoint : [float,*3]
+    #         Aimpoint of the vector originating at the origin
+    #     zrot : float
+    #         Rotation around the z-axis coordinate (degr)
 
-        Returns
-        ----------
-        list
-            Calculated Euler angles (rad)
-        """
+    #     Returns
+    #     ----------
+    #     list
+    #         Calculated Euler angles (rad)
+    #     """
 
-        a_origin = (c_number*3)()
-        a_aimpoint = (c_number*3)()
-        a_euler = (c_number*3)()
-        a_origin[:] = origin
-        a_aimpoint[:] = aimpoint
+    #     a_origin = (c_number*3)()
+    #     a_aimpoint = (c_number*3)()
+    #     a_euler = (c_number*3)()
+    #     a_origin[:] = origin
+    #     a_aimpoint[:] = aimpoint
 
-        self._pdll.st_calc_euler_angles.restype = c_void_p
-        self._pdll.st_calc_euler_angles(pointer(a_origin), pointer(a_aimpoint), c_number(zrot), pointer(a_euler))
+    #     self._pdll.st_calc_euler_angles.restype = c_void_p
+    #     self._pdll.st_calc_euler_angles(pointer(a_origin), pointer(a_aimpoint), c_number(zrot), pointer(a_euler))
 
-        return list(a_euler)
+    #     return list(a_euler)
 
-    def util_transform_to_local(self, posref, cosref, origin, rreftoloc):
-        """
-        Perform coordinate transformation from reference system to local system.
+    # def util_transform_to_local(self, posref, cosref, origin, rreftoloc):
+    #     """
+    #     Perform coordinate transformation from reference system to local system.
         
-        Parameters
-        ----------
-        PosRef : [float,]*3
-            X,Y,Z coordinates of ray point in reference system
-        CosRef : [float,]*3
-            Direction cosines of ray in reference system
-        Origin : [float,]*3
-            X,Y,Z coordinates of origin of local system as measured in reference system
-        RRefToLoc 
-            Rotation matrices required for coordinate transform from reference to local
+    #     Parameters
+    #     ----------
+    #     PosRef : [float,]*3
+    #         X,Y,Z coordinates of ray point in reference system
+    #     CosRef : [float,]*3
+    #         Direction cosines of ray in reference system
+    #     Origin : [float,]*3
+    #         X,Y,Z coordinates of origin of local system as measured in reference system
+    #     RRefToLoc 
+    #         Rotation matrices required for coordinate transform from reference to local
         
-        Returns
-        ----------
-        (dict)  Keys in return dictionary include:
-            posloc : ([float,]*3) X,Y,Z coordinates of ray point in local system
-            cosloc : ([float,]*3) Direction cosines of ray in local system
-        """
-        # Allocate space for input 
-        a_posref = (c_number*3)()
-        a_cosref = (c_number*3)()
-        a_origin = (c_number*3)() 
-        a_rreftoloc = (c_number*9)() 
-        #output
-        posloc = (c_number*3)()
-        cosloc = (c_number*3)()
-        # Assign input
-        a_posref[:] = posref
-        a_cosref[:] = cosref
-        a_origin[:] = origin
-        a_rreftoloc[:] = sum([], rreftoloc)
+    #     Returns
+    #     ----------
+    #     (dict)  Keys in return dictionary include:
+    #         posloc : ([float,]*3) X,Y,Z coordinates of ray point in local system
+    #         cosloc : ([float,]*3) Direction cosines of ray in local system
+    #     """
+    #     # Allocate space for input 
+    #     a_posref = (c_number*3)()
+    #     a_cosref = (c_number*3)()
+    #     a_origin = (c_number*3)() 
+    #     a_rreftoloc = (c_number*9)() 
+    #     #output
+    #     posloc = (c_number*3)()
+    #     cosloc = (c_number*3)()
+    #     # Assign input
+    #     a_posref[:] = posref
+    #     a_cosref[:] = cosref
+    #     a_origin[:] = origin
+    #     a_rreftoloc[:] = sum([], rreftoloc)
 
-        self._pdll.st_transform_to_local.restype = c_void_p
-        self._pdll.st_transform_to_local(pointer(a_posref), pointer(a_cosref), pointer(a_origin), pointer(a_rreftoloc), pointer(posloc), pointer(cosloc))
+    #     self._pdll.st_transform_to_local.restype = c_void_p
+    #     self._pdll.st_transform_to_local(pointer(a_posref), pointer(a_cosref), pointer(a_origin), pointer(a_rreftoloc), pointer(posloc), pointer(cosloc))
 
-        return {'cosloc':list(cosloc), 'posloc':list(posloc)}
+    #     return {'cosloc':list(cosloc), 'posloc':list(posloc)}
 
-    def util_transform_to_ref(self, posloc, cosloc, origin, rloctoref):
-        """
-        Perform coordinate transformation from local system to reference system.
+    # def util_transform_to_ref(self, posloc, cosloc, origin, rloctoref):
+    #     """
+    #     Perform coordinate transformation from local system to reference system.
         
-        Parameters
-        ----------
-        PosLoc : [float,]*3
-            X,Y,Z coordinates of ray point in local system
-        CosLoc : [float,]*3
-            Direction cosines of ray in local system
-        Origin : [float,]*3
-            X,Y,Z coordinates of origin of local system as measured in reference system
-        RLocToRef 
-            Rotation matrices required for coordinate transform from local to reference
-            -- inverse of reference to local transformation
+    #     Parameters
+    #     ----------
+    #     PosLoc : [float,]*3
+    #         X,Y,Z coordinates of ray point in local system
+    #     CosLoc : [float,]*3
+    #         Direction cosines of ray in local system
+    #     Origin : [float,]*3
+    #         X,Y,Z coordinates of origin of local system as measured in reference system
+    #     RLocToRef 
+    #         Rotation matrices required for coordinate transform from local to reference
+    #         -- inverse of reference to local transformation
         
-        Returns
-        ----------
-        dict  
-            Keys in return dictionary include:
-            posref : ([float,]*3) X,Y,Z coordinates of ray point in reference system
-            cosref : ([float,]*3) Direction cosines of ray in reference system
-        """
+    #     Returns
+    #     ----------
+    #     dict  
+    #         Keys in return dictionary include:
+    #         posref : ([float,]*3) X,Y,Z coordinates of ray point in reference system
+    #         cosref : ([float,]*3) Direction cosines of ray in reference system
+    #     """
 
-        a_posloc = (c_number*3)()
-        a_cosloc = (c_number*3)()
-        a_origin = (c_number*3)() 
-        a_rloctoref = (c_number*9)() 
-        #output
-        posref = (c_number*3)()
-        cosref = (c_number*3)()
+    #     a_posloc = (c_number*3)()
+    #     a_cosloc = (c_number*3)()
+    #     a_origin = (c_number*3)() 
+    #     a_rloctoref = (c_number*9)() 
+    #     #output
+    #     posref = (c_number*3)()
+    #     cosref = (c_number*3)()
         
-        a_posloc[:] = posloc
-        a_cosloc[:] = cosloc
-        a_origin[:] = origin
-        a_rloctoref[:] = sum([], rloctoref)
+    #     a_posloc[:] = posloc
+    #     a_cosloc[:] = cosloc
+    #     a_origin[:] = origin
+    #     a_rloctoref[:] = sum([], rloctoref)
 
-        self._pdll.st_transform_to_reference.restype = c_void_p
-        self._pdll.st_transform_to_reference(pointer(a_posloc), pointer(a_cosloc), pointer(a_origin), pointer(a_rloctoref), pointer(posref), pointer(cosref))
+    #     self._pdll.st_transform_to_reference.restype = c_void_p
+    #     self._pdll.st_transform_to_reference(pointer(a_posloc), pointer(a_cosloc), pointer(a_origin), pointer(a_rloctoref), pointer(posref), pointer(cosref))
 
-        return {'cosref':list(cosref), 'posref':list(posref)}
+    #     return {'cosref':list(cosref), 'posref':list(posref)}
 
-    def util_matrix_vector_mult(self, m, v):
-        """
-        Perform multiplication of a 3x3 matrix and a length-3 vector, returning the result vector.
+    # def util_matrix_vector_mult(self, m, v):
+    #     """
+    #     Perform multiplication of a 3x3 matrix and a length-3 vector, returning the result vector.
 
-        Parameters
-        ----------
-        m : list
-            m[3][3] - a 3x3 matrix
-        v : list
-            v[3] - a list, length 3
+    #     Parameters
+    #     ----------
+    #     m : list
+    #         m[3][3] - a 3x3 matrix
+    #     v : list
+    #         v[3] - a list, length 3
 
-        Returns
-        ----------
-        list
-            m x v [3]
-        """
+    #     Returns
+    #     ----------
+    #     list
+    #         m x v [3]
+    #     """
 
-        a_m = (c_number*9)()
-        a_v = (c_number*3)()
-        a_mv = (c_number*3)()
-        a_m[:] = sum([], m)
-        a_v[:] = v 
+    #     a_m = (c_number*9)()
+    #     a_v = (c_number*3)()
+    #     a_mv = (c_number*3)()
+    #     a_m[:] = sum([], m)
+    #     a_v[:] = v 
 
-        self._pdll.st_matrix_vector_mult.restype = c_void_p
-        self._pdll.st_matrix_vector_mult(pointer(a_m), pointer(a_v), pointer(a_mv))
+    #     self._pdll.st_matrix_vector_mult.restype = c_void_p
+    #     self._pdll.st_matrix_vector_mult(pointer(a_m), pointer(a_v), pointer(a_mv))
 
-        return list(a_mv)
+    #     return list(a_mv)
 
-    def util_calc_transforms(self, euler):
-        """
-        Calculate matrix transforms
+    # def util_calc_transforms(self, euler):
+    #     """
+    #     Calculate matrix transforms
 
-        Parameters
-        ----------
-        euler : [float,]*3
-            Euler angles
+    #     Parameters
+    #     ----------
+    #     euler : [float,]*3
+    #         Euler angles
 
-        Returns
-        ----------
-        (dict) A dictionary containing the keys:
-            rreftoloc : Transformation matrix from Reference to Local system
-            rloctoref : Transformation matrix from Local to Reference system
-        """
+    #     Returns
+    #     ----------
+    #     (dict) A dictionary containing the keys:
+    #         rreftoloc : Transformation matrix from Reference to Local system
+    #         rloctoref : Transformation matrix from Local to Reference system
+    #     """
 
-        a_euler = (c_number*3)()
-        rreftoloc = (c_number*9)()
-        rloctoref = (c_number*9)()
+    #     a_euler = (c_number*3)()
+    #     rreftoloc = (c_number*9)()
+    #     rloctoref = (c_number*9)()
 
-        a_euler[:] = euler
+    #     a_euler[:] = euler
 
-        self._pdll.st_calc_transform_matrices.restype = c_void_p
-        self._pdll.st_calc_transform_matrices(pointer(a_euler), pointer(rreftoloc), pointer(rloctoref))
+    #     self._pdll.st_calc_transform_matrices.restype = c_void_p
+    #     self._pdll.st_calc_transform_matrices(pointer(a_euler), pointer(rreftoloc), pointer(rloctoref))
 
-        # reshape
-        a_rreftoloc = []
-        a_rloctoref = []
-        for i in range(0,10,3):
-            a_rreftoloc.append(rreftoloc[i:i+3])
-            a_rloctoref.append(rloctoref[i:i+3])
+    #     # reshape
+    #     a_rreftoloc = []
+    #     a_rloctoref = []
+    #     for i in range(0,10,3):
+    #         a_rreftoloc.append(rreftoloc[i:i+3])
+    #         a_rloctoref.append(rloctoref[i:i+3])
 
-        return {'rreftoloc':a_rreftoloc, 'rloctoref':a_rloctoref}
+    #     return {'rreftoloc':a_rreftoloc, 'rloctoref':a_rloctoref}
 
-    def util_matrix_transpose(self, m):
-        """
-        Calculate matrix transpose 
+    # def util_matrix_transpose(self, m):
+    #     """
+    #     Calculate matrix transpose 
 
-        Parameters
-        ----------
-        m : [[float,]*3]*3
-            Square matrix 3x3 to be transposed.
+    #     Parameters
+    #     ----------
+    #     m : [[float,]*3]*3
+    #         Square matrix 3x3 to be transposed.
 
-        Returns
-        ----------
-        [[float,]*3]*3
-            Square matrix 3x3, transpose of 'm'
-        """
+    #     Returns
+    #     ----------
+    #     [[float,]*3]*3
+    #         Square matrix 3x3, transpose of 'm'
+    #     """
 
-        a_m = (c_number*9)()
-        a_m[:] = sum([], m)
-        output = (c_number*9)()
+    #     a_m = (c_number*9)()
+    #     a_m[:] = sum([], m)
+    #     output = (c_number*9)()
 
-        self._pdll.st_matrix_transpose.restype = c_void_p
-        self._pdll.st_matrix_transpose(pointer(a_m), pointer(output))
+    #     self._pdll.st_matrix_transpose.restype = c_void_p
+    #     self._pdll.st_matrix_transpose(pointer(a_m), pointer(output))
 
-        a_output = []
-        for i in range(0,10,3):
-            a_output.append(output[i:i+3])
+    #     a_output = []
+    #     for i in range(0,10,3):
+    #         a_output.append(output[i:i+3])
 
-        return a_output
+    #     return a_output
 
-    def util_rotation_arbitrary(self, theta, axis, axloc, pt):
-        """
-        Rotation of a point 'pt' about an arbitrary axis with direction 'axis' centered at point 'axloc'. 
-        The point is rotated through 'theta' radians.
+    # def util_rotation_arbitrary(self, theta, axis, axloc, pt):
+    #     """
+    #     Rotation of a point 'pt' about an arbitrary axis with direction 'axis' centered at point 'axloc'. 
+    #     The point is rotated through 'theta' radians.
 
-        Parameters
-        ----------
-        theta : float
-            Angle of rotation (rad)
-        axis : Point()
-            Vector (x=i,y=j,z=k) indicating direction of axis for rotation
-        axloc : Point()
-            Location of the axis origin
-        pt : Point()
-            Location of the point that is to be rotated
+    #     Parameters
+    #     ----------
+    #     theta : float
+    #         Angle of rotation (rad)
+    #     axis : Point()
+    #         Vector (x=i,y=j,z=k) indicating direction of axis for rotation
+    #     axloc : Point()
+    #         Location of the axis origin
+    #     pt : Point()
+    #         Location of the point that is to be rotated
 
-        Returns
-        -----------
-        Point
-            Point after rotation
+    #     Returns
+    #     -----------
+    #     Point
+    #         Point after rotation
 
-        """
+    #     """
 
-        a = axloc.x     #Point through which the axis passes
-        b = axloc.y
-        c = axloc.z
-        x = pt.x        #Point that we're rotating
-        y = pt.y
-        z = pt.z
-        u = axis.x        #Direction of the axis that we're rotating about
-        v = axis.y
-        w = axis.z
+    #     a = axloc.x     #Point through which the axis passes
+    #     b = axloc.y
+    #     c = axloc.z
+    #     x = pt.x        #Point that we're rotating
+    #     y = pt.y
+    #     z = pt.z
+    #     u = axis.x        #Direction of the axis that we're rotating about
+    #     v = axis.y
+    #     w = axis.z
 
         
-        sinth = math.sin(theta)
-        costh = math.cos(theta)
+    #     sinth = math.sin(theta)
+    #     costh = math.cos(theta)
 
-        fin = Point()
+    #     fin = Point()
 
-        fin.x = (a*(v*v+w*w) - u*(b*v + c*w - u*x - v*y - w*z))*(1.-costh) + x*costh + (-c*v + b*w - w*y + v*z)*sinth
-        fin.y = (b*(u*u+w*w) - v*(a*u + c*w - u*x - v*y - w*z))*(1.-costh) + y*costh + (c*u - a*w + w*x - u*z)*sinth
-        fin.z = (c*(u*u+v*v) - w*(a*u + b*v - u*x - v*y - w*z))*(1.-costh) + z*costh + (-b*u + a*v - v*x + u*y)*sinth
+    #     fin.x = (a*(v*v+w*w) - u*(b*v + c*w - u*x - v*y - w*z))*(1.-costh) + x*costh + (-c*v + b*w - w*y + v*z)*sinth
+    #     fin.y = (b*(u*u+w*w) - v*(a*u + c*w - u*x - v*y - w*z))*(1.-costh) + y*costh + (c*u - a*w + w*x - u*z)*sinth
+    #     fin.z = (c*(u*u+v*v) - w*(a*u + b*v - u*x - v*y - w*z))*(1.-costh) + z*costh + (-b*u + a*v - v*x + u*y)*sinth
 
-        return fin
+    #     return fin
 
-    def util_calc_unitvect(self, vect):
-        if type(vect) == list:
-            v = Point()
-            v.x = vect[0]
-            v.y = vect[1]
-            v.z = vect[2]
-        else:
-            v = vect
+    # def util_calc_unitvect(self, vect):
+    #     if type(vect) == list:
+    #         v = Point()
+    #         v.x = vect[0]
+    #         v.y = vect[1]
+    #         v.z = vect[2]
+    #     else:
+    #         v = vect
 
-        vect_mag = math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
-        nvect = Point()
-        nvect.x = v.x / vect_mag
-        nvect.y = v.y / vect_mag
-        nvect.z = v.z / vect_mag
+    #     vect_mag = math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
+    #     nvect = Point()
+    #     nvect.x = v.x / vect_mag
+    #     nvect.y = v.y / vect_mag
+    #     nvect.z = v.z / vect_mag
 
-        if type(vect) == list:
-            return [nvect.x, nvect.y, nvect.z]
-        else:
-            return nvect
+    #     if type(vect) == list:
+    #         return [nvect.x, nvect.y, nvect.z]
+    #     else:
+    #         return nvect
 
-    def util_calc_zrot_azel(self, vect) -> float:
-        """
-        Compute the z-rotation of a vector, assuming the vector's deviation from (0,0,1) 
-        has been realized using azimuth-elevation transforms.
+    # def util_calc_zrot_azel(self, vect) -> float:
+    #     """
+    #     Compute the z-rotation of a vector, assuming the vector's deviation from (0,0,1) 
+    #     has been realized using azimuth-elevation transforms.
 
-        Parameters
-        ----------
-        vect : (list OR Point)
-            i,j,k components of a vector
+    #     Parameters
+    #     ----------
+    #     vect : (list OR Point)
+    #         i,j,k components of a vector
 
-        Returns
-        ----------
-        float
-            Computed z-rotation (degrees)
-        """
-        if isinstance(vect, List):
-            vect_i, vect_j, vect_k = vect
-        elif isinstance(vect, Point):
-            vect_i = vect.x 
-            vect_j = vect.y 
-            vect_k = vect.z 
-        else:
-            raise TypeError("Function expects 'vect' of type List or Point")
+    #     Returns
+    #     ----------
+    #     float
+    #         Computed z-rotation (degrees)
+    #     """
+    #     if isinstance(vect, List):
+    #         vect_i, vect_j, vect_k = vect
+    #     elif isinstance(vect, Point):
+    #         vect_i = vect.x 
+    #         vect_j = vect.y 
+    #         vect_k = vect.z 
+    #     else:
+    #         raise TypeError("Function expects 'vect' of type List or Point")
 
-        az = math.atan2(vect_i,vect_j)
-        az = (az + 2.*math.pi) if az < 0. else az 
+    #     az = math.atan2(vect_i,vect_j)
+    #     az = (az + 2.*math.pi) if az < 0. else az 
 
-        el = math.asin(vect_k)
+    #     el = math.asin(vect_k)
 
-        #Calculate Euler angles
-        alpha = math.atan2(vect_i, vect_k);        #Rotation about the Y axis
-        bsign = 1 if vect_j > 0. else -1
-        beta = -bsign*math.acos( ( math.pow(vect_i,2) + math.pow(vect_k,2) )/ 
-                        max(math.sqrt(math.pow(vect_i,2) + math.pow(vect_k,2)), 1.e-8) )    #Rotation about the modified X axis
+    #     #Calculate Euler angles
+    #     alpha = math.atan2(vect_i, vect_k);        #Rotation about the Y axis
+    #     bsign = 1 if vect_j > 0. else -1
+    #     beta = -bsign*math.acos( ( math.pow(vect_i,2) + math.pow(vect_k,2) )/ 
+    #                     max(math.sqrt(math.pow(vect_i,2) + math.pow(vect_k,2)), 1.e-8) )    #Rotation about the modified X axis
 
-        #Calculate the modified axis vector
-        modax = Point(math.cos(alpha), 0., - math.sin(alpha))  
+    #     #Calculate the modified axis vector
+    #     modax = Point(math.cos(alpha), 0., - math.sin(alpha))  
 
-        #Rotation references - axis point. Set as origin
-        axpos = Point(0., 0., 0.)
-        #sp_point to rotate. lower edge of heliostat
-        pbase = Point(0., -1., 0.)
+    #     #Rotation references - axis point. Set as origin
+    #     axpos = Point(0., 0., 0.)
+    #     #sp_point to rotate. lower edge of heliostat
+    #     pbase = Point(0., -1., 0.)
         
-        #Rotated point
-        protv = self.util_rotation_arbitrary(beta, modax, axpos, pbase).unitize()
+    #     #Rotated point
+    #     protv = self.util_rotation_arbitrary(beta, modax, axpos, pbase).unitize()
 
-        #Azimuth/elevation reference vector (vector normal to where the base of the heliostat should be)
-        azelref = Point()   
-        azelref.x = math.sin(az)*math.sin(el)
-        azelref.y = math.cos(az)*math.sin(el)
-        azelref.z = -math.cos(el)
+    #     #Azimuth/elevation reference vector (vector normal to where the base of the heliostat should be)
+    #     azelref = Point()   
+    #     azelref.x = math.sin(az)*math.sin(el)
+    #     azelref.y = math.cos(az)*math.sin(el)
+    #     azelref.z = -math.cos(el)
 
-        # the sign of the rotation angle is determined by whether the 'k' component of the cross product
-        # vector is positive or negative. 
-        cp = Point()
-        cp.x = protv.y*azelref.z - protv.z*azelref.y
-        cp.y = protv.z*azelref.x - protv.x*azelref.z
-        cp.z = protv.x*azelref.y - protv.y*azelref.x
+    #     # the sign of the rotation angle is determined by whether the 'k' component of the cross product
+    #     # vector is positive or negative. 
+    #     cp = Point()
+    #     cp.x = protv.y*azelref.z - protv.z*azelref.y
+    #     cp.y = protv.z*azelref.x - protv.x*azelref.z
+    #     cp.z = protv.x*azelref.y - protv.y*azelref.x
 
-        gamma = math.asin( cp.radius() )
-        gsign = (1 if cp.z > 0. else -1.) * (1 if vect_j > 0. else -1.)
+    #     gamma = math.asin( cp.radius() )
+    #     gsign = (1 if cp.z > 0. else -1.) * (1 if vect_j > 0. else -1.)
 
-        return gamma * gsign * 180./math.pi
+    #     return gamma * gsign * 180./math.pi
 
     def write_soltrace_input_file(self, path : str):
         """
@@ -1983,3 +2066,11 @@ class PySolTrace:
                         "" ) )
         return
 # -----------------------------------------------------------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    p1 = PySolTrace()
+    p1.add_sun()
+
+    p2 = p1.copy()
+
+    print(p1,p2)
