@@ -1,50 +1,31 @@
 from datetime import datetime
-from tqdm import tqdm
 import sys, os, copy
-from time import sleep
 from typing import List
 import pandas as pd
 from ctypes import *
 c_number = c_double   #must be either c_double or c_float depending on coretrace definition
 import multiprocessing
-
-
-class thread_helper(Structure):
-    _fields_ = [
-        ('thread_id',c_uint32),
-        ('ntraced',c_uint32),
-        ('ntotrace',c_uint32),
-        ('curstage',c_uint32),
-        ('nstages',c_uint32),
-        ('resultcode',c_uint32), #Returns -1 if error; otherwise, number of rays traced. 0 while tracing
-        ]
+import time
 
 # Callback to print command line progress messages
 @CFUNCTYPE(c_int, c_uint32, c_uint32, c_uint32, c_uint32, c_uint32, c_void_p)
-def api_callback(ntracedtotal, ntraced, ntotrace, curstage, nstages, data):
-    print("\tProgress: Stage ({:d}/{:d}) - Complete {:.2f}%".format(curstage, nstages, 100.*float(ntraced)/float(ntotrace)) )
-    return 1
+def api_callback(ntracedtotal, ntraced, ntotrace, curstage, nstages, thread_id):
+    if thread_id:
+        if thread_id > 1:
+            return 1
 
-# Callback to print command line progress messages
-@CFUNCTYPE(c_int, c_uint32, c_uint32, c_uint32, c_uint32, c_uint32, c_void_p)
-def api_callback_mt(ntracedtotal, ntraced, ntotrace, curstage, nstages, data_i):
-    if data_i:
-        data = cast(data_i, POINTER(thread_helper)).contents
-        data.ntraced += ntraced 
-        data.ntotrace = ntotrace
-        data.curstage = curstage
-        data.nstages = nstages
-    print("\tProgress (thread {:d}): Stage ({:d}/{:d}) - Complete {:.2f}%".format(data.thread_id, curstage, nstages, 100.*float(ntraced)/float(ntotrace)) )
+    w = 50
+    prog = 100.*float(ntraced)/float(ntotrace)
+    pbprog = int(prog * w / 100.)
+    pbar = pbprog *"▮" + (w-pbprog)*"▯" 
+
+    print("{:s}  | Stage ({:d}/{:d}) - Complete {:.2f}%".format(pbar, curstage, nstages, prog), end='\r')
     return 1
 
 
-def _thread_func(pobj, id, p_handler):
-    print(f"starting thread {id}")
-    pobj.run(-1,True, 1, api_callback_mt, p_handler)
-    print(f"thread {id} complete")
+def _thread_func(pobj, id):
+    pobj.run(-1,True, 1, id)
     return copy.deepcopy(pobj.raydata)
-
-    
 
 
 # ==========================================================================================
@@ -1363,7 +1344,7 @@ class PySolTrace:
         # If reaching this point, the stage id was not found
         return 0
 
-    def run(self, seed : int = -1, as_power_tower = False, nthread=1, callback_func = api_callback, mt_handler=0):
+    def run(self, seed : int = -1, as_power_tower = False, nthread=1, thread_id=0):
         """
         Run SolTrace simulation. 
 
@@ -1387,12 +1368,12 @@ class PySolTrace:
             Simulation return value
         """
 
+        
         if nthread == 1:
             cwd = os.getcwd()
-            print(os.getpid()) 
             if sys.platform == 'win32' or sys.platform == 'cygwin':
                 ## loaded SolTrace library of exported functions
-                pdll = CDLL(cwd + "/coretrace_apid.dll")
+                pdll = CDLL(cwd + "/coretrace_api.dll")
                 # print("Loaded win32")
                 #pdll = CDLL(cwd + "/coretraced.dll") # for debugging
             elif sys.platform == 'darwin':
@@ -1413,9 +1394,15 @@ class PySolTrace:
             pdll.st_sim_params.restype = c_int 
             pdll.st_sim_params(c_void_p(p_data), c_int(int(self.num_ray_hits)), c_int(int(self.max_rays_traced)))
 
+            if thread_id == 0:
+                tstart = time.time()
+
             pdll.st_sim_run.restype = c_int 
             res = pdll.st_sim_run( c_void_p(p_data), c_uint16(seed), 
-                    c_bool(as_power_tower), api_callback_mt, pointer(mt_handler))
+                    c_bool(as_power_tower), api_callback, thread_id)
+            
+            if thread_id == 0:
+                print("\nSimulation complete. Total simulation time {:.2f} seconds.".format(time.time()-tstart))
 
             self.raydata = self.get_ray_dataframe(pdll,p_data)
 
@@ -1424,57 +1411,26 @@ class PySolTrace:
 
             return res
         else:
-            thread_helpers = [thread_helper(i+5) for i in range(nthread)]
-            P = [[self.copy(), thread_helpers[i].thread_id, thread_helpers[i]] for i in range(nthread)]
+            P = [[self.copy(), i+1] for i in range(nthread)]
 
             # modify the number of rays to match the required totals
             nrpt = int(float(self.num_ray_hits)/float(nthread))
             mrpt = int(float(self.max_rays_traced)/float(nthread))
 
             for p in P:
-                # if p==P[0]:
-                #     p[0].num_ray_hits = nrpt + (self.num_ray_hits % nthread)
-                #     p[0].max_rays_traced = nrpt + (self.max_rays_traced % nthread)
-                # else:
                 p[0].num_ray_hits = nrpt
                 p[0].max_rays_traced = mrpt
 
             pool = multiprocessing.Pool(nthread)
             # res = pool.starmap(_thread_func, P)
+            print("Launching {:d} threads...".format(nthread))
+            tstart = time.time()
             res = pool.starmap_async(_thread_func, P)
             pool.close()
             pool.join()
-
-            # all_threads_done = False
-
-            # with tqdm(total=100) as pbar:
-
-            #     while not all_threads_done:
-            #         sleep(0.2)
-
-            #         ntraced_tot = 0
-            #         ntotrace_tot = 0
-            #         curstage_tot = 0
-            #         nstages_tot = 0
-            #         thrtest = True
-            #         for pst,ind,ghobj in P:
-            #             resultcode = ghobj.resultcode
-            #             if resultcode < 0:
-            #                 raise("Trace error in thread {:d}".format(ind))
-            #             thrtest = thrtest and (resultcode > 0)
-
-            #             ntraced_tot += ghobj.ntraced
-            #             ntotrace_tot += ghobj.ntotrace
-            #             curstage_tot += ghobj.curstage
-            #             nstages_tot += ghobj.nstages
-
-            #         all_threads_done = thrtest
-            #         ntotrace_tot = max(ntotrace_tot,1)
-            #         pbar.update(float(ntraced_tot)/float(ntotrace_tot)*100.)
-            #         pbar.set_description("Stage {:d}/{:d}".format(int(curstage_tot/nthread), int(nstages_tot/nthread)))
-
-            # return pd.concat(res)
-            return pd.concat(res.get())
+            print("\nSimulation complete. Total simulation time {:.2f} seconds.".format(time.time()-tstart))
+            self.raydata = pd.concat(res.get())
+            return 1
 
     def get_num_intersections(self, pdll, p_data) -> int:
         """

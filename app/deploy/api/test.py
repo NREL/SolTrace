@@ -1,4 +1,4 @@
-from pysoltrace import PySolTrace, Point, thread_helper
+from pysoltrace import PySolTrace, Point
 import random
 import pandas as pd
 import copy
@@ -62,7 +62,7 @@ ela.optic = opt_abs
 ela.aperture_rectangle(5,5)  #target is 5x5 
 
 # set simulation parameters
-PT.num_ray_hits = 1e5
+PT.num_ray_hits = 1e6
 PT.max_rays_traced = PT.num_ray_hits*100
 PT.is_sunshape = True 
 PT.is_surface_errors = True
@@ -74,8 +74,8 @@ if __name__ == "__main__":
     # h = thread_helper()
     # h.thread_id = 4
     # df = PT.run(-1, True, 1, mt_handler=h)
-    df = PT.run(-1, True, 2)
-    x=1
+    PT.run(-1, True, 4)
+    print("Num rays traced: {:d}".format(PT.raydata.index.size))
 
     # # Data for a three-dimensional line
     # loc_x = df.loc_x.values
