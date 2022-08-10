@@ -1420,6 +1420,9 @@ class PySolTrace:
             for p in P:
                 p[0].num_ray_hits = nrpt
                 p[0].max_rays_traced = mrpt
+                if p == P[0]:
+                    p[0].num_ray_hits += int(float(self.num_ray_hits) % float(nthread))
+                    p[0].max_rays_traced += int(float(self.max_rays_traced) % float(nthread))
 
             pool = multiprocessing.Pool(nthread)
             # res = pool.starmap(_thread_func, P)
