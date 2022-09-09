@@ -6,6 +6,8 @@ from ctypes import *
 c_number = c_double   #must be either c_double or c_float depending on coretrace definition
 import multiprocessing
 import time
+import math
+import random
 
 # Callback to print command line progress messages
 @CFUNCTYPE(c_int, c_uint32, c_uint32, c_uint32, c_uint32, c_uint32, c_void_p)
@@ -23,9 +25,9 @@ def api_callback(ntracedtotal, ntraced, ntotrace, curstage, nstages, thread_id):
     return 1
 
 
-def _thread_func(pobj, id):
-    pobj.run(-1,True, 1, id)
-    return copy.deepcopy(pobj.raydata)
+def _thread_func(pobj, seed, id):
+    pobj.run(seed,True, 1, id)
+    return copy.deepcopy(pobj.raydata), copy.copy(pobj.sunstats)
 
 
 # ==========================================================================================
@@ -1109,7 +1111,7 @@ class PySolTrace:
             ## Flag indicating the stage is in trace-through mode
             self.is_tracethrough = False 
             ## Descriptive name for this stage
-            self.name = ""
+            self.name = "stage_{:d}".format(id)
 
             ## list of all elements in the stage
             self.elements = []
@@ -1200,6 +1202,8 @@ class PySolTrace:
         self.is_surface_errors = True
         # Placeholder for output ray data
         self.raydata = None
+        # Placeholder for sunstats data
+        self.sunstats = None
 
     def copy(self):
         psnew = PySolTrace()
@@ -1344,6 +1348,21 @@ class PySolTrace:
         # If reaching this point, the stage id was not found
         return 0
 
+    def __load_dll(self):
+        cwd = os.getcwd()
+        if sys.platform == 'win32' or sys.platform == 'cygwin':
+            ## loaded SolTrace library of exported functions
+            pdll = CDLL(cwd + "/coretrace_api.dll")
+            # print("Loaded win32")
+            #pdll = CDLL(cwd + "/coretraced.dll") # for debugging
+        elif sys.platform == 'darwin':
+            pdll = CDLL(cwd + "/coretrace.dylib")  # Never tested
+        elif sys.platform.startswith('linux'):
+            pdll = CDLL(cwd +"/coretrace.so")  # Never tested
+        else:
+            print( 'Platform not supported ', sys.platform)
+        return pdll
+
     def run(self, seed : int = -1, as_power_tower = False, nthread=1, thread_id=0):
         """
         Run SolTrace simulation. 
@@ -1368,20 +1387,10 @@ class PySolTrace:
             Simulation return value
         """
 
+        pdll = self.__load_dll()
         
         if nthread == 1:
-            cwd = os.getcwd()
-            if sys.platform == 'win32' or sys.platform == 'cygwin':
-                ## loaded SolTrace library of exported functions
-                pdll = CDLL(cwd + "/coretrace_api.dll")
-                # print("Loaded win32")
-                #pdll = CDLL(cwd + "/coretraced.dll") # for debugging
-            elif sys.platform == 'darwin':
-                pdll = CDLL(cwd + "/coretrace.dylib")  # Never tested
-            elif sys.platform.startswith('linux'):
-                pdll = CDLL(cwd +"/coretrace.so")  # Never tested
-            else:
-                print( 'Platform not supported ', sys.platform)
+            
             # Create an instance of soltrace in memory
             pdll.st_create_context.restype = c_void_p
             p_data = pdll.st_create_context()
@@ -1404,14 +1413,18 @@ class PySolTrace:
             if thread_id == 0:
                 print("\nSimulation complete. Total simulation time {:.2f} seconds.".format(time.time()-tstart))
 
-            self.raydata = self.get_ray_dataframe(pdll,p_data)
+            # Collect simulation output, including raw ray data and sunbox stats
+            self.raydata = self.__get_ray_dataframe(pdll,p_data)
+            self.sunstats = self.__get_sun_stats(pdll, p_data)
 
             pdll.st_free_context.restype = c_bool
             pdll.st_free_context(c_void_p(p_data))
 
             return res
         else:
-            P = [[self.copy(), i+1] for i in range(nthread)]
+            seeds = [seed + i if seed>0 else random.randint(1,int(1e9)) for i in range(nthread)]
+
+            P = [[self.copy(), seeds[i], i+1] for i in range(nthread)]
 
             # modify the number of rays to match the required totals
             nrpt = int(float(self.num_ray_hits)/float(nthread))
@@ -1425,14 +1438,29 @@ class PySolTrace:
                     p[0].max_rays_traced += int(float(self.max_rays_traced) % float(nthread))
 
             pool = multiprocessing.Pool(nthread)
-            # res = pool.starmap(_thread_func, P)
             print("Launching {:d} threads...".format(nthread))
             tstart = time.time()
             res = pool.starmap_async(_thread_func, P)
             pool.close()
             pool.join()
             print("\nSimulation complete. Total simulation time {:.2f} seconds.".format(time.time()-tstart))
-            self.raydata = pd.concat(res.get())
+
+            # Modify the ray number for threads 2+ to avoid duplication
+            dfs = [r[0] for r in res.get()]
+            rstart = int(dfs[0].iloc[-1].number)
+            if len(dfs)>1:
+                for d in dfs[1:]:
+                    d.number = d.number+rstart
+                    rstart = d.number.iloc[-1]
+
+            self.raydata = pd.concat(dfs)
+            self.sunstats = res.get()[0][1]  #take the first thread result
+            # add up all the sunrays from all threads
+            srct = 0
+            for r in res.get():
+                srct += r[1]['nsunrays']
+            self.sunstats['nsunrays'] = srct
+            
             return 1
 
     def get_num_intersections(self, pdll, p_data) -> int:
@@ -1451,133 +1479,41 @@ class PySolTrace:
         pdll.st_num_intersections.restype = c_int
         return pdll.st_num_intersections(c_void_p(p_data))
 
-    def get_intersect_locations(self):
+    def __get_sun_stats(self, pdll, p_data):
         """
-        [Post simulation] Get the ray intersection locations in global coordinates.
+        Get information on the sun box. 
 
         Returns
         ----------
-        [[x,y,z],] 
-            2D array of ray positions
+        dict      
+            Keys in the return dictionary are:
+            'xmin' --> Minimum x extent of the bounding box for hit testing 
+            'xmax' --> Maximum x extent of the bounding box for hit testing 
+            'ymin' --> Minimum y extent of the bounding box for hit testing 
+            'ymax' --> Maximum y extent of the bounding box for hit testing 
+            'nsunrays' --> Number of sun rays simulated
         """
-        if self.raydata:
-            return self.raydata[['loc_x','loc_y','loc_z']].tolist()
-        else:
-            return None
-
-    def get_intersect_cosines(self):
-        """
-        [Post simulation] Get the ray intersection cosines (direction vectors) in global coordinates.
-
-        Returns
-        ----------
-        [[cx,cy,cz],]
-            2D array of ray vectors associated with the intersection at the same index.
-        """
-        if self.raydata:
-            return self.raydata[['cos_x','cos_y','cos_z']].tolist()
-        else:
-            return None
-
-    # def get_intersect_elementmap(self):
-    #     """
-    #     [Post simulation] Get the elements associated with the ray intersection. The element numbers are
-    #     interpreted as follows:
-    #         0     | Ray did not hit an element in this stage 
-    #         >= +1 | Ray hit this element ID and was reflected / refracted 
-    #         <= -1 | Ray hit this element ID and was absorbed
-
-    #     Returns
-    #     ----------
-    #     [int,] 
-    #         2D array of integers associated with the intersection at the same index.
-    #     """
-    #     if self._p_data == 0:
-    #         raise "SolTrace context not assigned"
+        if p_data == 0:
+            raise "SolTrace context not assigned"
         
-    #     n_int = self.get_num_intersections()
-    #     element_map = (c_int*n_int)()
+        xmin = (c_number)()
+        xmax = (c_number)()
+        ymin = (c_number)()
+        ymax = (c_number)()
+        nsunrays = (c_int)()
 
-    #     self._pdll.st_elementmap.restype = c_int 
-    #     self._pdll.st_elementmap(c_void_p(self._p_data), pointer(element_map))
+        pdll.st_sun_stats.restype = c_int 
+        pdll.st_sun_stats(c_void_p(p_data), pointer(xmin), pointer(xmax), pointer(ymin), pointer(ymax), pointer(nsunrays))
 
-    #     return list(element_map)
+        return {
+            'xmin':float(xmin.value),
+            'xmax':float(xmax.value),
+            'ymin':float(ymin.value),
+            'ymax':float(ymax.value),
+            'nsunrays':int(nsunrays.value),
+        }
 
-    # def get_intersect_stagemap(self):
-    #     """
-    #     [Post simulation] Get the stage associated with the ray intersection at the same positional index.
-
-    #     Returns
-    #     ----------
-    #     [int,] 
-    #         List of stages associated with the intersection at the same index.
-    #     """
-    #     if self._p_data == 0:
-    #         raise "SolTrace context not assigned"
-        
-    #     n_int = self.get_num_intersections()
-    #     stage_map = (c_int*n_int)()
-
-    #     self._pdll.st_stagemap.restype = c_int 
-    #     self._pdll.st_stagemap(c_void_p(self._p_data), pointer(stage_map))
-
-    #     return list(stage_map)
-
-    # def get_intersect_raynumbers(self):
-    #     """
-    #     [Post simulation] Get the ray intersection numbers. 
-
-    #     Returns
-    #     ----------
-    #     [int,]
-    #         List of ray intersection numbers.
-    #     """
-    #     if self._p_data == 0:
-    #         raise "SolTrace context not assigned"
-        
-    #     n_int = self.get_num_intersections()
-    #     raynumbers = (c_int*n_int)()
-
-    #     self._pdll.st_raynumbers.restype = c_int 
-    #     self._pdll.st_raynumbers(c_void_p(self._p_data), pointer(raynumbers))
-
-    #     return list(raynumbers)
-
-    # def get_sun_stats(self):
-    #     """
-    #     Get information on the sun box. 
-
-    #     Returns
-    #     ----------
-    #     dict      
-    #         Keys in the return dictionary are:
-    #         'xmin' --> Minimum x extent of the bounding box for hit testing 
-    #         'xmax' --> Maximum x extent of the bounding box for hit testing 
-    #         'ymin' --> Minimum y extent of the bounding box for hit testing 
-    #         'ymax' --> Maximum y extent of the bounding box for hit testing 
-    #         'nsunrays' --> Number of sun rays simulated
-    #     """
-    #     if self._p_data == 0:
-    #         raise "SolTrace context not assigned"
-        
-    #     xmin = (c_number)()
-    #     xmax = (c_number)()
-    #     ymin = (c_number)()
-    #     ymax = (c_number)()
-    #     nsunrays = (c_int)()
-
-    #     self._pdll.st_sun_stats.restype = c_int 
-    #     self._pdll.st_sun_stats(c_void_p(self._p_data), pointer(xmin), pointer(xmax), pointer(ymin), pointer(ymax), pointer(nsunrays))
-
-    #     return {
-    #         'xmin':float(xmin.value),
-    #         'xmax':float(xmax.value),
-    #         'ymin':float(ymin.value),
-    #         'ymax':float(ymax.value),
-    #         'nsunrays':int(nsunrays.value),
-    #     }
-
-    def get_ray_dataframe(self, pdll, p_data):
+    def __get_ray_dataframe(self, pdll, p_data):
         """
         Get a pandas dataframe with all of the ray data from the simulation. 
 
@@ -1654,336 +1590,345 @@ class PySolTrace:
 
 
     # /* utility transform/math functions */
-    # def util_calc_euler_angles(self, origin, aimpoint, zrot):
-    #     """
-    #     Calculate the Euler angles associated with a given origin, aimpoint, and z-axis rotation. 
+    def util_calc_euler_angles(self, origin, aimpoint, zrot):
+        """
+        Calculate the Euler angles associated with a given origin, aimpoint, and z-axis rotation. 
 
-    #     Parameters
-    #     ----------
-    #     origin : [float,*3]
-    #         Origin of the coordinate system
-    #     aimpoint : [float,*3]
-    #         Aimpoint of the vector originating at the origin
-    #     zrot : float
-    #         Rotation around the z-axis coordinate (degr)
+        Parameters
+        ----------
+        origin : [float,*3]
+            Origin of the coordinate system
+        aimpoint : [float,*3]
+            Aimpoint of the vector originating at the origin
+        zrot : float
+            Rotation around the z-axis coordinate (degr)
 
-    #     Returns
-    #     ----------
-    #     list
-    #         Calculated Euler angles (rad)
-    #     """
+        Returns
+        ----------
+        list
+            Calculated Euler angles (rad)
+        """
 
-    #     a_origin = (c_number*3)()
-    #     a_aimpoint = (c_number*3)()
-    #     a_euler = (c_number*3)()
-    #     a_origin[:] = origin
-    #     a_aimpoint[:] = aimpoint
+        a_origin = (c_number*3)()
+        a_aimpoint = (c_number*3)()
+        a_euler = (c_number*3)()
+        a_origin[:] = origin
+        a_aimpoint[:] = aimpoint
 
-    #     self._pdll.st_calc_euler_angles.restype = c_void_p
-    #     self._pdll.st_calc_euler_angles(pointer(a_origin), pointer(a_aimpoint), c_number(zrot), pointer(a_euler))
+        pdll = self.__load_dll()
 
-    #     return list(a_euler)
+        pdll.st_calc_euler_angles.restype = c_void_p
+        pdll.st_calc_euler_angles(pointer(a_origin), pointer(a_aimpoint), c_number(zrot), pointer(a_euler))
 
-    # def util_transform_to_local(self, posref, cosref, origin, rreftoloc):
-    #     """
-    #     Perform coordinate transformation from reference system to local system.
+        return list(a_euler)
+
+    def util_transform_to_local(self, posref, cosref, origin, rreftoloc):
+        """
+        Perform coordinate transformation from reference system to local system.
         
-    #     Parameters
-    #     ----------
-    #     PosRef : [float,]*3
-    #         X,Y,Z coordinates of ray point in reference system
-    #     CosRef : [float,]*3
-    #         Direction cosines of ray in reference system
-    #     Origin : [float,]*3
-    #         X,Y,Z coordinates of origin of local system as measured in reference system
-    #     RRefToLoc 
-    #         Rotation matrices required for coordinate transform from reference to local
+        Parameters
+        ----------
+        PosRef : [float,]*3
+            X,Y,Z coordinates of ray point in reference system
+        CosRef : [float,]*3
+            Direction cosines of ray in reference system
+        Origin : [float,]*3
+            X,Y,Z coordinates of origin of local system as measured in reference system
+        RRefToLoc 
+            Rotation matrices required for coordinate transform from reference to local
         
-    #     Returns
-    #     ----------
-    #     (dict)  Keys in return dictionary include:
-    #         posloc : ([float,]*3) X,Y,Z coordinates of ray point in local system
-    #         cosloc : ([float,]*3) Direction cosines of ray in local system
-    #     """
-    #     # Allocate space for input 
-    #     a_posref = (c_number*3)()
-    #     a_cosref = (c_number*3)()
-    #     a_origin = (c_number*3)() 
-    #     a_rreftoloc = (c_number*9)() 
-    #     #output
-    #     posloc = (c_number*3)()
-    #     cosloc = (c_number*3)()
-    #     # Assign input
-    #     a_posref[:] = posref
-    #     a_cosref[:] = cosref
-    #     a_origin[:] = origin
-    #     a_rreftoloc[:] = sum([], rreftoloc)
+        Returns
+        ----------
+        (dict)  Keys in return dictionary include:
+            posloc : ([float,]*3) X,Y,Z coordinates of ray point in local system
+            cosloc : ([float,]*3) Direction cosines of ray in local system
+        """
+        pdll = self.__load_dll()
+        # Allocate space for input 
+        a_posref = (c_number*3)()
+        a_cosref = (c_number*3)()
+        a_origin = (c_number*3)() 
+        a_rreftoloc = (c_number*9)() 
+        #output
+        posloc = (c_number*3)()
+        cosloc = (c_number*3)()
+        # Assign input
+        a_posref[:] = posref
+        a_cosref[:] = cosref
+        a_origin[:] = origin
+        a_rreftoloc[:] = sum([], rreftoloc)
 
-    #     self._pdll.st_transform_to_local.restype = c_void_p
-    #     self._pdll.st_transform_to_local(pointer(a_posref), pointer(a_cosref), pointer(a_origin), pointer(a_rreftoloc), pointer(posloc), pointer(cosloc))
+        pdll.st_transform_to_local.restype = c_void_p
+        pdll.st_transform_to_local(pointer(a_posref), pointer(a_cosref), pointer(a_origin), pointer(a_rreftoloc), pointer(posloc), pointer(cosloc))
 
-    #     return {'cosloc':list(cosloc), 'posloc':list(posloc)}
+        return {'cosloc':list(cosloc), 'posloc':list(posloc)}
 
-    # def util_transform_to_ref(self, posloc, cosloc, origin, rloctoref):
-    #     """
-    #     Perform coordinate transformation from local system to reference system.
+    def util_transform_to_ref(self, posloc, cosloc, origin, rloctoref):
+        """
+        Perform coordinate transformation from local system to reference system.
         
-    #     Parameters
-    #     ----------
-    #     PosLoc : [float,]*3
-    #         X,Y,Z coordinates of ray point in local system
-    #     CosLoc : [float,]*3
-    #         Direction cosines of ray in local system
-    #     Origin : [float,]*3
-    #         X,Y,Z coordinates of origin of local system as measured in reference system
-    #     RLocToRef 
-    #         Rotation matrices required for coordinate transform from local to reference
-    #         -- inverse of reference to local transformation
+        Parameters
+        ----------
+        PosLoc : [float,]*3
+            X,Y,Z coordinates of ray point in local system
+        CosLoc : [float,]*3
+            Direction cosines of ray in local system
+        Origin : [float,]*3
+            X,Y,Z coordinates of origin of local system as measured in reference system
+        RLocToRef 
+            Rotation matrices required for coordinate transform from local to reference
+            -- inverse of reference to local transformation
         
-    #     Returns
-    #     ----------
-    #     dict  
-    #         Keys in return dictionary include:
-    #         posref : ([float,]*3) X,Y,Z coordinates of ray point in reference system
-    #         cosref : ([float,]*3) Direction cosines of ray in reference system
-    #     """
+        Returns
+        ----------
+        dict  
+            Keys in return dictionary include:
+            posref : ([float,]*3) X,Y,Z coordinates of ray point in reference system
+            cosref : ([float,]*3) Direction cosines of ray in reference system
+        """
+        pdll = self.__load_dll()
 
-    #     a_posloc = (c_number*3)()
-    #     a_cosloc = (c_number*3)()
-    #     a_origin = (c_number*3)() 
-    #     a_rloctoref = (c_number*9)() 
-    #     #output
-    #     posref = (c_number*3)()
-    #     cosref = (c_number*3)()
+        a_posloc = (c_number*3)()
+        a_cosloc = (c_number*3)()
+        a_origin = (c_number*3)() 
+        a_rloctoref = (c_number*9)() 
+        #output
+        posref = (c_number*3)()
+        cosref = (c_number*3)()
         
-    #     a_posloc[:] = posloc
-    #     a_cosloc[:] = cosloc
-    #     a_origin[:] = origin
-    #     a_rloctoref[:] = sum([], rloctoref)
+        a_posloc[:] = posloc
+        a_cosloc[:] = cosloc
+        a_origin[:] = origin
+        a_rloctoref[:] = sum([], rloctoref)
 
-    #     self._pdll.st_transform_to_reference.restype = c_void_p
-    #     self._pdll.st_transform_to_reference(pointer(a_posloc), pointer(a_cosloc), pointer(a_origin), pointer(a_rloctoref), pointer(posref), pointer(cosref))
+        pdll.st_transform_to_reference.restype = c_void_p
+        pdll.st_transform_to_reference(pointer(a_posloc), pointer(a_cosloc), pointer(a_origin), pointer(a_rloctoref), pointer(posref), pointer(cosref))
 
-    #     return {'cosref':list(cosref), 'posref':list(posref)}
+        return {'cosref':list(cosref), 'posref':list(posref)}
 
-    # def util_matrix_vector_mult(self, m, v):
-    #     """
-    #     Perform multiplication of a 3x3 matrix and a length-3 vector, returning the result vector.
+    def util_matrix_vector_mult(self, m, v):
+        """
+        Perform multiplication of a 3x3 matrix and a length-3 vector, returning the result vector.
 
-    #     Parameters
-    #     ----------
-    #     m : list
-    #         m[3][3] - a 3x3 matrix
-    #     v : list
-    #         v[3] - a list, length 3
+        Parameters
+        ----------
+        m : list
+            m[3][3] - a 3x3 matrix
+        v : list
+            v[3] - a list, length 3
 
-    #     Returns
-    #     ----------
-    #     list
-    #         m x v [3]
-    #     """
+        Returns
+        ----------
+        list
+            m x v [3]
+        """
+        pdll = self.__load_dll()
 
-    #     a_m = (c_number*9)()
-    #     a_v = (c_number*3)()
-    #     a_mv = (c_number*3)()
-    #     a_m[:] = sum([], m)
-    #     a_v[:] = v 
+        a_m = (c_number*9)()
+        a_v = (c_number*3)()
+        a_mv = (c_number*3)()
+        a_m[:] = sum([], m)
+        a_v[:] = v 
 
-    #     self._pdll.st_matrix_vector_mult.restype = c_void_p
-    #     self._pdll.st_matrix_vector_mult(pointer(a_m), pointer(a_v), pointer(a_mv))
+        pdll.st_matrix_vector_mult.restype = c_void_p
+        pdll.st_matrix_vector_mult(pointer(a_m), pointer(a_v), pointer(a_mv))
 
-    #     return list(a_mv)
+        return list(a_mv)
 
-    # def util_calc_transforms(self, euler):
-    #     """
-    #     Calculate matrix transforms
+    def util_calc_transforms(self, euler):
+        """
+        Calculate matrix transforms
 
-    #     Parameters
-    #     ----------
-    #     euler : [float,]*3
-    #         Euler angles
+        Parameters
+        ----------
+        euler : [float,]*3
+            Euler angles
 
-    #     Returns
-    #     ----------
-    #     (dict) A dictionary containing the keys:
-    #         rreftoloc : Transformation matrix from Reference to Local system
-    #         rloctoref : Transformation matrix from Local to Reference system
-    #     """
+        Returns
+        ----------
+        (dict) A dictionary containing the keys:
+            rreftoloc : Transformation matrix from Reference to Local system
+            rloctoref : Transformation matrix from Local to Reference system
+        """
 
-    #     a_euler = (c_number*3)()
-    #     rreftoloc = (c_number*9)()
-    #     rloctoref = (c_number*9)()
+        pdll = self.__load_dll()
 
-    #     a_euler[:] = euler
+        a_euler = (c_number*3)()
+        rreftoloc = (c_number*9)()
+        rloctoref = (c_number*9)()
 
-    #     self._pdll.st_calc_transform_matrices.restype = c_void_p
-    #     self._pdll.st_calc_transform_matrices(pointer(a_euler), pointer(rreftoloc), pointer(rloctoref))
+        a_euler[:] = euler
 
-    #     # reshape
-    #     a_rreftoloc = []
-    #     a_rloctoref = []
-    #     for i in range(0,10,3):
-    #         a_rreftoloc.append(rreftoloc[i:i+3])
-    #         a_rloctoref.append(rloctoref[i:i+3])
+        pdll.st_calc_transform_matrices.restype = c_void_p
+        pdll.st_calc_transform_matrices(pointer(a_euler), pointer(rreftoloc), pointer(rloctoref))
 
-    #     return {'rreftoloc':a_rreftoloc, 'rloctoref':a_rloctoref}
+        # reshape
+        a_rreftoloc = []
+        a_rloctoref = []
+        for i in range(0,10,3):
+            a_rreftoloc.append(rreftoloc[i:i+3])
+            a_rloctoref.append(rloctoref[i:i+3])
 
-    # def util_matrix_transpose(self, m):
-    #     """
-    #     Calculate matrix transpose 
+        return {'rreftoloc':a_rreftoloc, 'rloctoref':a_rloctoref}
 
-    #     Parameters
-    #     ----------
-    #     m : [[float,]*3]*3
-    #         Square matrix 3x3 to be transposed.
+    def util_matrix_transpose(self, m):
+        """
+        Calculate matrix transpose 
 
-    #     Returns
-    #     ----------
-    #     [[float,]*3]*3
-    #         Square matrix 3x3, transpose of 'm'
-    #     """
+        Parameters
+        ----------
+        m : [[float,]*3]*3
+            Square matrix 3x3 to be transposed.
 
-    #     a_m = (c_number*9)()
-    #     a_m[:] = sum([], m)
-    #     output = (c_number*9)()
+        Returns
+        ----------
+        [[float,]*3]*3
+            Square matrix 3x3, transpose of 'm'
+        """
 
-    #     self._pdll.st_matrix_transpose.restype = c_void_p
-    #     self._pdll.st_matrix_transpose(pointer(a_m), pointer(output))
+        pdll = self.__load_dll()
 
-    #     a_output = []
-    #     for i in range(0,10,3):
-    #         a_output.append(output[i:i+3])
+        a_m = (c_number*9)()
+        a_m[:] = sum([], m)
+        output = (c_number*9)()
 
-    #     return a_output
+        pdll.st_matrix_transpose.restype = c_void_p
+        pdll.st_matrix_transpose(pointer(a_m), pointer(output))
 
-    # def util_rotation_arbitrary(self, theta, axis, axloc, pt):
-    #     """
-    #     Rotation of a point 'pt' about an arbitrary axis with direction 'axis' centered at point 'axloc'. 
-    #     The point is rotated through 'theta' radians.
+        a_output = []
+        for i in range(0,10,3):
+            a_output.append(output[i:i+3])
 
-    #     Parameters
-    #     ----------
-    #     theta : float
-    #         Angle of rotation (rad)
-    #     axis : Point()
-    #         Vector (x=i,y=j,z=k) indicating direction of axis for rotation
-    #     axloc : Point()
-    #         Location of the axis origin
-    #     pt : Point()
-    #         Location of the point that is to be rotated
+        return a_output
 
-    #     Returns
-    #     -----------
-    #     Point
-    #         Point after rotation
+    def util_rotation_arbitrary(self, theta, axis, axloc, pt):
+        """
+        Rotation of a point 'pt' about an arbitrary axis with direction 'axis' centered at point 'axloc'. 
+        The point is rotated through 'theta' radians.
 
-    #     """
+        Parameters
+        ----------
+        theta : float
+            Angle of rotation (rad)
+        axis : Point()
+            Vector (x=i,y=j,z=k) indicating direction of axis for rotation
+        axloc : Point()
+            Location of the axis origin
+        pt : Point()
+            Location of the point that is to be rotated
 
-    #     a = axloc.x     #Point through which the axis passes
-    #     b = axloc.y
-    #     c = axloc.z
-    #     x = pt.x        #Point that we're rotating
-    #     y = pt.y
-    #     z = pt.z
-    #     u = axis.x        #Direction of the axis that we're rotating about
-    #     v = axis.y
-    #     w = axis.z
+        Returns
+        -----------
+        Point
+            Point after rotation
+
+        """
+
+        a = axloc.x     #Point through which the axis passes
+        b = axloc.y
+        c = axloc.z
+        x = pt.x        #Point that we're rotating
+        y = pt.y
+        z = pt.z
+        u = axis.x        #Direction of the axis that we're rotating about
+        v = axis.y
+        w = axis.z
 
         
-    #     sinth = math.sin(theta)
-    #     costh = math.cos(theta)
+        sinth = math.sin(theta)
+        costh = math.cos(theta)
 
-    #     fin = Point()
+        fin = Point()
 
-    #     fin.x = (a*(v*v+w*w) - u*(b*v + c*w - u*x - v*y - w*z))*(1.-costh) + x*costh + (-c*v + b*w - w*y + v*z)*sinth
-    #     fin.y = (b*(u*u+w*w) - v*(a*u + c*w - u*x - v*y - w*z))*(1.-costh) + y*costh + (c*u - a*w + w*x - u*z)*sinth
-    #     fin.z = (c*(u*u+v*v) - w*(a*u + b*v - u*x - v*y - w*z))*(1.-costh) + z*costh + (-b*u + a*v - v*x + u*y)*sinth
+        fin.x = (a*(v*v+w*w) - u*(b*v + c*w - u*x - v*y - w*z))*(1.-costh) + x*costh + (-c*v + b*w - w*y + v*z)*sinth
+        fin.y = (b*(u*u+w*w) - v*(a*u + c*w - u*x - v*y - w*z))*(1.-costh) + y*costh + (c*u - a*w + w*x - u*z)*sinth
+        fin.z = (c*(u*u+v*v) - w*(a*u + b*v - u*x - v*y - w*z))*(1.-costh) + z*costh + (-b*u + a*v - v*x + u*y)*sinth
 
-    #     return fin
+        return fin
 
-    # def util_calc_unitvect(self, vect):
-    #     if type(vect) == list:
-    #         v = Point()
-    #         v.x = vect[0]
-    #         v.y = vect[1]
-    #         v.z = vect[2]
-    #     else:
-    #         v = vect
+    def util_calc_unitvect(self, vect):
+        if type(vect) == list:
+            v = Point()
+            v.x = vect[0]
+            v.y = vect[1]
+            v.z = vect[2]
+        else:
+            v = vect
 
-    #     vect_mag = math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
-    #     nvect = Point()
-    #     nvect.x = v.x / vect_mag
-    #     nvect.y = v.y / vect_mag
-    #     nvect.z = v.z / vect_mag
+        vect_mag = math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z)
+        nvect = Point()
+        nvect.x = v.x / vect_mag
+        nvect.y = v.y / vect_mag
+        nvect.z = v.z / vect_mag
 
-    #     if type(vect) == list:
-    #         return [nvect.x, nvect.y, nvect.z]
-    #     else:
-    #         return nvect
+        if type(vect) == list:
+            return [nvect.x, nvect.y, nvect.z]
+        else:
+            return nvect
 
-    # def util_calc_zrot_azel(self, vect) -> float:
-    #     """
-    #     Compute the z-rotation of a vector, assuming the vector's deviation from (0,0,1) 
-    #     has been realized using azimuth-elevation transforms.
+    def util_calc_zrot_azel(self, vect) -> float:
+        """
+        Compute the z-rotation of a vector, assuming the vector's deviation from (0,0,1) 
+        has been realized using azimuth-elevation transforms.
 
-    #     Parameters
-    #     ----------
-    #     vect : (list OR Point)
-    #         i,j,k components of a vector
+        Parameters
+        ----------
+        vect : (list OR Point)
+            i,j,k components of a vector
 
-    #     Returns
-    #     ----------
-    #     float
-    #         Computed z-rotation (degrees)
-    #     """
-    #     if isinstance(vect, List):
-    #         vect_i, vect_j, vect_k = vect
-    #     elif isinstance(vect, Point):
-    #         vect_i = vect.x 
-    #         vect_j = vect.y 
-    #         vect_k = vect.z 
-    #     else:
-    #         raise TypeError("Function expects 'vect' of type List or Point")
+        Returns
+        ----------
+        float
+            Computed z-rotation (degrees)
+        """
+        if isinstance(vect, List):
+            vect_i, vect_j, vect_k = vect
+        elif isinstance(vect, Point):
+            vect_i = vect.x 
+            vect_j = vect.y 
+            vect_k = vect.z 
+        else:
+            raise TypeError("Function expects 'vect' of type List or Point")
 
-    #     az = math.atan2(vect_i,vect_j)
-    #     az = (az + 2.*math.pi) if az < 0. else az 
+        az = math.atan2(vect_i,vect_j)
+        az = (az + 2.*math.pi) if az < 0. else az 
 
-    #     el = math.asin(vect_k)
+        el = math.asin(vect_k)
 
-    #     #Calculate Euler angles
-    #     alpha = math.atan2(vect_i, vect_k);        #Rotation about the Y axis
-    #     bsign = 1 if vect_j > 0. else -1
-    #     beta = -bsign*math.acos( ( math.pow(vect_i,2) + math.pow(vect_k,2) )/ 
-    #                     max(math.sqrt(math.pow(vect_i,2) + math.pow(vect_k,2)), 1.e-8) )    #Rotation about the modified X axis
+        #Calculate Euler angles
+        alpha = math.atan2(vect_i, vect_k);        #Rotation about the Y axis
+        bsign = 1 if vect_j > 0. else -1
+        beta = -bsign*math.acos( ( math.pow(vect_i,2) + math.pow(vect_k,2) )/ 
+                        max(math.sqrt(math.pow(vect_i,2) + math.pow(vect_k,2)), 1.e-8) )    #Rotation about the modified X axis
 
-    #     #Calculate the modified axis vector
-    #     modax = Point(math.cos(alpha), 0., - math.sin(alpha))  
+        #Calculate the modified axis vector
+        modax = Point(math.cos(alpha), 0., - math.sin(alpha))  
 
-    #     #Rotation references - axis point. Set as origin
-    #     axpos = Point(0., 0., 0.)
-    #     #sp_point to rotate. lower edge of heliostat
-    #     pbase = Point(0., -1., 0.)
+        #Rotation references - axis point. Set as origin
+        axpos = Point(0., 0., 0.)
+        #sp_point to rotate. lower edge of heliostat
+        pbase = Point(0., -1., 0.)
         
-    #     #Rotated point
-    #     protv = self.util_rotation_arbitrary(beta, modax, axpos, pbase).unitize()
+        #Rotated point
+        protv = self.util_rotation_arbitrary(beta, modax, axpos, pbase).unitize()
 
-    #     #Azimuth/elevation reference vector (vector normal to where the base of the heliostat should be)
-    #     azelref = Point()   
-    #     azelref.x = math.sin(az)*math.sin(el)
-    #     azelref.y = math.cos(az)*math.sin(el)
-    #     azelref.z = -math.cos(el)
+        #Azimuth/elevation reference vector (vector normal to where the base of the heliostat should be)
+        azelref = Point()   
+        azelref.x = math.sin(az)*math.sin(el)
+        azelref.y = math.cos(az)*math.sin(el)
+        azelref.z = -math.cos(el)
 
-    #     # the sign of the rotation angle is determined by whether the 'k' component of the cross product
-    #     # vector is positive or negative. 
-    #     cp = Point()
-    #     cp.x = protv.y*azelref.z - protv.z*azelref.y
-    #     cp.y = protv.z*azelref.x - protv.x*azelref.z
-    #     cp.z = protv.x*azelref.y - protv.y*azelref.x
+        # the sign of the rotation angle is determined by whether the 'k' component of the cross product
+        # vector is positive or negative. 
+        cp = Point()
+        cp.x = protv.y*azelref.z - protv.z*azelref.y
+        cp.y = protv.z*azelref.x - protv.x*azelref.z
+        cp.z = protv.x*azelref.y - protv.y*azelref.x
 
-    #     gamma = math.asin( cp.radius() )
-    #     gsign = (1 if cp.z > 0. else -1.) * (1 if vect_j > 0. else -1.)
+        gamma = math.asin( cp.radius() )
+        gsign = (1 if cp.z > 0. else -1.) * (1 if vect_j > 0. else -1.)
 
-    #     return gamma * gsign * 180./math.pi
+        return gamma * gsign * 180./math.pi
 
     def write_soltrace_input_file(self, path : str):
         """
@@ -2061,10 +2006,23 @@ class PySolTrace:
         return
 # -----------------------------------------------------------------------------------------------------------------------------
 
+def loaddll():
+    cwd = os.getcwd()
+    pdll = CDLL(cwd + "/coretrace_api.dll")
+
+
 if __name__ == "__main__":
-    p1 = PySolTrace()
-    p1.add_sun()
+    # p1 = PySolTrace()
+    # p1.add_sun()
 
-    p2 = p1.copy()
+    # p2 = p1.copy()
 
-    print(p1,p2)
+    # print(p1,p2)
+
+    import time
+    tstart = time.time()
+
+    for i in range(1000):
+        loaddll()
+
+    print(time.time() - tstart)

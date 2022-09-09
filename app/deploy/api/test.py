@@ -73,30 +73,31 @@ if __name__ == "__main__":
 
     # h = thread_helper()
     # h.thread_id = 4
-    # df = PT.run(-1, True, 1, mt_handler=h)
     PT.run(-1, True, 4)
+    
     print("Num rays traced: {:d}".format(PT.raydata.index.size))
 
-    # # Data for a three-dimensional line
-    # loc_x = df.loc_x.values
-    # loc_y = df.loc_y.values
-    # loc_z = df.loc_z.values
+    df = PT.raydata
+    # Data for a three-dimensional line
+    loc_x = df.loc_x.values
+    loc_y = df.loc_y.values
+    loc_z = df.loc_z.values
 
 
-    # import plotly.express as px 
-    # import plotly.graph_objects as go
+    import plotly.express as px 
+    import plotly.graph_objects as go
 
-    # # fig = px.scatter_3d(df, x='loc_x', y='loc_y', z='loc_z', color='stage', size='element') 
+    # fig = px.scatter_3d(df, x='loc_x', y='loc_y', z='loc_z', color='stage', size='element') 
 
-    # fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ) )
+    fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ) )
 
-    # for i in range(50,100):
-    #     dfr = df[df.number == i]
-    #     ray_x = dfr.loc_x 
-    #     ray_y = dfr.loc_y
-    #     ray_z = dfr.loc_z
-    #     raynum = dfr.number
-    #     fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+    for i in range(50,100):
+        dfr = df[df.number == i]
+        ray_x = dfr.loc_x 
+        ray_y = dfr.loc_y
+        ray_z = dfr.loc_z
+        raynum = dfr.number
+        fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
 
-    # fig.update_layout(showlegend=False)
-    # fig.show()
+    fig.update_layout(showlegend=False)
+    fig.show()
