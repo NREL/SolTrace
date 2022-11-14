@@ -62,7 +62,7 @@ ela.optic = opt_abs
 ela.aperture_rectangle(5,5)  #target is 5x5 
 
 # set simulation parameters
-PT.num_ray_hits = 1e6
+PT.num_ray_hits = 1e5
 PT.max_rays_traced = PT.num_ray_hits*100
 PT.is_sunshape = True 
 PT.is_surface_errors = True
