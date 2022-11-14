@@ -22,6 +22,7 @@ Project(coretrace)
 include_directories(.)
 
 set(CORETRACE_SRC
+	interpolate.cpp
 	apertureplane.cpp
 	determineelementintersectionnew.cpp
 	dumpsys.cpp

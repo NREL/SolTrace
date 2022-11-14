@@ -223,23 +223,14 @@ Label_160:
 		}
 		
 		//Interpolate to find the z
-		density = Element->FEData.nrows()/Element->ApertureArea;
-		delta = 0.1/sqrt(density);
-		FEInterpNew(X, Y, density, Element->FEData, Element->FEData.nrows(), &zr);
-		
-		//Now evaluate the slopes
-		FEInterpNew(X+delta, Y, density, Element->FEData, Element->FEData.nrows(), &zx);
-		FEInterpNew(X, Y+delta, density, Element->FEData, Element->FEData.nrows(), &zy);
-		dzrdx = (zx-zr)/delta;
-		dzrdy = (zy-zr)/delta;
+		density = Element->FEData.nodes.size()/Element->ApertureArea;
+		delta = 0.001/sqrt(density);
+		FEInterpKD(X, Y, &Element->FEData, delta, &zr, &dzrdx, &dzrdy);
 		
 		PosXYZ[2] = zr;
 		*FXYZ = Z - zr;
 		DFDX = dzrdx;
 		DFDY = dzrdy;
-		//change sign of derivatives to agree with SurfaceType = 1
-		DFDX = -DFDX;
-		DFDY = -DFDY;
 		DFDZ = 1.0;
 		goto Label_990;
 	}

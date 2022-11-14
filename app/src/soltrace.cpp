@@ -81,7 +81,7 @@
 #include "soltrace.h"
 
 int version_major = 3;
-int version_minor = 2;
+int version_minor = 3;
 int version_micro = 0;
 
 class CustomThemeProvider : public wxMetroThemeProvider

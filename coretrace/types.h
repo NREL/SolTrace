@@ -58,12 +58,13 @@
 #include "stapi.h"
 #include "mtrand.h"
 #include "hpvm.h"
+#include "interpolate.h"
+#include "treemesh.h"
 
 #define ACOSM1O180 0.017453292519943295 // acos(-1)/180.0
 #ifndef M_PI
 	#define M_PI 3.141592653589793238462643
 #endif
-
 
 class nanexcept : public std::exception
 {
@@ -73,6 +74,13 @@ public:
 	virtual ~nanexcept() throw() {  }
 	virtual const char *what() const throw() { return m_text.c_str(); }
 };
+
+class FEDataObj : public st_hash_tree
+{
+public:
+	MatDoub nodes;
+};
+
 
 class TOpticalProperties
 {
@@ -177,7 +185,10 @@ struct TElement
 	double VSHOTTarDis;
 	
 	// Finite Element data coeffs
-	HPM2D FEData;	
+	//HPM2D FEData;	
+	//GaussMarkov* FEMeshInterp;
+	//GaussMarkov FEData;
+	FEDataObj FEData;
 	
 	/////////// OPTICAL PARAMETERS ///////////////
 	int InteractionType;

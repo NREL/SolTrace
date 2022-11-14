@@ -314,19 +314,19 @@ static int LoadSystemIntoContext( Project *System, st_context_t spcxt, wxArraySt
 
 	st_sun_xyz(spcxt, x, y, z );
 
-	int refl_npoints = System->Sun.UserShapeData.size();
-	if ( refl_npoints > 0)
+	int sun_npoints = System->Sun.UserShapeData.size();
+	if (sun_npoints > 0)
 	{
-		double *angle = new double[refl_npoints];
-		double *intensity = new double[refl_npoints];
+		double *angle = new double[sun_npoints];
+		double *intensity = new double[sun_npoints];
 
-		for (int i=0;i<refl_npoints;i++)
+		for (int i=0;i< sun_npoints;i++)
 		{
 			angle[i] = System->Sun.UserShapeData[i].x;
 			intensity[i] = System->Sun.UserShapeData[i].y;
 		}
 
-		st_sun_userdata(spcxt, refl_npoints, angle, intensity );
+		st_sun_userdata(spcxt, sun_npoints, angle, intensity );
 
 		delete [] angle;
 		delete [] intensity;
@@ -528,6 +528,10 @@ private:
 	st_context_t m_contextId;
 	bool m_cancelFlag;
     bool m_asPowerTower;
+	bool m_sunshape;
+	bool m_opterrs;
+	int m_nrays;
+	int m_nmaxrays;
 
 	size_t m_nTraceTotal;
 	size_t m_nTraced;
@@ -538,9 +542,12 @@ private:
 	int m_seedVal;
 	int m_resultCode;
 
+	Project* m_system;
+	wxArrayString* m_errmsg;
+
 	wxMutex m_statusLock;
 public:
-	TraceThread( st_context_t spcxt, int ithread, int seed, bool aspowertower )
+	TraceThread( Project* system, st_context_t spcxt, wxArrayString* errmsg, int ithread, int seed, bool aspowertower, int nrays, int nmaxrays, bool sunshape, bool opterrs )
 		: wxThread( wxTHREAD_JOINABLE ), m_cancelFlag( false )
 	{
 		m_iThread = ithread;
@@ -548,6 +555,13 @@ public:
 		m_seedVal = seed;
 		m_resultCode = -1;
         m_asPowerTower = aspowertower;
+		m_nrays = nrays;
+		m_nmaxrays = nmaxrays;
+		m_sunshape = sunshape;
+		m_opterrs = opterrs;
+		m_errmsg = errmsg;
+
+		m_system = system;
 
 		m_nTraceTotal = m_nTraced = m_nToTrace = m_curStage = m_nStages = 0;
 	}
@@ -601,6 +615,9 @@ public:
 	
 	virtual ExitCode Entry()
 	{
+		::st_sim_errors(m_contextId, m_sunshape ? 1 : 0, m_opterrs ? 1 : 0);
+		::st_sim_params(m_contextId, m_nrays, m_nmaxrays);
+
 		m_resultCode = ::st_sim_run( m_contextId, 
 			(unsigned int) m_seedVal,
             m_asPowerTower,
@@ -647,46 +664,35 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
     }
 		
 	std::vector<TraceThread*> ThreadList;
+	int SeedVal = *seed;
+	wxStopWatch sw;
 
 	bool ok = true;
-	size_t i;
 
-	int SeedVal = *seed;
-
-	for (i=0;i<ncpus && ok==true; i++)
+	for (size_t i = 0; i < ncpus && ok == true; i++)
 	{
 		st_context_t spcxt = ::st_create_context();
 
-		int result = LoadSystemIntoContext( System, spcxt, errors );
+		int result = LoadSystemIntoContext(System, spcxt, errors);
 		if (result < 0)
 		{
-			errors.Add( "error loading system into simulation context" );
+			errors.Add("error loading system into simulation context");
 			ok = false;
 			continue;
 		}
 
-		int rays_this_thread = nrays/ncpus;
-		if (i==0) rays_this_thread += (nrays%ncpus);
+		int rays_this_thread = nrays / ncpus;
+		if (i == 0) rays_this_thread += (nrays % ncpus);
 
-		::st_sim_errors( spcxt, sunshape?1:0, opterrs?1:0 );
-		::st_sim_params( spcxt, rays_this_thread, nmaxrays );
-		SeedVal += i*123;
+		::st_sim_errors(spcxt, sunshape ? 1 : 0, opterrs ? 1 : 0);
+		::st_sim_params(spcxt, rays_this_thread, nmaxrays);
+		SeedVal += i * 123;
 
-		ThreadList.push_back( new TraceThread( spcxt, i, SeedVal, aspowertower ) );
+		ThreadList.push_back(new TraceThread(System, spcxt, &errors, i, SeedVal, aspowertower, rays_this_thread, nmaxrays, sunshape, opterrs));
 	}
 
-	if (!ok)
-	{
-		for (i=0;i<ThreadList.size();i++)
-			delete ThreadList[i];
-		
-		return -777;
-	}
-
-	
 	g_currentThreadProgress = tpd;
-	wxStopWatch sw;
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 	{
 		ThreadList[i]->Create();
 		ThreadList[i]->Run();
@@ -697,7 +703,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	while (1)
 	{
 		size_t num_finished = 0;
-		for (i=0;i<ThreadList.size();i++)
+		for (size_t i=0;i<ThreadList.size();i++)
 			if ( !ThreadList[i]->IsRunning() )
 				num_finished++;
 
@@ -707,7 +713,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 		int ntotaltraces = 0;
         wxString cmd_threadstate; cmd_threadstate.clear();
 		
-        for (i=0;i<ThreadList.size();i++)
+        for (size_t i=0;i<ThreadList.size();i++)
 		{
 			ThreadList[i]->status(&ntotal, &ntraced, &ntotrace, &stagenum, &nstages);
 			if( is_cmd )
@@ -731,7 +737,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
         {
 		    if (tpd->IsCanceled())
 		    {
-			    for (i=0;i<ThreadList.size();i++)
+			    for (size_t i=0;i<ThreadList.size();i++)
 				    ThreadList[i]->cancelTrace();
 		    }
         }
@@ -742,11 +748,11 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	
 	// wait on the joinable threads
 	// make sure all have finished before continuing
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 		ThreadList[i]->Wait();
 
 	bool errors_found = false;
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 	{
 		st_context_t cxt = ThreadList[i]->contextId();
 		int code = ThreadList[i]->resultCode();
@@ -770,7 +776,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	if (!errors_found)
 	{
 		std::vector<st_context_t> ContextList;
-		for (i=0;i<ThreadList.size();i++)
+		for (size_t i=0;i<ThreadList.size();i++)
 			ContextList.push_back( ThreadList[i]->contextId() );
 
 		if (!System->Results.ReadResultsFromContextList( ContextList ))
@@ -784,7 +790,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	else
 		System->Results.FreeMemory();
 
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 		delete ThreadList[i];
 
 	ThreadList.clear();
