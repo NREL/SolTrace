@@ -633,7 +633,7 @@ class PySolTrace:
                 ## Charater indicating aperture type. 
                 self.aperture = 'r'
                 ## Up to 8 coefficients defining aperture -- values depend on selection for 'aperture'
-                self.aperture_params = [1, 1, 0, 0, 0, 0, 0, 0]
+                self.aperture_params = [0. for i in range(8)]
                 ## Character indicating surface type. 
                 self.surface = 'f'
                 ## Up to 8 coefficients defining surface -- values depend on selection for 'surface'
@@ -1204,6 +1204,10 @@ class PySolTrace:
         self.raydata = None
         # Placeholder for sunstats data
         self.sunstats = None
+        # Placeholder for power per ray
+        self.powerperray = None
+        # Direct normal irradince for calculations
+        self.dni = 1000.  #w/m^2
 
     def copy(self):
         psnew = PySolTrace()
@@ -1416,6 +1420,8 @@ class PySolTrace:
             # Collect simulation output, including raw ray data and sunbox stats
             self.raydata = self.__get_ray_dataframe(pdll,p_data)
             self.sunstats = self.__get_sun_stats(pdll, p_data)
+            # Compute and save power per ray
+            self.powerperray = (self.sunstats['xmax']-self.sunstats['xmin'])*(self.sunstats['ymax'] - self.sunstats['ymin']) / self.sunstats['nsunrays'] * self.dni
 
             pdll.st_free_context.restype = c_bool
             pdll.st_free_context(c_void_p(p_data))
@@ -1460,6 +1466,9 @@ class PySolTrace:
             for r in res.get():
                 srct += r[1]['nsunrays']
             self.sunstats['nsunrays'] = srct
+
+            # Compute and save power per ray [W]
+            self.powerperray = (self.sunstats['xmax']-self.sunstats['xmin'])*(self.sunstats['ymax'] - self.sunstats['ymin']) / self.sunstats['nsunrays'] * self.dni
             
             return 1
 
@@ -1962,7 +1971,7 @@ class PySolTrace:
                 np = len(self.sun.user_intensity_table)
                 fout.write( "USER SHAPE DATA\t{:d}\n".format( np) )
                 for i in range(np):
-                    fout.write( "{:f}\t{:f}\n".format( *self.sun.user_intensity_table.at(i) ) )
+                    fout.write( "{:f}\t{:f}\n".format( *self.sun.user_intensity_table[i] ) )
             else:
                 fout.write( "USER SHAPE DATA\t{:d}\n".format( 0) )
 
