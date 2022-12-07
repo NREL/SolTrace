@@ -518,8 +518,8 @@ bool ReadSurfaceFile( const char *file, TElement *elm , TSystem *sys)
 		elm->FEData.nodes.resize(NumPoints, VectDoub(3));
 
 		double xmax, xmin, ymax, ymin;
-		xmax = ymax = -HUGE;
-		xmin = ymin = HUGE;
+		xmax = ymax = -std::numeric_limits<double>::max();
+		xmin = ymin = std::numeric_limits<double>::max();
 
 		
 		for (int i=0;i<NumPoints;i++)

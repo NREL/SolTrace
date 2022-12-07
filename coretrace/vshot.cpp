@@ -50,6 +50,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <algorithm>
 
 #include "types.h"
 #include "procs.h"
