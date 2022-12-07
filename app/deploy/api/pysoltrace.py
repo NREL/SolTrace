@@ -1362,7 +1362,7 @@ class PySolTrace:
         elif sys.platform == 'darwin':
             pdll = CDLL(cwd + "/coretrace.dylib")  # Never tested
         elif sys.platform.startswith('linux'):
-            pdll = CDLL(cwd +"/coretrace.so")  # Never tested
+            pdll = CDLL(cwd +"/coretrace_api.so")  
         else:
             print( 'Platform not supported ', sys.platform)
         return pdll
