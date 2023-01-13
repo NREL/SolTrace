@@ -1009,7 +1009,11 @@ Label_TransformBackToGlobal:
 				// {Apply specularity optical error to PERTURBED (i.e. after interaction) ray at intersection point}
 				if( IncludeErrors )
 				{
-					CopyVec3(CosIn, CosRayOutElement);
+					if (optics->DistributionType == 'F' || optics->DistributionType == 'f')
+						CopyVec3(CosIn, LastDFXYZ);  // Apply diffuse errors relative to surface normal
+					else
+						CopyVec3(CosIn, CosRayOutElement); // Apply all other errors relative to the specularly-reflected direction
+
 					Errors(myrng, CosIn, 2, &System->Sun,
 						   Stage->ElementList[k], optics, CosOut, LastDFXYZ);  //optical errors
 					CopyVec3(CosRayOutElement, CosOut);
