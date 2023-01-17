@@ -89,6 +89,8 @@ if __name__ == "__main__":
     # Plotting with plotly
     import plotly.express as px 
     import plotly.graph_objects as go
+    import plotly.io as io
+    io.renderers.default='browser'
 
     fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ) )
 
@@ -102,3 +104,6 @@ if __name__ == "__main__":
 
     fig.update_layout(showlegend=False)
     fig.show()
+    
+    
+    
