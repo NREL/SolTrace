@@ -3,8 +3,13 @@ import random
 import pandas as pd
 import copy
 
-# def load_system(PT):
-# def load_system(ii):
+# geometric inputs
+# using SGX-2 from http://edge.rit.edu/edge/P15484/public/Detailed%20Design%20Documents/Solar%20Trough%20Preliminary%20analysis%20references/Parabolic%20Trough%20Technology.pdf
+l_c = 12.0 # module length
+a_w = 5.77 # aperture width
+focal_len = 1.71 # focal length # this must be correct for results to make sense
+d_abstube = 0.07 # diameter of absorber tube
+
 # Create API class instance
 PT = PySolTrace()
 
@@ -25,45 +30,38 @@ sun.position.z = 100.
 # Reflector stage
 st = PT.add_stage()
 
-# Simple reflector at origin
-# el = st.add_element()
-# el.aim.z = 1
-# el.optic = opt_ref
-# el.surface_flat()
-# el.aperture_rectangle(1,1)
-
-#absorber element height
-abs_pos = Point(0., 0., 10.)
-
-# Create a heliostat at some random x,y position, reflecting to the receiver
-for i in range(5):
-    hpos = [random.uniform(-10,10), random.uniform(-10,10)]
-    el = st.add_element()
-    el.optic = opt_ref
-    el.position.x = hpos[0]
-    el.position.y = hpos[1]
-    # calculate the vectors - receiver, sun, and aim
-    rvec = (abs_pos - el.position).unitize()
-    svec = sun.position.unitize()
-    avec = (rvec + svec)/2.
-    # assign the aim vector. scale by a large number
-    el.aim = el.position + avec*100.
-    # compute surface z rotation to align with plane of the ground
-    el.zrot = PT.util_calc_zrot_azel(avec)
-    # Set surface and aperture characteristics
-    el.surface_flat()
-    el.aperture_rectangle(0.5,1.0)
+# Create a parabolic trough at x,y position, reflecting to the receiver
+el = st.add_element()
+el.optic = opt_ref
+el.position.x = 0
+el.position.y = 0
+el.aim.x = 0 #0.05
+el.aim.z = 1
+# rvec = (abs_pos - el.position).unitize()
+# svec = sun.position.unitize()
+# avec = (rvec + svec)/2.
+# # assign the aim vector. scale by a large number
+# el.aim = el.position + avec*100.
+# # compute surface z rotation to align with plane of the ground
+# el.zrot = PT.util_calc_zrot_azel(avec)
+# Set surface and aperture characteristics
+el.surface_parabolic(focal_len, float('infinity')) # focal_len_y should be 'inf', but that threw an error
+el.aperture_rectangle(a_w,l_c)
     
-
 # absorber stage
 sta = PT.add_stage()
+
+#absorber element height
+abs_height = focal_len + d_abstube/2. # pt on upper?? sfc of abs tube
+abs_pos = Point(0., 0., abs_height)
+#abs_pos = Point(0., 0., 1.745)
 
 ela = sta.add_element()
 ela.position = abs_pos
 ela.aim.z = 0.
 ela.optic = opt_abs
-ela.surface_flat()
-ela.aperture_rectangle(5,5)  #target is 5x5 
+ela.surface_cylindrical(d_abstube/2.)
+ela.aperture_singleax_curve(0.,0.,l_c)
 
 # set simulation parameters
 PT.num_ray_hits = 1e5
@@ -72,10 +70,9 @@ PT.is_sunshape = True
 PT.is_surface_errors = True
 
 
-
 if __name__ == "__main__":
 
-    PT.run(-1, True, 4)         #(seed, is point focus system?, number of threads)
+    PT.run(10, False, 4)         #(seed, is point focus system?, number of threads)
     
     print("Num rays traced: {:d}".format(PT.raydata.index.size))
 
@@ -94,7 +91,8 @@ if __name__ == "__main__":
 
     fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ) )
 
-    for i in range(50,100):
+#    for i in range(50,100):
+    for i in range(0,100000,500):
         dfr = df[df.number == i]
         ray_x = dfr.loc_x 
         ray_y = dfr.loc_y
