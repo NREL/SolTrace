@@ -82,14 +82,16 @@ def create_xy_mesh_cyl(d,l,nx,ny):
     #ymax = l/2 # np.max(df.loc_y)
     #zmin = focal_len - d/2. # np.min(df.loc_z)
     #zmax = focal_len + d/2. #np.max(df.loc_z)
-    print(d, nx)
+    #print(d, nx)
     x = np.linspace(-d/2., d/2., nx)
     y = np.linspace(-l/2., l/2., ny)
-    print('size of x = ',np.size(x))
+    #print('size of x = ',np.size(x))
+    dx = x[1]-x[0]
+    dy = y[1]-y[0]
     
-    Xc,Yc = np.meshgrid(x,y)
+    Xc,Yc = np.meshgrid(x,y,indexing='ij')
     print('size of Xc = ', np.size(Xc))
-    return Xc,Yc
+    return Xc,Yc,x,y,dx,dy
     
 
 # copied from lines 74+ in https://github.com/NREL/SolarPILOT/blob/develop/deploy/api/test_solarpilot_soltrace.py
@@ -108,28 +110,40 @@ c_rec = np.pi*d_rec # circumference
 ny = 20 # how to determine ths?
 nx = 20
 
-Xc,Yc = create_xy_mesh_cyl(d_rec,l_c,nx,ny)
+Xc,Yc,x,y,dx,dy = create_xy_mesh_cyl(d_rec,l_c,nx,ny)
 
-flux_st = np.zeros((ny,nx))
-dx = d_rec*np.pi / nx # circumference of receiver / nx
-dy = l_c / ny # y is vertical direction here?
+flux_st = np.zeros((nx,ny))
+#dx = d_rec*np.pi / nx # circumference of receiver / nx
+#dy = l_c / ny # y is vertical direction here?
 anode = dx*dy # area of a node
+# is there a better way to do this?: seems as though anode shouldn't be in there
 ppr = PT.powerperray / anode *1e-3 #st.powerperray / anode *1e-3 # PT same as st?
 
 # count flux at receiver
 for ind,ray in df_rec.iterrows():
 
-    j = int(ray.loc_x/dx)
-    i = int(ray.loc_y/dy)
-
+    #i = int(ray.loc_x/dx)
+    #j = int(ray.loc_y/dy)
+    #print('ind,i,j = {},{},{}'.format(ind,i,j))
+    
+    #print(np.argmin(np.abs(x - ray.loc_x)))
+    #print(np.where(np.abs(x - ray.loc_x) < tol)[0])
+    # choose index of closest location to coordinates
+    i = np.argmin(np.abs(x - ray.loc_x)) # int(np.where(np.abs(x - ray.loc_x) < tol)[0])
+    j = np.argmin(np.abs(y - ray.loc_y)) # int(np.where(np.abs(y - ray.loc_y) < tol)[0])
+    #print('ind,i,j = {},{},{}'.format(ind,i,j))
+    
     flux_st[i,j] += ppr
 print(df_rec.describe())
 
-plt.figure()
+plt.figure(figsize=[3,4],dpi=250)
 plt.title("Flux simulation from the SolTrace engine")
 plt.contourf(Xc, Yc, flux_st, levels=25)
 plt.colorbar()
 plt.title(f"max flux {flux_st.max():.0f} kW/m2, mean flux {flux_st.mean():.1f}")
+plt.xlabel('x [m]')
+plt.ylabel('y [m]')
+#plt.xlim([-0.5,0.5])
 plt.show()
 
 # %%

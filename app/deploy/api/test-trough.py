@@ -64,8 +64,8 @@ ela.surface_cylindrical(d_abstube/2.)
 ela.aperture_singleax_curve(0.,0.,l_c)
 
 # set simulation parameters
-PT.num_ray_hits = 10 # 1e5
-PT.max_rays_traced = 100 #PT.num_ray_hits*100
+PT.num_ray_hits = 100 #10 # 1e5
+PT.max_rays_traced = 1000 #PT.num_ray_hits*100
 PT.is_sunshape = False # True
 PT.is_surface_errors = False # True
 
