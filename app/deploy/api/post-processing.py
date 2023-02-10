@@ -74,39 +74,79 @@ focal_len = 1.71 # focal length # this must be correct for results to make sense
 d_abstube = 0.07 # diameter of absorber tube
 abs_height = focal_len + d_abstube/2. # pt on upper?? sfc of abs tube
 
+def create_xy_mesh_cyl(d,l,nx,ny):
+    # assumes trough is located at 0,0,0
+    #xmin = -d/2. # np.min(df.loc_x)
+    #xmax = d/2. # np.max(df.loc_x)
+    #ymin = -l/2. # np.min(df.loc_y)
+    #ymax = l/2 # np.max(df.loc_y)
+    #zmin = focal_len - d/2. # np.min(df.loc_z)
+    #zmax = focal_len + d/2. #np.max(df.loc_z)
+    print(d, nx)
+    x = np.linspace(-d/2., d/2., nx)
+    y = np.linspace(-l/2., l/2., ny)
+    print('size of x = ',np.size(x))
+    
+    Xc,Yc = np.meshgrid(x,y)
+    print('size of Xc = ', np.size(Xc))
+    return Xc,Yc
+    
+
 # copied from lines 74+ in https://github.com/NREL/SolarPILOT/blob/develop/deploy/api/test_solarpilot_soltrace.py
 #dfr = df[df.stage==2]
 #dfr = dfr[dfr.element==-1]  #absorbed rays
 #df_ref = df[df.stage==1] # just reflector stage
 #df_ref = dfr[dfr.element==-1]  #absorbed rays
 df_rec = df[df.stage==2] # just receiver stage
-df_rec = df_rec[df_rec.element==-1]  #absorbed rays
+df_rec = df_rec[df_rec.element==1]  #absorbed rays should be -1? - shouldn't all rays be absorbed?
+# is flux calculation based on incident or absorbed rays?
 
 # creating mesh of receiver surface
 d_rec = d_abstube
 h_rec = abs_height
+c_rec = np.pi*d_rec # circumference
 ny = 20 # how to determine ths?
 nx = 20
+
+Xc,Yc = create_xy_mesh_cyl(d_rec,l_c,nx,ny)
+
+flux_st = np.zeros((ny,nx))
+dx = d_rec*np.pi / nx # circumference of receiver / nx
+dy = l_c / ny # y is vertical direction here?
+anode = dx*dy # area of a node
+ppr = PT.powerperray / anode *1e-3 #st.powerperray / anode *1e-3 # PT same as st?
+
+# count flux at receiver
+for ind,ray in df_rec.iterrows():
+
+    j = int(ray.loc_x/dx)
+    i = int(ray.loc_y/dy)
+
+    flux_st[i,j] += ppr
+print(df_rec.describe())
+
+plt.figure()
+plt.title("Flux simulation from the SolTrace engine")
+plt.contourf(Xc, Yc, flux_st, levels=25)
+plt.colorbar()
+plt.title(f"max flux {flux_st.max():.0f} kW/m2, mean flux {flux_st.mean():.1f}")
+plt.show()
+
+# %%
+
 #y_rec = np.arange(0, h_rec, h_rec/ny)
-y_rec = np.arange(-l_c/2., l_c/2., l_c/ny)
-x_rec = np.arange(0, np.pi*d_rec, np.pi*d_rec/nx)
+y_rec = np.arange(-l_c/2., l_c/2., l_c/ny) # centered at y=0
+x_rec = np.arange(0, c_rec, c_rec/nx)
 
 Xr,Yr = np.meshgrid(x_rec, y_rec)
+
 
 # finding rays that intersect a certain point?
 tht = 0. #cp.data_get_number(spcxt, "solarfield.0.tht") # what is this?
 df_rec['zpos'] = df_rec.loc_z - tht + h_rec/2. # what is this?
 df_rec['cpos'] = (np.arctan2(df_rec.loc_x, df_rec.loc_y)+math.pi)*d_rec/2. # and this?
 
-flux_st = np.zeros((ny,nx))
-dx = d_rec*np.pi / nx # circumference of receiver / nx
-dy = l_c / ny # y is vertical direction here?
-anode = dx*dy # area of a node
-ppr2 = PT.powerperray / anode *1e-3 #st.powerperray / anode *1e-3 # PT same as st?
-
 # count flux at reflector - needed for intercept factor?
-
-# count flux at receiver
 for ind,ray in df_rec.iterrows():
 
     j = int(ray.cpos/dx)
@@ -115,11 +155,5 @@ for ind,ray in df_rec.iterrows():
     flux_st[i,j] += ppr
 print(df_rec.describe())
 
-plt.figure()
-plt.title("Flux simulation from the SolTrace engine")
-plt.contourf(Xr, Yr, flux_st, levels=25)
-plt.colorbar()
-plt.title(f"max flux {flux_st.max():.0f} kW/m2, mean flux {flux_st.mean():.1f}")
-plt.show()
 
 #title = '$\gamma = {}, \eta = {}$'.format(intercept_factor,eta_optical))
