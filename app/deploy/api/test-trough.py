@@ -15,10 +15,11 @@ PT = PySolTrace()
 
 # Create two optics types - one for reflector, and one for absorber.
 opt_ref = PT.add_optic("Reflector")
-opt_ref.reflectivity = 1. # reflects all power
+opt_ref.front.reflectivity = 1. # reflects all power
 
 opt_abs = PT.add_optic("Absorber")
-opt_abs.reflectivity = 0.
+opt_abs.front.reflectivity = 0.
+opt_abs.back.reflectivity = 0.
 
 # Sun
 sun = PT.add_sun()
@@ -64,13 +65,14 @@ ela.surface_cylindrical(d_abstube/2.)
 ela.aperture_singleax_curve(0.,0.,l_c)
 
 # set simulation parameters
-PT.num_ray_hits = 100 #10 # 1e5
-PT.max_rays_traced = 1000 #PT.num_ray_hits*100
+PT.num_ray_hits = 10 # 1e5
+PT.max_rays_traced = 100 #PT.num_ray_hits*100
 PT.is_sunshape = False # True
 PT.is_surface_errors = False # True
 
 if __name__ == "__main__":
 
+    #PT.write_soltrace_input_file(test.input)
     #PT.run(10, False, 4)         #(seed, is point focus system?, number of threads)
     PT.run(1, False, 1)         #(seed, is point focus system?, number of threads)
     
