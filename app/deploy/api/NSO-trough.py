@@ -1,16 +1,9 @@
-#%%
-# import os
-# os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
+import os
+os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
 from pysoltrace import PySolTrace, Point
 import random
 import pandas as pd
 import copy
-import matplotlib.pyplot as plt
-plt.ion()
-
-from postprocessing_functions import *
-global focal_len
-
 
 # inputs
 
@@ -69,17 +62,9 @@ abs_aimz = 0. # focal_len*2. # 0.
 sun_position = [0., 0., 100.] # x, y, z
 
 # sim inputs
-n_hits = 1e7 #1e7 #10 # 1e55
+n_hits = 1e5 #10 # 1e5
 sunshape_flag = False
 sfcerr_flag = False
-
-global nx
-global ny
-# mesh definition for flux map
-nx = 30
-ny = 30
-
-plotrays = False
 
 # simulation setup ==========================================================================
 # Create API class instance
@@ -122,13 +107,13 @@ el.surface_parabolic(focal_len, float('infinity')) # focal_len_y should be 'inf'
 el.aperture_rectangle(a_w,l_c)
     
 # absorber stage
-# sta = PT.add_stage()
+sta = PT.add_stage()
 
 #absorber element height
 abs_pos = Point(ptc_pos[0], ptc_pos[1], abs_height)
 #abs_pos = Point(0., 0., 1.745)
 
-ela = st.add_element()
+ela = sta.add_element()
 ela.position = abs_pos
 ela.aim.z = abs_aimz
 ela.optic = opt_abs
@@ -143,7 +128,7 @@ PT.is_surface_errors = sfcerr_flag # True
 
 if __name__ == "__main__":
 
-    PT.write_soltrace_input_file('LS3trough-singlestage.stinput')
+    #PT.write_soltrace_input_file(test.input)
     PT.run(10, False, 4)         #(seed, is point focus system?, number of threads)
     #PT.run(1, False, 1)         #(seed, is point focus system?, number of threads)
     
@@ -151,36 +136,33 @@ if __name__ == "__main__":
 
     df = PT.raydata
     
-    #print("Did any rays miss receiver? Element unique values = {}".format(df[df.stage==2].element.unique()))
-
-    if plotrays==True:
-        # Data for a three-dimensional line
-        loc_x = df.loc_x.values
-        loc_y = df.loc_y.values
-        loc_z = df.loc_z.values
-
-        # Plotting with plotly
-        import plotly.express as px 
-        import plotly.graph_objects as go
-        import plotly.io as io
-        io.renderers.default='browser'
-
-        fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ))
-
-        #for i in range(PT.raydata.index.size): # all rays
-        for i in range(50,100):
-        #for i in range(0,100000,500):
-            dfr = df[df.number == i]
-            ray_x = dfr.loc_x 
-            ray_y = dfr.loc_y
-            ray_z = dfr.loc_z
-            raynum = dfr.number
-            fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
-
-        fig.update_layout(showlegend=False)
-        fig.show()
+    print("Did any rays miss receiver? Element unique values = {}".format(df[df.stage==2].element.unique()))
     
-    #print(df.describe())
-    ppr = PT.powerperray
-    df_rec = generate_receiver_dataframe(df,d_abstube,focal_len)
-    flux_st = compute_fluxmap(ppr,df_rec,d_abstube,l_c,nx,ny,plotflag=True)
+    # Data for a three-dimensional line
+    loc_x = df.loc_x.values
+    loc_y = df.loc_y.values
+    loc_z = df.loc_z.values
+    
+    # Plotting with plotly
+    import plotly.express as px 
+    import plotly.graph_objects as go
+    import plotly.io as io
+    io.renderers.default='browser'
+
+    fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ))
+
+    #for i in range(PT.raydata.index.size): # all rays
+    for i in range(50,100):
+    #for i in range(0,100000,500):
+        dfr = df[df.number == i]
+        ray_x = dfr.loc_x 
+        ray_y = dfr.loc_y
+        ray_z = dfr.loc_z
+        raynum = dfr.number
+        fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+
+    fig.update_layout(showlegend=False)
+    fig.show()
+    
+    
+    

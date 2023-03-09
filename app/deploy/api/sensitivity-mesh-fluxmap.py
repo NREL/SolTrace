@@ -1,12 +1,12 @@
-#%%
-# import os
-# os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
+import os
+os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
 from pysoltrace import PySolTrace, Point
 import random
 import pandas as pd
 import copy
 import matplotlib.pyplot as plt
 plt.ion()
+import numpy as np
 
 from postprocessing_functions import *
 global focal_len
@@ -69,17 +69,20 @@ abs_aimz = 0. # focal_len*2. # 0.
 sun_position = [0., 0., 100.] # x, y, z
 
 # sim inputs
-n_hits = 1e7 #1e7 #10 # 1e55
+n_hits = 1e5 # [int(1e2),int(1e3),int(1e4),int(1e5),int(1e6)] #,1e3,1e4,1e5]) # 1e7 #1e7 #10 # 1e5
 sunshape_flag = False
 sfcerr_flag = False
 
 global nx
 global ny
 # mesh definition for flux map
-nx = 30
-ny = 30
+nxs = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] #, 110, 120, 130, 140, 150]
+#nx = 30
+#ny = 30
 
 plotrays = False
+
+max_flux = np.zeros(np.shape(nxs))
 
 # simulation setup ==========================================================================
 # Create API class instance
@@ -143,7 +146,7 @@ PT.is_surface_errors = sfcerr_flag # True
 
 if __name__ == "__main__":
 
-    PT.write_soltrace_input_file('LS3trough-singlestage.stinput')
+    #PT.write_soltrace_input_file('LS3trough.stinput')
     PT.run(10, False, 4)         #(seed, is point focus system?, number of threads)
     #PT.run(1, False, 1)         #(seed, is point focus system?, number of threads)
     
@@ -183,4 +186,17 @@ if __name__ == "__main__":
     #print(df.describe())
     ppr = PT.powerperray
     df_rec = generate_receiver_dataframe(df,d_abstube,focal_len)
-    flux_st = compute_fluxmap(ppr,df_rec,d_abstube,l_c,nx,ny,plotflag=True)
+    for n,s in enumerate(nxs):
+        nx = s
+        ny = s
+        flux_st = compute_fluxmap(ppr,df_rec,d_abstube,l_c,nx,ny,plotflag=True)
+        max_flux[n] = np.max(flux_st)
+    del df
+    
+    
+plt.figure(figsize=[3,4],dpi=250)
+plt.plot(nxs, max_flux, '.-')
+plt.title('num of hits = {}'.format(int(n_hits)))
+plt.xlabel('nx, ny')
+plt.ylabel('max flux [kW/m2]')
+    
