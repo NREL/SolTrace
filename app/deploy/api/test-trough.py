@@ -106,8 +106,12 @@ st = PT.add_stage()
 # Create a parabolic trough at x,y position, reflecting to the receiver
 el = st.add_element()
 el.optic = opt_ref
+
+# sets origin of element
 el.position.x = ptc_pos[0]
 el.position.y = ptc_pos[1]
+
+# the aim point - sets point to which the element z axis points to
 el.aim.x = ptc_aim[0] #0.01
 el.aim.z = ptc_aim[1]
 # rvec = (abs_pos - el.position).unitize()

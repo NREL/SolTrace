@@ -6,15 +6,38 @@ stages:
     1 = collector
     2 = receiver
 elements:
-    1 = reflected
-    -1 = absorbed (isfinal)
+    +N = reflected
+    -N = absorbed (isfinal)
 """
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 plt.ion()
 import math
+import plotly.graph_objects as go
+import plotly.io as io
+io.renderers.default='browser'
 
+def get_trough_angles():
+    fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
+    angles = pd.read_csv(fn, parse_dates={'UTC': [0, 1]}).set_index('UTC')  # ,nrows=200
+    angles.iloc[:,-1] = angles.iloc[:,-1].where(angles.iloc[:,-1]>0)
+    angles['trough_angle'] = np.degrees( np.arctan2(np.sin(np.radians(angles.iloc[:,-1])), np.sin(np.radians(angles.iloc[:,-2])) ))
+    angles.trough_angle = angles.trough_angle.where(angles.trough_angle.isnull()==False, -30)
+    angles = -angles + 90
+    return angles.trough_angle
+
+def get_sun_angles():
+    fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
+    angles = pd.read_csv(fn, parse_dates={'UTC': [0, 1]}).set_index('UTC')  # ,nrows=200
+    #angles.iloc[:,-1] = angles.iloc[:,-1].where(angles.iloc[:,-1]>0)
+    return angles.iloc[:,-1]
+
+# def sun_elev_to_trough_angles(elev_angles):
+#     trough_angles = np.degrees( np.arctan2(np.sin(np.radians(elev_angles)), np.sin(np.radians(elev_angles)) ))
+#     #angles.trough_angle = angles.trough_angle.where(angles.trough_angle.isnull()==False, -30)
+#     #angles = -angles + 90
+#     return trough_angles
 
 #--- Get intersections for stage and element. Note: input stage/element is zero-indexed
 def get_intersections(df, stage, elem = 'all'): #, isfinal = False):
@@ -42,10 +65,19 @@ def get_power_per_ray(PT,df):
     return ppr
 
 def calc_intercept_factor(df):
-    n_coll_rays = get_number_of_hits(df,1,'reflected') # 'all' equivalent to PT.num_ray_hits
-    n_rcvr_rays = get_number_of_hits(df,2,'absorbed') #just absorbed or all rays? 
+    stages = df.stage.unique()
+    
+    # needs fixing, [0] and [-1] not robust for more than 2 stages
+    n_coll_rays = get_number_of_hits(df,stages[0],'reflected') # 'all' equivalent to PT.num_ray_hits
+    n_rcvr_rays = get_number_of_hits(df,stages[-1],'absorbed') #just absorbed or all rays? 
+    
+    # single stage
+    # n_coll_rays = get_number_of_hits(df,stages[-1],'reflected') # 'all' equivalent to PT.num_ray_hits
+    # n_rcvr_rays = get_number_of_hits(df,stages[-1],'absorbed') #just absorbed or all rays? 
+    
     intercept_factor = n_rcvr_rays/n_coll_rays # * PT.powerperray cancels out in numerator and denominator
     print('intercept factor = {} = {}/{}'.format(intercept_factor,n_rcvr_rays,n_coll_rays))
+    return intercept_factor
 
 def create_xy_mesh_cyl(d,l,nx,ny):
     # assumes trough is located at 0,0,0
@@ -136,7 +168,7 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
     print('coeff of variation = {}'.format(c_v))
 
     if plotflag==True:
-        #%% plot flux line 
+        #% plot flux line 
         flux_centerline = np.array(flux_st[:,int(ny/2)])
         plt.figure(figsize=[3,4],dpi=250)
         plt.plot(x, flux_centerline, 'k.-') #, vmin=240, vmax=420)
@@ -146,7 +178,7 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
         plt.savefig('flux-line.png')
         plt.show()
 
-        #%% contour plot
+        #% contour plot
         plt.figure(figsize=[6,4],dpi=250)
         plt.contourf(Xc, Yc, flux_st, levels=15, cmap='viridis') #, vmin=240, vmax=420)
         plt.colorbar()
@@ -155,5 +187,43 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
         plt.ylabel('y [m]')
         plt.savefig('flux-map.png')
         plt.show()
-    return flux_st
-# %%
+    return flux_st, c_v
+
+def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
+    fig, axs = plt.subplots(4,1,figsize=[9,7],dpi=250)
+
+    axs[0].plot(solpos.apparent_elevation,'k.-')
+    axs[0].set_ylabel('sun elev. angle [deg]')
+
+    axs[1].plot(solpos.index, intercept_factor, '.-')
+    axs[1].set_ylabel('intercept factor')
+    
+    axs[2].plot(solpos.index, c_v, '.-')
+    axs[2].set_ylabel('coeff of variation')
+     
+    fluxcntr = np.array(flux_centerline_time).T
+    cf = axs[3].contourf(solpos.index, x, fluxcntr, levels=100, cmap='turbo')
+    axs[3].set_ylabel('x [m]')
+    fig.colorbar(cf, ax=axs[3], label='flux at y=0')
+
+    for ax in axs:
+        ax.tick_params(labelrotation=30)
+
+    plt.tight_layout()
+
+def plot_rays_globalcoords(df, PT, st):
+    locs_stage = np.array([df[k].values for k in ['loc_x','loc_y','loc_z']])
+    cos_stage = np.array([df[k].values for k in ['cos_x','cos_y','cos_z']])
+    target = st #st
+    euler = PT.util_calc_euler_angles([target.position.x, target.position.y, target.position.z], 
+                                      [target.aim.x, target.aim.y, target.aim.z], target.zrot)
+    T = PT.util_calc_transforms(euler)
+    global_origin = np.array([0, 0, 0]).reshape((3,1))
+    locs = np.matmul(T['rloctoref'][0:-1], locs_stage-global_origin)
+    #locs_transform = PT.util_transform_to_ref(locs_stage, cos_stage, global_origin, T['rloctoref'])
+
+    # Plotting with plotly
+    fig = go.Figure(data=go.Scatter3d(x=locs_stage[0], y=locs_stage[1], z=locs_stage[2], mode='markers', marker=dict( size=1, color='red', opacity=0.8, ) ))
+    fig.add_trace(go.Scatter3d(x=locs[0], y=locs[1], z=locs[2], mode='markers', marker=dict( size=1, color='black', opacity=0.8, ) ))
+    #fig.add_trace(go.Scatter3d(x=locs_transform[0], y=locs_transform[1], z=locs_transform[2], mode='markers', marker=dict( size=1, color='blue', opacity=0.8, ) ))
+    fig.show()
