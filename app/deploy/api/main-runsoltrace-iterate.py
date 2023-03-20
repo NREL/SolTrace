@@ -45,9 +45,16 @@ a_w = 5.77 # aperture width
 focal_len = 1.71 # focal length # this must be correct for results to make sense
 d_abstube = 0.07 # diameter of absorber tube
 abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
-ptc_pos = [0, 0] # x, y 
-ptc_aim = [0, 1] # x, z
+ptc_pos = [0, 0, 0] # x, y, z
+ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
+
+# data output settings
+# mesh definition for flux map
+nx = 30
+ny = 30
+plotrays = True
+# sampling_rate = 1 #hrs interval between sampling output
 
 #%% add nominal trough angles from text file
 # spa_sun_positions = get_sun_angles()
@@ -122,18 +129,9 @@ sun_positions = 1000 * sun_vectors # multiplying by arbitrary distance for soltr
 # sun_positions = np.array([100, 0, 100])[:,None]
 
 #%%
-# data output settings
-global nx
-global ny
-# mesh definition for flux map
-nx = 30
-ny = 30
 circumf = math.pi*d_abstube
 x = np.linspace(-circumf/2.,circumf/2., nx)
 y = np.linspace(-l_c/2., l_c/2., ny)
-
-plotrays = True
-# sampling_rate = 1 #hrs interval between sampling output
 
 # initialize intercept factor
 intercept_factor = [] # np.ones(len(angles))*np.nan
@@ -142,7 +140,7 @@ flux_centerline_time = [] # np.ones((nx,len(angles)))*np.nan
 coeff_var = []
 
 # iterate through pandas dataframe at all sun positions
-for col in range(sun_positions.shape[1]):
+for col in range(sun_positions.shape[1]): # col iterates through through time
     # set up simulation
     PT = PySolTrace()
     
@@ -167,37 +165,32 @@ for col in range(sun_positions.shape[1]):
     st = PT.add_stage()
     
     # set coordinate system for the PTC and absorber
-    # print('st position = {}'.format(st.position))
-    # print('st aim = {}'.format(st.aim))
-    
     # stage origin is global origin = 0, 0, 0
     st.position = Point(0, 0, 0)
     
-    # only take the x and z components of the sun position (trough doesn't adjust laterally)
-    st.aim = Point(sun_position[0], 0, sun_position[2]) #Point(1, 0, 1)
-    # print('after st position = {}'.format(st.position))
-    # print('after st aim = {}'.format(st.aim))
-    # st.position.x = 0
-    # st.position.y = 0
+    # NOMINAL: stage aim towards sun: only take the x and z components of the sun position (trough doesn't adjust laterally)
+    # st.aim = Point(sun_position[0], 0, sun_position[2]) #Point(1, 0, 1)
     
-    # st.aim.x = 1
-    # st.aim.y = 0
-    # st.aim.z = 1
-    
-    # print(st.aim)
+    # stage aim towards pt based on elev angle
+    stage_aim = get_aimpt_from_sunangles(solpos.apparent_elevation[col], solpos.azimuth[col], focal_len)
+    st.aim = Point(stage_aim[0], 0, stage_aim[1])
     
     # create parabolic trough element
     el = st.add_element()
     el.optic = opt_ref
     
+    ptc_pos = [0, 0, 0] # x, y, z
+    ptc_aim = [0, 0, 1] # x, y, z
+    
     # # sets origin of element
-    el.position.x = ptc_pos[0]
-    el.position.y = ptc_pos[1]
+    el.position = Point(ptc_pos[0], ptc_pos[1], ptc_pos[2])
+    # el.position.x = ptc_pos[0]
+    # el.position.y = ptc_pos[1]
     
     # the aim point - sets point to which the element z axis points to
-    # print(el.aim)
-    el.aim.x = ptc_aim[0] #0.01
-    el.aim.z = ptc_aim[1]
+    el.aim = Point(ptc_aim[0], ptc_aim[1], ptc_aim[2])
+    # el.aim.x = ptc_aim[0] #0.01
+    # el.aim.z = ptc_aim[1]
     
     # define PTC surface
     el.surface_parabolic(focal_len, float('infinity')) # focal_len_y should be 'inf', but that threw an error
@@ -251,25 +244,27 @@ for col in range(sun_positions.shape[1]):
         # plot rays
         if plotrays==True:
             # Data for a three-dimensional line
-            loc_x = df.loc_x.values
-            loc_y = df.loc_y.values
-            loc_z = df.loc_z.values
+            # loc_x = df.loc_x.values
+            # loc_y = df.loc_y.values
+            # loc_z = df.loc_z.values
 
-            # Plotting with plotly
-            fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ))
+            # # Plotting with plotly
+            # fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ))
 
-            #for i in range(PT.raydata.index.size): # all rays
-            for i in range(50,100):
-            #for i in range(0,100000,500):
-                dfr = df[df.number == i]
-                ray_x = dfr.loc_x 
-                ray_y = dfr.loc_y
-                ray_z = dfr.loc_z
-                raynum = dfr.number
-                fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+            # #for i in range(PT.raydata.index.size): # all rays
+            # for i in range(50,100):
+            # #for i in range(0,100000,500):
+            #     dfr = df[df.number == i]
+            #     ray_x = dfr.loc_x 
+            #     ray_y = dfr.loc_y
+            #     ray_z = dfr.loc_z
+            #     raynum = dfr.number
+            #     fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
 
-            fig.update_layout(showlegend=False)
-            fig.show()
+            # fig.update_layout(showlegend=False)
+            # fig.show()
+            
+            plot_rays_globalcoords(df, PT, st)
         
         #print(df.describe())
         
@@ -280,17 +275,22 @@ for col in range(sun_positions.shape[1]):
 #%% plot time-varying variables
 # plot_time_series(solpos, intercept_factor, flux_centerline_time, coeff_var, x)
 
-#%% coordinate rotation and transformation
-# xs = np.column_stack((origin, sun_positions))[0]
-# ys = np.column_stack((origin, sun_positions))[1]
-# zs = np.column_stack((origin, sun_positions))[2]
+#%% plt sun position and PTC aim points
+# xs = np.column_stack((origin, sun_positions))[0]/100
+# ys = np.column_stack((origin, sun_positions))[1]/100
+# zs = np.column_stack((origin, sun_positions))[2]/100
 
 # #date_to_val = solpos.index.map(pd.Series(data=np.arange(len(solpos)-1), index=solpos.index.values).to_dict())
 
 # fig = go.Figure(data=go.Scatter3d(x=xs, y=ys, z=zs, mode='markers')) #,marker_color=date_to_val))
-# fig.add_trace(go.Scatter3d(x=xs, y=ys, z=zs, mode='lines'))
+# #fig.add_trace(go.Scatter3d(x=xs, y=ys, z=zs, mode='lines'))
 
-# fig.update_layout(showlegend=False)
+# xaims, zaims = get_aimpt_from_sunangles(solpos.apparent_elevation, solpos.azimuth, focal_len)
+# yaims = np.zeros((np.shape(xaims)))
+
+# fig.add_trace(go.Scatter3d(x=xaims, y=yaims, z=zaims, mode='markers'))
+
+# fig.update_layout() #showlegend=False)
 # fig.show()
 
 #%% transforming from stage to global

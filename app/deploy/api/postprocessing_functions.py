@@ -33,11 +33,20 @@ def get_sun_angles():
     #angles.iloc[:,-1] = angles.iloc[:,-1].where(angles.iloc[:,-1]>0)
     return angles.iloc[:,-1]
 
-# def sun_elev_to_trough_angles(elev_angles):
-#     trough_angles = np.degrees( np.arctan2(np.sin(np.radians(elev_angles)), np.sin(np.radians(elev_angles)) ))
-#     #angles.trough_angle = angles.trough_angle.where(angles.trough_angle.isnull()==False, -30)
-#     #angles = -angles + 90
-#     return trough_angles
+def sun_elev_to_trough_angles(elev_angles, azimuth_angles):
+    trough_angles = np.degrees( np.arctan2(np.sin(np.radians(elev_angles)), np.sin(np.radians(azimuth_angles)) ))
+    # print(trough_angles)
+    # trough_angles = trough_angles.where(trough_angles.isnull()==False, -30)
+    # print(trough_angles.where(trough_angles.isnull()==False, -30))
+    trough_angles = -trough_angles + 90
+    return trough_angles
+
+def get_aimpt_from_sunangles(elev_angles, azimuth_angles, factor):
+    trough_angles = sun_elev_to_trough_angles(elev_angles, azimuth_angles)
+    signed_elev_angles = 90 - trough_angles
+    x = factor * np.cos(np.radians(signed_elev_angles))
+    z = x * np.tan(np.radians(signed_elev_angles))
+    return x,z
 
 #--- Get intersections for stage and element. Note: input stage/element is zero-indexed
 def get_intersections(df, stage, elem = 'all'): #, isfinal = False):
@@ -211,9 +220,9 @@ def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
 
     plt.tight_layout()
 
-def plot_rays_globalcoords(df, PT, st):
+def transform_stage_to_global_coords(df, PT, st):
     locs_stage = np.array([df[k].values for k in ['loc_x','loc_y','loc_z']])
-    cos_stage = np.array([df[k].values for k in ['cos_x','cos_y','cos_z']])
+    #cos_stage = np.array([df[k].values for k in ['cos_x','cos_y','cos_z']])
     target = st #st
     euler = PT.util_calc_euler_angles([target.position.x, target.position.y, target.position.z], 
                                       [target.aim.x, target.aim.y, target.aim.z], target.zrot)
@@ -221,9 +230,48 @@ def plot_rays_globalcoords(df, PT, st):
     global_origin = np.array([0, 0, 0]).reshape((3,1))
     locs = np.matmul(T['rloctoref'][0:-1], locs_stage-global_origin)
     #locs_transform = PT.util_transform_to_ref(locs_stage, cos_stage, global_origin, T['rloctoref'])
+    
+    # create rotated dataframe
+    col_list = ['loc_x', 'loc_y', 'loc_z', 'element', 'stage', 'number']
+    dfr = df[col_list].copy()
+    
+    # replace coords with rotated coords
+    dfr.loc[:,'loc_x'] = locs[0,:]
+    dfr.loc[:,'loc_y'] = locs[1,:]
+    dfr.loc[:,'loc_z'] = locs[2,:]
+    return dfr
 
+def plot_rays_globalcoords(df, PT, st):
     # Plotting with plotly
-    fig = go.Figure(data=go.Scatter3d(x=locs_stage[0], y=locs_stage[1], z=locs_stage[2], mode='markers', marker=dict( size=1, color='red', opacity=0.8, ) ))
-    fig.add_trace(go.Scatter3d(x=locs[0], y=locs[1], z=locs[2], mode='markers', marker=dict( size=1, color='black', opacity=0.8, ) ))
+    dfr = transform_stage_to_global_coords(df, PT, st)
+    
+    # fig = go.Figure(data=go.Scatter3d(x=locs_stage[0], y=locs_stage[1], z=locs_stage[2], mode='markers', marker=dict( size=1, color='red', opacity=0.8, ) ))
+    # fig.add_trace(go.Scatter3d(x=locs_global[0], y=locs_global[1], z=locs_global[2], mode='markers', marker=dict( size=1, color='black', opacity=0.8, ) ))
+
+    # stage coords
+    fig = go.Figure(data=go.Scatter3d(x=df.loc_x.values, y=df.loc_y.values, z=df.loc_z.values, mode='markers', marker=dict( size=1, color='red', opacity=0.1, ) ))
+    # plot rays in stage coord sys
+    for i in range(50,100):
+        dfs = df[df.number == i]
+        
+        ray_x = dfs.loc_x 
+        ray_y = dfs.loc_y
+        ray_z = dfs.loc_z
+        raynum = dfs.number
+        fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='red', width=0.5)))
+    
+    # global coords
+    fig.add_trace(go.Scatter3d(x=dfr.loc_x.values, y=dfr.loc_y.values, z=dfr.loc_z.values, mode='markers', marker=dict( size=1, color='black', opacity=0.8, ) ))
+    # plot rays in global
+    for i in range(50,100):
+        dfs = dfr[dfr.number == i]
+        
+        ray_x = dfs.loc_x 
+        ray_y = dfs.loc_y
+        ray_z = dfs.loc_z
+        raynum = dfs.number
+        fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+    
     #fig.add_trace(go.Scatter3d(x=locs_transform[0], y=locs_transform[1], z=locs_transform[2], mode='markers', marker=dict( size=1, color='blue', opacity=0.8, ) ))
+    fig.update_layout(showlegend=False)
     fig.show()
