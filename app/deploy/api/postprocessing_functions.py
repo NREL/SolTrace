@@ -14,6 +14,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 plt.ion()
 import math
+from pvlib import solarposition, tracking
+import glob
 import plotly.graph_objects as go
 import plotly.io as io
 io.renderers.default='browser'
@@ -22,7 +24,8 @@ def get_trough_angles():
     fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
     angles = pd.read_csv(fn, parse_dates={'UTC': [0, 1]}).set_index('UTC')  # ,nrows=200
     angles.iloc[:,-1] = angles.iloc[:,-1].where(angles.iloc[:,-1]>0)
-    angles['trough_angle'] = np.degrees( np.arctan2(np.sin(np.radians(angles.iloc[:,-1])), np.sin(np.radians(angles.iloc[:,-2])) ))
+    angles['trough_angle'] = np.degrees( np.arctan2(np.sin(np.radians(angles.iloc[:,-1])), 
+                                                    np.sin(np.radians(angles.iloc[:,-2])) ))
     angles.trough_angle = angles.trough_angle.where(angles.trough_angle.isnull()==False, -30)
     angles = -angles + 90
     return angles.trough_angle
@@ -34,18 +37,50 @@ def get_sun_angles():
     return angles.iloc[:,-1]
 
 def sun_elev_to_trough_angles(elev_angles, azimuth_angles):
-    trough_angles = np.degrees( np.arctan2(np.sin(np.radians(elev_angles)), np.sin(np.radians(azimuth_angles)) ))
-    # print(trough_angles)
-    # trough_angles = trough_angles.where(trough_angles.isnull()==False, -30)
-    # print(trough_angles.where(trough_angles.isnull()==False, -30))
-    trough_angles = -trough_angles + 90
-    return trough_angles
+    # trough_angles = np.degrees( np.arctan2(np.sin(np.radians(elev_angles)), np.sin(np.radians(azimuth_angles)) ))
+    # print('trough angle = {:2f}'.format(trough_angles))
+    # # print(trough_angles)
+    # # trough_angles = trough_angles.where(trough_angles.isnull()==False, -30)
+    # # print(trough_angles.where(trough_angles.isnull()==False, -30))
+    # trough_angles = -trough_angles + 90
+    # print('trough angle = {:2f}'.format(trough_angles))
+    x, z = get_aimpt_from_sunangles(elev_angles, azimuth_angles)
+    trough_angle = get_tracker_angle_from_aimpt(x,z)
+    return trough_angle
 
-def get_aimpt_from_sunangles(elev_angles, azimuth_angles, factor):
-    trough_angles = sun_elev_to_trough_angles(elev_angles, azimuth_angles)
-    signed_elev_angles = 90 - trough_angles
-    x = factor * np.cos(np.radians(signed_elev_angles))
-    z = x * np.tan(np.radians(signed_elev_angles))
+def get_aimpt_from_sunangles(elev_angles, azimuth_angles):
+    # trough_angles = sun_elev_to_trough_angles(elev_angles, azimuth_angles)
+    # print('elev angle = {:2f}'.format(elev_angles))
+    # print('azimuth angle = {:2f}'.format(azimuth_angles))
+    # #print('trough angle = {:2f}'.format(trough_angles))
+    # signed_elev_angles = 90 - trough_angles
+    # x = factor * np.cos(np.radians(signed_elev_angles))
+    # z = x * np.tan(np.radians(signed_elev_angles))
+    x = np.cos(np.radians(elev_angles))*np.sin(np.radians(azimuth_angles))
+    z = np.sin(np.radians(elev_angles))
+    return x,z
+
+def get_tracker_angle_from_aimpt(x,z):
+    tracker_angle = np.degrees(np.arctan2(x,z))
+    return tracker_angle
+
+def get_aimpt_from_trough_angle(trough_angle):
+    x = np.sin(np.radians(trough_angle))
+    z = np.cos(np.radians(trough_angle))
+    return(x,z)
+
+def get_aimpt_from_sunangles_pvlib(zenith, azimuth, factor):
+    trough_angles = tracking.singleaxis(
+        apparent_zenith=zenith,
+        apparent_azimuth=azimuth,
+        axis_tilt=0,
+        axis_azimuth=180, # pointing east = negative
+        max_angle=90,
+        backtrack=False,  # for true-tracking
+        gcr=0.5)  # irrelevant for true-tracking
+    # unfinished
+    x = 1
+    z = 1
     return x,z
 
 #--- Get intersections for stage and element. Note: input stage/element is zero-indexed
@@ -220,6 +255,38 @@ def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
 
     plt.tight_layout()
 
+def plot_time_series_compare(nominaldf, solpos, intercept_factor, flux_centerline_time, c_v, x):
+    fig, axs = plt.subplots(5,1,figsize=[12,7],dpi=250)
+
+    axs[0].plot(solpos.apparent_elevation,'k.-')
+    axs[0].set_ylabel('sun elev. angle [deg]')
+
+    axs[1].plot(nominaldf.index, nominaldf.intercept_factor, '.-', label='nominal')
+    axs[1].plot(solpos.index, intercept_factor, '.-', label='actual')
+    axs[1].set_ylabel('intercept factor')
+    
+    axs[2].plot(nominaldf.index, nominaldf.coeff_var, '.-', label='nominal')
+    axs[2].plot(solpos.index, c_v, '.-', label='actual')
+    axs[2].set_ylabel('coeff of variation')
+    axs[2].legend()
+     
+    fluxcntr = np.array(flux_centerline_time).T
+    cf = axs[3].contourf(solpos.index, x, fluxcntr, levels=100, cmap='turbo')
+    axs[3].set_ylabel('x [m]')
+    fig.colorbar(cf, ax=axs[3], label='flux at y=0')
+    axs[3].set_title('actual')
+    
+    # fluxcntr2 = nominaldf.flux_centerline.values.T
+    # cf2 = axs[4].contourf(nominaldf.index, x, fluxcntr2, levels=100, cmap='turbo')
+    # axs[4].set_ylabel('x [m]')
+    # axs[4].set_title('actual')
+    # fig.colorbar(cf2, ax=axs[4], label='flux at y=0')
+
+    for ax in axs:
+        ax.tick_params(labelrotation=30)
+
+    plt.tight_layout()
+
 def transform_stage_to_global_coords(df, PT, st):
     locs_stage = np.array([df[k].values for k in ['loc_x','loc_y','loc_z']])
     #cos_stage = np.array([df[k].values for k in ['cos_x','cos_y','cos_z']])
@@ -275,3 +342,46 @@ def plot_rays_globalcoords(df, PT, st):
     #fig.add_trace(go.Scatter3d(x=locs_transform[0], y=locs_transform[1], z=locs_transform[2], mode='markers', marker=dict( size=1, color='blue', opacity=0.8, ) ))
     fig.update_layout(showlegend=False)
     fig.show()
+    
+def load_field_data(path, year, month, day, fileres, outres):
+    inflow_files = sorted(glob.glob(path +'Inflow_Mast_' + fileres + '_' + year + '-' + month + '-' + day + '_' + '*.pkl'))   #
+    loads_files = sorted(glob.glob(path +'Loads_' + fileres + '_' + year + '-' + month + '-' + day + '_' + '*.pkl'))
+
+    inflow = pd.DataFrame()
+    for datafile in inflow_files:
+        #print(datafile)
+        inflow = pd.concat( [inflow, pd.read_pickle(datafile)])
+    #drop duplicates
+    # inflow = inflow[inflow.index.drop_duplicates(keep='first')]
+    # print(inflow)
+
+    loads = pd.DataFrame()
+    for datafile in loads_files:
+        #print(datafile)
+        tmpdf = pd.read_pickle(datafile)
+        for col in tmpdf.columns:
+            if 'R1_SO_tilt' in col:
+                print('correcting {} for tilt vs Tilt in {}'.format(col,datafile))
+                if tmpdf[col].isna().any()==False: # if the col contains no nans
+                    # then just rename it
+                    tmpdf = tmpdf.rename(columns={'R1_SO_tilt':'R1_SO_Tilt'})
+                else:
+                    print('need code to handle when there are nans: combine with other column')
+        loads = pd.concat( [loads, tmpdf]) 
+        # print(loads.keys())
+
+    delta = loads.index[0]-inflow.index[0]
+    if delta.microseconds > 0:
+        print('rounding index to nearest full second')
+        # round timestamp to nearest full second
+        loads.index = loads.index.floor('T') # or should this be ceiling?
+        #loads.index = loads.index.round('1S')
+
+    #% merge into one dataframe
+    # complete dataframe with inflow and masts and trough angles
+    fulldata = inflow.merge(loads, left_index = True, right_index=True, how="inner") 
+    # fulldata = fulldata.resample(outres).asfreq() #1 minute
+    
+    return fulldata
+    
+    

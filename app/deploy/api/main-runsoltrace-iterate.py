@@ -21,7 +21,7 @@ import random
 import pandas as pd
 import copy
 import matplotlib.pyplot as plt
-from pvlib import solarposition
+from pvlib import solarposition, tracking
 import numpy as np
 import math
 # import plotly.express as px 
@@ -56,6 +56,16 @@ ny = 30
 plotrays = True
 # sampling_rate = 1 #hrs interval between sampling output
 
+#%% load field data
+year   = '*'
+month  = '12' # '01' # '*'
+day    = '16'
+fileres = '1min' # '1min' or '20Hz'
+outres = '0.5H'
+
+path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
+field_data = load_field_data(path, year, month, day, fileres, outres)
+
 #%% add nominal trough angles from text file
 # spa_sun_positions = get_sun_angles()
 # tstart = '2022-12-16 15:00:00.000000' # '2022-12-16 00:00:00.000000-08:00' 
@@ -68,11 +78,10 @@ plotrays = True
 # plt.plot(spa_sun_positions,'.-')
 
 #%% get sun positions from SPA directly through pvlib
-
 #tz = 'UTC'
 lat, lon = 35.8, -114.983 #coordinates of NSO
 times = pd.date_range('2022-12-16 15:06:00', '2022-12-17 00:00:00',
-                      freq='4H') #, tz=tz)
+                      freq='0.5H') #, tz=tz)
 # times = pd.date_range('2022-12-16 19:31:00', '2022-12-16 19:40:00',
 #                       freq='0.5T') #, tz=tz)
 
@@ -92,13 +101,17 @@ plt.legend()
 #%% calc sun position based on sun vector
 
 # now that we have the angles, find vector pointing toward the sun
-sun_vectors = np.zeros((3,len(solpos.apparent_elevation)))
-sun_vectors[0,:] = np.sin(np.radians(solpos.azimuth)) #x
-sun_vectors[1,:] = np.sin(np.radians(solpos.azimuth))/np.tan(np.radians(solpos.azimuth)) #y
-sun_vectors[2,:] = np.tan(np.radians(solpos.apparent_elevation)) #z
+# sun_vectors = np.zeros((3,len(solpos.apparent_elevation)))
+# sun_vectors[0,:] = np.sin(np.radians(solpos.azimuth)) #x
+# sun_vectors[1,:] = np.sin(np.radians(solpos.azimuth))/np.tan(np.radians(solpos.azimuth)) #y
+# sun_vectors[2,:] = np.tan(np.radians(solpos.apparent_elevation)) #z
 
-origin = np.zeros(3)
+# origin = np.zeros(3)
 
+#%%
+solpos['sun_pos_x'] = 1000 * np.sin(np.radians(solpos.azimuth))
+solpos['sun_pos_y'] = 1000 * np.sin(np.radians(solpos.azimuth))/np.tan(np.radians(solpos.azimuth)) #y
+solpos['sun_pos_z'] = 1000 * np.tan(np.radians(solpos.apparent_elevation)) #z
 #%% 3d plot of sun vectors
 # import plotly.express as px 
 # import plotly.graph_objects as go
@@ -122,13 +135,52 @@ origin = np.zeros(3)
 # fig.show()
 
 #%% compute sun positions for soltrace input from sun vectors
-sun_positions = 1000 * sun_vectors # multiplying by arbitrary distance for soltrace
+# sun_positions = 1000 * sun_vectors # multiplying by arbitrary distance for soltrace
 
 # testing
 #sun_ positions = np.array([0, 0, 100])[:,None]
 # sun_positions = np.array([100, 0, 100])[:,None]
 
 #%%
+trough_angles = pd.DataFrame()
+trough_angles = sun_elev_to_trough_angles(solpos.apparent_elevation,solpos.azimuth)
+trough_angles = trough_angles.to_frame(name='nom_trough_angle')
+anglesdf = solpos.merge(trough_angles, left_index = True, right_index = True, how='inner')
+
+#%% merge field data and nominal
+fulldata = anglesdf.merge(field_data, left_index = True, right_index = True, how='inner')
+
+#%% calc angle deviation
+for column in fulldata.filter(regex='Tilt').columns:
+    # absolute value
+    fulldata['trough_angle_dev_{}'.format(column[0:6])] = abs(fulldata[column] - fulldata['nom_trough_angle'])
+    
+    # not absolute value
+    # fulldata['trough_angle_dev_{}'.format(column[0:6])] = fulldata[column] - fulldata['trough_angle']
+
+#% add column that's just time of day
+# fulldata['timeofday'] = fulldata.index.hour + fulldata.index.minute/60. # hours + minutes
+
+#%%
+fig, axs = plt.subplots(3,1,figsize=[9,7],dpi=250,sharex=True)
+
+axs[0].plot(fulldata.apparent_elevation,'k.-')
+axs[0].set_ylabel('sun elev. angle [deg]')
+
+axs[1].plot(fulldata.nom_trough_angle, '.-', label='nominal')
+axs[1].plot(fulldata['R1_Mid_Tilt'], 'k.', label='R1_Mid_Tilt')
+axs[1].set_ylabel('trough_angle')
+axs[1].legend()
+
+axs[2].plot(fulldata.trough_angle_dev_R1_Mid, '.-')
+axs[2].set_ylabel('deviation [deg]')
+
+for ax in axs:
+    ax.tick_params(labelrotation=30)
+
+plt.tight_layout()
+
+#%% main loop
 circumf = math.pi*d_abstube
 x = np.linspace(-circumf/2.,circumf/2., nx)
 y = np.linspace(-l_c/2., l_c/2., ny)
@@ -140,7 +192,8 @@ flux_centerline_time = [] # np.ones((nx,len(angles)))*np.nan
 coeff_var = []
 
 # iterate through pandas dataframe at all sun positions
-for col in range(sun_positions.shape[1]): # col iterates through through time
+#for col in range(sun_positions.shape[1]): # col iterates through through time
+for index, row in fulldata.iterrows():
     # set up simulation
     PT = PySolTrace()
     
@@ -155,10 +208,13 @@ for col in range(sun_positions.shape[1]): # col iterates through through time
     # define sun
     sun = PT.add_sun()
     # Give sun position
-    sun_position = sun_positions[:,col]
-    sun.position.x = sun_position[0] #2. #0.
-    sun.position.y = sun_position[1]
-    sun.position.z = sun_position[2]
+    # sun_position = sun_positions[:,col]
+    # sun.position.x = sun_position[0] #2. #0.
+    # sun.position.y = sun_position[1]
+    # sun.position.z = sun_position[2]
+    sun.position.x = row['sun_pos_x']
+    sun.position.y = row['sun_pos_y']
+    sun.position.z = row['sun_pos_z']
     
     # create stage for parabolic trough and absorber
     # (single stage)
@@ -172,7 +228,16 @@ for col in range(sun_positions.shape[1]): # col iterates through through time
     # st.aim = Point(sun_position[0], 0, sun_position[2]) #Point(1, 0, 1)
     
     # stage aim towards pt based on elev angle
-    stage_aim = get_aimpt_from_sunangles(solpos.apparent_elevation[col], solpos.azimuth[col], focal_len)
+    # stage_aim = get_aimpt_from_sunangles(row.apparent_elevation, row.azimuth) #, 10)
+    # # stage_aim = get_aimpt_from_sunangles_pvlib(solpos.zenith[col], solpos.azimuth[col], focal_len)
+    # st.aim = Point(stage_aim[0], 0, stage_aim[1])
+    
+    # stage aim as tracker angle
+    # stage_aim = get_aimpt_from_trough_angle(row.nom_trough_angle)
+    
+    # stage aim using actual tracker angle from field
+    stage_aim = get_aimpt_from_trough_angle(row.R1_Mid_Tilt)
+    
     st.aim = Point(stage_aim[0], 0, stage_aim[1])
     
     # create parabolic trough element
@@ -220,7 +285,7 @@ for col in range(sun_positions.shape[1]): # col iterates through through time
     # run pysoltrace at this instant in time / at this sun position
     if __name__ == "__main__":
         
-        PT.write_soltrace_input_file('trough-singlestage-stagerotate.stinput')
+        # PT.write_soltrace_input_file('trough-singlestage-stagerotate.stinput')
         PT.run(10, False, 4)
         print("Num rays traced: {:d}".format(PT.raydata.index.size))
         
@@ -269,11 +334,23 @@ for col in range(sun_positions.shape[1]): # col iterates through through time
         #print(df.describe())
         
         # delete dataframe to save memory unless it's last iteration
-        if (col != sun_positions.shape[1]-1):
+        if (index != anglesdf.index[-1]):
             del df
 
 #%% plot time-varying variables
 # plot_time_series(solpos, intercept_factor, flux_centerline_time, coeff_var, x)
+
+#%% save variables to pickle file
+# resultsdf = pd.DataFrame(list(zip(intercept_factor, flux_centerline_time, coeff_var)),
+#             index = solpos.index, 
+#             columns =['intercept_factor', 'flux_centerline', 'coeff_var'])
+# pickle.dump(resultsdf, open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22.p', 'wb'))
+
+#%% read pickle file of nominal results
+# nominaldf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22.p','rb'))
+
+#%% compare nominal to actual
+# plot_time_series_compare(nominaldf, solpos, intercept_factor, flux_centerline_time, coeff_var, x)
 
 #%% plt sun position and PTC aim points
 # xs = np.column_stack((origin, sun_positions))[0]/100
