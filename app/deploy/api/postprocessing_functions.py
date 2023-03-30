@@ -233,6 +233,26 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
         plt.show()
     return flux_st, c_v
 
+def plot_sun_trough_deviation_angles(fulldata, sensorloc):
+    fig, axs = plt.subplots(3,1,figsize=[9,7],dpi=250,sharex=True)
+
+    axs[0].plot(fulldata.apparent_elevation,'k.-')
+    axs[0].set_ylabel('sun elev. angle [deg]')
+
+    devkey = [col for col in fulldata.filter(regex='Tilt').columns if sensorloc in col]
+    axs[1].plot(fulldata.nom_trough_angle, '.-', label='nominal')
+    axs[1].plot(fulldata[devkey], 'k.', label=devkey[0])
+    axs[1].set_ylabel('trough_angle')
+    axs[1].legend()
+
+    devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
+    axs[2].plot(fulldata[devkey], '.-')
+    axs[2].set_ylabel('deviation [deg]')
+    
+    for ax in axs:
+        ax.tick_params(labelrotation=30)
+    plt.tight_layout()
+
 def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
     fig, axs = plt.subplots(4,1,figsize=[9,7],dpi=250)
 

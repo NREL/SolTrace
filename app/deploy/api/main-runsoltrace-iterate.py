@@ -71,16 +71,6 @@ if tracker_angle_input == 'field':
     path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
     field_data = load_field_data(path, year, month, day, fileres, outres)
 
-#%% add nominal trough angles from text file
-# spa_sun_positions = get_sun_angles()
-# tstart = '2022-12-16 15:00:00.000000' # '2022-12-16 00:00:00.000000-08:00' 
-# tend = '2022-12-17 00:00:00.000000'
-# spa_sun_positions = spa_sun_positions[tstart:tend]
-# #%
-# spa_sun_positions = spa_sun_positions.resample('4H').asfreq().interpolate() #1 minute
-
-# plt.figure()
-# plt.plot(spa_sun_positions,'.-')
 
 #%% get sun positions from SPA directly through pvlib
 #tz = 'UTC'
@@ -107,34 +97,6 @@ plt.legend()
 solpos['sun_pos_x'] = 1000 * np.sin(np.radians(solpos.azimuth))
 solpos['sun_pos_y'] = 1000 * np.sin(np.radians(solpos.azimuth))/np.tan(np.radians(solpos.azimuth)) #y
 solpos['sun_pos_z'] = 1000 * np.tan(np.radians(solpos.apparent_elevation)) #z
-#%% 3d plot of sun vectors
-# import plotly.express as px 
-# import plotly.graph_objects as go
-# import plotly.io as io
-# io.renderers.default='browser'
-
-# xs = np.column_stack((origin, sun_vectors))[0]
-# ys = np.column_stack((origin, sun_vectors))[1]
-# zs = np.column_stack((origin, sun_vectors))[2]
-
-# #date_to_val = solpos.index.map(pd.Series(data=np.arange(len(solpos)-1), index=solpos.index.values).to_dict())
-
-# fig = go.Figure(data=go.Scatter3d(x=xs, y=ys, z=zs, mode='markers')) #,marker_color=date_to_val))
-# for i in range(len(solpos.apparent_elevation)):
-#     xlines = [origin[0], sun_vectors[0,i]]
-#     ylines = [origin[1], sun_vectors[1,i]]
-#     zlines = [origin[2], sun_vectors[2,i]]
-#     fig.add_trace(go.Scatter3d(x=xlines, y=ylines, z=zlines, mode='lines'))
-
-# fig.update_layout(showlegend=False)
-# fig.show()
-
-#%% compute sun positions for soltrace input from sun vectors
-# sun_positions = 1000 * sun_vectors # multiplying by arbitrary distance for soltrace
-
-# testing
-#sun_ positions = np.array([0, 0, 100])[:,None]
-# sun_positions = np.array([100, 0, 100])[:,None]
 
 #%% calc nominal trough angles
 trough_angles = pd.DataFrame()
@@ -143,8 +105,6 @@ trough_angles = trough_angles.to_frame(name='nom_trough_angle')
 anglesdf = solpos.merge(trough_angles, left_index = True, right_index = True, how='inner')
 
 #%% merge field data and nominal
-#sensorloc = 'R1_Mid'
-
 if tracker_angle_input == 'field':
     fulldata = anglesdf.merge(field_data, left_index = True, right_index = True, how='inner')
     
@@ -152,26 +112,8 @@ if tracker_angle_input == 'field':
     for column in fulldata.filter(regex='Tilt').columns:
         # absolute value
         fulldata['trough_angle_dev_{}'.format(column[0:6])] = abs(fulldata[column] - fulldata['nom_trough_angle'])
+    plot_sun_trough_deviation_angles(fulldata, sensorloc)
 
-    fig, axs = plt.subplots(3,1,figsize=[9,7],dpi=250,sharex=True)
-
-    axs[0].plot(fulldata.apparent_elevation,'k.-')
-    axs[0].set_ylabel('sun elev. angle [deg]')
-
-    devkey = [col for col in fulldata.filter(regex='Tilt').columns if sensorloc in col]
-    axs[1].plot(fulldata.nom_trough_angle, '.-', label='nominal')
-    axs[1].plot(fulldata[devkey], 'k.', label=devkey[0])
-    axs[1].set_ylabel('trough_angle')
-    axs[1].legend()
-
-    devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
-    axs[2].plot(fulldata[devkey], '.-')
-    axs[2].set_ylabel('deviation [deg]')
-
-    for ax in axs:
-        ax.tick_params(labelrotation=30)
-
-    plt.tight_layout()
 else: # 'nominal'
     fulldata = anglesdf
 
