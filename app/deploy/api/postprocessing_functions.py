@@ -255,35 +255,54 @@ def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
 
     plt.tight_layout()
 
-def plot_time_series_compare(nominaldf, solpos, intercept_factor, flux_centerline_time, c_v, x):
-    fig, axs = plt.subplots(5,1,figsize=[12,7],dpi=250)
+def plot_time_series_compare(nominaldf, df, intercept_factor, flux_centerline_time, c_v, x, sensorloc):
+    #fig, axs = plt.subplots(5,1,figsize=[10,9],dpi=250)
+    fig, axs = plt.subplot_mosaic("AE;BE;CF;DF",sharex=True,figsize=[12,7],dpi=250)
 
-    axs[0].plot(solpos.apparent_elevation,'k.-')
-    axs[0].set_ylabel('sun elev. angle [deg]')
-
-    axs[1].plot(nominaldf.index, nominaldf.intercept_factor, '.-', label='nominal')
-    axs[1].plot(solpos.index, intercept_factor, '.-', label='actual')
-    axs[1].set_ylabel('intercept factor')
+    axs['A'].plot(df.apparent_elevation,'k.:')
+    axs['A'].set_ylabel('sun elev. angle [deg]')
     
-    axs[2].plot(nominaldf.index, nominaldf.coeff_var, '.-', label='nominal')
-    axs[2].plot(solpos.index, c_v, '.-', label='actual')
-    axs[2].set_ylabel('coeff of variation')
-    axs[2].legend()
+    devkey = [col for col in df.filter(regex='trough_angle_dev').columns if sensorloc in col]
+    axs['B'].plot(df[devkey],'r.-')
+    axs['B'].set_ylabel('trough angle \n deviation [deg]')
+
+    axs['C'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
+    axs['C'].plot(df.index, intercept_factor, 'r.-', label=sensorloc)
+    axs['C'].set_ylabel('intercept factor')
+    axs['C'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
+                     format(nominaldf.intercept_factor.mean(),
+                            np.mean(intercept_factor)))
+    axs['C'].set_ylim([0, 1])
+    
+    axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
+    axs['D'].plot(df.index, c_v, 'r.-', label=sensorloc)
+    axs['D'].set_ylabel('coeff of variation')
+    axs['D'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
+                     format(nominaldf.coeff_var.mean(),
+                            np.mean(c_v)))
+    axs['D'].set_ylim([1, 6])
+    axs['D'].legend()
+    
+    vmin = 0.0
+    vmax = np.max(flux_centerline_time)
+    levels = np.linspace(vmin,vmax,100)
+    
+    fluxcntr2 = np.stack(nominaldf.flux_centerline.values).T
+    cf2 = axs['E'].contourf(nominaldf.index, x, fluxcntr2, 
+                            levels=levels, cmap='turbo')
+    axs['E'].set_ylabel('x [m]')
+    axs['E'].set_title('nominal')
+    fig.colorbar(cf2, ax=axs['E'], label='flux at y=0', extend='both')
      
     fluxcntr = np.array(flux_centerline_time).T
-    cf = axs[3].contourf(solpos.index, x, fluxcntr, levels=100, cmap='turbo')
-    axs[3].set_ylabel('x [m]')
-    fig.colorbar(cf, ax=axs[3], label='flux at y=0')
-    axs[3].set_title('actual')
-    
-    # fluxcntr2 = nominaldf.flux_centerline.values.T
-    # cf2 = axs[4].contourf(nominaldf.index, x, fluxcntr2, levels=100, cmap='turbo')
-    # axs[4].set_ylabel('x [m]')
-    # axs[4].set_title('actual')
-    # fig.colorbar(cf2, ax=axs[4], label='flux at y=0')
+    cf = axs['F'].contourf(df.index, x, fluxcntr, levels=levels, 
+                           cmap='turbo')
+    axs['F'].set_ylabel('x [m]')
+    fig.colorbar(cf, ax=axs['F'], label='flux at y=0')
+    axs['F'].set_title('actual')
 
-    for ax in axs:
-        ax.tick_params(labelrotation=30)
+    axs['D'].tick_params(labelrotation=30)
+    axs['F'].tick_params(labelrotation=30)
 
     plt.tight_layout()
 
