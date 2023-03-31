@@ -33,8 +33,6 @@ from postprocessing_functions import *
 global focal_len
 
 # define constant inputs
-refl_rho = 1. # trough reflectivity
-absr_rho = 0. # receiver reflectivity
 n_hits = 1e5 #1e5
 sunshape_flag = False
 sfcerr_flag = False
@@ -54,12 +52,25 @@ abs_aimz = focal_len*2. # 0. ??
 nx = 30
 ny = 30
 plotrays = False
-save_pickle = False
+save_pickle = True
 # sampling_rate = 1 #hrs interval between sampling output
 
 tracker_angle_input = 'field' # 'field'
-sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
+#sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
+sensorlocs = ['R1_SO','R1_Mid','R1_DO']
 
+optics_type = 'realistic' # 'ideal'
+
+if optics_type == 'ideal':
+    refl_rho = 0.9 # 1. # trough reflectivity
+    absr_rho = 0. # receiver reflectivity
+    absr_alpha = 0.96 # 1. # receiver absorptivity
+    tau = 1. # transmittance of glass envelope
+else:
+    refl_rho = 1. # trough reflectivity
+    absr_rho = 0. # receiver reflectivity
+    absr_alpha = 1. # receiver absorptivity
+    tau = 1. # transmittance of glass envelope
 #%% load field data
 if tracker_angle_input == 'field':
     year   = '*'
@@ -273,10 +284,13 @@ if __name__ == "__main__":
     
     #%0 save variables to pickle file
     if save_pickle == True:
-        pickle.dump(results, open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22_1e5.p', 'wb'))
+        pickle.dump([fulldata, results], open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/{}_{}.p'.format(tracker_angle_input,n_hits), 'wb'))
     
     plot_time_series_compare_sensors(nominaldf, fulldata, results, x, sensorlocs)
         
     #%% transforming from stage to global
     # plot_rays_globalcoords(df, PT, st)
 
+
+    
+    
