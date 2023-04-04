@@ -427,34 +427,35 @@ def load_field_data(path, year, month, day, fileres, outres):
 def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs):
     fig, axs = plt.subplot_mosaic("AE;BF;CG;DH",sharex=True,figsize=[12,7],dpi=250)
 
-    axs['A'].plot(inputsdf.apparent_elevation,'k.:')
-    axs['A'].set_ylabel('sun elev. angle [deg]')
+    axs['A'].plot(inputsdf.wspd_7m,'k.:')
+    axs['A'].set_ylabel('wind speed [m/s]')
+    
+    axs['B'].plot(inputsdf.nom_trough_angle, 'k-', label='nominal')
+    for sensorloc in sensorlocs:
+        devkey = [col for col in inputsdf.filter(regex='Tilt').columns if sensorloc in col]
+        axs['B'].plot(inputsdf[devkey],'.', label=sensorloc)
+    axs['B'].set_ylabel('trough angle [deg]')
 
     for sensorloc in sensorlocs:
         devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
-        axs['B'].plot(inputsdf[devkey],'.-', label=sensorloc)
-    axs['B'].set_ylabel('trough angle \n deviation [deg]')
+        axs['C'].plot(inputsdf[devkey],'.-', label=sensorloc)
+    axs['C'].set_ylabel('trough angle \n deviation [deg]')
 
-    axs['C'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
+    axs['D'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
     for sensorloc in sensorlocs:
         outputsdf = results[sensorloc]
-        axs['C'].plot(inputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
-    axs['C'].set_ylabel('intercept factor')
-    # axs['C'].set_title('nominal avg = {:.2f}, actual avg = {:.2f}'.
-    #                  format(nominaldf.intercept_factor.mean(),
-    #                         np.mean(outputsdf.intercept_factor)))
-    axs['C'].set_ylim([0, 1])
-
-    axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
-    for sensorloc in sensorlocs:
-        outputsdf = results[sensorloc]
-        axs['D'].plot(inputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
-    axs['D'].set_ylabel('coeff of variation')
-    # axs['D'].set_title('nominal avg = {:.2f}, actual avg = {:.2f}'.
-    #                  format(nominaldf.coeff_var.mean(),
-    #                         np.mean(outputsdf.coeff_var)))
-    axs['D'].set_ylim([1, 6])
+        axs['D'].plot(inputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
+    axs['D'].set_ylabel('intercept factor')
+    axs['D'].set_ylim([0, 1])
     axs['D'].legend()
+
+    # axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
+    # for sensorloc in sensorlocs:
+    #     outputsdf = results[sensorloc]
+    #     axs['D'].plot(inputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
+    # axs['D'].set_ylabel('coeff of variation')
+    # axs['D'].set_ylim([1, 6])
+    # axs['D'].legend()
 
     vmin = 0.0
     vmax = 0.0 # just initializing
@@ -473,7 +474,7 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
     fig.colorbar(cf2, ax=axs['E'], label='flux at y=0', extend='both')
 
     cntraxs = [axs['F'],axs['G'],axs['H']]
-    for n,sensorloc in enumerate(sensorlocs):
+    for n,sensorloc in enumerate(sensorlocs[0:3]):
         outputsdf = results[sensorloc]
         ax = cntraxs[n]
         fluxcntr = np.stack(outputsdf.flux_centerline.values).T
@@ -487,4 +488,3 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
     axs['H'].tick_params(axis='x',labelrotation=30)
 
     plt.tight_layout()
-    

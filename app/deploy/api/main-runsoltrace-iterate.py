@@ -33,7 +33,7 @@ from postprocessing_functions import *
 global focal_len
 
 # define constant inputs
-n_hits = 1e5 #1e5
+n_hits = 1e5 # 5e6 # 1e5 #1e5                                                                                                                                                                                                                                                                                                                               
 sunshape_flag = False
 sfcerr_flag = False
 
@@ -47,6 +47,17 @@ ptc_pos = [0, 0, 0] # x, y, z
 ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
 
+# Yang et al 2022 geometry
+# l_c = 7.8 # module length
+# a_w = 5.0 #5.77 # aperture width
+# focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
+# d_abstube = 0.07 # diameter of absorber tube
+# abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
+# ptc_pos = [0, 0, 0] # x, y, z
+# ptc_aim = [0, 0, 1] # x, y, z
+# abs_aimz = focal_len*2. # 0. ??
+
+
 # data output settings
 # mesh definition for flux map
 nx = 30
@@ -56,12 +67,14 @@ save_pickle = True
 # sampling_rate = 1 #hrs interval between sampling output
 
 tracker_angle_input = 'field' # 'field'
-#sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
-sensorlocs = ['R1_SO','R1_Mid','R1_DO']
+# sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
+# sensorlocs = ['R1_SO','R1_Mid','R1_DO']
+# sensorlocs = ['R2_SO','R2_Mid','R2_DO']
+sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO']
 
-optics_type = 'realistic' # 'ideal'
+optics_type = 'ideal' # 'realistic' # 'ideal'
 
-if optics_type == 'ideal':
+if optics_type == 'realistic':
     refl_rho = 0.9 # 1. # trough reflectivity
     absr_rho = 0. # receiver reflectivity
     absr_alpha = 0.96 # 1. # receiver absorptivity

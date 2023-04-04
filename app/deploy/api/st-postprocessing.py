@@ -20,10 +20,28 @@ a_w = 5.0 #5.77 # aperture width
 aperture_area = a_w * l_c
 Ib = 1000 # W/m2
 
+sensorlocs = ['R1_SO','R1_Mid','R1_DO']
+
+optics_type = 'realistic' # 'ideal'
+
+if optics_type == 'ideal':
+    refl_rho = 0.9 # 1. # trough reflectivity
+    absr_rho = 0. # receiver reflectivity
+    absr_alpha = 0.96 # 1. # receiver absorptivity
+    tau = 1. # transmittance of glass envelope
+else:
+    refl_rho = 1. # trough reflectivity
+    absr_rho = 0. # receiver reflectivity
+    absr_alpha = 1. # receiver absorptivity
+    tau = 1. # transmittance of glass envelope
+
 # read in results
 tracker_angle_input = 'field' # 'field'
 n_hits = 1e5 #1e5
 fulldata,results = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/{}_{}.p'.format(tracker_angle_input,n_hits), 'rb'))
+
+#%%
+plot_time_series_compare_sensors(nominaldf, fulldata, results, x, sensorlocs)
 
 #%% calculate opt efficiency and heat flux
 for sensorloc in sensorlocs:
@@ -56,15 +74,54 @@ for ax in axs:
 plt.tight_layout()
 
 #%% validate against literature
-filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/StanekFig9.csv'
-stanekdf = pd.read_csv(filedir, header=None, names=['tracker_error', 'Q'])
-stanek_aper_area = 1.*1.5
+valdata = {}
 
+filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/StanekFig9.csv'
+valdata['stanek-Q'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'Q'])
+valdata['stanek_aper_area'] = 1.*1.5
+
+filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig12-Q-case4.csv'
+valdata['yang-Q'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'Q'])
+#convert from mrad to degrees
+valdata['yang-Q']['tracker_error'] = np.degrees(valdata['yang-Q']['tracker_error']/1000.)
+valdata['yang_aper_area'] = 5.*7.8
+
+filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig12-eta-case4.csv'
+valdata['yang-eta'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'eta'])
+valdata['yang-eta']['tracker_error'] = np.degrees(valdata['yang-eta']['tracker_error']/1000.)
+
+filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig10-intercept-case4.csv'
+valdata['yang-intc'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'intercept_factor'])
+valdata['yang-intc']['tracker_error'] = np.degrees(valdata['yang-intc']['tracker_error']/1000.)
+
+
+#%% plot validation of Q
 fig = plt.figure(dpi=250)
-plt.scatter(stanekdf['tracker_error'],stanekdf['Q']/stanek_aper_area,color='k', label='Stanek et al. 2022')
+plt.scatter(valdata['stanek-Q']['tracker_error'],valdata['stanek-Q']['Q']/valdata['stanek_aper_area'],color='k', label='Stanek et al. 2022')
+plt.scatter(valdata['yang-Q']['tracker_error'],valdata['yang-Q']['Q']/valdata['yang_aper_area'],color='k',marker='^', label='Yang et al. 2022')
 for sensorloc in sensorlocs:
     devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
     plt.scatter(fulldata[devkey],results[sensorloc].Q/aperture_area, label = sensorloc)
 plt.xlabel('trough angle deviation [deg]')
 plt.ylabel('$Q/A_a$ [W/m2]')
+plt.legend()
+
+#%% plot validation of opt efficiency
+fig = plt.figure(dpi=250)
+plt.scatter(valdata['yang-eta']['tracker_error'],valdata['yang-eta']['eta'],color='k',marker='^', label='Yang et al. 2022')
+for sensorloc in sensorlocs:
+    devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
+    plt.scatter(fulldata[devkey],results[sensorloc].eta*100, label = sensorloc)
+plt.xlabel('trough angle deviation [deg]')
+plt.ylabel('$\eta$ [%]')
+plt.legend()
+
+#%% plot validation of intercept factor
+fig = plt.figure(dpi=250)
+plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='^', label='Yang et al. 2022')
+for sensorloc in sensorlocs:
+    devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
+    plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
+plt.xlabel('trough angle deviation [deg]')
+plt.ylabel('intercept factor')
 plt.legend()
