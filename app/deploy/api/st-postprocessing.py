@@ -122,6 +122,7 @@ plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercep
 for sensorloc in sensorlocs:
     devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
     plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
+    # plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
 plt.xlabel('trough angle deviation [deg]')
 plt.ylabel('intercept factor')
 plt.legend()

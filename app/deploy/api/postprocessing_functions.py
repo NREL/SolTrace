@@ -44,7 +44,7 @@ def sun_elev_to_trough_angles(elev_angles, azimuth_angles):
     # # print(trough_angles.where(trough_angles.isnull()==False, -30))
     # trough_angles = -trough_angles + 90
     # print('trough angle = {:2f}'.format(trough_angles))
-    x, z = get_aimpt_from_sunangles(elev_angles, azimuth_angles)
+    x, _, z = get_aimpt_from_sunangles(elev_angles, azimuth_angles)
     trough_angle = get_tracker_angle_from_aimpt(x,z)
     return trough_angle
 
@@ -57,8 +57,9 @@ def get_aimpt_from_sunangles(elev_angles, azimuth_angles):
     # x = factor * np.cos(np.radians(signed_elev_angles))
     # z = x * np.tan(np.radians(signed_elev_angles))
     x = np.cos(np.radians(elev_angles))*np.sin(np.radians(azimuth_angles))
+    y = np.cos(np.radians(elev_angles)) * np.cos(np.radians(azimuth_angles))
     z = np.sin(np.radians(elev_angles))
-    return x,z
+    return x,y,z
 
 def get_tracker_angle_from_aimpt(x,z):
     tracker_angle = np.degrees(np.arctan2(x,z))
@@ -293,7 +294,8 @@ def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
     axs['C'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
                      format(nominaldf.intercept_factor.mean(),
                             np.mean(outputsdf.intercept_factor)))
-    axs['C'].set_ylim([0, 1])
+    ymax = np.maximum(1., np.max(outputsdf.intercept_factor))
+    axs['C'].set_ylim([0, ymax])
     
     axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
     axs['D'].plot(inputsdf.index, outputsdf.coeff_var, 'r.-', label=sensorloc)
@@ -380,6 +382,23 @@ def plot_rays_globalcoords(df, PT, st):
         fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
     
     #fig.add_trace(go.Scatter3d(x=locs_transform[0], y=locs_transform[1], z=locs_transform[2], mode='markers', marker=dict( size=1, color='blue', opacity=0.8, ) ))
+    fig.update_layout(showlegend=False)
+    fig.show()
+    
+def plot_sun_position(solpos):
+    #% 3d plot of sun vectors
+    # origin = np.zeros((3,len(solpos['sun_pos_x'])))
+    # xs = np.column_stack((origin[0,:], solpos['sun_pos_x']))
+    # print(xs)
+    # ys = np.column_stack((origin[1,:], solpos['sun_pos_y']))
+    # zs = np.column_stack((origin[2,:], solpos['sun_pos_z']))
+    # fig = go.Figure(go.Scatter3d(x=xs, y=ys, z=zs, mode='markers')) #,marker_color=date_to_val))
+    fig = go.Figure(go.Scatter3d(x=solpos['sun_pos_x'], y=solpos['sun_pos_y'], 
+                                 z=solpos['sun_pos_z'], mode='markers')) #,marker_color=date_to_val))
+    # xaims, zaims = get_aimpt_from_sunangles(solpos.apparent_elevation, solpos.azimuth)
+    # print(xaims)
+    #yaims = np.zeros((np.shape(xaims)))
+    #fig.add_trace(go.Scatter3d(x=xaims, y=yaims, z=zaims, mode='markers'))
     fig.update_layout(showlegend=False)
     fig.show()
     

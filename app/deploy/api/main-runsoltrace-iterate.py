@@ -32,8 +32,7 @@ io.renderers.default='browser'
 from postprocessing_functions import *
 global focal_len
 
-# define constant inputs
-n_hits = 1e5 # 5e6 # 1e5 #1e5                                                                                                                                                                                                                                                                                                                               
+# define constant inputs                                                                                                                                                                                                                                                                                                                       
 sunshape_flag = False
 sfcerr_flag = False
 
@@ -46,6 +45,7 @@ abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
 ptc_pos = [0, 0, 0] # x, y, z
 ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
+n_hits = 1e5 # 5e6 # 1e5 #1e5    
 
 # Yang et al 2022 geometry
 # l_c = 7.8 # module length
@@ -56,21 +56,21 @@ abs_aimz = focal_len*2. # 0. ??
 # ptc_pos = [0, 0, 0] # x, y, z
 # ptc_aim = [0, 0, 1] # x, y, z
 # abs_aimz = focal_len*2. # 0. ??
-
+# n_hits = 1e5 # 5e6 # 1e5 #1e5    
 
 # data output settings
 # mesh definition for flux map
 nx = 30
 ny = 30
-plotrays = False
-save_pickle = True
+plotrays = True
+save_pickle = False
 # sampling_rate = 1 #hrs interval between sampling output
 
-tracker_angle_input = 'field' # 'field'
-# sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
+tracker_angle_input = 'nominal' # 'nominal' # 'field'
+sensorlocs = ['nominal']
+#sensorlocs = ['R2_Mid'] #,'R2_Mid','R4_Mid']
 # sensorlocs = ['R1_SO','R1_Mid','R1_DO']
 # sensorlocs = ['R2_SO','R2_Mid','R2_DO']
-sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO']
 
 optics_type = 'ideal' # 'realistic' # 'ideal'
 
@@ -78,12 +78,17 @@ if optics_type == 'realistic':
     refl_rho = 0.9 # 1. # trough reflectivity
     absr_rho = 0. # receiver reflectivity
     absr_alpha = 0.96 # 1. # receiver absorptivity
-    tau = 1. # transmittance of glass envelope
-else:
+    # tau = 1. # transmittance of glass envelope
+elif optics_type == 'ideal':
     refl_rho = 1. # trough reflectivity
     absr_rho = 0. # receiver reflectivity
     absr_alpha = 1. # receiver absorptivity
-    tau = 1. # transmittance of glass envelope
+    # tau = 1. # transmittance of glass envelope
+elif optics_type == 'yang':
+    refl_rho = 0.93 # trough reflectivity
+    absr_rho = 0. # receiver reflectivity
+    absr_alpha = 0.96 # receiver absorptivity
+    # tau = 0.95 # transmittance of glass envelope
 #%% load field data
 if tracker_angle_input == 'field':
     year   = '*'
@@ -94,15 +99,17 @@ if tracker_angle_input == 'field':
     
     path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
     field_data = load_field_data(path, year, month, day, fileres, outres)
-
-
+# else:
+#     sensorlocs = 'nominal'
 #%% get sun positions from SPA directly through pvlib
-#tz = 'UTC'
+# if tracker_angle_input == 'nominal':
 lat, lon = 35.8, -114.983 #coordinates of NSO
 times = pd.date_range('2022-12-16 15:36:00', '2022-12-17 00:00:00',
-                      freq='1H') #, tz=tz)
+                      freq='3H') #, tz=tz)
 # times = pd.date_range('2022-12-16 19:31:00', '2022-12-16 19:40:00',
 #                       freq='0.5T') #, tz=tz)
+# times = pd.date_range('2022-12-16 15:36:00', '2022-12-16 20:00:00',
+#                       freq='4H') #, tz=tz)
 
 solpos = solarposition.get_solarposition(times, lat, lon, altitude=543) #, method='nrel_numba')
 # remove nighttime
@@ -118,9 +125,27 @@ plt.legend()
 # conclusion: python wrapper generates the same angles as the SPA website
 
 #%% calc sun position based on sun vector
-solpos['sun_pos_x'] = 1000 * np.sin(np.radians(solpos.azimuth))
-solpos['sun_pos_y'] = 1000 * np.sin(np.radians(solpos.azimuth))/np.tan(np.radians(solpos.azimuth)) #y
-solpos['sun_pos_z'] = 1000 * np.tan(np.radians(solpos.apparent_elevation)) #z
+# if tracker_angle_input == 'nominal':
+# solpos['sun_pos_x'] = 1000 * np.sin(np.radians(solpos.azimuth))
+# solpos['sun_pos_y'] = 1000 * np.sin(np.radians(solpos.azimuth))/np.tan(np.radians(solpos.azimuth)) #y
+# solpos['sun_pos_z'] = 1000 * np.tan(np.radians(solpos.apparent_elevation)) #z
+# solpos['sun_pos_x'] = 1000 * np.cos(np.radians(solpos.apparent_elevation)) * np.sin(np.radians(solpos.azimuth))
+# solpos['sun_pos_y'] = 1000 * np.cos(np.radians(solpos.apparent_elevation)) * np.cos(np.radians(solpos.azimuth))
+# solpos['sun_pos_z'] = 1000 * np.sin(np.radians(solpos.apparent_elevation)) #z
+# print(solpos['sun_pos_x'],solpos['sun_pos_y'],solpos['sun_pos_z'])
+
+[a, b, c] = get_aimpt_from_sunangles(solpos.apparent_elevation, solpos.azimuth)
+solpos['sun_pos_x'] = 1000 * a
+solpos['sun_pos_y'] = 0. # 1000 * b
+solpos['sun_pos_z'] = 1000 * c
+# plot_sun_position(solpos)
+
+plt.figure(dpi=250)
+plt.plot(solpos['sun_pos_x'],solpos['sun_pos_z'],'ko')
+# plt.plot(spa_sun_positions,'rx', label='SPA txt file')
+plt.xlabel('sun position [x]')
+plt.ylabel('sun position [z]')
+plt.xticks(rotation=45)
 
 #%% calc nominal trough angles
 trough_angles = pd.DataFrame()
@@ -154,6 +179,7 @@ tstart = time.time()
 if __name__ == "__main__":
     # iterate over each row and sensor location
     for sensorloc in sensorlocs:
+        print(sensorloc)
         
         # initialize
         intercept_factor = [] # np.ones(len(angles))*np.nan
@@ -269,14 +295,6 @@ if __name__ == "__main__":
                 plot_rays_globalcoords(df, PT, st)
             
             #print(df.describe())
-            
-            # delete dataframe to save memory unless it's last iteration
-            if (index != anglesdf.index[-1]):
-                del df
-            else:
-                tend = time.time()
-                elapsed_time = tend - tstart
-                print('Execution time: {:2f} seconds'.format(elapsed_time))
         
         #% plot time-varying variables
         # plot_time_series(nominaldf, fulldata, intercept_factor, flux_centerline_time, coeff_var, x)
@@ -299,11 +317,15 @@ if __name__ == "__main__":
     if save_pickle == True:
         pickle.dump([fulldata, results], open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/{}_{}.p'.format(tracker_angle_input,n_hits), 'wb'))
     
-    plot_time_series_compare_sensors(nominaldf, fulldata, results, x, sensorlocs)
+    if tracker_angle_input == 'field':
+        plot_time_series_compare_sensors(nominaldf, fulldata, results, x, sensorlocs)
         
+    # delete dataframe to save memory unless it's last iteration
+    if (index != anglesdf.index[-1]):
+        del df
+    else:
+        tend = time.time()
+        elapsed_time = tend - tstart
+        print('Execution time: {:2f} seconds'.format(elapsed_time))
     #%% transforming from stage to global
     # plot_rays_globalcoords(df, PT, st)
-
-
-    
-    
