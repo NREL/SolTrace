@@ -119,10 +119,13 @@ plt.legend()
 #%% plot validation of intercept factor
 fig = plt.figure(dpi=250)
 plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='^', label='Yang et al. 2022')
-for sensorloc in sensorlocs:
-    devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
-    plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
-    # plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
+if tracker_angle_input == 'validation':
+    plt.scatter(fulldata['trough_angle_dev'],results[sensorloc].intercept_factor, label = 'pysoltrace')
+else:
+    for sensorloc in sensorlocs:
+        devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
+        plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
+        # plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
 plt.xlabel('trough angle deviation [deg]')
 plt.ylabel('intercept factor')
 plt.legend()

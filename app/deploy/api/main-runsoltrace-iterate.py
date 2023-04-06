@@ -37,20 +37,9 @@ sunshape_flag = False
 sfcerr_flag = False
 
 # NSO Trough Geometry: using measurements from CAD file from Dave
-l_c = 12.0 # module length
-a_w = 5.0 #5.77 # aperture width
-focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
-d_abstube = 0.07 # diameter of absorber tube
-abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
-ptc_pos = [0, 0, 0] # x, y, z
-ptc_aim = [0, 0, 1] # x, y, z
-abs_aimz = focal_len*2. # 0. ??
-n_hits = 1e5 # 5e6 # 1e5 #1e5    
-
-# Yang et al 2022 geometry
-# l_c = 7.8 # module length
+# l_c = 12.0 # module length
 # a_w = 5.0 #5.77 # aperture width
-# focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
+# focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
 # d_abstube = 0.07 # diameter of absorber tube
 # abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
 # ptc_pos = [0, 0, 0] # x, y, z
@@ -58,22 +47,35 @@ n_hits = 1e5 # 5e6 # 1e5 #1e5
 # abs_aimz = focal_len*2. # 0. ??
 # n_hits = 1e5 # 5e6 # 1e5 #1e5    
 
+# Yang et al 2022 geometry
+l_c = 7.8 # module length
+a_w = 5.0 #5.77 # aperture width
+focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
+d_abstube = 0.07 # diameter of absorber tube
+abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
+ptc_pos = [0, 0, 0] # x, y, z
+ptc_aim = [0, 0, 1] # x, y, z
+abs_aimz = focal_len*2. # 0. ??
+n_hits = 1e5 # 5e6 # 1e5 #1e5    
+
 # data output settings
 # mesh definition for flux map
 nx = 30
 ny = 30
-plotrays = True
+plotrays = False
 save_pickle = False
 # sampling_rate = 1 #hrs interval between sampling output
 
-tracker_angle_input = 'nominal' # 'nominal' # 'field'
-sensorlocs = ['nominal']
+tracker_angle_input = 'validation' # 'nominal' # 'field'
+sensorlocs = ['validation'] # ['nominal']
+num_iters = 3
 #sensorlocs = ['R2_Mid'] #,'R2_Mid','R4_Mid']
 # sensorlocs = ['R1_SO','R1_Mid','R1_DO']
 # sensorlocs = ['R2_SO','R2_Mid','R2_DO']
 
-optics_type = 'ideal' # 'realistic' # 'ideal'
+optics_type = 'yang' # 'realistic' # 'ideal'
 
+#%% optics properties definition
 if optics_type == 'realistic':
     refl_rho = 0.9 # 1. # trough reflectivity
     absr_rho = 0. # receiver reflectivity
@@ -86,8 +88,9 @@ elif optics_type == 'ideal':
     # tau = 1. # transmittance of glass envelope
 elif optics_type == 'yang':
     refl_rho = 0.93 # trough reflectivity
-    absr_rho = 0. # receiver reflectivity
     absr_alpha = 0.96 # receiver absorptivity
+    absr_rho = 1 - absr_alpha # receiver reflectivity (assumption in soltrace)
+    refl_spec = 1.8 # [mrad] 0.2 == default
     # tau = 0.95 # transmittance of glass envelope
 #%% load field data
 if tracker_angle_input == 'field':
@@ -102,59 +105,74 @@ if tracker_angle_input == 'field':
 # else:
 #     sensorlocs = 'nominal'
 #%% get sun positions from SPA directly through pvlib
-# if tracker_angle_input == 'nominal':
-lat, lon = 35.8, -114.983 #coordinates of NSO
-times = pd.date_range('2022-12-16 15:36:00', '2022-12-17 00:00:00',
-                      freq='3H') #, tz=tz)
-# times = pd.date_range('2022-12-16 19:31:00', '2022-12-16 19:40:00',
-#                       freq='0.5T') #, tz=tz)
-# times = pd.date_range('2022-12-16 15:36:00', '2022-12-16 20:00:00',
-#                       freq='4H') #, tz=tz)
+tracker_angle_input = 'validation'
+if tracker_angle_input == 'nominal':
+    lat, lon = 35.8, -114.983 #coordinates of NSO
+    times = pd.date_range('2022-12-16 15:36:00', '2022-12-17 00:00:00',
+                          freq='3H') #, tz=tz)
+    # times = pd.date_range('2022-12-16 19:31:00', '2022-12-16 19:40:00',
+    #                       freq='0.5T') #, tz=tz)
+    # times = pd.date_range('2022-12-16 15:36:00', '2022-12-16 20:00:00',
+    #                       freq='4H') #, tz=tz)
+    
+    solpos = solarposition.get_solarposition(times, lat, lon, altitude=543) #, method='nrel_numba')
+    # remove nighttime
+    solpos = solpos.loc[solpos['apparent_elevation'] > 0, :]
+    
+    plt.figure(dpi=250)
+    plt.plot(solpos.apparent_elevation,'ko', label='py-spa')
+    # plt.plot(spa_sun_positions,'rx', label='SPA txt file')
+    plt.ylabel('elevation angle [deg]')
+    plt.xticks(rotation=45)
+    plt.legend()
 
-solpos = solarposition.get_solarposition(times, lat, lon, altitude=543) #, method='nrel_numba')
-# remove nighttime
-solpos = solpos.loc[solpos['apparent_elevation'] > 0, :]
+    # conclusion: python wrapper generates the same angles as the SPA website
+    
+    #% calc sun position based on sun vector
+    # if tracker_angle_input == 'nominal':
+    # solpos['sun_pos_x'] = 1000 * np.sin(np.radians(solpos.azimuth))
+    # solpos['sun_pos_y'] = 1000 * np.sin(np.radians(solpos.azimuth))/np.tan(np.radians(solpos.azimuth)) #y
+    # solpos['sun_pos_z'] = 1000 * np.tan(np.radians(solpos.apparent_elevation)) #z
+    # solpos['sun_pos_x'] = 1000 * np.cos(np.radians(solpos.apparent_elevation)) * np.sin(np.radians(solpos.azimuth))
+    # solpos['sun_pos_y'] = 1000 * np.cos(np.radians(solpos.apparent_elevation)) * np.cos(np.radians(solpos.azimuth))
+    # solpos['sun_pos_z'] = 1000 * np.sin(np.radians(solpos.apparent_elevation)) #z
+    # print(solpos['sun_pos_x'],solpos['sun_pos_y'],solpos['sun_pos_z'])
 
-plt.figure(dpi=250)
-plt.plot(solpos.apparent_elevation,'ko', label='py-spa')
-# plt.plot(spa_sun_positions,'rx', label='SPA txt file')
-plt.ylabel('elevation angle [deg]')
-plt.xticks(rotation=45)
-plt.legend()
-
-# conclusion: python wrapper generates the same angles as the SPA website
-
-#%% calc sun position based on sun vector
-# if tracker_angle_input == 'nominal':
-# solpos['sun_pos_x'] = 1000 * np.sin(np.radians(solpos.azimuth))
-# solpos['sun_pos_y'] = 1000 * np.sin(np.radians(solpos.azimuth))/np.tan(np.radians(solpos.azimuth)) #y
-# solpos['sun_pos_z'] = 1000 * np.tan(np.radians(solpos.apparent_elevation)) #z
-# solpos['sun_pos_x'] = 1000 * np.cos(np.radians(solpos.apparent_elevation)) * np.sin(np.radians(solpos.azimuth))
-# solpos['sun_pos_y'] = 1000 * np.cos(np.radians(solpos.apparent_elevation)) * np.cos(np.radians(solpos.azimuth))
-# solpos['sun_pos_z'] = 1000 * np.sin(np.radians(solpos.apparent_elevation)) #z
-# print(solpos['sun_pos_x'],solpos['sun_pos_y'],solpos['sun_pos_z'])
-
-[a, b, c] = get_aimpt_from_sunangles(solpos.apparent_elevation, solpos.azimuth)
-solpos['sun_pos_x'] = 1000 * a
-solpos['sun_pos_y'] = 0. # 1000 * b
-solpos['sun_pos_z'] = 1000 * c
+    [a, b, c] = get_aimpt_from_sunangles(solpos.apparent_elevation, solpos.azimuth)
+    solpos['sun_pos_x'] = 1000 * a
+    solpos['sun_pos_y'] = 1000 * b
+    solpos['sun_pos_z'] = 1000 * c
+    
+elif tracker_angle_input == 'validation':
+    # solpos = pd.DataFrame()
+    solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
+    # solpos['sun_pos_x'] = 0. # 1000 * a
+    # solpos['sun_pos_y'] = 0. # 1000 * b
+    # solpos['sun_pos_z'] = 100. # 1000 * c
 # plot_sun_position(solpos)
 
-plt.figure(dpi=250)
+fig = plt.figure(dpi=250)
 plt.plot(solpos['sun_pos_x'],solpos['sun_pos_z'],'ko')
 # plt.plot(spa_sun_positions,'rx', label='SPA txt file')
 plt.xlabel('sun position [x]')
 plt.ylabel('sun position [z]')
-plt.xticks(rotation=45)
+# plt.xticks(rotation=45)
 
 #%% calc nominal trough angles
-trough_angles = pd.DataFrame()
-trough_angles = sun_elev_to_trough_angles(solpos.apparent_elevation,solpos.azimuth)
-trough_angles = trough_angles.to_frame(name='nom_trough_angle')
-anglesdf = solpos.merge(trough_angles, left_index = True, right_index = True, how='inner')
+if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
+    trough_angles = pd.DataFrame()
+    trough_angles = sun_elev_to_trough_angles(solpos.apparent_elevation,solpos.azimuth)
+    trough_angles = trough_angles.to_frame(name='nom_trough_angle')
+    anglesdf = solpos.merge(trough_angles, left_index = True, right_index = True, how='inner')
+else: # validation
+    nom_trough_angle = 0.
+    # trough_angles = pd.DataFrame()
+    # trough_angles['nom_trough_angle'] = 90.
+    # anglesdf = solpos.merge(trough_angles, left_index = True, right_index = True, how='inner')
 
-#%% merge field data and nominal
+#%% calculate trough angle deviation
 if tracker_angle_input == 'field':
+    # merge field data and nominal
     fulldata = anglesdf.merge(field_data, left_index = True, right_index = True, how='inner')
     
     #% calc angle deviation
@@ -163,7 +181,14 @@ if tracker_angle_input == 'field':
             # absolute value
             fulldata['trough_angle_dev_{}'.format(column[0:6])] = abs(fulldata[column] - fulldata['nom_trough_angle'])
         plot_sun_trough_deviation_angles(fulldata, sensorloc)
-
+elif tracker_angle_input == 'validation':
+    # fulldata = pd.DataFrame()
+    error = np.linspace(0,1,num_iters) # 0.05 #0.025 # [deg]
+    data = nom_trough_angle + error
+    trough_angles = pd.DataFrame(data, columns=['trough_angle'])
+    fulldata = solpos.merge(trough_angles, how='cross') # repeat same sun position for all rows
+    fulldata['nom_trough_angle'] = nom_trough_angle
+    fulldata['trough_angle_dev'] = error
 else: # 'nominal'
     fulldata = anglesdf
 
@@ -194,6 +219,9 @@ if __name__ == "__main__":
             # Create two optics types - one for reflector, and one for absorber.
             opt_ref = PT.add_optic("Reflector")
             opt_ref.front.reflectivity = refl_rho # reflects all power
+            opt_ref.front.spec_error = refl_spec
+            opt_ref.back.reflectivity = refl_rho # reflects all power
+            opt_ref.back.spec_error = refl_spec
         
             opt_abs = PT.add_optic("Absorber")
             opt_abs.front.reflectivity = absr_rho
@@ -225,6 +253,8 @@ if __name__ == "__main__":
             if tracker_angle_input == 'nominal':
                 # stage aim as tracker angle
                 stage_aim = get_aimpt_from_trough_angle(row.nom_trough_angle)
+            elif tracker_angle_input == 'validation':
+                stage_aim = get_aimpt_from_trough_angle(row.trough_angle)
             else: # 'field'
                 # stage aim using actual tracker angle from field
                 devkey = [col for col in fulldata.filter(regex='Tilt').columns if sensorloc in col]
@@ -301,7 +331,7 @@ if __name__ == "__main__":
     
         # combine results into a dataframe
         resultsdf = pd.DataFrame(list(zip(intercept_factor, flux_centerline_time, coeff_var)),
-                    index = solpos.index, 
+                    index = fulldata.index, 
                     columns =['intercept_factor', 'flux_centerline', 'coeff_var'])
         
         results[sensorloc] = resultsdf
@@ -321,7 +351,7 @@ if __name__ == "__main__":
         plot_time_series_compare_sensors(nominaldf, fulldata, results, x, sensorlocs)
         
     # delete dataframe to save memory unless it's last iteration
-    if (index != anglesdf.index[-1]):
+    if (index != fulldata.index[-1]):
         del df
     else:
         tend = time.time()

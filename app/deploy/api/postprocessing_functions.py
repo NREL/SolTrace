@@ -168,7 +168,7 @@ def convert_xy_polar_coords(d,x,zloc,focal_len,gui_coords=False):
     if gui_coords:
         #z = zloc - focal_len + d_rec/2. #reset height of tube to z=0
         cpos = r * np.arctan2(x,(zloc-focal_len))
-        print('using gui coords')
+        # print('using gui coords')
     
     # assumes x=0 is at bottom of absorber tube
     # uses s = r*theta and theta = atan(loc_x/r-loc_z)
@@ -214,24 +214,28 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
 
     if plotflag==True:
         #% plot flux line 
+        fig, axs = plt.subplots(1,2,figsize=[6,4],dpi=250)
+        
         flux_centerline = np.array(flux_st[:,int(ny/2)])
-        plt.figure(figsize=[3,4],dpi=250)
-        plt.plot(x, flux_centerline, 'k.-') #, vmin=240, vmax=420)
-        plt.title(f"max flux {flux_st.max():.0f} kW/m2, mean flux {flux_st.mean():.1f}")
-        plt.xlabel('x [m]')
-        plt.ylabel('flux at y=0 [kW/m2]')
-        plt.savefig('flux-line.png')
-        plt.show()
+        # plt.figure(figsize=[3,4],dpi=250)
+        axs[0].plot(x, flux_centerline, 'k.-') #, vmin=240, vmax=420)
+        # axs[0].set_title(f"max flux {flux_st.max():.2f} kW/m2, mean flux {flux_st.mean():.1f}")
+        axs[0].set_xlabel('x [m]')
+        axs[0].set_ylabel('flux at y=0 [kW/m2]')
+        # plt.savefig('flux-line.png')
+        # plt.show()
 
         #% contour plot
-        plt.figure(figsize=[6,4],dpi=250)
-        plt.contourf(Xc, Yc, flux_st, levels=15, cmap='viridis') #, vmin=240, vmax=420)
-        plt.colorbar()
-        plt.title(f"pysoltrace: \n max flux {flux_st.max():.2f} kW/m2, mean flux {flux_st.mean():.2f}")
-        plt.xlabel('x [m]')
-        plt.ylabel('y [m]')
+        # plt.figure(figsize=[6,4],dpi=250)
+        cf = axs[1].contourf(Xc, Yc, flux_st, levels=15, cmap='viridis') #, vmin=240, vmax=420)
+        fig.colorbar(cf, ax=axs[1], label='flux [kW/m2]')
+        axs[1].set_title(f"pysoltrace: \n max flux {flux_st.max():.2f} kW/m2, mean flux {flux_st.mean():.2f}")
+        axs[1].set_xlabel('x [m]')
+        axs[1].set_ylabel('y [m]')
+        plt.tight_layout()
         plt.savefig('flux-map.png')
         plt.show()
+        
     return flux_st, c_v
 
 def plot_sun_trough_deviation_angles(fulldata, sensorloc):
@@ -278,27 +282,47 @@ def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
 
 def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
     #fig, axs = plt.subplots(5,1,figsize=[10,9],dpi=250)
-    fig, axs = plt.subplot_mosaic("AE;BE;CF;DF",sharex=True,figsize=[12,7],dpi=250)
+    fig, axs = plt.subplot_mosaic("AE;BE;CF;DF",figsize=[12,7],dpi=250)
 
-    axs['A'].plot(inputsdf.apparent_elevation,'k.:')
-    axs['A'].set_ylabel('sun elev. angle [deg]')
-    axs['A'].set_title(sensorloc)
+    # axs['A'].plot(inputsdf.apparent_elevation,'k.:')
+    # axs['A'].set_ylabel('sun elev. angle [deg]')
+    # axs['A'].set_title(sensorloc)
     
-    devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
-    axs['B'].plot(inputsdf[devkey],'r.-')
+    axs['A'].plot(inputsdf.nom_trough_angle, 'k.-', label='nominal')
+    if sensorloc == 'validation':
+        axs['A'].plot(inputsdf.trough_angle, '.-', label='actual')
+    else:
+        devkey = [col for col in inputsdf.filter(regex='Tilt').columns if sensorloc in col]
+        axs['A'].plot(inputsdf[devkey],'.', label=sensorloc)
+    axs['A'].set_ylabel('trough angle [deg]')
+    
+    if sensorloc == 'validation':
+        axs['B'].plot(inputsdf.trough_angle_dev, '.-')
+    else:
+        devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
+        axs['B'].plot(inputsdf[devkey],'.-')
     axs['B'].set_ylabel('trough angle \n deviation [deg]')
 
-    axs['C'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
-    axs['C'].plot(inputsdf.index, outputsdf.intercept_factor, 'r.-', label=sensorloc)
+    if sensorloc == 'validation':
+        axs['C'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
+        axs['C'].plot(outputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
+    else:  
+        axs['C'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
+        axs['C'].plot(inputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
     axs['C'].set_ylabel('intercept factor')
     axs['C'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
                      format(nominaldf.intercept_factor.mean(),
                             np.mean(outputsdf.intercept_factor)))
     ymax = np.maximum(1., np.max(outputsdf.intercept_factor))
     axs['C'].set_ylim([0, ymax])
+    axs['C'].legend()
     
-    axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
-    axs['D'].plot(inputsdf.index, outputsdf.coeff_var, 'r.-', label=sensorloc)
+    if sensorloc == 'validation':
+        # axs['D'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
+        axs['D'].plot(outputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
+    else: 
+        axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
+        axs['D'].plot(inputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
     axs['D'].set_ylabel('coeff of variation')
     axs['D'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
                      format(nominaldf.coeff_var.mean(),
