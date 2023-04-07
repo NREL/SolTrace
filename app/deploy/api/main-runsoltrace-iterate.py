@@ -36,21 +36,11 @@ global focal_len
 sunshape_flag = False
 sfcerr_flag = False
 
+# parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave
-l_c = 12.0 # module length
-a_w = 5.0 #5.77 # aperture width
-focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
-d_abstube = 0.07 # diameter of absorber tube
-abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
-ptc_pos = [0, 0, 0] # x, y, z
-ptc_aim = [0, 0, 1] # x, y, z
-abs_aimz = focal_len*2. # 0. ??
-n_hits = 1e5 # 5e6 # 1e5 #1e5    
-
-# Yang et al 2022 geometry
-# l_c = 7.8 # module length
+# l_c = 12.0 # module length
 # a_w = 5.0 #5.77 # aperture width
-# focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
+# focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
 # d_abstube = 0.07 # diameter of absorber tube
 # abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
 # ptc_pos = [0, 0, 0] # x, y, z
@@ -58,37 +48,54 @@ n_hits = 1e5 # 5e6 # 1e5 #1e5
 # abs_aimz = focal_len*2. # 0. ??
 # n_hits = 1e5 # 5e6 # 1e5 #1e5    
 
+# Yang et al 2022 geometry
+l_c = 7.8 # module length
+a_w = 5.0 #5.77 # aperture width
+focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
+d_abstube = 0.07 # diameter of absorber tube
+abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
+ptc_pos = [0, 0, 0] # x, y, z
+ptc_aim = [0, 0, 1] # x, y, z
+abs_aimz = focal_len*2. # 0. ??
+n_hits = 1e5 # 5e6 # 1e5 #1e5    
+
 # data output settings
 # mesh definition for flux map
 nx = 30
 ny = 30
-plotrays = True
+plotrays = False
 save_pickle = False
-# sampling_rate = 1 #hrs interval between sampling output
 
-# running with field data
-tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
+# running with field data =============================================
+# tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+# sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
 # sensorlocs = ['R1_SO','R1_Mid','R1_DO']
 # sensorlocs = ['R2_SO','R2_Mid','R2_DO']
+# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 
-# running nominal or for validation
-# tracker_angle_input = 'feild' # 'validation' 'nominal' # 'field'
-# sensorlocs = ['validation'] # ['nominal']
-# num_iters = 3 # number of trough dev angles to evaluate
+# running nominal =============================================
+# tracker_angle_input = 'nominal' # 'validation' 'nominal' # 'field'
+# sensorlocs = ['nominal']
+# optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
 
-optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+
+# running nominal or for validation ===================================
+tracker_angle_input = 'validation' # 'validation' 'nominal' # 'field'
+sensorlocs = ['validation'] # ['nominal']
+num_iters = 3 # number of trough dev angles to evaluate
+optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
 
 #%% optics properties definition
 if optics_type == 'realistic':
     refl_rho = 0.9 # 1. # trough reflectivity
-    absr_rho = 0. # receiver reflectivity
     absr_alpha = 0.96 # 1. # receiver absorptivity
+    absr_rho = 1 - absr_alpha #0. # receiver reflectivity
     # tau = 1. # transmittance of glass envelope
 elif optics_type == 'ideal':
     refl_rho = 1. # trough reflectivity
     absr_rho = 0. # receiver reflectivity
-    absr_alpha = 1. # receiver absorptivity
+    refl_spec = 0.0 # [mrad] 0.2 == default
+    # absr_alpha = 1. # receiver absorptivity
     # tau = 1. # transmittance of glass envelope
 elif optics_type == 'yang':
     refl_rho = 0.93 # trough reflectivity
@@ -147,11 +154,8 @@ if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
     solpos['sun_pos_z'] = 1000 * c
     
 elif tracker_angle_input == 'validation':
-    # solpos = pd.DataFrame()
+    # if validating, sun position is directly overhead at arbitrary height of 100 m
     solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
-    # solpos['sun_pos_x'] = 0. # 1000 * a
-    # solpos['sun_pos_y'] = 0. # 1000 * b
-    # solpos['sun_pos_z'] = 100. # 1000 * c
 # plot_sun_position(solpos)
 
 fig = plt.figure(dpi=250)
@@ -168,10 +172,7 @@ if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
     trough_angles = trough_angles.to_frame(name='nom_trough_angle')
     anglesdf = solpos.merge(trough_angles, left_index = True, right_index = True, how='inner')
 else: # validation
-    nom_trough_angle = 0.
-    # trough_angles = pd.DataFrame()
-    # trough_angles['nom_trough_angle'] = 90.
-    # anglesdf = solpos.merge(trough_angles, left_index = True, right_index = True, how='inner')
+    nom_trough_angle = 0. # 0 degrees = flat, facing the sun directlly overhead
 
 #%% calculate trough angle deviation
 if tracker_angle_input == 'field':
@@ -185,9 +186,14 @@ if tracker_angle_input == 'field':
             fulldata['trough_angle_dev_{}'.format(column[0:6])] = abs(fulldata[column] - fulldata['nom_trough_angle'])
         plot_sun_trough_deviation_angles(fulldata, sensorloc)
 elif tracker_angle_input == 'validation':
-    # fulldata = pd.DataFrame()
+    
+    # array of tracking error values
     error = np.linspace(0,1,num_iters) # 0.05 #0.025 # [deg]
+    
+    # define trough angle based on tracking error
     data = nom_trough_angle + error
+    
+    # create dataframe of trough angles
     trough_angles = pd.DataFrame(data, columns=['trough_angle'])
     fulldata = solpos.merge(trough_angles, how='cross') # repeat same sun position for all rows
     fulldata['nom_trough_angle'] = nom_trough_angle
@@ -195,7 +201,7 @@ elif tracker_angle_input == 'validation':
 else: # 'nominal'
     fulldata = anglesdf
 
-#%% main loop
+#%% main loop of pysoltrace
 circumf = math.pi*d_abstube
 x = np.linspace(-circumf/2.,circumf/2., nx)
 y = np.linspace(-l_c/2., l_c/2., ny)
@@ -211,7 +217,6 @@ if __name__ == "__main__":
         
         # initialize
         intercept_factor = [] # np.ones(len(angles))*np.nan
-        eta = [] # np.ones(len(angles))*np.nan
         flux_centerline_time = [] # np.ones((nx,len(angles)))*np.nan
         coeff_var = []
         
@@ -221,10 +226,13 @@ if __name__ == "__main__":
             
             # Create two optics types - one for reflector, and one for absorber.
             opt_ref = PT.add_optic("Reflector")
-            opt_ref.front.reflectivity = refl_rho # reflects all power
-            # opt_ref.front.spec_error = refl_spec
-            opt_ref.back.reflectivity = refl_rho # reflects all power
-            # opt_ref.back.spec_error = refl_spec
+            opt_ref.front.reflectivity = refl_rho
+            opt_ref.back.reflectivity = refl_rho
+            
+            if tracker_angle_input == 'validation':
+                opt_ref.front.spec_error = refl_spec
+                opt_ref.back.spec_error = refl_spec
+                # ? these values seem to have no impact on intercept factor
         
             opt_abs = PT.add_optic("Absorber")
             opt_abs.front.reflectivity = absr_rho
@@ -298,11 +306,8 @@ if __name__ == "__main__":
             PT.max_rays_traced = PT.num_ray_hits*100 # 1000 #100 #PT.num_ray_hits*100
             PT.is_sunshape = sunshape_flag # True
             PT.is_surface_errors = sfcerr_flag # True
-            
-            # run pysoltrace at this instant in time / at this sun position
-            # if __name__ == "__main__":
                 
-            # PT.write_soltrace_input_file('trough-singlestage-stagerotate.stinput')
+            # PT.write_soltrace_input_file('trough-singlestage-{}.stinput'.format(index))
             PT.run(10, False, 4)
             print("Num rays traced: {:d}".format(PT.raydata.index.size))
             
@@ -311,9 +316,7 @@ if __name__ == "__main__":
             
             # calculate intercept factor
             intercept_factor.append(calc_intercept_factor(df))
-            
-            # calculate optical efficiency
-            
+                        
             # calculate flux map
             ppr = PT.powerperray
             df_rec = generate_receiver_dataframe(df,d_abstube,focal_len)

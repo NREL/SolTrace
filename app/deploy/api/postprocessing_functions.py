@@ -86,17 +86,23 @@ def get_aimpt_from_sunangles_pvlib(zenith, azimuth, factor):
 
 #--- Get intersections for stage and element. Note: input stage/element is zero-indexed
 def get_intersections(df, stage, elem = 'all'): #, isfinal = False):
-# Note: stage/element numbering in SolTrace output starts from 1
-# stage : integer, [0:PT.stages-1]
-# elem  : string, ['all','absorbed','reflected'] 
+    # Note: stage/element numbering in SolTrace output starts from 1
+    # stage : integer, [0:PT.stages-1]
+    # elem  : string, ['all','absorbed','reflected']
+    
+    elems_negative = df.element.unique()[df.element.unique()<0]
+    elems_positive = df.element.unique()[df.element.unique()>0]
+    
     if elem == 'all': # all
         inds = np.where(df['stage'].values == stage)[0]
     
     elif elem == 'absorbed': # absorbed --> negative elem values only
-        inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values < 0))[0]
+        # inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values < 0))[0]
+        inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values == np.min(elems_negative)))[0]
     
     elif elem == 'reflected':# reflected --> positive elem values only
-        inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values > 0))[0]
+        # inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values > 0))[0]
+        inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values == np.min(elems_positive)))[0]
     return inds
 
 #--- Get number of ray intersections with given element
@@ -112,9 +118,9 @@ def get_power_per_ray(PT,df):
 def calc_intercept_factor(df):
     stages = df.stage.unique()
     
-    # needs fixing, [0] and [-1] not robust for more than 2 stages
-    n_coll_rays = get_number_of_hits(df,stages[0],'reflected') # 'all' equivalent to PT.num_ray_hits
-    n_rcvr_rays = get_number_of_hits(df,stages[-1],'absorbed') #just absorbed or all rays? 
+    # needs fixing, not robust for more than 2 stages
+    n_coll_rays = get_number_of_hits(df,np.min(stages),'reflected') # 'all' equivalent to PT.num_ray_hits
+    n_rcvr_rays = get_number_of_hits(df,np.max(stages),'absorbed') #just absorbed or all rays? 
     
     # single stage
     # n_coll_rays = get_number_of_hits(df,stages[-1],'reflected') # 'all' equivalent to PT.num_ray_hits
