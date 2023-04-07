@@ -37,20 +37,9 @@ sunshape_flag = False
 sfcerr_flag = False
 
 # NSO Trough Geometry: using measurements from CAD file from Dave
-# l_c = 12.0 # module length
-# a_w = 5.0 #5.77 # aperture width
-# focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
-# d_abstube = 0.07 # diameter of absorber tube
-# abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
-# ptc_pos = [0, 0, 0] # x, y, z
-# ptc_aim = [0, 0, 1] # x, y, z
-# abs_aimz = focal_len*2. # 0. ??
-# n_hits = 1e5 # 5e6 # 1e5 #1e5    
-
-# Yang et al 2022 geometry
-l_c = 7.8 # module length
+l_c = 12.0 # module length
 a_w = 5.0 #5.77 # aperture width
-focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
+focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
 d_abstube = 0.07 # diameter of absorber tube
 abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
 ptc_pos = [0, 0, 0] # x, y, z
@@ -58,22 +47,37 @@ ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
 n_hits = 1e5 # 5e6 # 1e5 #1e5    
 
+# Yang et al 2022 geometry
+# l_c = 7.8 # module length
+# a_w = 5.0 #5.77 # aperture width
+# focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
+# d_abstube = 0.07 # diameter of absorber tube
+# abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
+# ptc_pos = [0, 0, 0] # x, y, z
+# ptc_aim = [0, 0, 1] # x, y, z
+# abs_aimz = focal_len*2. # 0. ??
+# n_hits = 1e5 # 5e6 # 1e5 #1e5    
+
 # data output settings
 # mesh definition for flux map
 nx = 30
 ny = 30
-plotrays = False
+plotrays = True
 save_pickle = False
 # sampling_rate = 1 #hrs interval between sampling output
 
-tracker_angle_input = 'validation' # 'nominal' # 'field'
-sensorlocs = ['validation'] # ['nominal']
-num_iters = 3
-#sensorlocs = ['R2_Mid'] #,'R2_Mid','R4_Mid']
+# running with field data
+tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
 # sensorlocs = ['R1_SO','R1_Mid','R1_DO']
 # sensorlocs = ['R2_SO','R2_Mid','R2_DO']
 
-optics_type = 'yang' # 'realistic' # 'ideal'
+# running nominal or for validation
+# tracker_angle_input = 'feild' # 'validation' 'nominal' # 'field'
+# sensorlocs = ['validation'] # ['nominal']
+# num_iters = 3 # number of trough dev angles to evaluate
+
+optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 
 #%% optics properties definition
 if optics_type == 'realistic':
@@ -105,8 +109,7 @@ if tracker_angle_input == 'field':
 # else:
 #     sensorlocs = 'nominal'
 #%% get sun positions from SPA directly through pvlib
-tracker_angle_input = 'validation'
-if tracker_angle_input == 'nominal':
+if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
     lat, lon = 35.8, -114.983 #coordinates of NSO
     times = pd.date_range('2022-12-16 15:36:00', '2022-12-17 00:00:00',
                           freq='3H') #, tz=tz)
@@ -219,9 +222,9 @@ if __name__ == "__main__":
             # Create two optics types - one for reflector, and one for absorber.
             opt_ref = PT.add_optic("Reflector")
             opt_ref.front.reflectivity = refl_rho # reflects all power
-            opt_ref.front.spec_error = refl_spec
+            # opt_ref.front.spec_error = refl_spec
             opt_ref.back.reflectivity = refl_rho # reflects all power
-            opt_ref.back.spec_error = refl_spec
+            # opt_ref.back.spec_error = refl_spec
         
             opt_abs = PT.add_optic("Absorber")
             opt_abs.front.reflectivity = absr_rho
