@@ -3,8 +3,7 @@ post-processing functions for output from pysoltrace
 ------------------------------------------------------------
 soltrace numbering convention
 stages:
-    1 = collector
-    2 = receiver
+    1 = collector and receiver for single stage
 elements:
     +N = reflected
     -N = absorbed (isfinal)

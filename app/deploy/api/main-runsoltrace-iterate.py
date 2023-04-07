@@ -5,6 +5,10 @@ This file runs pysoltrace.py iteratively through time-series data
 and with field tilt angle data.
 
 Notes:
+    - this code can be run in three modes:
+        - tracker_angle_input = 'field' - sets tracker angle from field data over time
+        - tracker_angle_input = 'nominal' - sets tracker angle to point the trough towards the sun over time
+        - tracker_angle_input = 'validation' - sets tracker angle to vary error at a single sun position
     - may take too much memory to run in Spyder, so ideally will be launched 
     from a terminal, maybe on HPC resources
 
@@ -38,26 +42,26 @@ sfcerr_flag = False
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave
-# l_c = 12.0 # module length
-# a_w = 5.0 #5.77 # aperture width
-# focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
-# d_abstube = 0.07 # diameter of absorber tube
-# abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
-# ptc_pos = [0, 0, 0] # x, y, z
-# ptc_aim = [0, 0, 1] # x, y, z
-# abs_aimz = focal_len*2. # 0. ??
-# n_hits = 1e5 # 5e6 # 1e5 #1e5    
-
-# Yang et al 2022 geometry
-l_c = 7.8 # module length
+l_c = 12.0 # module length
 a_w = 5.0 #5.77 # aperture width
-focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
+focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
 d_abstube = 0.07 # diameter of absorber tube
 abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
 ptc_pos = [0, 0, 0] # x, y, z
 ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
 n_hits = 1e5 # 5e6 # 1e5 #1e5    
+
+# Yang et al 2022 geometry
+# l_c = 7.8 # module length
+# a_w = 5.0 #5.77 # aperture width
+# focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
+# d_abstube = 0.07 # diameter of absorber tube
+# abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
+# ptc_pos = [0, 0, 0] # x, y, z
+# ptc_aim = [0, 0, 1] # x, y, z
+# abs_aimz = focal_len*2. # 0. ??
+# n_hits = 1e5 # 5e6 # 1e5 #1e5    
 
 # data output settings
 # mesh definition for flux map
@@ -67,23 +71,23 @@ plotrays = False
 save_pickle = False
 
 # running with field data =============================================
-# tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-# sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
+tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
 # sensorlocs = ['R1_SO','R1_Mid','R1_DO']
 # sensorlocs = ['R2_SO','R2_Mid','R2_DO']
-# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 
 # running nominal =============================================
 # tracker_angle_input = 'nominal' # 'validation' 'nominal' # 'field'
 # sensorlocs = ['nominal']
-# optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
+# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 
 
 # running nominal or for validation ===================================
-tracker_angle_input = 'validation' # 'validation' 'nominal' # 'field'
-sensorlocs = ['validation'] # ['nominal']
-num_iters = 3 # number of trough dev angles to evaluate
-optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
+# tracker_angle_input = 'validation' # 'validation' 'nominal' # 'field'
+# sensorlocs = ['validation'] # ['nominal']
+# num_iters = 3 # number of trough dev angles to evaluate
+# optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
 
 #%% optics properties definition
 if optics_type == 'realistic':
@@ -119,7 +123,7 @@ if tracker_angle_input == 'field':
 if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
     lat, lon = 35.8, -114.983 #coordinates of NSO
     times = pd.date_range('2022-12-16 15:36:00', '2022-12-17 00:00:00',
-                          freq='3H') #, tz=tz)
+                          freq='1H') #, tz=tz)
     # times = pd.date_range('2022-12-16 19:31:00', '2022-12-16 19:40:00',
     #                       freq='0.5T') #, tz=tz)
     # times = pd.date_range('2022-12-16 15:36:00', '2022-12-16 20:00:00',
@@ -135,19 +139,9 @@ if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
     plt.ylabel('elevation angle [deg]')
     plt.xticks(rotation=45)
     plt.legend()
-
     # conclusion: python wrapper generates the same angles as the SPA website
     
     #% calc sun position based on sun vector
-    # if tracker_angle_input == 'nominal':
-    # solpos['sun_pos_x'] = 1000 * np.sin(np.radians(solpos.azimuth))
-    # solpos['sun_pos_y'] = 1000 * np.sin(np.radians(solpos.azimuth))/np.tan(np.radians(solpos.azimuth)) #y
-    # solpos['sun_pos_z'] = 1000 * np.tan(np.radians(solpos.apparent_elevation)) #z
-    # solpos['sun_pos_x'] = 1000 * np.cos(np.radians(solpos.apparent_elevation)) * np.sin(np.radians(solpos.azimuth))
-    # solpos['sun_pos_y'] = 1000 * np.cos(np.radians(solpos.apparent_elevation)) * np.cos(np.radians(solpos.azimuth))
-    # solpos['sun_pos_z'] = 1000 * np.sin(np.radians(solpos.apparent_elevation)) #z
-    # print(solpos['sun_pos_x'],solpos['sun_pos_y'],solpos['sun_pos_z'])
-
     [a, b, c] = get_aimpt_from_sunangles(solpos.apparent_elevation, solpos.azimuth)
     solpos['sun_pos_x'] = 1000 * a
     solpos['sun_pos_y'] = 1000 * b
@@ -282,7 +276,7 @@ if __name__ == "__main__":
             # the aim point - sets point to which the element z axis points to
             el.aim = Point(ptc_aim[0], ptc_aim[1], ptc_aim[2])
             
-            # define PTC surface
+            # define parabolic trough surface
             el.surface_parabolic(focal_len, float('infinity')) # focal_len_y should be 'inf', but that threw an error
             el.aperture_rectangle(a_w,l_c)
             
@@ -331,6 +325,13 @@ if __name__ == "__main__":
                 plot_rays_globalcoords(df, PT, st)
             
             #print(df.describe())
+            # delete dataframe to save memory unless it's last iteration
+            if (index != fulldata.index[-1]):
+                del df
+            else:
+                tend = time.time()
+                elapsed_time = tend - tstart
+                print('Execution time: {:2f} seconds'.format(elapsed_time))
         
         #% plot time-varying variables
         # plot_time_series(nominaldf, fulldata, intercept_factor, flux_centerline_time, coeff_var, x)
@@ -344,24 +345,20 @@ if __name__ == "__main__":
         
         # read pickle file of nominal results if you haven't already
         print('reading nominal results dataframe for comparison')
-        nominaldf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22_1e5.p','rb'))
+        # nominaldf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22_1e5.p','rb'))
+        tmp = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_1E+06hits_realistic_optics.p','rb'))
+        nominaldf = tmp[1]['nominal']
         
         #% compare nominal to actual
         plot_time_series_compare(nominaldf, fulldata, resultsdf, x, sensorloc)
     
-    #%0 save variables to pickle file
+    #% save variables to pickle file
     if save_pickle == True:
-        pickle.dump([fulldata, results], open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/{}_{}.p'.format(tracker_angle_input,n_hits), 'wb'))
+        pickle.dump([fulldata, results], open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/{}_{}_{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input,fulldata.index[0].month,fulldata.index[0].day,int(n_hits),optics_type), 'wb'))
     
     if tracker_angle_input == 'field':
         plot_time_series_compare_sensors(nominaldf, fulldata, results, x, sensorlocs)
         
-    # delete dataframe to save memory unless it's last iteration
-    if (index != fulldata.index[-1]):
-        del df
-    else:
-        tend = time.time()
-        elapsed_time = tend - tstart
-        print('Execution time: {:2f} seconds'.format(elapsed_time))
+
     #%% transforming from stage to global
     # plot_rays_globalcoords(df, PT, st)
