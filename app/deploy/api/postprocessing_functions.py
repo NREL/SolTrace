@@ -249,7 +249,7 @@ def plot_sun_trough_deviation_angles(fulldata, sensorloc):
     axs[0].plot(fulldata.apparent_elevation,'k.-')
     axs[0].set_ylabel('sun elev. angle [deg]')
 
-    devkey = [col for col in fulldata.filter(regex='Tilt').columns if sensorloc in col]
+    devkey = [col for col in fulldata.filter(regex='Tilt_adjusted').columns if sensorloc in col]
     axs[1].plot(fulldata.nom_trough_angle, '.-', label='nominal')
     axs[1].plot(fulldata[devkey], 'k.', label=devkey[0])
     axs[1].set_ylabel('trough_angle')
@@ -476,26 +476,27 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
     fig, axs = plt.subplot_mosaic("AE;BF;CG;DH",sharex=True,figsize=[12,7],dpi=250)
 
     axs['A'].plot(inputsdf.wspd_7m,'k.:')
-    axs['A'].set_ylabel('wind speed [m/s]')
+    axs['A'].set_ylabel('wind speed \n [m/s]')
     
     axs['B'].plot(inputsdf.nom_trough_angle, 'k-', label='nominal')
     for sensorloc in sensorlocs:
         devkey = [col for col in inputsdf.filter(regex='Tilt').columns if sensorloc in col]
         axs['B'].plot(inputsdf[devkey],'.', label=sensorloc)
-    axs['B'].set_ylabel('trough angle [deg]')
+    axs['B'].set_ylabel('trough angle \n [deg]')
 
     for sensorloc in sensorlocs:
         devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
-        axs['C'].plot(inputsdf[devkey],'.-', label=sensorloc)
-    axs['C'].set_ylabel('trough angle \n deviation [deg]')
+        axs['C'].plot(abs(inputsdf[devkey]),'.-', label=sensorloc)
+    axs['C'].set_ylabel('abs. val. trough \n angle deviation [deg]')
+    axs['C'].set_ylim([0, 1])
 
-    axs['D'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
+    axs['D'].plot(nominaldf.index, nominaldf.intercept_factor, 'k-', label='nominal')
     for sensorloc in sensorlocs:
         outputsdf = results[sensorloc]
         axs['D'].plot(inputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
-    axs['D'].set_ylabel('intercept factor')
-    axs['D'].set_ylim([0, 1])
-    axs['D'].legend()
+    axs['D'].set_ylabel('intercept \n factor')
+    axs['D'].set_ylim([0.6, 1])
+    axs['D'].legend(fontsize=7,loc='upper left')
 
     # axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
     # for sensorloc in sensorlocs:
