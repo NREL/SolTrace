@@ -631,11 +631,12 @@ STCORE_API int st_sun_stats( st_context_t pcxt, double *xmin, double *xmax, doub
 
 
 /* functions to control simulation */
-STCORE_API int st_sim_params(st_context_t pcxt, int raycount, int maxcount)
+STCORE_API int st_sim_params(st_context_t pcxt, int raycount, int maxcount, int include_dynamic_group)
 {
 	SYSTEM(pcxt,-1);
 	sys->sim_raycount = raycount;
 	sys->sim_raymax = maxcount;
+	sys->sim_dynamic_group = include_dynamic_group ? true : false;
 	return 1;
 }
 
@@ -648,7 +649,6 @@ STCORE_API int st_sim_errors(st_context_t pcxt, int include_sun_shape, int inclu
 }
 
 STCORE_API int st_sim_run_data( st_context_t pcxt, unsigned int seed, 
-                            bool AsPowerTower,
                             std::vector<std::vector< double > > *data_s1, 
                             std::vector<std::vector< double > > *data_s2, 
                             bool save_st_data,
@@ -679,7 +679,7 @@ STCORE_API int st_sim_run_data( st_context_t pcxt, unsigned int seed,
 
 	if ( !Trace(sys, seed,
 		rayct, sys->sim_raymax,
-		sys->sim_errors_sunshape, sys->sim_errors_optical, AsPowerTower,
+		sys->sim_errors_sunshape, sys->sim_errors_optical, sys->sim_dynamic_group,
 		callback, cbdata, data_s1, data_s2, save_st_data) )
 		return -1;
 
@@ -698,10 +698,10 @@ STCORE_API int st_sim_run_data( st_context_t pcxt, unsigned int seed,
 	}
 }
 
-STCORE_API int st_sim_run( st_context_t pcxt, unsigned int seed, bool AsPowerTower,
+STCORE_API int st_sim_run( st_context_t pcxt, unsigned int seed,
 						  int (*callback)(st_uint_t ntracedtotal, st_uint_t ntraced, st_uint_t ntotrace, st_uint_t curstage, st_uint_t nstages, void *data), void *cbdata)
 {
-    return st_sim_run_data( pcxt, seed, AsPowerTower, 0, 0, false, callback, cbdata);
+    return st_sim_run_data( pcxt, seed, 0, 0, false, callback, cbdata);
 }
 
 

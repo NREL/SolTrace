@@ -549,9 +549,9 @@ int main(int argc, char *argv[])
 	
 	fclose(fp);
 
-	::st_sim_params( cxt, nrays, maxrays );
+	::st_sim_params( cxt, nrays, maxrays, aspointfocus);
 	::st_sim_errors( cxt, sunshape, errors );
-	int code = ::st_sim_run( cxt, (unsigned int)seed, aspointfocus==aspointfocus, trace_progress, 0 );
+	int code = ::st_sim_run( cxt, (unsigned int)seed, trace_progress, 0 );
 	
 	if ( code >= 0 )
 	{

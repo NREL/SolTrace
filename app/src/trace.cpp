@@ -616,11 +616,10 @@ public:
 	virtual ExitCode Entry()
 	{
 		::st_sim_errors(m_contextId, m_sunshape ? 1 : 0, m_opterrs ? 1 : 0);
-		::st_sim_params(m_contextId, m_nrays, m_nmaxrays);
+		::st_sim_params(m_contextId, m_nrays, m_nmaxrays, m_asPowerTower);
 
 		m_resultCode = ::st_sim_run( m_contextId, 
 			(unsigned int) m_seedVal,
-            m_asPowerTower,
 			trace_callback_multi_thread, this );
 
 		return 0;
@@ -685,7 +684,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 		if (i == 0) rays_this_thread += (nrays % ncpus);
 
 		::st_sim_errors(spcxt, sunshape ? 1 : 0, opterrs ? 1 : 0);
-		::st_sim_params(spcxt, rays_this_thread, nmaxrays);
+		::st_sim_params(spcxt, rays_this_thread, nmaxrays, aspowertower);
 		SeedVal += i * 123;
 
 		ThreadList.push_back(new TraceThread(System, spcxt, &errors, i, SeedVal, aspowertower, rays_this_thread, nmaxrays, sunshape, opterrs));
