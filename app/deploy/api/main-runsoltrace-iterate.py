@@ -18,6 +18,7 @@ Created on Tue Feb 21 13:46:41 2023
 
 import os
 os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
+from os.path import exists
 from pysoltrace import PySolTrace, Point
 import random
 import pandas as pd
@@ -41,7 +42,7 @@ sunshape_flag = False
 sfcerr_flag = False
 
 # parabolic trough geometry definition ================================
-# NSO Trough Geometry: using measurements from CAD file from Dave
+# NSO Trough Geometry: using measurements from CAD file from Dave (aka LS2)
 l_c = 12.0 # module length
 a_w = 5.0 #5.77 # aperture width
 focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
@@ -68,12 +69,27 @@ n_hits = 1e5 # 5e6 # 1e5 #1e5
 nx = 30
 ny = 30
 plotrays = False
-save_pickle = False
+save_pickle = True
 
 # running with field data =============================================
-tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-# sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
-sensorlocs = ['R4_SO','R4_Mid','R4_DO']
+# tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+# # sensorlocs = ['R1_DO']
+# # sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
+# sensorlocs = ['R1_DO','R1_Mid','R1_SO']
+# # sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO']
+# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+
+# running with field data stats ======================================
+# tracker_angle_input = 'stats' # 'validation' 'nominal' # 'field'
+# rows = [1, 2, 4]
+# sensorlocs = ['DO','Mid','SO']
+# # sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO']
+# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+
+# running characteristic median diurnal cycle from NSO ======================================
+tracker_angle_input = 'char' # 'validation' 'nominal' # 'field'
+rows = [1]
+sensorlocs = ['all']
 # sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO']
 optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 
@@ -85,8 +101,8 @@ optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 # running for validation ===================================
 # tracker_angle_input = 'validation' # 'validation' 'nominal' # 'field'
 # sensorlocs = ['validation'] # ['nominal']
-# num_iters = 5 # number of trough dev angles to evaluate
-# optics_type = 'yang' # 'yang' 'realistic' # 'ideal'
+# num_iters = 16 # number of trough dev angles to evaluate
+# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 
 #%% optics properties definition
 if optics_type == 'realistic':
@@ -109,8 +125,8 @@ elif optics_type == 'yang':
 #%% load field data
 if tracker_angle_input == 'field':
     year   = '*'
-    month  = '03' # '12' # '01' # '*'
-    day    = '05' # '16'
+    month  = '*' # '12' # '01' # '*'
+    day    = '*' # '16'
     fileres = '1min' # '1min' or '20Hz'
     outres = '0.5H'
     
@@ -126,8 +142,10 @@ if tracker_angle_input == 'field':
 
 if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
     lat, lon = 35.8, -114.983 #coordinates of NSO
-    times = pd.date_range('2023-03-05 15:00:00', '2023-03-06 00:00:00',
-                          freq='1H') #, tz=tz)
+    # times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',
+    #                       freq='0.5H') #, tz=tz)
+    times = pd.date_range('2023-01-01 15:00:00', '2023-01-01 23:50:00',
+                          freq='0.5H') #, tz=tz)
     # times = pd.date_range('2022-12-16 15:36:00', '2022-12-17 00:00:00',
     #                       freq='1H') #, tz=tz)
     # times = pd.date_range('2022-12-16 19:31:00', '2022-12-16 19:40:00',
@@ -155,25 +173,36 @@ if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
     # solpos['sun_pos_y'] = 1000 * b
     # solpos['sun_pos_z'] = 1000 * c
     
+    # sample every time interval
     field_data = field_data.loc[times]
+    
+    # average over time interval
+    
     
     [a, b, c] = get_aimpt_from_sunangles(field_data.apparent_elevation, field_data.azimuth)
     field_data['sun_pos_x'] = 1000 * a
     field_data['sun_pos_y'] = 1000 * b
     field_data['sun_pos_z'] = 1000 * c
     
+    fig = plt.figure(dpi=250)
+    plt.plot(field_data['sun_pos_x'],field_data['sun_pos_z'],'ko')
+    # plt.plot(spa_sun_positions,'rx', label='SPA txt file')
+    plt.xlabel('sun position [x]')
+    plt.ylabel('sun position [z]')
+    # plt.xticks(rotation=45)
+    
+elif tracker_angle_input == 'stats':
+    stats_data = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/tracker_error_stats.p','rb'))
+    solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
+    
+elif tracker_angle_input == 'char':
+    char_data = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/median_diurnal_cycle.p','rb'))
+    solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
     
 elif tracker_angle_input == 'validation':
     # if validating, sun position is directly overhead at arbitrary height of 100 m
     solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
 # plot_sun_position(solpos)
-
-fig = plt.figure(dpi=250)
-plt.plot(field_data['sun_pos_x'],field_data['sun_pos_z'],'ko')
-# plt.plot(spa_sun_positions,'rx', label='SPA txt file')
-plt.xlabel('sun position [x]')
-plt.ylabel('sun position [z]')
-# plt.xticks(rotation=45)
 
 #%% calc nominal trough angles
 # if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
@@ -181,8 +210,8 @@ plt.ylabel('sun position [z]')
 #     trough_angles = sun_elev_to_trough_angles(solpos.apparent_elevation,solpos.azimuth)
 #     trough_angles = trough_angles.to_frame(name='nom_trough_angle')
 #     anglesdf = solpos.merge(trough_angles, left_index = True, right_index = True, how='inner')
-# else: # validation
-#     nom_trough_angle = 0. # 0 degrees = flat, facing the sun directlly overhead
+if tracker_angle_input == 'validation':
+    nom_trough_angle = 0. # 0 degrees = flat, facing the sun directlly overhead
 
 #%% calculate trough angle deviation
 if tracker_angle_input == 'field':
@@ -197,10 +226,55 @@ if tracker_angle_input == 'field':
         #     # absolute value
         #     fulldata['trough_angle_dev_{}'.format(column[0:6])] = abs(fulldata[column] - fulldata['nom_trough_angle'])
         plot_sun_trough_deviation_angles(fulldata, sensorloc)
+
+elif tracker_angle_input == 'stats':
+    # select only the rows that match the senslocs requested at the top
+    # dfdata = stats_data.loc[(rows, sensorlocs),:]
+    
+    # plot that data
+    plot_stats_deviation(dfdata)
+    
+    # concatenate the mean, mean+sigma, mean-sigma, and max into rows of a dataframe for parsing
+    fulldata = pd.DataFrame()
+    dfdata = stats_data.loc[(rows, sensorlocs),:]
+    colnames = ['absmean','absmean+std','absmean+2std','absmean-std','absmax']
+    for col in colnames:
+        if '+std' in col:
+            tmpdf = dfdata['absmean']+dfdata['absstd'] # captures 68% of the data
+            tmpdf = tmpdf.to_frame()
+            tmpdf.columns=[col]
+        elif '+2std' in col:
+            tmpdf = dfdata['absmean']+2*dfdata['absstd'] # captures 95% of the data
+            tmpdf = tmpdf.to_frame()
+            tmpdf.columns=[col]
+        elif '-std' in col:
+            tmpdf = dfdata['absmean']-dfdata['absstd']
+            tmpdf = tmpdf.to_frame()
+            tmpdf.columns=[col]
+        else:
+            tmpdf = dfdata[col].to_frame()
+        tmpdf.rename(columns={col: 'trough_angle'}, inplace=True)
+        tmpdf['stat'] = col
+        fulldata = pd.concat([fulldata, tmpdf])
+        del tmpdf
+    fulldata['nom_trough_angle'] = 0
+    
+    # combine with sun position
+    for col in solpos.columns:
+        fulldata[col] = solpos[col][0]
+    
+    fulldata = fulldata.set_index(['stat'],append=True)
+
+elif tracker_angle_input == 'char':
+    fulldata = char_data
+    fulldata.rename(columns={'trough_angle_dev': 'trough_angle'}, inplace=True)
+    for col in solpos.columns:
+        fulldata[col] = solpos[col][0]
+
 elif tracker_angle_input == 'validation':
     
     # array of tracking error values
-    error = np.linspace(0,1,num_iters) # 0.05 #0.025 # [deg]
+    error = np.linspace(0,2,num_iters) # 0.05 #0.025 # [deg]
     
     # define trough angle based on tracking error
     data = nom_trough_angle + error
@@ -212,6 +286,8 @@ elif tracker_angle_input == 'validation':
     fulldata['trough_angle_dev'] = error
 else: # 'nominal'
     fulldata = anglesdf
+
+# print(fulldata)
 
 #%% main loop of pysoltrace
 circumf = math.pi*d_abstube
@@ -232,7 +308,7 @@ if __name__ == "__main__":
         flux_centerline_time = [] # np.ones((nx,len(angles)))*np.nan
         coeff_var = []
         
-        for index, row in fulldata.iterrows():
+        for index, row in fulldata.iterrows(): # for testing .iloc[0:1]
             # set up simulation
             PT = PySolTrace()
             
@@ -278,7 +354,7 @@ if __name__ == "__main__":
             if tracker_angle_input == 'nominal':
                 # stage aim as tracker angle
                 stage_aim = get_aimpt_from_trough_angle(row.nom_trough_angle)
-            elif tracker_angle_input == 'validation':
+            elif (tracker_angle_input == 'validation') or (tracker_angle_input == 'stats'):
                 stage_aim = get_aimpt_from_trough_angle(row.trough_angle)
             else: # 'field'
                 # stage aim using actual tracker angle from field
@@ -365,21 +441,33 @@ if __name__ == "__main__":
         results[sensorloc] = resultsdf
         
         # read pickle file of nominal results if you haven't already
-        print('reading nominal results dataframe for comparison')
-        # nominaldf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22_1e5.p','rb'))
-        tmp = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_{}_{}_{:.0E}hits_{}_optics.p'.format(fulldata.index[0].month,fulldata.index[0].day,int(n_hits),optics_type),'rb'))
-        nominaldf = tmp[1]['nominal']
+        if tracker_angle_input == 'field':
+            print('reading nominal results dataframe for comparison')
+            # nominaldf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22_1e5.p','rb'))
+            nomfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_{}_{}_{:.0E}hits_{}_optics.p'.format(fulldata.index[0].month,fulldata.index[0].day,int(n_hits),optics_type)
+            if exists(nomfn):
+                tmp = pickle.load(open(nomfn,'rb'))
+                nominaldf = tmp[1]['nominal']
+        else:
+            nominaldf = resultsdf.copy()
+            for col in nominaldf.columns:
+                nominaldf = nominaldf.assign(col=np.nan)
         
-        #% compare nominal to actual
-        plot_time_series_compare(nominaldf, fulldata, resultsdf, x, sensorloc)
+        if tracker_angle_input != 'stats':
+            #% compare nominal to actual
+            plot_time_series_compare(nominaldf, fulldata, resultsdf, x, sensorloc)
     
     #% save variables to pickle file
     if save_pickle == True:
-        pickle.dump([fulldata, results], open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/{}_{}_{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input,fulldata.index[0].month,fulldata.index[0].day,int(n_hits),optics_type), 'wb'))
+        if tracker_angle_input == 'field':
+            pickle.dump([fulldata, results], open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/{}_{}_{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input,fulldata.index[0].month,fulldata.index[0].day,int(n_hits),optics_type), 'wb'))
+        else:
+            pickle.dump([fulldata, results], open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input,int(n_hits),optics_type), 'wb'))
     
     if tracker_angle_input == 'field':
         plot_time_series_compare_sensors(nominaldf, fulldata, results, x, sensorlocs)
-        
+    elif tracker_angle_input == 'stats':
+        plot_stats_intercept_factor(resultsdf)
 
     #%% transforming from stage to global
     # plot_rays_globalcoords(df, PT, st)

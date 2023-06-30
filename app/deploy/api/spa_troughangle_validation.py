@@ -8,11 +8,16 @@ Created on Thu Apr 20 15:38:07 2023
 Compare SPA output to python wrapper version
 
 """
+import os
+os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from pvlib import solarposition, tracking
 from postprocessing_functions import *
+
+lat, lon = 35.8, -114.983 #coordinates of NSO
+freq = '10T'
 
 def get_trough_angles_txt(tstart, tend):
     times = pd.date_range(tstart, tend, freq='10T')
@@ -27,10 +32,8 @@ def get_trough_angles_txt(tstart, tend):
     angles = angles[tstart:tend]
     return angles
 
-def get_trough_angles_py(tstart, tend):
-    lat, lon = 35.8, -114.983 #coordinates of NSO
+def get_trough_angles_py(tstart, tend, lat, lon, freq):
     times = pd.date_range(tstart, tend, freq='10T')
-
     solpos = solarposition.get_solarposition(times, lat, lon, altitude=543) #, method='nrel_numba')
     # remove nighttime
     # solpos = solpos.loc[solpos['apparent_elevation'] > 0, :]
@@ -73,3 +76,15 @@ plt.plot(angles['spa_py']['apparent_zenith'],'o-', label='spa_py')
 plt.ylabel('zenith angle [deg]')
 plt.xticks(rotation=45)
 plt.legend()
+
+#%%
+plt.figure(dpi=250)
+plt.plot(angles['spa_txt']['Top. elevation angle (corrected)'],'o-', label='spa_txt elev')
+plt.plot(angles['spa_py']['apparent_elevation'],'o-', label='spa_py elev')
+plt.plot(angles['spa_txt']['Topocentric zenith angle'],'o-', label='spa_txt zenith')
+plt.plot(angles['spa_py']['apparent_zenith'],'o-', label='spa_py zenith')
+# plt.plot(spa_sun_positions,'rx', label='SPA txt file')
+plt.ylabel('sun angles [deg]')
+plt.xticks(rotation=45)
+plt.legend()
+

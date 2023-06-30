@@ -7,11 +7,15 @@ Created on Fri Mar 31 16:51:58 2023
 
 @author: bstanisl
 """
+import os
+os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import pickle
 from postprocessing_functions import *
+
+figdir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/fig/'
 
 tau = 1. # transmittance of glass envelope
 
@@ -94,6 +98,10 @@ filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig10-interce
 valdata['yang-intc'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'intercept_factor'])
 valdata['yang-intc']['tracker_error'] = np.degrees(valdata['yang-intc']['tracker_error']/1000.)
 
+filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/firstOptic_Tracking.dat'
+valdata['firstoptic'] = pd.read_csv(filedir, header=None, sep=' ', names=['tracker_error', 'intercept_factor'])
+valdata['firstoptic']['tracker_error'] = np.degrees(valdata['firstoptic']['tracker_error'])
+
 
 #%% plot validation of Q
 fig = plt.figure(dpi=250)
@@ -107,6 +115,7 @@ plt.ylabel('$Q/A_a$ [W/m2]')
 plt.legend()
 
 #%% plot validation of opt efficiency
+
 fig = plt.figure(dpi=250)
 plt.scatter(valdata['yang-eta']['tracker_error'],valdata['yang-eta']['eta'],color='k',marker='^', label='Yang et al. 2022')
 for sensorloc in sensorlocs:
@@ -117,15 +126,24 @@ plt.ylabel('$\eta$ [%]')
 plt.legend()
 
 #%% plot validation of intercept factor
-fig = plt.figure(dpi=250)
-plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='^', label='Yang et al. 2022')
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['mathtext.fontset'] = 'dejavuserif'
+plt.rcParams['font.size'] = 14
+
+resolution_value = 300
+
+fig = plt.figure(dpi=resolution_value)
+# plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='x', label='Yang et al. 2022')
+plt.plot(valdata['firstoptic']['tracker_error'],valdata['firstoptic']['intercept_factor'],color='k', label='FirstOPTIC')
 if tracker_angle_input == 'validation':
-    plt.scatter(fulldata['trough_angle_dev'],results[sensorloc].intercept_factor, label = 'pysoltrace')
+    plt.plot(fulldata['trough_angle_dev'],results[sensorloc].intercept_factor, 'kx', label = 'pysoltrace')
 else:
     for sensorloc in sensorlocs:
         devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
-        plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
+        plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, color='r', label = sensorloc)
         # plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
 plt.xlabel('trough angle deviation [deg]')
 plt.ylabel('intercept factor')
 plt.legend()
+
+plt.savefig('{}validation-firstoptic.pdf'.format(figdir), format='pdf', dpi=resolution_value)

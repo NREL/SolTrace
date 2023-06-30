@@ -19,15 +19,31 @@ import plotly.graph_objects as go
 import plotly.io as io
 io.renderers.default='browser'
 
-def get_trough_angles():
-    fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
-    angles = pd.read_csv(fn, parse_dates={'UTC': [0, 1]}).set_index('UTC')  # ,nrows=200
-    angles.iloc[:,-1] = angles.iloc[:,-1].where(angles.iloc[:,-1]>0)
-    angles['trough_angle'] = np.degrees( np.arctan2(np.sin(np.radians(angles.iloc[:,-1])), 
-                                                    np.sin(np.radians(angles.iloc[:,-2])) ))
-    angles.trough_angle = angles.trough_angle.where(angles.trough_angle.isnull()==False, -30)
-    angles = -angles + 90
-    return angles.trough_angle
+# def get_trough_angles():
+#     fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
+#     angles = pd.read_csv(fn, parse_dates={'UTC': [0, 1]}).set_index('UTC')  # ,nrows=200
+#     angles.iloc[:,-1] = angles.iloc[:,-1].where(angles.iloc[:,-1]>0)
+#     angles['trough_angle'] = np.degrees( np.arctan2(np.sin(np.radians(angles.iloc[:,-1])), 
+#                                                     np.sin(np.radians(angles.iloc[:,-2])) ))
+#     angles.trough_angle = angles.trough_angle.where(angles.trough_angle.isnull()==False, -30)
+#     angles = -angles + 90
+#     return angles.trough_angle
+
+def get_trough_angles_py(tstart, tend, lat, lon, inpfreq):
+    # tstart and tend in UTC
+    # lat, lon = 35.8, -114.983 #coordinates of NSO
+    times = pd.date_range(tstart, tend, freq=inpfreq)
+
+    solpos = solarposition.get_solarposition(times, lat, lon, altitude=543) #, method='nrel_numba')
+    # remove nighttime
+    # solpos = solpos.loc[solpos['apparent_elevation'] > 0, :]
+
+    angles = pd.DataFrame()
+    angles = sun_elev_to_trough_angles(solpos.apparent_elevation,solpos.azimuth)
+    angles = angles.to_frame(name='nom_trough_angle')
+    anglesdf = solpos.merge(angles, left_index = True, right_index = True, how='inner')
+    anglesdf.nom_trough_angle[anglesdf['apparent_elevation'] < 0] = 120
+    return anglesdf
 
 def get_sun_angles():
     fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
@@ -263,6 +279,48 @@ def plot_sun_trough_deviation_angles(fulldata, sensorloc):
         ax.tick_params(labelrotation=30)
     plt.tight_layout()
 
+def plot_stats_deviation(track_error_stats):
+    sensor_locs = track_error_stats.index.unique(level=1).values
+    fig,axs = plt.subplots(1,3,sharey=True,figsize=[9,3],dpi=250)
+    for ax,sloc in zip(axs.ravel(),sensor_locs):
+        rows = track_error_stats.index.unique(level=0).values
+        ys = track_error_stats.loc[(rows,sloc),'absmean']
+        stds = track_error_stats.loc[(rows,sloc),'absstd']
+        ax.plot(rows, ys,'.-', label='avg')
+        ax.fill_between(rows, ys-stds, ys+stds, alpha=0.2, label='std')
+        ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmax'], 'k.', label='peak')
+        ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
+        ax.axhline(0, color='0.5', linestyle=':')
+        ax.set_xlabel('row')
+        ax.set_title(sloc)
+    
+    axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
+    axs[0].set_ylabel('|trough angle deviation| [deg]')
+
+def plot_stats_intercept_factor(resultsdf):
+    rows = resultsdf.index.unique(level=0).values
+    sensorlocs = resultsdf.index.unique(level=1).values
+    fig,axs = plt.subplots(1,3,figsize=[9,3],sharey=True,dpi=250)
+    for ax,sloc in zip(axs.ravel(),sensorlocs):
+        ys = resultsdf.loc[(rows,sloc,'absmean'),'intercept_factor']
+        yp2std = resultsdf.loc[(rows,sloc,'absmean+2std'),'intercept_factor']
+        ypstd = resultsdf.loc[(rows,sloc,'absmean+std'),'intercept_factor']
+        ymstd = resultsdf.loc[(rows,sloc,'absmean-std'),'intercept_factor']
+        maxs = resultsdf.loc[(rows,sloc,'absmax'),'intercept_factor']
+        # stds = track_error_stats.loc[(rows,sloc),'absstd']
+        ax.plot(rows, ys,'.-', label='$\overline{\gamma}$')
+        ax.fill_between(rows, yp2std, ymstd, color='C0', alpha=0.2, label='$\overline{\gamma} + 2\sigma$')
+        ax.fill_between(rows, ypstd, ymstd, color='C0', alpha=0.4, label='$\overline{\gamma} + \sigma$')
+        ax.plot(rows, maxs, 'k.', label='$min(\gamma)$')
+        ax.axhline(0,color='0.8',linestyle=':')
+        # ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
+        # ax.axhline(0, color='0.5', linestyle=':')
+        ax.set_xlabel('row')
+        ax.set_title(sloc)
+
+    axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
+    axs[0].set_ylabel('intercept factor ($\gamma$)')
+
 def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
     fig, axs = plt.subplots(4,1,figsize=[9,7],dpi=250)
 
@@ -478,24 +536,27 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
     axs['A'].plot(inputsdf.wspd_7m,'k.:')
     axs['A'].set_ylabel('wind speed \n [m/s]')
     
-    axs['B'].plot(inputsdf.nom_trough_angle, 'k-', label='nominal')
-    for sensorloc in sensorlocs:
-        devkey = [col for col in inputsdf.filter(regex='Tilt').columns if sensorloc in col]
-        axs['B'].plot(inputsdf[devkey],'.', label=sensorloc)
-    axs['B'].set_ylabel('trough angle \n [deg]')
+    axs['B'].plot(inputsdf.wdir_7m,'k.:')
+    axs['B'].axhspan(225, 315, facecolor='0.8', alpha=0.9)
+    axs['B'].set_ylabel('wind direction \n [deg]')
+    # axs['B'].plot(inputsdf.nom_trough_angle, 'k-', label='nominal')
+    # for sensorloc in sensorlocs:
+    #     devkey = [col for col in inputsdf.filter(regex='Tilt').columns if sensorloc in col]
+    #     axs['B'].plot(inputsdf[devkey],'.', label=sensorloc)
+    # axs['B'].set_ylabel('trough angle \n [deg]')
 
     for sensorloc in sensorlocs:
         devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
         axs['C'].plot(abs(inputsdf[devkey]),'.-', label=sensorloc)
     axs['C'].set_ylabel('abs. val. trough \n angle deviation [deg]')
-    axs['C'].set_ylim([0, 1])
+    # axs['C'].set_ylim([0, 1])
 
     axs['D'].plot(nominaldf.index, nominaldf.intercept_factor, 'k-', label='nominal')
     for sensorloc in sensorlocs:
         outputsdf = results[sensorloc]
         axs['D'].plot(inputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
     axs['D'].set_ylabel('intercept \n factor')
-    axs['D'].set_ylim([0.6, 1])
+    # axs['D'].set_ylim([0.6, 1])
     axs['D'].legend(fontsize=7,loc='upper left')
 
     # axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
