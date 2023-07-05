@@ -17,6 +17,10 @@ from pvlib import solarposition, tracking
 import glob
 import plotly.graph_objects as go
 import plotly.io as io
+from scipy import interpolate
+from os.path import exists
+import pickle
+
 io.renderers.default='browser'
 
 # def get_trough_angles():
@@ -320,6 +324,69 @@ def plot_stats_intercept_factor(resultsdf):
 
     axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
     axs[0].set_ylabel('intercept factor ($\gamma$)')
+
+def plot_diurnal_cycle_optical_performance(mediandf, resultsdf, critical_angle_error):
+    # from "char" mode of running SolTrace
+    
+    # merge dataframes
+    combineddf = mediandf.merge(resultsdf, how='outer', left_index=True, right_index=True)
+    # replace intercept factor values
+    combineddf.loc[combineddf.trough_angle_dev > 1.5, 'intercept_factor'] = 0
+    
+    # get nominal value from wintertime nominal cycle
+    nomfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_3_5_1E+05hits_realistic_optics.p'
+    if exists(nomfn):
+        tmp = pickle.load(open(nomfn,'rb'))
+        nominaldf = tmp[1]['nominal']
+    nominaldf['time'] = nominaldf.index.tz_localize('UTC').tz_convert('US/Pacific')
+    nominaldf['time'] = nominaldf.time.dt.hour + nominaldf.time.dt.minute/60.
+
+    f = interpolate.interp1d(nominaldf.time, nominaldf.intercept_factor, bounds_error=False, fill_value = nominaldf.intercept_factor.max())
+    combineddf.loc[combineddf.trough_angle_dev < critical_angle_error, 'intercept_factor'] = f(combineddf.loc[combineddf.trough_angle_dev < critical_angle_error].index)
+
+    # plotting
+    plt.rcParams.update({'font.size': 14})
+    markers = ['.','x','+']
+    propcolors = ['orange','green','blue']
+    colorsdict = {}
+    for n,season in enumerate(combineddf.season.unique()):
+        colorsdict[season] = propcolors[n]
+        
+    markersdict = {}
+    for n,sensor in enumerate(combineddf.sensor.unique()):
+        markersdict[sensor] = markers[n]
+        
+        
+    tilt_col_list = combineddf.sensor.unique()
+    
+    fig,axs = plt.subplots(2, 1, dpi=250, sharex=True, figsize=[12,5])
+    for season, d1 in combineddf.groupby('season'):
+        # print(season)
+        for sensor, d in d1.groupby('sensor'):
+            axs[0].plot(d.trough_angle_dev, linestyle='', color=colorsdict[season], marker = markersdict[sensor]) #, label=column[:6])
+            axs[1].plot(d.intercept_factor, linestyle='', color=colorsdict[season], marker = markersdict[sensor]) #, label=column[-6:])
+    axs[0].axhline(critical_angle_error, color='k', label='critical angle \n deviation')
+
+    # axs[0].set_ylabel('wind speed at 7m \n [m/s]')      
+    # axs[1].set_ylabel('wind dir at 7m \n [deg]')      
+    # axs[2].set_ylabel('nom trough angle \n [deg]')
+    #axs[2].set_ylabel('{} trough angle \n [deg]'.format(srow))
+    axs[0].set_ylabel('abs. val. trough \n angle deviation [deg]')
+    axs[1].set_ylabel('intercept factor')
+
+    axs[0].set_ylim([0, 1.4])
+
+    axs[0].plot(np.nan, np.nan, label='spring', color='green')
+    axs[0].plot(np.nan, np.nan, label='summer', color='red')
+    axs[0].plot(np.nan, np.nan, label='fall', color='orange')
+    axs[0].plot(np.nan, np.nan, label='winter', color='blue')
+
+    for n,column in enumerate(tilt_col_list):
+        axs[0].plot(np.nan, np.nan, label=column[:6], color = 'k', marker=markers[n], linewidth=0)
+        axs[1].plot(np.nan, np.nan, label=column[:6], color = 'k', marker=markers[n], linewidth=0)
+
+    axs[0].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
 
 def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
     fig, axs = plt.subplots(4,1,figsize=[9,7],dpi=250)

@@ -51,7 +51,9 @@ abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
 ptc_pos = [0, 0, 0] # x, y, z
 ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
-n_hits = 1e5 # 5e6 # 1e5 #1e5    
+n_hits = 1e3 # 5e6 # 1e5 #1e5 
+critical_angle_error = 0.79 #[deg] from firstoptic validation dataset
+   
 
 # Yang et al 2022 geometry
 # l_c = 7.8 # module length
@@ -196,7 +198,8 @@ elif tracker_angle_input == 'stats':
     solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
     
 elif tracker_angle_input == 'char':
-    char_data = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/median_diurnal_cycle.p','rb'))
+    mediandf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/median_diurnal_cycle.p','rb'))
+    char_data = mediandf[(mediandf.trough_angle_dev > critical_angle_error) & (mediandf.trough_angle_dev < 1.5)]
     solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
     
 elif tracker_angle_input == 'validation':
@@ -266,8 +269,7 @@ elif tracker_angle_input == 'stats':
     fulldata = fulldata.set_index(['stat'],append=True)
 
 elif tracker_angle_input == 'char':
-    fulldata = char_data
-    fulldata.rename(columns={'trough_angle_dev': 'trough_angle'}, inplace=True)
+    fulldata = char_data.rename(columns={'trough_angle_dev': 'trough_angle'})
     for col in solpos.columns:
         fulldata[col] = solpos[col][0]
 
@@ -289,6 +291,7 @@ else: # 'nominal'
 
 # print(fulldata)
 
+#%% main loop
 #%% main loop of pysoltrace
 circumf = math.pi*d_abstube
 x = np.linspace(-circumf/2.,circumf/2., nx)
@@ -354,7 +357,7 @@ if __name__ == "__main__":
             if tracker_angle_input == 'nominal':
                 # stage aim as tracker angle
                 stage_aim = get_aimpt_from_trough_angle(row.nom_trough_angle)
-            elif (tracker_angle_input == 'validation') or (tracker_angle_input == 'stats'):
+            elif (tracker_angle_input == 'validation') or (tracker_angle_input == 'char') or (tracker_angle_input == 'stats'):
                 stage_aim = get_aimpt_from_trough_angle(row.trough_angle)
             else: # 'field'
                 # stage aim using actual tracker angle from field
