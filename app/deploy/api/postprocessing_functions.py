@@ -23,15 +23,37 @@ import pickle
 
 io.renderers.default='browser'
 
-# def get_trough_angles():
-#     fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
-#     angles = pd.read_csv(fn, parse_dates={'UTC': [0, 1]}).set_index('UTC')  # ,nrows=200
-#     angles.iloc[:,-1] = angles.iloc[:,-1].where(angles.iloc[:,-1]>0)
-#     angles['trough_angle'] = np.degrees( np.arctan2(np.sin(np.radians(angles.iloc[:,-1])), 
-#                                                     np.sin(np.radians(angles.iloc[:,-2])) ))
-#     angles.trough_angle = angles.trough_angle.where(angles.trough_angle.isnull()==False, -30)
-#     angles = -angles + 90
-#     return angles.trough_angle
+def load_inflow_data(inflow_files):
+    inflow = pd.DataFrame()    
+    for datafile in inflow_files:
+        inflow = pd.concat( [inflow, pd.read_pickle(datafile)])
+    return inflow
+
+def load_loads_data(loads_files):
+    loads = pd.DataFrame()
+    for datafile in loads_files:
+        #print(datafile)
+        tmpdf = pd.read_pickle(datafile)
+        for col in tmpdf.columns:
+            if 'R1_SO_tilt' in col:
+                print('correcting {} for tilt vs Tilt in {}'.format(col,datafile))
+                if tmpdf[col].isna().any()==False: # if the col contains no nans
+                    # then just rename it
+                    tmpdf = tmpdf.rename(columns={'R1_SO_tilt':'R1_SO_Tilt'})
+                else:
+                    print('need code to handle when there are nans: combine with other column')
+            # if ('_std' in col): # or ('_min' in col) or ('_max' in col):
+            #     print(tmpdf.columns)
+            #     tmpdf.drop(columns=col)
+        #print(loads.columns)
+        loads = pd.concat( [loads, tmpdf]) 
+    # remove extra columns in new data
+    del_cols = [col for col in loads.columns if '_max' in col]
+    del_cols.extend([col for col in loads.columns if '_min' in col])
+    del_cols.extend([col for col in loads.columns if '_std' in col])
+    # print(del_cols)
+    loads = loads.drop(columns=del_cols)
+    return loads
 
 def get_trough_angles_py(tstart, tend, lat, lon, inpfreq):
     # tstart and tend in UTC
@@ -48,6 +70,77 @@ def get_trough_angles_py(tstart, tend, lat, lon, inpfreq):
     anglesdf = solpos.merge(angles, left_index = True, right_index = True, how='inner')
     anglesdf.nom_trough_angle[anglesdf['apparent_elevation'] < 0] = 120
     return anglesdf
+
+def first_pass_visualize(fulldata):
+    plt.rcParams.update({'font.size': 12})
+
+    fig,axs = plt.subplots(2, 1, dpi=250, sharex=True)
+    #axs[0].plot(data['Anemometer'],'.')
+    axs[0].plot(fulldata['wspd_7m'],'.')
+    axs[0].set_ylabel('wind speed at 7m [m/s]')
+
+    #for column in loads.filter(regex='Tilt').columns:
+    #    axs[1].plot(time[tstart:tend],loads[column][tstart:tend],".", label = loads[column].name) 
+    axs[1].plot(fulldata['nom_trough_angle'], 'k.', label='nominal')
+    # for column in data.filter(regex='Tilt').columns:
+    #     axs[1].plot(data[column],'.', label=column)
+    axs[1].plot(fulldata['R1_Mid_Tilt'],'.', label='R1_Mid_Tilt')
+    axs[1].axhline(0,color='k',linestyle=':')
+    # axs[1].plot(data['R1_DO_Tilt'],'.', label='R1_DO_Tilt') 
+    # axs[1].plot(data['R1_SO_Tilt'],'.', label='R1_SO_Tilt')
+    # for column in data.filter(regex='trough_angle_dev').columns:
+    #     axs[1].plot(data[column],'_', label=column)
+    axs[1].set_ylabel('trough angle [deg]')
+    axs[1].set_xlabel('date')
+    plt.legend(fontsize=8)
+    fig.autofmt_xdate() 
+    
+def season(x):
+    spring = range(80, 172)
+    summer = range(172, 264)
+    fall = range(264, 355)
+    
+    if x in spring:
+       return 'Spring'
+    if x in summer:
+       return 'Summer'
+    if x in fall:
+       return 'Fall'
+    else :
+       return 'Winter'
+   
+def assign_color(x):
+    spring = range(80, 172)
+    summer = range(172, 264)
+    fall = range(264, 355)
+    if x in spring:
+       return 'green'
+    if x in summer:
+       return 'red'
+    if x in fall:
+       return 'orange'
+    else :
+       return 'blue'
+   
+def assign_Color(x):
+    if x in 'Spring':
+       return 'green'
+    if x in 'Summer':
+       return 'red'
+    if x in 'Fall':
+       return 'orange'
+    else :
+       return 'blue'
+   
+def cardinal_dir(x):
+    if (x > 225) & (x <= 315):
+        return 'west'
+    elif (x > 45) & (x <= 135):
+        return 'east'
+    elif (x > 135) & (x <= 225):
+        return 'south'
+    else:
+        return 'north'
 
 def get_sun_angles():
     fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
