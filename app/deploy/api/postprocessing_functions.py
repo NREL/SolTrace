@@ -20,6 +20,7 @@ import plotly.io as io
 from scipy import interpolate
 from os.path import exists
 import pickle
+from scipy import stats as st
 
 io.renderers.default='browser'
 
@@ -141,6 +142,294 @@ def cardinal_dir(x):
         return 'south'
     else:
         return 'north'
+
+def filter_data(data, tstart='', tend='', stow_position_flag=False, low_winds_flag=False, high_winds_flag=False,
+                nighttime_flag=False, daytime_flag=False, winddir = '', flat_pos_flag=False, dev_threshold=None):
+    # select data within timeframe
+    if tstart:
+        data = data[(data.index > tstart) & (data.index < tend)]
+        
+    # select data only at stow position (120 degrees)
+    if stow_position_flag:
+        data = data[(data.nom_trough_angle > 119.) & (data.nom_trough_angle < 121.)]
+    if flat_pos_flag:
+        data = data[(data.nom_trough_angle > -1.) & (data.nom_trough_angle < 1.)]
+    
+    # select data only at low wind speeds
+    if low_winds_flag:
+        data = data[(data.wspd_7m < 1.)]
+    if high_winds_flag:
+        data = data[(data.wspd_7m > 5.)]
+    
+    # select data only at night time
+    if nighttime_flag:
+        data = data[(data.nom_trough_angle > 89.) | (data.nom_trough_angle < -89.)]
+        
+    # select data only at day time
+    if daytime_flag:
+        data = data[(data.nom_trough_angle < 83.) & (data.nom_trough_angle > -83.)] # narrow daytime
+        
+    # select data only from certain wind direction
+    if winddir:
+        data = data[data.cwdir == winddir]
+    
+    # select data only for angle deviations below a threshold
+    if dev_threshold is not None:
+        for column in data.filter(regex='trough_angle_dev').columns:
+            data = data[(abs(data[column]) < dev_threshold)] # only daytime
+        
+    return data
+
+def plot_timeseries_winds_tilts(data):
+    markersize = 2
+    fig,axs = plt.subplots(4, 1, dpi=250, sharex=True, figsize=[8,10])
+    axs[0].plot(data['wspd_7m'],'.',markersize=markersize)
+    axs[0].set_ylabel('wind speed at 7m \n [m/s]')
+
+    axs[1].plot(data['wdir_7m'],'.',markersize=markersize)
+    axs[1].set_ylabel('wind dir at 7m \n [m/s]')
+
+    axs[2].plot(data['nom_trough_angle'], 'k.', markersize=markersize, label='nominal')
+    for column in data.filter(regex='Tilt').columns:
+        axs[2].plot(data[column],'.', markersize=markersize, label=column[:6])
+    axs[2].set_ylabel('trough angle \n [deg]')
+    axs[2].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+
+
+    for column in data.filter(regex='trough_angle_dev').columns:
+        axs[3].plot(data[column],'.', markersize=markersize, label=column[-6:])
+    axs[3].set_ylabel('trough angle deviation [deg]')
+    axs[3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[3].grid()
+
+    fig.autofmt_xdate()
+    
+def plot_timeseries_winds_tilts_byrow(data, adj_flag=True):
+    markersize = 2
+    
+    if adj_flag:
+        col_list = [col for col in data.filter(regex='trough_angle_dev_adj').columns]
+    else:
+        col_list = [col for col in data.filter(regex='trough_angle_dev_R').columns]
+
+    fig,axs = plt.subplots(6, 1, dpi=250, sharex=True, figsize=[8,10])
+    axs[0].plot(data['wspd_7m'],'.',markersize=markersize)
+    axs[0].set_ylabel('wind speed at 7m \n [m/s]')
+
+    axs[1].plot(data['wdir_7m'],'.',markersize=markersize)
+    axs[1].axhspan(225, 315, facecolor='0.8', alpha=0.9)
+    axs[1].set_ylabel('wind dir at 7m \n [m/s]')
+
+    axs[2].plot(data['nom_trough_angle'], 'k.', markersize=markersize, label='nominal')
+    for column in data.filter(regex='Tilt_adjusted').columns:
+        axs[2].plot(data[column],'.', markersize=markersize, label='') #, label=column[:6])
+    axs[2].axhline(0,color='k',linestyle=':', linewidth=0.5)
+    axs[2].set_ylabel('trough angle \n [deg]')
+    axs[2].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+
+
+    for column in [column for column in col_list if 'R1' in column]:
+        axs[3].plot(abs(data[column]),'.', markersize=markersize, label=column[-6:])
+    # axs[3].set_ylabel('abs. val. trough \n angle deviation [deg]')
+    axs[3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[3].set_ylim([0, 2])
+    axs[3].grid()
+
+    for column in [column for column in col_list if 'R2' in column]:
+        axs[4].plot(abs(data[column]),'.', markersize=markersize, label=column[-6:])
+    axs[4].set_ylabel('abs. val. trough \n angle deviation [deg]')
+    axs[4].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[4].set_ylim([0, 2])
+    axs[4].grid()
+
+    for column in [column for column in col_list if 'R4' in column]:
+        axs[5].plot(abs(data[column]),'.', markersize=markersize, label=column[-6:])
+    # axs[5].set_ylabel('abs. val. trough \n angle deviation [deg]')
+    axs[5].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[5].set_ylim([0, 2])
+    axs[5].grid()
+
+    # axs[2].set_xlabel('date')
+    fig.autofmt_xdate() 
+
+def plot_timeseries_winds_tilts_byrow_2col(data, adj_flag=True):
+    markersize = 2
+    ylimmax = 2
+    
+    if adj_flag:
+        col_list = [col for col in data.filter(regex='trough_angle_dev_adj').columns]
+    else:
+        col_list = [col for col in data.filter(regex='trough_angle_dev_R').columns]
+
+    fig,axs = plt.subplots(3, 2, dpi=250, sharex=True, figsize=[14,8])
+    axs[0,0].plot(data['wspd_7m'],'.',markersize=markersize)
+    axs[0,0].set_ylabel('wind speed at 7m \n [m/s]')
+
+    axs[1,0].plot(data['wdir_7m'],'.',markersize=markersize)
+    axs[1,0].axhspan(225, 315, facecolor='0.8', alpha=0.9)
+    axs[1,0].set_ylabel('wind dir at 7m \n [m/s]')
+
+    axs[2,0].plot(data['nom_trough_angle'], 'k.', markersize=markersize, label='nominal')
+    for column in data.filter(regex='Tilt_adjusted').columns:
+    # for column in plotdata.filter(regex='Tilt_adjusted').columns:
+        axs[2,0].plot(data[column],'.', markersize=markersize, label='') #, label=column[:6])
+    # axs[1].plot(fulldata['R1_Mid_Tilt'],'.', label='R1_Mid_Tilt')
+    axs[2,0].axhline(0,color='k',linestyle=':', linewidth=0.5)
+    axs[2,0].set_ylabel('trough angle \n [deg]')
+    axs[2,0].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+
+
+    for column in [column for column in col_list if 'R1' in column]:
+        axs[0,1].plot(abs(data[column]),'.', markersize=markersize, label=column[-6:])
+    # axs[3].set_ylabel('abs. val. trough \n angle deviation [deg]')
+    axs[0,1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[0,1].set_ylim([0, ylimmax])
+    axs[0,1].grid()
+
+    for column in [column for column in col_list if 'R2' in column]:
+        axs[1,1].plot(abs(data[column]),'.', markersize=markersize, label=column[-6:])
+    axs[1,1].set_ylabel('abs. val. trough \n angle deviation [deg]')
+    axs[1,1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[1,1].set_ylim([0, ylimmax])
+    axs[1,1].grid()
+
+    for column in [column for column in col_list if 'R4' in column]:
+        axs[2,1].plot(abs(data[column]),'.', markersize=markersize, label=column[-6:])
+    # axs[5].set_ylabel('abs. val. trough \n angle deviation [deg]')
+    axs[2,1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[2,1].set_ylim([0, ylimmax])
+    axs[2,1].grid()
+
+    # axs[2].set_xlabel('date')
+    fig.autofmt_xdate() 
+    
+def plot_tilt_timeseries_indiv_sensors_intindices(data, adj_flag=True):
+    markersize = 2
+    intindices = list(range(len(data['wspd_7m'])))
+    
+    if adj_flag:
+        col_list = [col for col in data.filter(regex='trough_angle_dev_adj').columns]
+    else:
+        col_list = [col for col in data.filter(regex='trough_angle_dev_R').columns]
+    
+    fig,axs = plt.subplots(9, 1, dpi=250, sharex=True, figsize=[8,12])
+    for ax,column in zip(axs.ravel(),col_list):
+        ax.plot(intindices,data[column],'.', markersize=markersize, label=column[-6:])
+        ax.axhline(np.average(data[column]), color='r', linestyle='--', alpha = 0.5, 
+                   label = 'avg = {:.2f}, \n $\sigma$ = {:.2f}'.format(np.average(data[column]), np.std(data[column])))
+        ax.axhline(np.median(data[column]), linestyle = ':', color='k', label = 'median')
+        ax.axhline(st.mode(np.around(data[column].values,2),keepdims=True)[0], linestyle = '--', color='g', label='mode')
+        ax.grid()
+        ax.legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[4].set_ylabel('trough angle deviation [deg]')
+    
+def plot_histogram_tilt_error(data, adj_flag=True):
+    nbins=30
+    
+    if adj_flag:
+        col_list = [col for col in data.filter(regex='trough_angle_dev_adj').columns]
+    else:
+        col_list = [col for col in data.filter(regex='trough_angle_dev_R').columns]
+    #print(col_list)
+
+    fig,axs = plt.subplots(3, 3, dpi=250, figsize=[10,9]) #, sharex=True, sharey=True)
+    for ax,column in zip(axs.ravel(),col_list):
+        # absolute value 
+        absplotdata = pd.DataFrame()
+        absplotdata[column] = abs(data[column])
+        absplotdata.hist(column = column, bins = nbins, ax=ax, color='0.5', grid=False)
+        ax.axvline(np.average(absplotdata[column]), linestyle = '-', color='k', label = 'avg = {:.2f}, $\sigma$ = {:.2f}'.format(np.average(absplotdata[column]),np.std(absplotdata[column])))
+        ax.axvline(0,color='0.25',linestyle=':')
+        ax.axvline(np.max(absplotdata[column]), linestyle = '--', color='k', label = '')
+        ax.axvline(np.min(absplotdata[column]), linestyle = '--', color='k', label = 'min = {:.2f}, max = {:.2f}'.format(np.min(absplotdata[column]),np.max(absplotdata[column])))
+        ax.legend(bbox_to_anchor=(0, -.12), loc='upper left', fontsize=10)
+        
+        # not absolute value
+        # data.hist(column = column, bins = nbins, ax=ax)
+        # # print(data[column])
+        # #ax.axvline(offsets[column], linestyle = '--', color='r', label='avg')
+        # ax.axvline(np.average(data[column]), linestyle = '--', color='r', label = 'avg = {:.2f}, $\sigma$ = {:.2f}'.format(np.average(data[column]),np.std(data[column])))
+        # #ax.axvline(mode(plotdata[column]), linestyle = ':', color='g', label='mode')
+        # ax.axvline(np.median(data[column]), linestyle = ':', color='k', label = 'median')
+        # ax.axvline(st.mode(np.around(data[column].values,2),keepdims=True)[0], linestyle = '--', color='g', label='mode')
+        # ax.legend(bbox_to_anchor=(0, -.25), loc='upper left', fontsize=10)
+    plt.suptitle('{} to {}'.format(data.index[0],data.index[-1]))
+    plt.tight_layout()
+
+def verify_zero_avg_offset(fulldata):
+    data = filter_data(fulldata, stow_position_flag=True, low_winds_flag=True, dev_threshold=1.6)
+    plot_histogram_tilt_error(data, adj_flag=True)
+    
+def visualize_median_diurnal_cycle(data, critical_angle_error=0.79, savedf=False):
+    tstart = data.index[0] # '2022-12-17 07:59:06.500000' # '2022-12-16 00:00:00.000000-08:00' 
+    tend = data.index[-1]
+    srow = 'R1'
+    markers = ['.','x','+']
+
+    dev_col_list = [col for col in data.filter(regex='trough_angle_dev_adj_R').columns if srow in col]
+    tilt_col_list = [col for col in data.filter(regex='Tilt_adjusted').columns if srow in col]
+    
+    # create lists for saving to dataframe
+    timelist = []; seasonlist = []; sensorlist = []; talist = []
+    
+    mediangroupbydf = data.groupby(['timeofday','season']).median(numeric_only=True)
+
+    fig,axs = plt.subplots(4, 1, dpi=250, sharex=True, figsize=[12,10])
+    axs[0].set_title('median diurnal cycle from {} to {}'.format(tstart,tend))
+
+    for s, dfs in mediangroupbydf.groupby('season'):
+        print(s)
+        ind = dfs.index.get_level_values(0)
+        color = assign_Color(s)
+        print(color)
+        
+        axs[0].plot(ind, dfs.wspd_7m,'.',color=color,alpha=0.7)
+        axs[1].plot(ind, dfs.wdir_7m,'.',color=color,alpha=0.7)
+                
+        axs[2].plot(ind, dfs.nom_trough_angle,"o", fillstyle='none', markeredgecolor='k')
+
+        for n, (tc, dc) in enumerate(zip(tilt_col_list,dev_col_list)):
+            axs[2].plot(ind, dfs[tc], linestyle='', color=color, marker = markers[n]) #, label=column[:6])
+        
+            calc_trough_dev = abs(dfs[tc] - dfs.nom_trough_angle)
+            axs[3].plot(ind, calc_trough_dev, linestyle='', color=color, marker = markers[n]) #, label=column[-6:])
+
+            timelist.append(ind)
+            seasonlist.append(dfs.index.get_level_values(1))
+            sensorlist.append(tc[-6:])
+            talist.append(calc_trough_dev)
+
+    axs[1].axhspan(225, 315, facecolor='0.8', alpha=0.9, label='west')
+    axs[3].axhline(critical_angle_error, color='k', label='critical angle \n deviation')
+
+    axs[0].set_ylabel('wind speed at 7m \n [m/s]')      
+    axs[1].set_ylabel('wind dir at 7m \n [deg]')      
+    # axs[2].set_ylabel('nom trough angle \n [deg]')
+    axs[2].set_ylabel('{} trough angle \n [deg]'.format(srow))
+    axs[3].set_ylabel('abs. val. trough \n angle deviation [deg]')
+    axs[3].set_ylim([0, 4])
+
+    axs[0].plot(np.nan, np.nan, label='spring', color='green')
+    axs[0].plot(np.nan, np.nan, label='summer', color='red')
+    axs[0].plot(np.nan, np.nan, label='fall', color='orange')
+    axs[0].plot(np.nan, np.nan, label='winter', color='blue')
+
+    for n,column in enumerate(tilt_col_list):
+        axs[2].plot(np.nan, np.nan, label=column[:6], color = 'k', marker=markers[n], linewidth=0)
+        axs[3].plot(np.nan, np.nan, label=column[:6], color = 'k', marker=markers[n], linewidth=0)
+
+    axs[0].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[2].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+
+    if savedf:
+        mediandf = pd.DataFrame({'time':timelist, 'season':seasonlist, 'sensor':sensorlist, 'trough_angle_dev':talist})
+        mediandf = mediandf.set_index(['time'])
+    else:
+        mediandf = None
+    
+    return mediandf
 
 def get_sun_angles():
     fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
