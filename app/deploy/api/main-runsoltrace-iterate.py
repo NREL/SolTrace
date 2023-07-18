@@ -34,15 +34,19 @@ import plotly.graph_objects as go
 import plotly.io as io
 io.renderers.default='browser'
 
-from postprocessing_functions import *
+from st_processing_functions import *
 global focal_len
+
+#%% INPUTS ===========================================================================================
 
 # define constant inputs                                                                                                                                                                                                                                                                                                                       
 sunshape_flag = False
 sfcerr_flag = False
+optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+
 
 # parabolic trough geometry definition ================================
-# NSO Trough Geometry: using measurements from CAD file from Dave (aka LS2)
+# NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
 l_c = 12.0 # module length
 a_w = 5.0 #5.77 # aperture width
 focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
@@ -53,84 +57,49 @@ ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
 n_hits = 1e3 # 5e6 # 1e5 #1e5 
 critical_angle_error = 0.79 #[deg] from firstoptic validation dataset
-   
+lat, lon = 35.8, -114.983 #coordinates of NSO
 
-# Yang et al 2022 geometry
-# l_c = 7.8 # module length
-# a_w = 5.0 #5.77 # aperture width
-# focal_len = 1.84 #1.71 # focal length # this must be correct for results to make sense
-# d_abstube = 0.07 # diameter of absorber tube
-# abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
-# ptc_pos = [0, 0, 0] # x, y, z
-# ptc_aim = [0, 0, 1] # x, y, z
-# abs_aimz = focal_len*2. # 0. ??
-# n_hits = 1e5 # 5e6 # 1e5 #1e5    
-
-# data output settings
-# mesh definition for flux map
-nx = 30
-ny = 30
-plotrays = False
-save_pickle = True
-
-# running with field data =============================================
-# tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-# # sensorlocs = ['R1_DO']
-# # sensorlocs = ['R1_Mid','R2_Mid','R4_Mid']
-# sensorlocs = ['R1_DO','R1_Mid','R1_SO']
-# # sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO']
-# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+# running with field data timeseries =============================================
+tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+sensorlocs = ['R1_DO','R1_Mid','R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
+times = pd.date_range('2023-01-01 15:00:00', '2023-01-01 23:50:00',freq='0.5H') # in UTC
 
 # running with field data stats ======================================
-# tracker_angle_input = 'stats' # 'validation' 'nominal' # 'field'
+# tracker_angle_input = 'stats'
 # rows = [1, 2, 4]
 # sensorlocs = ['DO','Mid','SO']
-# # sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO']
-# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 
 # running characteristic median diurnal cycle from NSO ======================================
 tracker_angle_input = 'char' # 'validation' 'nominal' # 'field'
 rows = [1]
 sensorlocs = ['all']
-# sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO']
-optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 
 # running nominal =============================================
-# tracker_angle_input = 'nominal' # 'validation' 'nominal' # 'field'
+# tracker_angle_input = 'nominal'
 # sensorlocs = ['nominal']
-# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 
 # running for validation ===================================
-# tracker_angle_input = 'validation' # 'validation' 'nominal' # 'field'
-# sensorlocs = ['validation'] # ['nominal']
+# tracker_angle_input = 'validation'
+# sensorlocs = ['validation']
 # num_iters = 16 # number of trough dev angles to evaluate
-# optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+
+# data output settings
+# mesh discretization on absorber tube for flux map
+nx = 30
+ny = 30
+plotrays = False
+save_pickle = False
 
 #%% optics properties definition
-if optics_type == 'realistic':
-    refl_rho = 0.9 # 1. # trough reflectivity
-    absr_alpha = 0.96 # 1. # receiver absorptivity
-    absr_rho = 1 - absr_alpha #0. # receiver reflectivity
-    # tau = 1. # transmittance of glass envelope
-elif optics_type == 'ideal':
-    refl_rho = 1. # trough reflectivity
-    absr_rho = 0. # receiver reflectivity
-    refl_spec = 0.0 # [mrad] 0.2 == default
-    # absr_alpha = 1. # receiver absorptivity
-    # tau = 1. # transmittance of glass envelope
-elif optics_type == 'yang':
-    refl_rho = 0.93 # trough reflectivity
-    absr_alpha = 0.96 # receiver absorptivity
-    absr_rho = 1 - absr_alpha # receiver reflectivity (assumption in soltrace)
-    refl_spec = 1.8 # [mrad] 0.2 == default
-    # tau = 0.95 # transmittance of glass envelope
+refl_rho, absr_alpha, absr_rho, refl_spec = set_optics_props(optics_type)
+
 #%% load field data
 if tracker_angle_input == 'field':
-    year   = '*'
-    month  = '*' # '12' # '01' # '*'
-    day    = '*' # '16'
-    fileres = '1min' # '1min' or '20Hz'
-    outres = '0.5H'
+    # year   = '*'
+    # month  = '*' # '12' # '01' # '*'
+    # day    = '*' # '16'
+    # fileres = '1min' # '1min' or '20Hz'
+    # outres = '0.5H'
     
     # path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
     # field_data = load_field_data(path, year, month, day, fileres, outres)
@@ -143,43 +112,8 @@ if tracker_angle_input == 'field':
 #% get sun positions from SPA directly through pvlib
 
 if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
-    lat, lon = 35.8, -114.983 #coordinates of NSO
-    # times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',
-    #                       freq='0.5H') #, tz=tz)
-    times = pd.date_range('2023-01-01 15:00:00', '2023-01-01 23:50:00',
-                          freq='0.5H') #, tz=tz)
-    # times = pd.date_range('2022-12-16 15:36:00', '2022-12-17 00:00:00',
-    #                       freq='1H') #, tz=tz)
-    # times = pd.date_range('2022-12-16 19:31:00', '2022-12-16 19:40:00',
-    #                       freq='0.5T') #, tz=tz)
-    # times = pd.date_range('2022-12-16 15:36:00', '2022-12-16 20:00:00',
-    #                       freq='4H') #, tz=tz)
-    
-    #solpos = solarposition.get_solarposition(times, lat, lon, altitude=543) #, method='nrel_numba')
-    # solpos = pd.DataFrame(field_data, columns=['apparent_elevation', 'azimuth'])
-    # solpos = solpos.loc[times] #solarposition.get_solarposition(times, lat, lon, altitude=543) #, method='nrel_numba')
-    # # remove nighttime
-    # # solpos = solpos.loc[solpos['apparent_elevation'] > 0, :]
-    
-    # # plt.figure(dpi=250)
-    # # plt.plot(solpos.apparent_elevation,'ko', label='py-spa')
-    # # # plt.plot(spa_sun_positions,'rx', label='SPA txt file')
-    # # plt.ylabel('elevation angle [deg]')
-    # # plt.xticks(rotation=45)
-    # # plt.legend()
-    # # conclusion: python wrapper generates the same angles as the SPA website
-    
-    # #% calc sun position based on sun vector
-    # [a, b, c] = get_aimpt_from_sunangles(solpos.apparent_elevation, solpos.azimuth)
-    # solpos['sun_pos_x'] = 1000 * a
-    # solpos['sun_pos_y'] = 1000 * b
-    # solpos['sun_pos_z'] = 1000 * c
-    
-    # sample every time interval
+    # sample field data at specified times
     field_data = field_data.loc[times]
-    
-    # average over time interval
-    
     
     [a, b, c] = get_aimpt_from_sunangles(field_data.apparent_elevation, field_data.azimuth)
     field_data['sun_pos_x'] = 1000 * a
@@ -188,10 +122,8 @@ if (tracker_angle_input == 'nominal') or (tracker_angle_input == 'field'):
     
     fig = plt.figure(dpi=250)
     plt.plot(field_data['sun_pos_x'],field_data['sun_pos_z'],'ko')
-    # plt.plot(spa_sun_positions,'rx', label='SPA txt file')
     plt.xlabel('sun position [x]')
     plt.ylabel('sun position [z]')
-    # plt.xticks(rotation=45)
     
 elif tracker_angle_input == 'stats':
     stats_data = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/tracker_error_stats.p','rb'))
