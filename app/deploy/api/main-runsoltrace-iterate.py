@@ -43,7 +43,9 @@ global focal_len
 sunshape_flag = False
 sfcerr_flag = False
 optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
-
+plotrays = False
+save_pickle = False
+n_hits = 1e2 # 5e6 # 1e5 #1e5 
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
@@ -55,7 +57,6 @@ abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
 ptc_pos = [0, 0, 0] # x, y, z
 ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
-n_hits = 1e3 # 5e6 # 1e5 #1e5 
 critical_angle_error = 0.79 #[deg] from firstoptic validation dataset
 lat, lon = 35.8, -114.983 #coordinates of NSO
 
@@ -87,10 +88,8 @@ sensorlocs = ['all']
 # mesh discretization on absorber tube for flux map
 nx = 30
 ny = 30
-plotrays = False
-save_pickle = False
 
-#%% optics properties definition
+#% optics properties definition
 refl_rho, absr_alpha, absr_rho, refl_spec = set_optics_props(optics_type)
 
 #%% load field data
@@ -204,6 +203,7 @@ elif tracker_angle_input == 'char':
     fulldata = char_data.rename(columns={'trough_angle_dev': 'trough_angle'})
     for col in solpos.columns:
         fulldata[col] = solpos[col][0]
+    fulldata['nom_trough_angle'] = 0.
 
 elif tracker_angle_input == 'validation':
     
@@ -223,7 +223,6 @@ else: # 'nominal'
 
 # print(fulldata)
 
-#%% main loop
 #%% main loop of pysoltrace
 circumf = math.pi*d_abstube
 x = np.linspace(-circumf/2.,circumf/2., nx)
@@ -388,7 +387,7 @@ if __name__ == "__main__":
             for col in nominaldf.columns:
                 nominaldf = nominaldf.assign(col=np.nan)
         
-        if tracker_angle_input != 'stats':
+        if (tracker_angle_input != 'stats') and (tracker_angle_input != 'char'):
             #% compare nominal to actual
             plot_time_series_compare(nominaldf, fulldata, resultsdf, x, sensorloc)
     
