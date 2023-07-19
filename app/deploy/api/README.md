@@ -1,4 +1,4 @@
-# README
+<img width="1289" alt="image" src="https://github.com/brookeslawski/SolTrace/assets/34248707/5f57698d-c55e-4647-acd9-30ce45a05344"># README
 ## Instructions for using PySolTrace for Tracking Error Measurements (main-runsoltrace-iterate.py)
 
 Built on top of the existing SolTrace Python API developed by Mike Wagner, this open-source tool feeds in time-series measurements of tracking error and sun positions and uses Monte-Carlo-based ray-tracing to generate flux distribution on the absorber tube and optical performance.
@@ -25,7 +25,10 @@ Trough angle sign convention: 0 degrees is flat, -90 is pointing west, +90 is po
 The code then uses NREL's Solar Position Algorithm (https://pvlib-python.readthedocs.io/en/v0.4.2/generated/pvlib.solarposition.spa_python.html) to calculate the sun position (elevation and azimuth angles) at each timestamp in the input dataframe.
 
 
-To calculate the optical performance and flux distribution, an instance of SolTrace is created for every time stamp (every row in the input dataframe) and every sensor location (every column in the input dataframe).
+To calculate the optical performance and flux distribution, an instance of SolTrace via the Python API (https://github.com/brookeslawski/SolTrace/blob/develop/app/deploy/api/pysoltrace.py) is created for every time stamp (every row in the input dataframe) and every sensor location (every column in the input dataframe).
+
+
+SolTrace models the ray interactions with each element in the CSP system using Monte-Carlo based ray-tracing (Wendelin, T. (2003). "SolTRACE: A New Optical Modeling Tool for Concentrating Solar Optics." Proceedings of the ISEC 2003: International Solar Energy Conference, 15-18 March 2003, Kohala Coast, Hawaii. New York: American Society of Mechanical Engineers, pp. 253-260; NREL Report No. CP-550-32866.). We use the back-end ray-tracing algorithm called `coretrace` through a Python API in a packaged called `pysoltrace`, which does not rely on a GUI.
 
 ### Outputs
 For each SolTrace instance, a results dataframe is generated that includes the intercept factor, the flux distribution at the centerline (circumference of the absorber tube at the lateral mid-point), and the coefficient of variation. For example:
