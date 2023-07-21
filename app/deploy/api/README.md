@@ -1,4 +1,4 @@
-## Instructions for using PySolTrace for Tracking Error Measurements (main-runsoltrace-iterate.py)
+## Usage: PySolTrace for Tracking Error Measurements (main-runsoltrace-iterate.py)
 
 Built on top of the existing SolTrace Python API developed by Mike Wagner, this open-source tool feeds in time-series measurements of tracking error and sun positions and uses Monte-Carlo-based ray-tracing to generate flux distribution on the absorber tube and optical performance.
 
