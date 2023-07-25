@@ -147,3 +147,76 @@ plt.ylabel('intercept factor')
 plt.legend()
 
 plt.savefig('{}validation-firstoptic.pdf'.format(figdir), format='pdf', dpi=resolution_value)
+
+#%% plotting median diurnal cycle with intercept factor 
+combineddf = resultsdf.merge(mediandf, left_index = True, right_index = True, how='outer')
+combineddf['intercept_factor'] = combineddf['intercept_factor'].fillna(0)
+
+tilt_col_list = [col for col in data.filter(regex='Tilt_adjusted').columns if srow in col]
+markers = ['.','x','+']
+
+plt.rcParams.update({'font.size': 14})
+plt.rcParams.update({'font.family': 'serif'})
+fig,axs = plt.subplots(5, 1, dpi=250, sharex=True, figsize=[10,12])
+axs[0].set_title('median diurnal cycle')
+
+for s, dfs in combineddf.groupby('season'):
+    print(s)
+    ind = dfs.index.get_level_values(0)
+    color = assign_Color(s)
+    print(color)
+    
+    axs[0].plot(ind, dfs.wspd_3m,'.-',linewidth=0.5,color=color,alpha=0.7)
+    axs[1].plot(ind, dfs.wdir_3m,'.-',linewidth=0.5,color=color,alpha=0.7)
+    #axs[2].plot(ind, dfs.Temp_3m,'.',color=color,alpha=0.7)
+            
+    axs[2].plot(ind, dfs.nom_trough_angle,"o", fillstyle='none', markeredgecolor='k')
+    
+    # print(dfs)
+
+    for n, tc in enumerate(tilt_col_list):
+        axs[2].plot(ind, dfs[tc], linestyle='-', linewidth=0.5, color=color, marker = markers[n]) #, label=column[:6])
+    
+        # calc_trough_dev = abs(dfs[tc] - dfs.nom_trough_angle)
+        calc_trough_dev = dfs[tc] - dfs.nom_trough_angle
+        axs[3].plot(ind, abs(calc_trough_dev), linestyle='-', linewidth=0.5, color=color, marker = markers[n]) #
+        
+    axs[4].plot(ind, dfs.intercept_factor, linestyle='-', linewidth=0.5, color=color, marker = 'o') #
+    
+axs[1].axhspan(225, 315, facecolor='0.8', alpha=0.9, label='west')
+axs[3].axhline(critical_angle_error, color='0.6', label='critical angle \n deviation')
+axs[3].axhline(0, color='k', label='')
+
+axs[0].set_ylabel('wind speed at 3m \n [m/s]')      
+axs[1].set_ylabel('wind dir at 3m \n [deg]')      
+# axs[2].set_ylabel('air temperature at 3m \n [C]')      
+# axs[2].set_ylabel('nom trough angle \n [deg]')
+axs[2].set_ylabel('{} trough angle \n [deg]'.format(srow))
+axs[3].set_ylabel('abs. val. trough \n angle deviation [deg]')
+axs[4].set_ylabel('intercept factor \n $\lambda$')
+axs[-1].set_xlabel('hour [UTC]')
+
+axs[3].set_ylim([-2, 5])
+
+axs[0].plot(np.nan, np.nan, label='spring', color='green')
+axs[0].plot(np.nan, np.nan, label='summer', color='red')
+# axs[0].plot(np.nan, np.nan, label='fall', color='orange')
+axs[0].plot(np.nan, np.nan, label='winter', color='blue')
+
+for n,column in enumerate(tilt_col_list):
+    axs[2].plot(np.nan, np.nan, label=column[:6], color = 'k', marker=markers[n], linewidth=0.5)
+    axs[3].plot(np.nan, np.nan, label=column[:6], color = 'k', marker=markers[n], linewidth=0.5)
+axs[4].plot(np.nan, np.nan, label='R1 avg', color = 'k', marker='o', linewidth=0.5)
+
+axs[0].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
+axs[1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
+axs[2].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
+axs[3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
+axs[4].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
+    
+#%%
+noadjfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/stats_1E+05hits_Dec_June2023_realistic_optics_no_adj.p'
+rawdf = pickle.load(open(noadjfn,'rb'))
+inputdata = rawdf[0]
+resultsdf = rawdf[1]['DO']
+plot_stats_intercept_factor(resultsdf)

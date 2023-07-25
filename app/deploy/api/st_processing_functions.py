@@ -45,32 +45,25 @@ def set_optics_props(optics_type):
         # tau = 0.95 # transmittance of glass envelope
     return refl_rho, absr_alpha, absr_rho, refl_spec
 
-def get_sun_angles():
-    fn = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/NREL_NSO_meas/trough_angles/sun_angles.txt'
-    angles = pd.read_csv(fn, parse_dates={'UTC': [0, 1]}).set_index('UTC')  # ,nrows=200
-    #angles.iloc[:,-1] = angles.iloc[:,-1].where(angles.iloc[:,-1]>0)
-    return angles.iloc[:,-1]
+def get_trough_angles_py(times, lat, lon, alt):
+    # tstart and tend in UTC
+    #times = pd.date_range(tstart, tend, freq=inpfreq)
+
+    solpos = solarposition.get_solarposition(times, lat, lon, altitude=alt) #, method='nrel_numba')
+
+    angles = pd.DataFrame()
+    angles = sun_elev_to_trough_angles(solpos.apparent_elevation,solpos.azimuth)
+    angles = angles.to_frame(name='nom_trough_angle')
+    anglesdf = solpos.merge(angles, left_index = True, right_index = True, how='inner')
+    anglesdf.nom_trough_angle[anglesdf['apparent_elevation'] < 0] = 120
+    return anglesdf
 
 def sun_elev_to_trough_angles(elev_angles, azimuth_angles):
-    # trough_angles = np.degrees( np.arctan2(np.sin(np.radians(elev_angles)), np.sin(np.radians(azimuth_angles)) ))
-    # print('trough angle = {:2f}'.format(trough_angles))
-    # # print(trough_angles)
-    # # trough_angles = trough_angles.where(trough_angles.isnull()==False, -30)
-    # # print(trough_angles.where(trough_angles.isnull()==False, -30))
-    # trough_angles = -trough_angles + 90
-    # print('trough angle = {:2f}'.format(trough_angles))
     x, _, z = get_aimpt_from_sunangles(elev_angles, azimuth_angles)
     trough_angle = get_tracker_angle_from_aimpt(x,z)
     return trough_angle
 
 def get_aimpt_from_sunangles(elev_angles, azimuth_angles):
-    # trough_angles = sun_elev_to_trough_angles(elev_angles, azimuth_angles)
-    # print('elev angle = {:2f}'.format(elev_angles))
-    # print('azimuth angle = {:2f}'.format(azimuth_angles))
-    # #print('trough angle = {:2f}'.format(trough_angles))
-    # signed_elev_angles = 90 - trough_angles
-    # x = factor * np.cos(np.radians(signed_elev_angles))
-    # z = x * np.tan(np.radians(signed_elev_angles))
     x = np.cos(np.radians(elev_angles))*np.sin(np.radians(azimuth_angles))
     y = np.cos(np.radians(elev_angles)) * np.cos(np.radians(azimuth_angles))
     z = np.sin(np.radians(elev_angles))
@@ -265,37 +258,40 @@ def plot_sun_trough_deviation_angles(fulldata, sensorloc):
     axs[0].plot(fulldata.apparent_elevation,'k.-')
     axs[0].set_ylabel('sun elev. angle [deg]')
 
-    devkey = [col for col in fulldata.filter(regex='Tilt_adjusted').columns if sensorloc in col]
+    devkey = [col for col in fulldata.filter(regex='Tilt_adjusted').columns if sensorloc in col][0]
     axs[1].plot(fulldata.nom_trough_angle, '.-', label='nominal')
     axs[1].plot(fulldata[devkey], 'k.', label=devkey[0])
     axs[1].set_ylabel('trough_angle')
     axs[1].legend()
-
-    devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
-    axs[2].plot(fulldata[devkey], '.-')
+    
+    # calculate tracking error
+    fulldata['track_err'] = fulldata[devkey] - fulldata['nom_trough_angle']
+    axs[2].plot(fulldata['track_err'], '.-')
     axs[2].set_ylabel('deviation [deg]')
     
     for ax in axs:
         ax.tick_params(labelrotation=30)
     plt.tight_layout()
 
-def plot_stats_deviation(track_error_stats):
+def plot_stats_deviation(track_error_stats, critical_angle_error=0.79):
     sensor_locs = track_error_stats.index.unique(level=1).values
     fig,axs = plt.subplots(1,3,sharey=True,figsize=[9,3],dpi=250)
-    for ax,sloc in zip(axs.ravel(),sensor_locs):
+    for ax,sinputloc in zip(axs.ravel(),sensor_locs):
         rows = track_error_stats.index.unique(level=0).values
-        ys = track_error_stats.loc[(rows,sloc),'absmean']
-        stds = track_error_stats.loc[(rows,sloc),'absstd']
-        ax.plot(rows, ys,'.-', label='avg')
-        ax.fill_between(rows, ys-stds, ys+stds, alpha=0.2, label='std')
-        ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmax'], 'k.', label='peak')
-        ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
+        ys = track_error_stats.loc[(rows,sinputloc),'absmean']
+        stds = track_error_stats.loc[(rows,sinputloc),'absstd']
+        ax.plot(rows, ys,'.-', label='$\overline{\epsilon}$')
+        ax.fill_between(rows, ys-stds, ys+stds, color='C0', alpha=0.4, label='$\overline{\epsilon} + \sigma$')
+        ax.fill_between(rows, ys-2*stds, ys+2*stds, color='C0', alpha=0.2, label='$\overline{\epsilon} + 2\sigma$')
+        ax.plot(rows, track_error_stats.loc[(rows,sinputloc),'absmax'], 'k.', label='peak')
+        # ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
+        ax.axhline(critical_angle_error, color='0.6', label='critical $\epsilon$')
         ax.axhline(0, color='0.5', linestyle=':')
         ax.set_xlabel('row')
-        ax.set_title(sloc)
+        ax.set_title(sinputloc)
     
     axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
-    axs[0].set_ylabel('|trough angle deviation| [deg]')
+    axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')
 
 def plot_stats_intercept_factor(resultsdf):
     rows = resultsdf.index.unique(level=0).values
