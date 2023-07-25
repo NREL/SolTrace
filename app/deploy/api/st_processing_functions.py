@@ -252,13 +252,16 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
         
     return flux_st, c_v
 
-def plot_sun_trough_deviation_angles(fulldata, sensorloc):
+def plot_sun_trough_deviation_angles(fulldata, sensorloc, adj_flag = True):
     fig, axs = plt.subplots(3,1,figsize=[9,7],dpi=250,sharex=True)
 
     axs[0].plot(fulldata.apparent_elevation,'k.-')
     axs[0].set_ylabel('sun elev. angle [deg]')
 
-    devkey = [col for col in fulldata.filter(regex='Tilt_adjusted').columns if sensorloc in col][0]
+    if adj_flag:
+        devkey = [col for col in fulldata.filter(regex='Tilt_adjusted').columns if sensorloc in col][0]
+    else:
+        devkey = [col for col in fulldata.filter(regex='Tilt$').columns if sensorloc in col][0]
     axs[1].plot(fulldata.nom_trough_angle, '.-', label='nominal')
     axs[1].plot(fulldata[devkey], 'k.', label=devkey[0])
     axs[1].set_ylabel('trough_angle')
