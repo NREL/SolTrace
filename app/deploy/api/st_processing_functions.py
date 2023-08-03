@@ -618,7 +618,7 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
     axs['A'].plot(inputsdf.wspd_3m,'k.:')
     axs['A'].set_ylabel('wind speed \n [m/s]')
     
-    axs['B'].plot(inputsdf.wdir_7m,'k.:')
+    axs['B'].plot(inputsdf.wdir_3m,'k.:')
     axs['B'].axhspan(225, 315, facecolor='0.8', alpha=0.9)
     axs['B'].set_ylabel('wind direction \n [deg]')
     # axs['B'].plot(inputsdf.nom_trough_angle, 'k-', label='nominal')
