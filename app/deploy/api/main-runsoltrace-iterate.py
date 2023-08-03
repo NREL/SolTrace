@@ -45,7 +45,7 @@ sfcerr_flag = False
 optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 plot_rays = False
 save_pickle = True
-number_hits = 1e3 # 5e6 # 1e5 #1e5 
+number_hits = 1e5 # 5e6 # 1e5 #1e5 
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
@@ -60,13 +60,14 @@ abs_aimz = focal_len*2. # 0. ??
 critical_angle_error = 0.79 #[deg] from firstoptic validation dataset
 lat, lon = 35.8, -114.983 #coordinates of NSO
 altitude = 543 #m
+save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
+
 
 # running with field data timeseries =============================================
 tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
 sensorlocs = ['R1_DO','R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
 times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='4H') # in UTC
 field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
-save_path = 'Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
 
 # running with field data stats ======================================
 # tracker_angle_input = 'stats'
@@ -95,7 +96,7 @@ save_path = 'Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/dep
 nx = 30
 ny = 30
 
-#% optics properties definition
+#%% optics properties definition
 refl_rho, absr_alpha, absr_rho, refl_spec = set_optics_props(optics_type)
 
 #%% load field data
@@ -192,8 +193,8 @@ elif tracker_angle_input == 'stats':
     
     # concatenate the mean, mean+sigma, mean-sigma, and max into rows of a dataframe for parsing
     inputdata = pd.DataFrame()
-    dfdata = stats_data.loc[(rows, sensorlocs),:]
-    colnames = ['absmean','absmean+std','absmean+2std','absmean-std','absmax']
+    # dfdata = stats_data.loc[(rows, sensorlocs),:]
+    colnames = ['absmean','absmean+std','absmean+2std','absmean-std','absmean-2std','absmax']
     for col in colnames:
         if '+std' in col:
             tmpdf = dfdata['absmean']+dfdata['absstd'] # captures 68% of the data
@@ -207,7 +208,11 @@ elif tracker_angle_input == 'stats':
             tmpdf = dfdata['absmean']-dfdata['absstd']
             tmpdf = tmpdf.to_frame()
             tmpdf.columns=[col]
-        else:
+        elif '-2std' in col:
+            tmpdf = dfdata['absmean']-2*dfdata['absstd'] # captures 95% of the data
+            tmpdf = tmpdf.to_frame()
+            tmpdf.columns=[col]
+        else: #max?
             tmpdf = dfdata[col].to_frame()
         tmpdf.rename(columns={col: 'trough_angle'}, inplace=True)
         tmpdf['stat'] = col
@@ -427,16 +432,15 @@ if __name__ == "__main__":
     #% save variables to pickle file
     if save_pickle == True:
         if tracker_angle_input == 'field':
-            pickle.dump(results, open('/{}{}_{}_{}_{:.0E}hits_{}_optics_test.p'.format(save_path,tracker_angle_input,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type), 'wb'))
-        if tracker_angle_input == 'char':
-            pickle.dump([inputdata, resultsdf], open('{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input,int(number_hits),optics_type), 'wb'))
+            pfn = '{}{}_{}_{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type)
         else:
-            pickle.dump([inputdata, results], open('{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input,int(number_hits),optics_type), 'wb'))
-    
+            pfn = '{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input,int(number_hits),optics_type)
+        pickle.dump([inputdata, results], open(pfn, 'wb'))
+        
     if tracker_angle_input == 'field':
         plot_time_series_compare_sensors(nominaldf, inputdata, results, x, sensorlocs)
     elif tracker_angle_input == 'stats':
-        plot_stats_intercept_factor(resultsdf)
+        plot_stats_intercept_factor(inputdata, resultsdf)
 
     #%% transforming from stage to global
     # plot_rays_globalcoords(df, PT, st)

@@ -62,4 +62,4 @@ if __name__ == "__main__":
     run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input_mode, sensorlocs,
                              module_length, aperture_width, focal_length, d_abstube, 
                              ptc_pos, ptc_aim, 
-                             sunshape_flag=False, sfcerr_flag=False, optics_type='realistic', plot_rays=plot_rays, number_hits=n_hits, nx=nx, ny=ny)
+                             sunshape_flag=False, sfcerr_flag=False, optics_type='realistic', plot_rays=plot_rays, save_pickle=save_pickle, number_hits=n_hits, nx=nx, ny=ny)

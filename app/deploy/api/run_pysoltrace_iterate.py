@@ -23,7 +23,7 @@ from st_processing_functions import *
 def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, tracker_angle_input_mode, sensorlocs,
                          module_length, aperture_width, focal_length, absorber_diameter, 
                          ptc_position, ptc_aim, 
-                         sunshape_flag=False, sfcerr_flag=False, optics_type='realistic', plot_rays=False, number_hits=1e5, nx=30, ny=30):
+                         sunshape_flag=False, sfcerr_flag=False, optics_type='realistic', plot_rays=False, save_pickle=False, number_hits=1e5, nx=30, ny=30):
     """
     Calculate the optical performance of a series of tracking error inputs of CSP Parabolic Trough systems using the SolTrace Python API [1].
     
@@ -320,3 +320,45 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         plot_stats_intercept_factor(resultsdf)
     
     return results
+
+
+#%% INPUTS ===========================================================================================
+
+# define constant inputs                                                                                                                                                                                                                                                                                                                       
+sunshape_flag = False
+sfcerr_flag = False
+optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+plot_rays = False
+save_pickle = True
+number_hits = 1e5 # 5e6 # 1e5 #1e5 
+
+# parabolic trough geometry definition ================================
+# NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
+module_length = 12.0 # module length
+aperture_width = 5.0 #5.77 # aperture width
+focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
+d_abstube = 0.07 # diameter of absorber tube
+abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
+ptc_pos = [0, 0, 0] # x, y, z
+ptc_aim = [0, 0, 1] # x, y, z
+abs_aimz = focal_len*2. # 0. ??
+critical_angle_error = 0.79 #[deg] from firstoptic validation dataset
+lat, lon = 35.8, -114.983 #coordinates of NSO
+altitude = 543 #m
+save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
+
+
+# running with field data timeseries =============================================
+tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+sensorlocs = ['R1_DO','R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
+times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='4H') # in UTC
+field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
+
+# data output settings
+# mesh discretization on absorber tube for flux map
+nx = 30
+ny = 30
+
+
+if __name__ == "__main__":
+    results = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, module_length, aperture_width, focal_len, d_abstube, ptc_pos, ptc_aim, sunshape_flag, sfcerr_flag, optics_type='realistic', plot_rays=False, save_pickle=False, number_hits=1e3, nx=30, ny=30)

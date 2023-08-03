@@ -215,8 +215,33 @@ axs[3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
 axs[4].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
     
 #%%
-noadjfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/stats_1E+05hits_Dec_June2023_realistic_optics_no_adj.p'
+noadjfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/stats_1E+05hits_Dec_June2023_realistic_optics_adj.p'
 rawdf = pickle.load(open(noadjfn,'rb'))
 inputdata = rawdf[0]
 resultsdf = rawdf[1]['DO']
-plot_stats_intercept_factor(resultsdf)
+plot_stats_intercept_factor(inputdata, resultsdf)
+
+#%%
+critical_angle_error = 0.79
+sensorlocs = inputdata.index.unique(level=1).values
+
+fig,axs = plt.subplots(1,3,sharey=True,figsize=[9,3],dpi=250)
+for ax,sinputloc in zip(axs.ravel(),sensorlocs):
+    rows = inputdata.index.unique(level=0).values
+    ys = inputdata.loc[(rows,sinputloc,'absmean'),'trough_angle']
+    # stds = inputdata.loc[(rows,sinputloc),'absstd']
+    ax.plot(rows, ys,'.-', label='$\overline{\epsilon}$')
+    ax.fill_between(rows, inputdata.loc[(rows,sinputloc,'absmean-std'),'trough_angle'],
+                    inputdata.loc[(rows,sinputloc,'absmean+std'),'trough_angle'], 
+                    color='C0', alpha=0.4, label='$\overline{\epsilon} + \sigma$')
+    # ax.fill_between(rows, inputdata.loc[(rows,sinputloc,'absmean-2std'),'trough_angle'],
+    #                 inputdata.loc[(rows,sinputloc,'absmean+2std'),'trough_angle'], 
+                    # color='C0', alpha=0.2, label='$\overline{\epsilon} + \sigma$')    # ax.plot(rows, track_error_stats.loc[(rows,sinputloc),'absmax'], 'k.', label='peak')
+    # ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
+    ax.plot(rows, inputdata.loc[(rows,sinputloc,'absmax'), 'trough_angle'], 'k.', label='peak')
+    ax.axhline(critical_angle_error, color='0.6', label='critical $\epsilon$')
+    ax.axhline(0, color='0.5', linestyle=':')
+    ax.set_xlabel('row')
+    ax.set_title(sinputloc)
+axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
+axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')

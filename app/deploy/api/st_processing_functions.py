@@ -296,7 +296,27 @@ def plot_stats_deviation(track_error_stats, critical_angle_error=0.79):
     axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
     axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')
 
-def plot_stats_intercept_factor(resultsdf):
+def plot_stats_intercept_factor(inputdata, resultsdf):
+    # rows = inputdata.index.unique(level=0).values
+    # sensorlocs = inputdata.index.unique(level=1).values
+    # fig,axs = plt.subplots(1,3,sharey=True,figsize=[9,3],dpi=250)
+    # for ax,sinputloc in zip(axs.ravel(),sensor_locs):
+    #     rows = inputdata.index.unique(level=0).values
+    #     ys = inputdata.loc[(rows,sinputloc),'absmean']
+    #     stds = inputdata.loc[(rows,sinputloc),'absstd']
+    #     ax.plot(rows, ys,'.-', label='$\overline{\epsilon}$')
+    #     ax.fill_between(rows, ys-stds, ys+stds, color='C0', alpha=0.4, label='$\overline{\epsilon} + \sigma$')
+    #     ax.fill_between(rows, ys-2*stds, ys+2*stds, color='C0', alpha=0.2, label='$\overline{\epsilon} + 2\sigma$')
+    #     ax.plot(rows, track_error_stats.loc[(rows,sinputloc),'absmax'], 'k.', label='peak')
+    #     # ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
+    #     ax.axhline(critical_angle_error, color='0.6', label='critical $\epsilon$')
+    #     ax.axhline(0, color='0.5', linestyle=':')
+    #     ax.set_xlabel('row')
+    #     ax.set_title(sinputloc)
+    
+    # axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
+    # axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')
+    
     rows = resultsdf.index.unique(level=0).values
     sensorlocs = resultsdf.index.unique(level=1).values
     fig,axs = plt.subplots(1,3,figsize=[9,3],sharey=True,dpi=250)
@@ -595,7 +615,7 @@ def load_field_data(path, year, month, day, fileres, outres):
 def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs):
     fig, axs = plt.subplot_mosaic("AE;BF;CG;DH",sharex=True,figsize=[12,7],dpi=250)
 
-    axs['A'].plot(inputsdf.wspd_7m,'k.:')
+    axs['A'].plot(inputsdf.wspd_3m,'k.:')
     axs['A'].set_ylabel('wind speed \n [m/s]')
     
     axs['B'].plot(inputsdf.wdir_7m,'k.:')
