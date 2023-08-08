@@ -20,6 +20,24 @@ io.renderers.default='browser'
 
 from st_processing_functions import *
 
+def find_year_month_day(times):
+    if times.year[0]==times.year[-1]:
+        year = str(times.year[0])
+    else:
+        year = '*'
+    
+    if times.month[0]==times.month[-1]:
+        month = times.strftime('%m')[0]
+    else:
+        month = '*'
+        
+    if times.day[0]==times.day[-1]:
+        day = times.strftime('%d')[0]
+    else:
+        day = '*'
+    
+    return year,month,day
+
 def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, tracker_angle_input_mode, sensorlocs,
                          module_length, aperture_width, focal_length, absorber_diameter, 
                          ptc_position, ptc_aim, 
@@ -94,9 +112,11 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
     refl_rho, absr_alpha, absr_rho, refl_spec = set_optics_props(optics_type)
     
     if tracker_angle_input_mode == 'field':
-        year   = '2023'  # !! fix this to not be hard coded in (just for testing)
-        month  = '03' # '12' # '01' # '*'
-        day    = '05' # '16'
+        
+        year, month, day = find_year_month_day(times)
+        # year   = '2023'  # !! fix this to not be hard coded in (just for testing)
+        # month  = '03' # '12' # '01' # '*'
+        # day    = '05' # '16'
         fileres = '1min' # '1min' or '20Hz'
         outres = '0.5H'
         
@@ -119,7 +139,6 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         sunangles = get_trough_angles_py(times, latitude, longitude, altitude)
         field_data = field_data.merge(sunangles, left_index = True, right_index = True, how='inner')
         
-        # [a, b, c] = get_aimpt_from_sunangles(field_data.apparent_elevation, field_data.azimuth)
         [a, b, c] = get_aimpt_from_sunangles(field_data.apparent_elevation, field_data.azimuth)
         field_data['sun_pos_x'] = 1000 * a
         field_data['sun_pos_y'] = 1000 * b
@@ -132,14 +151,12 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         
         inputdata = field_data
         for sensorloc in sensorlocs:
-            # for column in inputdata.filter(regex='Tilt').columns:
-            #     # absolute value
-            #     inputdata['trough_angle_dev_{}'.format(column[0:6])] = abs(inputdata[column] - inputdata['nom_trough_angle'])
             plot_sun_trough_deviation_angles(field_data, sensorloc, adj_flag = False)
     
     results = {}
 
     tstart = time.time()
+    
     # iterate through pandas dataframe at all sun positions
     # iterate over each row and sensor location
     for sensorloc in sensorlocs:
@@ -338,15 +355,15 @@ module_length = 12.0 # module length
 aperture_width = 5.0 #5.77 # aperture width
 focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
 d_abstube = 0.07 # diameter of absorber tube
-abs_height = focal_len - d_abstube/2. # pt on upper?? sfc of abs tube
 ptc_pos = [0, 0, 0] # x, y, z
 ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
 critical_angle_error = 0.79 #[deg] from firstoptic validation dataset
-lat, lon = 35.8, -114.983 #coordinates of NSO
+
+# field site definition ================================
+lat, lon = 35.8, -114.983 #coordinates of Nevada Solar One
 altitude = 543 #m
 save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
-
 
 # running with field data timeseries =============================================
 tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'

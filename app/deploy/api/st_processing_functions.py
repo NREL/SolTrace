@@ -55,6 +55,7 @@ def get_trough_angles_py(times, lat, lon, alt):
     angles = sun_elev_to_trough_angles(solpos.apparent_elevation,solpos.azimuth)
     angles = angles.to_frame(name='nom_trough_angle')
     anglesdf = solpos.merge(angles, left_index = True, right_index = True, how='inner')
+    anglesdf['projected_sun_angle'] = anglesdf.nom_trough_angle
     anglesdf.nom_trough_angle[anglesdf['apparent_elevation'] < 0] = 120
     return anglesdf
 
@@ -497,6 +498,7 @@ def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
     axs['F'].tick_params(labelrotation=30)
 
     plt.tight_layout()
+    plt.show()
 
 def transform_stage_to_global_coords(df, PT, st):
     locs_stage = np.array([df[k].values for k in ['loc_x','loc_y','loc_z']])
