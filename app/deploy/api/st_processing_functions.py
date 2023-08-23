@@ -35,7 +35,7 @@ def set_optics_props(optics_type):
         refl_rho = 1. # trough reflectivity
         absr_rho = 0. # receiver reflectivity
         refl_spec = 0.0 # [mrad] 0.2 == default
-        # absr_alpha = 1. # receiver absorptivity
+        absr_alpha = 1. # receiver absorptivity
         # tau = 1. # transmittance of glass envelope
     elif optics_type == 'yang':
         refl_rho = 0.93 # trough reflectivity
@@ -99,7 +99,10 @@ def get_intersections(df, stage, elem = 'all'): #, isfinal = False):
     # stage : integer, [0:PT.stages-1]
     # elem  : string, ['all','absorbed','reflected']
     
+    # if element value is negative, that ray was absorbed
     elems_negative = df.element.unique()[df.element.unique()<0]
+    
+    # if element value is positive, that ray was reflected
     elems_positive = df.element.unique()[df.element.unique()>0]
     
     if elem == 'all': # all
@@ -107,11 +110,16 @@ def get_intersections(df, stage, elem = 'all'): #, isfinal = False):
     
     elif elem == 'absorbed': # absorbed --> negative elem values only
         # inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values < 0))[0]
-        inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values == np.min(elems_negative)))[0]
+        if elems_negative.size > 0: # rays have been absorbed
+            # inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values == np.min(elems_negative)))[0]
+            inds = df.loc[(df['stage'] == stage) & (df['element'] == np.min(elems_negative)) & (df['cos_z'] > 0.)].index.values # not counting rays from the sun that hit the absorber tube first ('cos_z' = -1)
+        else: # all rays missed absorber
+            inds = np.array([]) # return empty array with len zero (no intersections)
     
     elif elem == 'reflected':# reflected --> positive elem values only
         # inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values > 0))[0]
-        inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values == np.min(elems_positive)))[0]
+        # inds = np.where(np.logical_and(df['stage'].values == stage, df['element'].values == np.min(elems_positive)))[0]
+        inds = df.loc[(df['stage'] == stage) & (df['element'] == np.min(elems_positive))].index.values
     return inds
 
 #--- Get number of ray intersections with given element
@@ -276,6 +284,7 @@ def plot_sun_trough_deviation_angles(fulldata, sensorloc, adj_flag = True):
     for ax in axs:
         ax.tick_params(labelrotation=30)
     plt.tight_layout()
+    plt.show()
 
 def plot_stats_deviation(track_error_stats, critical_angle_error=0.79):
     sensor_locs = track_error_stats.index.unique(level=1).values
@@ -296,6 +305,7 @@ def plot_stats_deviation(track_error_stats, critical_angle_error=0.79):
     
     axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
     axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')
+    plt.show()
 
 def plot_stats_intercept_factor(inputdata, resultsdf):
     # rows = inputdata.index.unique(level=0).values
@@ -340,6 +350,7 @@ def plot_stats_intercept_factor(inputdata, resultsdf):
 
     axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
     axs[0].set_ylabel('intercept factor ($\gamma$)')
+    plt.show()
 
 def plot_diurnal_cycle_optical_performance(mediandf, resultsdf, critical_angle_error):
     # from "char" mode of running SolTrace
@@ -403,6 +414,7 @@ def plot_diurnal_cycle_optical_performance(mediandf, resultsdf, critical_angle_e
 
     axs[0].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
     axs[1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    plt.show()
 
 def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
     fig, axs = plt.subplots(4,1,figsize=[9,7],dpi=250)
@@ -425,6 +437,7 @@ def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
         ax.tick_params(labelrotation=30)
 
     plt.tight_layout()
+    plt.show()
 
 def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
     #fig, axs = plt.subplots(5,1,figsize=[10,9],dpi=250)
@@ -682,3 +695,4 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
     axs['H'].tick_params(axis='x',labelrotation=30)
 
     plt.tight_layout()
+    plt.show()

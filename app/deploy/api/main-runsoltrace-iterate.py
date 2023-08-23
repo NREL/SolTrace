@@ -42,10 +42,10 @@ global focal_len
 # define constant inputs                                                                                                                                                                                                                                                                                                                       
 sunshape_flag = False
 sfcerr_flag = False
-optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
 plot_rays = False
 save_pickle = True
-number_hits = 1e5 # 5e6 # 1e5 #1e5 
+number_hits = 1e3 # 5e6 # 1e5 #1e5 
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
@@ -62,12 +62,11 @@ lat, lon = 35.8, -114.983 #coordinates of NSO
 altitude = 543 #m
 save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
 
-
 # running with field data timeseries =============================================
-tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-sensorlocs = ['R1_DO','R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
-times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='4H') # in UTC
-field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
+# tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+# sensorlocs = ['R1_DO','R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
+# times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='4H') # in UTC
+# field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
 
 # running with field data stats ======================================
 # tracker_angle_input = 'stats'
@@ -87,9 +86,9 @@ field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/'
 # times = pd.date_range('2023-01-01 15:00:00', '2023-01-01 23:50:00',freq='4H') # in UTC
 
 # running for validation ===================================
-# tracker_angle_input = 'validation'
-# sensorlocs = ['validation']
-# num_iters = 16 # number of trough dev angles to evaluate
+tracker_angle_input = 'validation'
+sensorlocs = ['validation']
+num_iters = 1 #1 # number of trough dev angles to evaluate
 
 # data output settings
 # mesh discretization on absorber tube for flux map
@@ -236,6 +235,7 @@ elif tracker_angle_input == 'validation':
     
     # array of tracking error values
     error = np.linspace(0,2,num_iters) # 0.05 #0.025 # [deg]
+    #error = np.array([0.85])
     
     # define trough angle based on tracking error
     data = nom_trough_angle + error
@@ -348,7 +348,10 @@ if __name__ == "__main__":
             el.aperture_rectangle(aperture_width,module_length)
             
             # create absorber tube
-            #sta = PT.add_stage()
+            # double stage
+            # sta = PT.add_stage()
+            # ela = sta.add_element()
+            
             # single stage
             ela = st.add_element()
             
@@ -425,7 +428,7 @@ if __name__ == "__main__":
                 for col in nominaldf.columns:
                     nominaldf = nominaldf.assign(col=np.nan)
         
-        if (tracker_angle_input != 'stats') and (tracker_angle_input != 'char'):
+        #if (tracker_angle_input != 'stats') and (tracker_angle_input != 'char'):
             #% compare nominal to actual
             plot_time_series_compare(nominaldf, sensorinputdata, resultsdf, x, sensorloc)
     
@@ -434,7 +437,7 @@ if __name__ == "__main__":
         if tracker_angle_input == 'field':
             pfn = '{}{}_{}_{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type)
         else:
-            pfn = '{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input,int(number_hits),optics_type)
+            pfn = '{}{}_{:.0E}hits_{}_optics_2stage.p'.format(save_path,tracker_angle_input,int(number_hits),optics_type)
         pickle.dump([inputdata, results], open(pfn, 'wb'))
         
     if tracker_angle_input == 'field':

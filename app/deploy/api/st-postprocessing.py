@@ -131,6 +131,7 @@ plt.rcParams['mathtext.fontset'] = 'dejavuserif'
 plt.rcParams['font.size'] = 14
 
 resolution_value = 300
+fulldata = results['validation']
 
 fig = plt.figure(dpi=resolution_value)
 # plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='x', label='Yang et al. 2022')
