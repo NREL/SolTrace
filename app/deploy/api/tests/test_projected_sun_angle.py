@@ -14,7 +14,6 @@ def test_answer():
     altitude = 543 #m
     
     sunangles = get_trough_angles_py(times, lat, lon, altitude)
-    answers = {}
     answers = [79.385638, 16.929936, -56.151902]
     assert np.allclose(func(sunangles), answers)
     # for sloc in ['R1_DO']: # results.keys():

@@ -269,16 +269,19 @@ def plot_sun_trough_deviation_angles(fulldata, sensorloc, adj_flag = True):
 
     if adj_flag:
         devkey = [col for col in fulldata.filter(regex='Tilt_adjusted').columns if sensorloc in col][0]
+    elif sensorloc == 'nominal':
+        devkey = 'nom_trough_angle' # 'nominal'
     else:
         devkey = [col for col in fulldata.filter(regex='Tilt$').columns if sensorloc in col][0]
+    
     axs[1].plot(fulldata.nom_trough_angle, '.-', label='nominal')
     axs[1].plot(fulldata[devkey], 'k.', label=devkey[0])
     axs[1].set_ylabel('trough_angle')
     axs[1].legend()
     
     # calculate tracking error
-    fulldata['track_err'] = fulldata[devkey] - fulldata['nom_trough_angle']
-    axs[2].plot(fulldata['track_err'], '.-')
+    track_error = fulldata[devkey] - fulldata['nom_trough_angle']
+    axs[2].plot(track_error, '.-')
     axs[2].set_ylabel('deviation [deg]')
     
     for ax in axs:
@@ -451,15 +454,16 @@ def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
     if sensorloc == 'validation':
         axs['A'].plot(inputsdf.trough_angle, '.-', label='actual')
     else:
-        devkey = [col for col in inputsdf.filter(regex='Tilt').columns if sensorloc in col]
+        devkey = [col for col in inputsdf.filter(regex='Tilt$').columns if sensorloc in col][0]
         axs['A'].plot(inputsdf[devkey],'.', label=sensorloc)
     axs['A'].set_ylabel('trough angle [deg]')
     
     if sensorloc == 'validation':
         axs['B'].plot(inputsdf.trough_angle_dev, '.-')
     else:
-        devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
-        axs['B'].plot(inputsdf[devkey],'.-')
+        # devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
+        track_error = inputsdf[devkey] - inputsdf['nom_trough_angle']
+        axs['B'].plot(track_error,'.-')
     axs['B'].set_ylabel('trough angle \n deviation [deg]')
 
     if sensorloc == 'validation':
@@ -512,6 +516,82 @@ def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
 
     plt.tight_layout()
     plt.show()
+
+def plot_time_series_compare_nominal(inputsdf, outputsdf, x, sensorloc):
+    #fig, axs = plt.subplots(5,1,figsize=[10,9],dpi=250)
+    fig, axs = plt.subplot_mosaic("AE;BE;CF;DF",figsize=[12,7],dpi=250)
+
+    # axs['A'].plot(inputsdf.apparent_elevation,'k.:')
+    # axs['A'].set_ylabel('sun elev. angle [deg]')
+    # axs['A'].set_title(sensorloc)
+    
+    axs['A'].plot(inputsdf.nom_trough_angle, 'k.-', label='nominal')
+    if sensorloc == 'validation':
+        axs['A'].plot(inputsdf.trough_angle, '.-', label='actual')
+    else:
+        devkey = [col for col in inputsdf.filter(regex='Tilt$').columns if sensorloc in col][0]
+        axs['A'].plot(inputsdf[devkey],'.', label=sensorloc)
+    axs['A'].set_ylabel('trough angle [deg]')
+    
+    if sensorloc == 'validation':
+        axs['B'].plot(inputsdf.trough_angle_dev, '.-')
+    else:
+        # devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
+        track_error = inputsdf[devkey] - inputsdf['nom_trough_angle']
+        axs['B'].plot(track_error,'.-')
+    axs['B'].set_ylabel('trough angle \n deviation [deg]')
+
+    if sensorloc == 'validation':
+        axs['C'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
+        axs['C'].plot(outputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
+    else:  
+        axs['C'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
+        axs['C'].plot(inputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
+    axs['C'].set_ylabel('intercept factor')
+    axs['C'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
+                     format(nominaldf.intercept_factor.mean(),
+                            np.mean(outputsdf.intercept_factor)))
+    ymax = np.maximum(1., np.max(outputsdf.intercept_factor))
+    axs['C'].set_ylim([0, ymax])
+    axs['C'].legend()
+    
+    if sensorloc == 'validation':
+        # axs['D'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
+        axs['D'].plot(outputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
+    else: 
+        axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
+        axs['D'].plot(inputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
+    axs['D'].set_ylabel('coeff of variation')
+    axs['D'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
+                     format(nominaldf.coeff_var.mean(),
+                            np.mean(outputsdf.coeff_var)))
+    axs['D'].set_ylim([1, 6])
+    axs['D'].legend()
+    
+    vmin = 0.0
+    vmax = np.max(list(outputsdf.flux_centerline.values))
+    levels = np.linspace(vmin,vmax,100)
+    
+    fluxcntr2 = np.stack(nominaldf.flux_centerline.values).T
+    cf2 = axs['E'].contourf(nominaldf.index, x, fluxcntr2, 
+                            levels=levels, cmap='turbo')
+    axs['E'].set_ylabel('x [m]')
+    axs['E'].set_title('nominal')
+    fig.colorbar(cf2, ax=axs['E'], label='flux at y=0', extend='both')
+     
+    fluxcntr = np.stack(outputsdf.flux_centerline.values).T
+    cf = axs['F'].contourf(inputsdf.index, x, fluxcntr, levels=levels, 
+                           cmap='turbo')
+    axs['F'].set_ylabel('x [m]')
+    fig.colorbar(cf, ax=axs['F'], label='flux at y=0')
+    axs['F'].set_title('actual')
+
+    axs['D'].tick_params(labelrotation=30)
+    axs['F'].tick_params(labelrotation=30)
+
+    plt.tight_layout()
+    plt.show()
+
 
 def transform_stage_to_global_coords(df, PT, st):
     locs_stage = np.array([df[k].values for k in ['loc_x','loc_y','loc_z']])
@@ -587,8 +667,8 @@ def plot_sun_position(solpos):
     fig.show()
     
 def load_field_data(path, year, month, day, fileres, outres):
-    inflow_files = sorted(glob.glob(path +'Inflow_Mast_' + fileres + '_' + year + '-' + month + '-' + day + '_' + '*.pkl'))   #
-    loads_files = sorted(glob.glob(path +'Loads_' + fileres + '_' + year + '-' + month + '-' + day + '_' + '*.pkl'))
+    inflow_files = sorted(glob.glob(path +'Met_masts_v0/Inflow_Mast_' + fileres + '_' + year + '-' + month + '-' + day + '_' + '*.pkl'))   #
+    loads_files = sorted(glob.glob(path +'Loads_v1/Loads_' + fileres + '_' + year + '-' + month + '-' + day + '_' + '*.pkl'))
 
     inflow = pd.DataFrame()
     for datafile in inflow_files:
@@ -643,8 +723,11 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
     # axs['B'].set_ylabel('trough angle \n [deg]')
 
     for sensorloc in sensorlocs:
-        devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
-        axs['C'].plot(abs(inputsdf[devkey]),'.-', label=sensorloc)
+        # devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
+        devkey = [col for col in inputsdf.filter(regex='Tilt$').columns if sensorloc in col]
+        
+        track_error = inputsdf[devkey[0]] - inputsdf['nom_trough_angle']
+        axs['C'].plot(abs(track_error),'.-', label=sensorloc)
     axs['C'].set_ylabel('abs. val. trough \n angle deviation [deg]')
     # axs['C'].set_ylim([0, 1])
 

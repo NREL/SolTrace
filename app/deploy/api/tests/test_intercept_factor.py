@@ -10,7 +10,7 @@ def test_answer():
     # running for validation ===================================
     tracker_angle_input = 'validation'
     sensorlocs = ['validation']
-    num_iters = 3 #1 # number of trough dev angles to evaluate
+    error_angles = np.array([0., np.degrees(1.733333e-02), 2.5])
 
     # fake inputs - not used in validation mode
     times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='4H') # in UTC
@@ -38,7 +38,7 @@ def test_answer():
                                    ptc_aim, sunshape_flag, sfcerr_flag, 
                                    optics_type, plot_rays, 
                                    save_pickle, number_hits, nx=30, ny=30,
-                                   num_iters=num_iters)
+                                   error_angles=error_angles)
 
 
     # calculate intercept factor

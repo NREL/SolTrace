@@ -125,13 +125,16 @@ plt.xlabel('trough angle deviation [deg]')
 plt.ylabel('$\eta$ [%]')
 plt.legend()
 
-#%% plot validation of intercept factor
+#%% plot validation of intercept factor - firstOPTIC
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['mathtext.fontset'] = 'dejavuserif'
 plt.rcParams['font.size'] = 14
 
 resolution_value = 300
 fulldata = results['validation']
+
+critical_angle_error_min = 0.79 #[deg] from firstoptic validation dataset
+critical_angle_error_max = np.degrees(2.363636e-02) #[deg] from firstoptic validation dataset
 
 fig = plt.figure(dpi=resolution_value)
 # plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='x', label='Yang et al. 2022')
@@ -143,8 +146,9 @@ else:
         devkey = [col for col in fulldata.filter(regex='trough_angle_dev').columns if sensorloc in col]
         plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, color='r', label = sensorloc)
         # plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
-plt.xlabel('trough angle deviation [deg]')
-plt.ylabel('intercept factor')
+plt.axvspan(critical_angle_error_min, critical_angle_error_max, color='0.7', alpha=0.6)
+plt.xlabel('tracking error ($\epsilon$) [$^\circ$]')
+plt.ylabel('intercept factor ($\gamma$) [-]')
 plt.legend()
 
 plt.savefig('{}validation-firstoptic.pdf'.format(figdir), format='pdf', dpi=resolution_value)

@@ -41,10 +41,9 @@ def find_year_month_day(times):
     return year,month,day
 
 def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, tracker_angle_input_mode, sensorlocs,
-                         module_length, aperture_width, focal_length, absorber_diameter, 
-                         ptc_position, ptc_aim, 
-                         sunshape_flag=False, sfcerr_flag=False, optics_type='realistic', plot_rays=False, save_pickle=False, number_hits=1e5, nx=30, ny=30,
-                         num_iters=16):
+                         module_length, aperture_width, focal_length, absorber_diameter, ptc_position, ptc_aim, 
+                         sunshape_flag=False, sfcerr_flag=False, optics_type='realistic', plot_rays=False,
+                         save_pickle=False, number_hits=1e5, nx=30, ny=30, error_angles=np.array([0., 1.25, 2.5])):
     """
     Calculate the optical performance of a series of tracking error inputs of CSP Parabolic Trough systems using the SolTrace Python API [1].
     
@@ -133,14 +132,20 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         selcols = list(field_data.filter(regex='Tilt$').columns)
         selcols.extend(['wspd_3m','wdir_3m',])
         field_data = field_data[selcols]
+        
+        # sample field data at specified times
+        field_data = field_data.loc[times]
         # else:
             
     #% calculate sun positions from SPA directly through pvlib
     if (tracker_angle_input_mode == 'nominal') or (tracker_angle_input_mode == 'field'):
-        # sample field data at specified times
-        field_data = field_data.loc[times]
+
         sunangles = get_trough_angles_py(times, latitude, longitude, altitude)
-        field_data = field_data.merge(sunangles, left_index = True, right_index = True, how='inner')
+        
+        if tracker_angle_input_mode == 'nominal':
+            field_data = sunangles
+        else:
+            field_data = field_data.merge(sunangles, left_index = True, right_index = True, how='inner')
         
         [a, b, c] = get_aimpt_from_sunangles(field_data.apparent_elevation, field_data.azimuth)
         field_data['sun_pos_x'] = 1000 * a
@@ -151,6 +156,9 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         plt.plot(field_data['sun_pos_x'],field_data['sun_pos_z'],'ko')
         plt.xlabel('sun position [x]')
         plt.ylabel('sun position [z]')
+        
+        print(field_data)
+        print(field_data.columns)
         
         inputdata = field_data
         for sensorloc in sensorlocs:
@@ -164,10 +172,11 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         nom_trough_angle = 0. # 0 degrees = flat, facing the sun directlly overhead
     
         # array of tracking error values
-        if num_iters == 3:
-            error = np.array([0., np.degrees(1.733333e-02), 2.5]) # for intercepts of 1, x, and 0
-        else:
-            error = np.linspace(0,2.5,num_iters) # 0.05 #0.025 # [deg]
+        error = error_angles
+        # if num_iters == 3:
+        #     error = np.array([0., np.degrees(1.733333e-02), 2.5]) # for intercepts of 1, x, and 0
+        # else:
+        #     error = np.linspace(0,2.5,num_iters) # 0.05 #0.025 # [deg]
             #error = np.array([0.85])
         
         # define trough angle based on tracking error
@@ -206,6 +215,7 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
     for sensorloc in sensorlocs:
         print(sensorloc)
         
+        # remove cols for all other sensors
         dropcols = [col for col in inputdata.filter(regex='Tilt$').columns if sensorloc not in col]
         sensorinputdata = inputdata.drop(columns=dropcols)
         
@@ -264,7 +274,7 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
                 stage_aim = get_aimpt_from_trough_angle(row.trough_angle)
             else: # 'field'
                 # stage aim using actual tracker angle from field
-                # devkey = [col for col in inputdata.filter(regex='Tilt_adjusted').columns if sensorloc in col]
+                # devkey = [col for col in sensorinputdata.filter(regex='Tilt_adjusted').columns if sensorloc in col]
                 devkey = [col for col in sensorinputdata.filter(regex='Tilt$').columns if sensorloc in col]
                 stage_aim = get_aimpt_from_trough_angle(row[devkey[0]])
                 print('stage aim = {}'.format(stage_aim))
@@ -391,7 +401,7 @@ sfcerr_flag = False
 optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
 plot_rays = False
 save_pickle = False
-number_hits = 1e3 # 5e6 # 1e5 #1e5 
+number_hits = 1e5 # 5e6 # 1e5 #1e5 
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
@@ -402,7 +412,8 @@ d_abstube = 0.07 # diameter of absorber tube
 ptc_pos = [0, 0, 0] # x, y, z
 ptc_aim = [0, 0, 1] # x, y, z
 abs_aimz = focal_len*2. # 0. ??
-critical_angle_error = 0.79 #[deg] from firstoptic validation dataset
+critical_angle_error_min = 0.79 #[deg] from firstoptic validation dataset
+critical_angle_error_max = np.degrees(2.363636e-02) #[deg] from firstoptic validation dataset
 
 # field site definition ================================
 lat, lon = 35.8, -114.983 #coordinates of Nevada Solar One
@@ -411,20 +422,38 @@ save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/de
 
 # running with field data timeseries =============================================
 # tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-# sensorlocs = ['R1_DO','R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
-times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='4H') # in UTC
-field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
+# sensorlocs = ['R1_DO','R1_Mid','R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
+# # times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='1H') # in UTC
+# tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
+# tend = '2023-01-15 21:00:00' 
+# times = pd.date_range(tstart, tend, freq='0.5H') # in UTC
+# # field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' CHANGE THIS TO SERVER
+# field_data_path = '/Volumes/Processed_data/'
+# error_angles = []
 
 # running for validation ===================================
-tracker_angle_input = 'validation'
-sensorlocs = ['validation']
-num_iters = 14 # 3 #1 # number of trough dev angles to evaluate
+# times = [''] # in UTC
+# field_data_path = '' 
+# tracker_angle_input = 'validation'
+# sensorlocs = ['validation']
+# error_angles = np.concatenate((np.linspace(0.,critical_angle_error_min, 3), 
+#                     np.linspace(critical_angle_error_min+.06, critical_angle_error_max-.05, 7),
+#                     np.linspace(critical_angle_error_max, 3., 3)))
+# error_angles = np.linspace(0,2.5,3) # 0.05 #0.025 # [deg]
+
+# running  nominal (no tracking error) ===================================
+tracker_angle_input = 'nominal'
+sensorlocs = ['nominal']
+tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
+tend = '2023-01-15 21:00:00' 
+times = pd.date_range(tstart, tend, freq='3H') # in UTC
+field_data_path = '/Volumes/Processed_data/'
+error_angles = []
 
 # data output settings
 # mesh discretization on absorber tube for flux map
 nx = 30
 ny = 30
 
-
 if __name__ == "__main__":
-    results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, module_length, aperture_width, focal_len, d_abstube, ptc_pos, ptc_aim, sunshape_flag, sfcerr_flag, optics_type, plot_rays, save_pickle, number_hits, nx, ny, num_iters=num_iters)
+    results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, module_length, aperture_width, focal_len, d_abstube, ptc_pos, ptc_aim, sunshape_flag, sfcerr_flag, optics_type, plot_rays, save_pickle, number_hits, nx, ny, error_angles=error_angles)
