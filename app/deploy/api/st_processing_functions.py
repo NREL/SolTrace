@@ -517,77 +517,100 @@ def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
     plt.tight_layout()
     plt.show()
 
-def plot_time_series_compare_nominal(inputsdf, outputsdf, x, sensorloc):
-    #fig, axs = plt.subplots(5,1,figsize=[10,9],dpi=250)
-    fig, axs = plt.subplot_mosaic("AE;BE;CF;DF",figsize=[12,7],dpi=250)
+def plot_time_series_compare_nominal(results, x):
+    # nom trough angle
+    # intercept factor
+    # flux map
+    resultsdf = results['nominal']
+    
+    fig, axs = plt.subplots(3,1,figsize=[8,8],dpi=250)
+    # fig, axs = plt.subplot_mosaic("AE;BE;CF;DF",figsize=[12,7],dpi=250)
 
+    axs[0].plot(resultsdf.nom_trough_angle)
+    axs[0].set_ylabel(r'$\beta_{nominal} \; [^\circ]$')
+    
+    axs[1].plot(resultsdf.intercept_factor)
+    axs[1].set_ylabel('$\lambda_{nominal} \; [-]$')
+    
+    vmin = 0.0
+    vmax = np.max(list(resultsdf.flux_centerline.values))
+    levels = np.linspace(vmin,vmax,100)
+    
+    fluxcntr2 = np.stack(resultsdf.flux_centerline.values).T
+    cf2 = axs[2].contourf(resultsdf.index, x, fluxcntr2, 
+                            levels=levels, cmap='turbo')
+    axs[2].set_ylabel('x [m]')
+    # axs['E'].set_title('nominal')
+    fig.colorbar(cf2, ax=axs[2], label='flux at y=0', extend='both')
+     
+    
     # axs['A'].plot(inputsdf.apparent_elevation,'k.:')
     # axs['A'].set_ylabel('sun elev. angle [deg]')
     # axs['A'].set_title(sensorloc)
     
-    axs['A'].plot(inputsdf.nom_trough_angle, 'k.-', label='nominal')
-    if sensorloc == 'validation':
-        axs['A'].plot(inputsdf.trough_angle, '.-', label='actual')
-    else:
-        devkey = [col for col in inputsdf.filter(regex='Tilt$').columns if sensorloc in col][0]
-        axs['A'].plot(inputsdf[devkey],'.', label=sensorloc)
-    axs['A'].set_ylabel('trough angle [deg]')
+    # axs['A'].plot(inputsdf.nom_trough_angle, 'k.-', label='nominal')
+    # if sensorloc == 'validation':
+    #     axs['A'].plot(inputsdf.trough_angle, '.-', label='actual')
+    # else:
+    #     devkey = [col for col in inputsdf.filter(regex='Tilt$').columns if sensorloc in col][0]
+    #     axs['A'].plot(inputsdf[devkey],'.', label=sensorloc)
+    # axs['A'].set_ylabel('trough angle [deg]')
     
-    if sensorloc == 'validation':
-        axs['B'].plot(inputsdf.trough_angle_dev, '.-')
-    else:
-        # devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
-        track_error = inputsdf[devkey] - inputsdf['nom_trough_angle']
-        axs['B'].plot(track_error,'.-')
-    axs['B'].set_ylabel('trough angle \n deviation [deg]')
+    # if sensorloc == 'validation':
+    #     axs['B'].plot(inputsdf.trough_angle_dev, '.-')
+    # else:
+    #     # devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
+    #     track_error = inputsdf[devkey] - inputsdf['nom_trough_angle']
+    #     axs['B'].plot(track_error,'.-')
+    # axs['B'].set_ylabel('trough angle \n deviation [deg]')
 
-    if sensorloc == 'validation':
-        axs['C'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
-        axs['C'].plot(outputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
-    else:  
-        axs['C'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
-        axs['C'].plot(inputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
-    axs['C'].set_ylabel('intercept factor')
-    axs['C'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
-                     format(nominaldf.intercept_factor.mean(),
-                            np.mean(outputsdf.intercept_factor)))
-    ymax = np.maximum(1., np.max(outputsdf.intercept_factor))
-    axs['C'].set_ylim([0, ymax])
-    axs['C'].legend()
+    # if sensorloc == 'validation':
+    #     axs['C'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
+    #     axs['C'].plot(outputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
+    # else:  
+    #     axs['C'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
+    #     axs['C'].plot(inputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
+    # axs['C'].set_ylabel('intercept factor')
+    # axs['C'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
+    #                  format(nominaldf.intercept_factor.mean(),
+    #                         np.mean(outputsdf.intercept_factor)))
+    # ymax = np.maximum(1., np.max(outputsdf.intercept_factor))
+    # axs['C'].set_ylim([0, ymax])
+    # axs['C'].legend()
     
-    if sensorloc == 'validation':
-        # axs['D'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
-        axs['D'].plot(outputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
-    else: 
-        axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
-        axs['D'].plot(inputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
-    axs['D'].set_ylabel('coeff of variation')
-    axs['D'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
-                     format(nominaldf.coeff_var.mean(),
-                            np.mean(outputsdf.coeff_var)))
-    axs['D'].set_ylim([1, 6])
-    axs['D'].legend()
+    # if sensorloc == 'validation':
+    #     # axs['D'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
+    #     axs['D'].plot(outputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
+    # else: 
+    #     axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
+    #     axs['D'].plot(inputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
+    # axs['D'].set_ylabel('coeff of variation')
+    # axs['D'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
+    #                  format(nominaldf.coeff_var.mean(),
+    #                         np.mean(outputsdf.coeff_var)))
+    # axs['D'].set_ylim([1, 6])
+    # axs['D'].legend()
     
-    vmin = 0.0
-    vmax = np.max(list(outputsdf.flux_centerline.values))
-    levels = np.linspace(vmin,vmax,100)
+    # vmin = 0.0
+    # vmax = np.max(list(outputsdf.flux_centerline.values))
+    # levels = np.linspace(vmin,vmax,100)
     
-    fluxcntr2 = np.stack(nominaldf.flux_centerline.values).T
-    cf2 = axs['E'].contourf(nominaldf.index, x, fluxcntr2, 
-                            levels=levels, cmap='turbo')
-    axs['E'].set_ylabel('x [m]')
-    axs['E'].set_title('nominal')
-    fig.colorbar(cf2, ax=axs['E'], label='flux at y=0', extend='both')
+    # fluxcntr2 = np.stack(nominaldf.flux_centerline.values).T
+    # cf2 = axs['E'].contourf(nominaldf.index, x, fluxcntr2, 
+    #                         levels=levels, cmap='turbo')
+    # axs['E'].set_ylabel('x [m]')
+    # axs['E'].set_title('nominal')
+    # fig.colorbar(cf2, ax=axs['E'], label='flux at y=0', extend='both')
      
-    fluxcntr = np.stack(outputsdf.flux_centerline.values).T
-    cf = axs['F'].contourf(inputsdf.index, x, fluxcntr, levels=levels, 
-                           cmap='turbo')
-    axs['F'].set_ylabel('x [m]')
-    fig.colorbar(cf, ax=axs['F'], label='flux at y=0')
-    axs['F'].set_title('actual')
+    # fluxcntr = np.stack(outputsdf.flux_centerline.values).T
+    # cf = axs['F'].contourf(inputsdf.index, x, fluxcntr, levels=levels, 
+    #                        cmap='turbo')
+    # axs['F'].set_ylabel('x [m]')
+    # fig.colorbar(cf, ax=axs['F'], label='flux at y=0')
+    # axs['F'].set_title('actual')
 
-    axs['D'].tick_params(labelrotation=30)
-    axs['F'].tick_params(labelrotation=30)
+    # axs['D'].tick_params(labelrotation=30)
+    # axs['F'].tick_params(labelrotation=30)
 
     plt.tight_layout()
     plt.show()

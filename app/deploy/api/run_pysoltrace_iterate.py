@@ -246,7 +246,7 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
             sun = PT.add_sun()
             # Give sun position
             sun.position.x = row['sun_pos_x']
-            sun.position.y = row['sun_pos_y']
+            sun.position.y = 0. # row['sun_pos_y']
             sun.position.z = row['sun_pos_z']
             print('sun position x = {}'.format(sun.position.x))
             print('sun position z = {}'.format(sun.position.z))
@@ -378,17 +378,20 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
     
     #% save variables to pickle file
     if save_pickle == True:
-        if tracker_angle_input_mode == 'field':
-            pickle.dump(results, open('/{}{}_{}_{}_{:.0E}hits_{}_optics_test.p'.format(save_path,tracker_angle_input_mode,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type), 'wb'))
-        if tracker_angle_input_mode == 'char':
-            pickle.dump([inputdata, resultsdf], open('{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
-        else:
-            pickle.dump([inputdata, results], open('{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
+        pickle.dump(results, open('/{}{}_{}_{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type), 'wb'))
+        # if tracker_angle_input_mode == 'field':
+        #     pickle.dump(results, open('/{}{}_{}_{}_{:.0E}hits_{}_optics_test.p'.format(save_path,tracker_angle_input_mode,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type), 'wb'))
+        # if tracker_angle_input_mode == 'char':
+        #     pickle.dump([inputdata, resultsdf], open('{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
+        # else:
+        #     pickle.dump([inputdata, results], open('{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
     
     if tracker_angle_input_mode == 'field':
         plot_time_series_compare_sensors(nominaldf, inputdata, results, x, sensorlocs)
     elif tracker_angle_input_mode == 'stats':
         plot_stats_intercept_factor(resultsdf)
+    elif tracker_angle_input_mode == 'nominal':
+        plot_time_series_compare_nominal(results, x)
     
     return results, df
 
@@ -453,7 +456,7 @@ error_angles = []
 # data output settings
 # mesh discretization on absorber tube for flux map
 nx = 30
-ny = 30
+ny = 100 #30
 
 if __name__ == "__main__":
     results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, module_length, aperture_width, focal_len, d_abstube, ptc_pos, ptc_aim, sunshape_flag, sfcerr_flag, optics_type, plot_rays, save_pickle, number_hits, nx, ny, error_angles=error_angles)
