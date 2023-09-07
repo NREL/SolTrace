@@ -505,6 +505,10 @@ def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
     fig.colorbar(cf2, ax=axs['E'], label='flux at y=0', extend='both')
      
     fluxcntr = np.stack(outputsdf.flux_centerline.values).T
+    # print('inner function')
+    # print('inputsdf.index = ',inputsdf.index)
+    # print('x = ',x)
+    # print('fluxcntr = ',fluxcntr)
     cf = axs['F'].contourf(inputsdf.index, x, fluxcntr, levels=levels, 
                            cmap='turbo')
     axs['F'].set_ylabel('x [m]')
@@ -526,10 +530,10 @@ def plot_time_series_compare_nominal(results, x):
     fig, axs = plt.subplots(3,1,figsize=[8,8],dpi=250)
     # fig, axs = plt.subplot_mosaic("AE;BE;CF;DF",figsize=[12,7],dpi=250)
 
-    axs[0].plot(resultsdf.nom_trough_angle)
+    axs[0].plot(resultsdf.nom_trough_angle,'.-k')
     axs[0].set_ylabel(r'$\beta_{nominal} \; [^\circ]$')
     
-    axs[1].plot(resultsdf.intercept_factor)
+    axs[1].plot(resultsdf.intercept_factor, '.-k')
     axs[1].set_ylabel('$\lambda_{nominal} \; [-]$')
     
     vmin = 0.0
@@ -791,14 +795,124 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
         outputsdf = results[sensorloc]
         ax = cntraxs[n]
         fluxcntr = np.stack(outputsdf.flux_centerline.values).T
+        # print('outer function')
+        # print('inputsdf.index = ',inputsdf.index)
+        # print('x = ',x)
+        # print('fluxcntr = ',fluxcntr)
         cf = ax.contourf(inputsdf.index, x, fluxcntr, levels=levels, 
                                 cmap='turbo')
+        ax.set_xlim([inputsdf.index[0], inputsdf.index[-1]])
         ax.set_ylabel('x [m]')
         fig.colorbar(cf, ax=ax, label='flux at y=0')
         ax.set_title(sensorloc)
 
     axs['D'].tick_params(axis='x',labelrotation=30)
     axs['H'].tick_params(axis='x',labelrotation=30)
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_time_series_optical_results(results, nominaldf = None, critical_angle_error_min = 0.79, critical_angle_error_max = 1.3542636710518383):
+    # extract row numbers
+    rows = []
+    for key in list(results.keys()):
+        split_results = key.split('_',1)
+        if split_results[0] not in rows:
+            rows.append(split_results[0])
+    
+    fig, axs = plt.subplots(3*len(rows),1,figsize=[8,4*len(rows)],sharex=True,dpi=250)
+    
+    # n = 0, row = 1, ax = 0
+    # n = 1, row = 2, ax = 3
+    # n = 2, row = 4, ax = 6
+    # nominal
+    if nominaldf is not None:
+        for n,row in enumerate(rows):
+            axs[n*3].plot(nominaldf.intercept_factor*0., '-k', label='nominal') #zero tracking angle
+            axs[n*3+1].plot(nominaldf.intercept_factor, '-k') #zero tracking angle
+            axs[n*3+2].plot(nominaldf.coeff_var, '-k') #zero tracking angle
+    
+    
+    for n,row in enumerate(rows):
+        for column in [column for column in results.keys() if row in column]:
+            tracking_error = abs(results[column]['{}_Tilt'.format(column)] - results[column].nom_trough_angle)
+            
+            # replace values with nans where non-operational
+            tracking_error = tracking_error.where(tracking_error < critical_angle_error_max)
+            # results[column] = results[column].where(tracking_error < critical_angle_error_max)
+            
+            axs[n*3].axhline(critical_angle_error_min, color='0.6')
+            axs[n*3].plot(tracking_error, '.-', label=column)
+            axs[n*3].set_ylim([-0.05,critical_angle_error_max])
+            axs[n*3+1].plot(results[column].intercept_factor, '.-', label=column)
+            axs[n*3+1].set_ylim([0,1])
+            axs[n*3+2].plot(results[column].coeff_var, '.-', label=column)
+            axs[n*3+2].set_ylim([1,2])
+            # axs[0].plot(data[column],'.', markersize=markersize, label='') #, label=column[:6])
+        axs[n*3].set_ylabel(r'$ |\epsilon| \; [^\circ]$')
+        axs[n*3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    
+        axs[n*3+1].set_ylabel(r'$ \lambda \; [-]$')   
+        axs[n*3+2].set_ylabel(r'$ C_v \; [-]$')   
+
+    plt.tight_layout()
+    plt.show()
+    
+def plot_time_series_fluxmap_results(results, x, nominaldf = None):
+    
+    fig, axs = plt.subplots(1+len(results.keys()),1,figsize=[8,1.5+1.5*len(results.keys())],dpi=250)
+    
+    #
+    # n = 0, row = 1, ax = 0
+    # n = 1, row = 2, ax = 3
+    # n = 2, row = 4, ax = 6
+    
+    xmin = np.min([results[list(results.keys())[0]].index[0],nominaldf.index[0]])
+    xmax = np.max([results[list(results.keys())[0]].index[-1],nominaldf.index[-1]])
+    
+    # find vmax
+    vmax = 0.
+    for column in results.keys():
+        tmpmax = np.max(list(results[column].flux_centerline.values))
+        if tmpmax > vmax:
+            vmax = tmpmax
+    
+    vmin = 0.0
+    levels = np.linspace(vmin,vmax,100)
+    
+    # nominal
+    if nominaldf is not None:
+        fluxcntr = np.stack(nominaldf.flux_centerline.values).T
+        cf = axs[0].contourf(nominaldf.index, x, fluxcntr, levels=levels, 
+                               cmap='turbo')
+        axs[0].set_ylabel('x [m]')
+        axs[0].set_title('nominal')
+    
+    for ax,column in zip(axs[1:].ravel(),results.keys()):
+            fluxcntr = np.stack(results[column].flux_centerline.values).T
+            cf = ax.contourf(results[column].index, x, fluxcntr, levels=levels, 
+                                   cmap='turbo')
+            ax.set_ylabel('x [m]')
+            ax.set_title(column)
+            
+    for ax in axs:
+        fig.colorbar(cf, ax=ax) #, label='flux at y=0')
+        ax.set_xlim([xmin, xmax])
+        
+    for ax in axs[:-1]:
+        ax.xaxis.set_major_formatter(plt.NullFormatter())
+
+    axs[-1].tick_params(labelrotation=30)
+            
+        #     axs[n*3].plot(tracking_error, '.-', label=column)
+        #     axs[n*3+1].plot(results[column].intercept_factor, '.-', label=column)
+        #     axs[n*3+2].plot(results[column].coeff_var, '.-', label=column)
+        #     # axs[0].plot(data[column],'.', markersize=markersize, label='') #, label=column[:6])
+        # axs[n*3].set_ylabel(r'$ |\epsilon| \; [^\circ]$')
+        # axs[n*3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    
+        # axs[n*3+1].set_ylabel(r'$ \lambda \; [-]$')   
+        # axs[n*3+2].set_ylabel('coeff of var. [-]')   
 
     plt.tight_layout()
     plt.show()

@@ -7,7 +7,8 @@ Created on Tue Jul 25 09:24:15 2023
 """
 import os
 os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
-from os.path import exists
+# from os.path import exists
+import glob
 from pysoltrace import PySolTrace, Point
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -156,10 +157,7 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         plt.plot(field_data['sun_pos_x'],field_data['sun_pos_z'],'ko')
         plt.xlabel('sun position [x]')
         plt.ylabel('sun position [z]')
-        
-        print(field_data)
-        print(field_data.columns)
-        
+               
         inputdata = field_data
         for sensorloc in sensorlocs:
             plot_sun_trough_deviation_angles(field_data, sensorloc, adj_flag = False)
@@ -362,10 +360,11 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         if tracker_angle_input_mode == 'field':
             print('reading nominal results dataframe for comparison')
             # nominaldf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22_1e5.p','rb'))
-            nomfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_{}_{}_{:.0E}hits_{}_optics.p'.format(sensorinputdata.index[0].month,sensorinputdata.index[0].day,int(number_hits),optics_type)
-            if exists(nomfn):
-                tmp = pickle.load(open(nomfn,'rb'))
-                nominaldf = tmp[1]['nominal']
+            nomfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_{}_{}_*hits_{}_optics.p'.format(sensorinputdata.index[0].month,sensorinputdata.index[0].day,optics_type)
+            if len(glob.glob(nomfn)) > 0:
+            # if exists(nomfn):
+                tmp = pickle.load(open(glob.glob(nomfn)[-1],'rb'))
+                nominaldf = tmp['nominal']
             else:
                 # if nominal has not been run already, then fill with NaNs
                 nominaldf = resultsdf.copy()
@@ -387,7 +386,9 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         #     pickle.dump([inputdata, results], open('{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
     
     if tracker_angle_input_mode == 'field':
-        plot_time_series_compare_sensors(nominaldf, inputdata, results, x, sensorlocs)
+        # plot_time_series_compare_sensors(nominaldf, inputdata, results, x, sensorlocs)
+        plot_time_series_optical_results(results, nominaldf)
+        plot_time_series_fluxmap_results(results, x, nominaldf)
     elif tracker_angle_input_mode == 'stats':
         plot_stats_intercept_factor(resultsdf)
     elif tracker_angle_input_mode == 'nominal':
@@ -401,14 +402,14 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
 # define constant inputs                                                                                                                                                                                                                                                                                                                       
 sunshape_flag = False
 sfcerr_flag = False
-optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
+optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 plot_rays = False
-save_pickle = False
+save_pickle = True
 number_hits = 1e5 # 5e6 # 1e5 #1e5 
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
-module_length = 12.0 # module length
+module_length = 12.0 # module length (doesn't matter much)
 aperture_width = 5.0 #5.77 # aperture width
 focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
 d_abstube = 0.07 # diameter of absorber tube
@@ -424,15 +425,18 @@ altitude = 543 #m
 save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
 
 # running with field data timeseries =============================================
-# tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-# sensorlocs = ['R1_DO','R1_Mid','R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
-# # times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='1H') # in UTC
-# tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
-# tend = '2023-01-15 21:00:00' 
-# times = pd.date_range(tstart, tend, freq='0.5H') # in UTC
-# # field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' CHANGE THIS TO SERVER
-# field_data_path = '/Volumes/Processed_data/'
-# error_angles = []
+#path = 'smb://nrel.gov/shared/Wind-data/Restricted/Projects/NSO/Processed_data/'
+tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+# sensorlocs = ['R1_Mid', 'R1_SO', 'R2_SO'] #,'R1_Mid','R1_SO'] #,'R1_SO'] 
+sensorlocs = ['R1_DO','R1_Mid','R1_SO','R2_DO','R2_Mid','R2_SO','R4_DO','R4_Mid','R4_SO']
+# sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
+# times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='1H') # in UTC
+tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
+tend = '2023-01-15 21:00:00' 
+times = pd.date_range(tstart, tend, freq='0.5H') # in UTC
+# field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' CHANGE THIS TO SERVER
+field_data_path = '/Volumes/Processed_data/'
+error_angles = []
 
 # running for validation ===================================
 # times = [''] # in UTC
@@ -445,18 +449,18 @@ save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/de
 # error_angles = np.linspace(0,2.5,3) # 0.05 #0.025 # [deg]
 
 # running  nominal (no tracking error) ===================================
-tracker_angle_input = 'nominal'
-sensorlocs = ['nominal']
-tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
-tend = '2023-01-15 21:00:00' 
-times = pd.date_range(tstart, tend, freq='3H') # in UTC
-field_data_path = '/Volumes/Processed_data/'
-error_angles = []
+# tracker_angle_input = 'nominal'
+# sensorlocs = ['nominal']
+# tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
+# tend = '2023-01-15 21:00:00' 
+# times = pd.date_range(tstart, tend, freq='0.5H') # in UTC
+# field_data_path = '/Volumes/Processed_data/'
+# error_angles = []
 
 # data output settings
 # mesh discretization on absorber tube for flux map
 nx = 30
-ny = 100 #30
+ny = 30 #30
 
 if __name__ == "__main__":
     results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, module_length, aperture_width, focal_len, d_abstube, ptc_pos, ptc_aim, sunshape_flag, sfcerr_flag, optics_type, plot_rays, save_pickle, number_hits, nx, ny, error_angles=error_angles)
