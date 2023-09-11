@@ -20,9 +20,20 @@ import plotly.io as io
 from scipy import interpolate
 from os.path import exists
 import pickle
-from scipy import stats as st
+# from scipy import stats as st
+# from field_postprocessing_functions import assign_Color
 
 io.renderers.default='browser'
+
+def assign_Color(x):
+    if x in 'Spring':
+       return 'green'
+    if x in 'Summer':
+       return 'red'
+    if x in 'Fall':
+       return 'orange'
+    else :
+       return 'blue'
 
 def set_optics_props(optics_type):
     if optics_type == 'realistic':
@@ -77,7 +88,7 @@ def get_tracker_angle_from_aimpt(x,z):
 def get_aimpt_from_trough_angle(trough_angle):
     x = np.sin(np.radians(trough_angle))
     z = np.cos(np.radians(trough_angle))
-    return(x,z)
+    return x,z
 
 def get_aimpt_from_sunangles_pvlib(zenith, azimuth, factor):
     trough_angles = tracking.singleaxis(
@@ -916,3 +927,107 @@ def plot_time_series_fluxmap_results(results, x, nominaldf = None):
 
     plt.tight_layout()
     plt.show()
+    
+def assign_marker(x):
+    if 'DO' in x:
+        marker = '.'
+    elif 'Mid' in x:
+        marker = 'x'
+    else:
+        marker = '+'
+    return marker
+
+def plot_time_series_median_optical(results, abs_val=False, critical_angle_error_min = 0.79, critical_angle_error_max = 1.3542636710518383):
+    lw = 0.75
+    ms = 8
+    # combineddf = resultsdf.merge(mediandf, left_index = True, right_index = True, how='outer')
+    # combineddf['intercept_factor'] = combineddf['intercept_factor'].fillna(0)
+    # srows = ['R1', 'R2','R4']
+    # markers = ['.','x','+']
+    
+    rows = []
+    for key in list(results.keys()):
+        split_results = key.split('_',1)
+        if split_results[0] not in rows:
+            rows.append(split_results[0])
+    
+    fig, axs = plt.subplots(3*len(rows),1,figsize=[8,4*len(rows)],sharex=True,dpi=250)
+
+    for nk, key in enumerate(results.keys()):
+        combineddf = results[key]
+        
+        marker = assign_marker(key)
+        # print(key)
+        # print(marker)
+        # tilt_col_list = [key] # [col for col in combineddf.filter(regex='Tilt').columns if srow in col]
+
+
+        tstart = combineddf.index[0] # '2022-12-17 07:59:06.500000' # '2022-12-16 00:00:00.000000-08:00' 
+        tend = combineddf.index[-1]
+        mediangroupbydf = combineddf.groupby(['timeofday','season']).median(numeric_only=True)
+
+        
+        # fig,axs = plt.subplots(4, 1, dpi=250, sharex=True, figsize=[10,10])
+        # axs[0].set_title('median diurnal cycle from {} to {}'.format(tstart,tend))
+        
+        # for ax in axs:
+        #     ax.axhline(0, color='k', label='')
+        
+        # for ax in axs[1:]:
+        #     if abs_val:
+        #         ax.set_ylabel(r'$|\epsilon| \; [^\circ]$')
+        #         ax.axhline(critical_angle_error, color='0.6', label=r'$critical \; \epsilon$')
+        #     else:
+        #         ax.set_ylabel(r'$\epsilon \; [^\circ]$')
+        #         ax.axhline(critical_angle_error, color='0.6', label=r'$critical \; \epsilon$')
+        #         ax.axhline(-critical_angle_error, color='0.6', label='')
+
+        for s, dfs in mediangroupbydf.groupby('season'):
+            ind = dfs.index.get_level_values(0)
+            color = assign_Color(s)
+                    
+            # axs[0].plot(ind, dfs.nom_trough_angle,"o", fillstyle='none', markeredgecolor='k')
+            
+            for i,srow in enumerate(rows):
+                tilt_col_list = [col for col in combineddf.filter(regex='Tilt$').columns if srow in col]
+                for n,tc in enumerate(tilt_col_list):
+                    # axs[0].plot(ind, dfs[tc],  linestyle='-', linewidth=0.5, color=color, marker = markers[n]) #, label=column[:6])
+                
+                    if abs_val:
+                        calc_trough_dev = abs(dfs[tc] - dfs.nom_trough_angle)
+                    else:
+                        calc_trough_dev = dfs[tc] - dfs.nom_trough_angle
+                    axs[3*i].set_title(srow)
+                    axs[3*i].axhline(critical_angle_error_min, color='0.6')
+                    axs[3*i].plot(ind, calc_trough_dev,  linestyle='-', linewidth=lw, color=color, marker = marker, markersize = ms) #, label=column[-6:])
+                    axs[3*i].set_ylabel(r'$ |\epsilon| \; [^\circ]$')
+                    
+                    
+                    axs[1+3*i].plot(ind, dfs.intercept_factor,  linestyle='-', linewidth=lw, color=color, marker = marker, markersize = ms) #, label=column[-6:])
+                    axs[1+3*i].set_ylabel(r'$ \lambda \; [-]$')   
+                    axs[1+3*i].set_ylim([0, 1])
+                    
+                    axs[2+3*i].plot(ind, dfs.coeff_var,  linestyle='-', linewidth=lw, color=color, marker = marker, markersize = ms) #, label=column[-6:])
+                    axs[2+3*i].set_ylabel(r'$ C_v \; [-]$')   
+                
+                if s == 'Fall' and nk == 0:
+                    axs[3*i].plot(np.nan, np.nan, label='spring', color='green')
+                    axs[3*i].plot(np.nan, np.nan, label='summer', color='red')
+                    axs[3*i].plot(np.nan, np.nan, label='fall', color='orange')
+                    axs[3*i].plot(np.nan, np.nan, label='winter', color='blue')
+                    
+                if s == 'Fall' and srow in key:
+                    # print(tc)
+                    # print(srow)
+                    # print(key)
+                    axs[1+3*i].plot(np.nan, np.nan, label=tc[:6], color = 'k', marker=marker, linewidth=0)
+                    axs[2+3*i].plot(np.nan, np.nan, label=tc[:6], color = 'k', marker=marker, linewidth=0)
+                
+
+
+    
+    for ax in axs:
+        ax.legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
+    axs[-1].set_xlabel('hour of the day [UTC]')
+    
+    plt.tight_layout()
