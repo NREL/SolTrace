@@ -321,7 +321,7 @@ def plot_stats_deviation(track_error_stats, critical_angle_error=0.79):
     axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')
     plt.show()
 
-def plot_stats_intercept_factor(inputdata, resultsdf):
+def plot_stats_intercept_factor(results):
     # rows = inputdata.index.unique(level=0).values
     # sensorlocs = inputdata.index.unique(level=1).values
     # fig,axs = plt.subplots(1,3,sharey=True,figsize=[9,3],dpi=250)
@@ -342,6 +342,7 @@ def plot_stats_intercept_factor(inputdata, resultsdf):
     # axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
     # axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')
     
+    resultsdf = results[list(results.keys())[0]]
     rows = resultsdf.index.unique(level=0).values
     sensorlocs = resultsdf.index.unique(level=1).values
     fig,axs = plt.subplots(1,3,figsize=[9,3],sharey=True,dpi=250)
@@ -950,6 +951,18 @@ def plot_time_series_median_optical(results, abs_val=False, critical_angle_error
         split_results = key.split('_',1)
         if split_results[0] not in rows:
             rows.append(split_results[0])
+            
+    # find min and max vals for c_v
+    ymin = 1.4
+    ymax = 1.4 # just initializing
+    for nk, key in enumerate(results.keys()):
+        outputsdf = results[key]
+        tmpmin = np.min(list(outputsdf.coeff_var.values))
+        if tmpmin > ymin:
+            ymin = tmpmin
+        tmpmax = np.max(list(outputsdf.coeff_var.values))
+        if tmpmax > ymax:
+            ymax = tmpmax
     
     fig, axs = plt.subplots(3*len(rows),1,figsize=[8,4*len(rows)],sharex=True,dpi=250)
 
@@ -1009,6 +1022,7 @@ def plot_time_series_median_optical(results, abs_val=False, critical_angle_error
                     
                     axs[2+3*i].plot(ind, dfs.coeff_var,  linestyle='-', linewidth=lw, color=color, marker = marker, markersize = ms) #, label=column[-6:])
                     axs[2+3*i].set_ylabel(r'$ C_v \; [-]$')   
+                    axs[2+3*i].set_ylim([ymin, ymax])
                 
                 if s == 'Fall' and nk == 0:
                     axs[3*i].plot(np.nan, np.nan, label='spring', color='green')
