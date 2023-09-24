@@ -154,6 +154,12 @@ geometric surfaces.
 
 		//wendelin 5-18-11 changes to allow different vertex curvature in the x and y directions for the parabola only
 		// Term = sqrt(1.0 - Element->Kappa*Element->VertexCurvX*Element->VertexCurvX*Rho2);
+
+		if (1.0 - Element->Kappa * (Element->VertexCurvX * Element->VertexCurvX * X * X + Element->VertexCurvY * Element->VertexCurvY * Y * Y) < 0)
+		{
+			*ErrorFlag = 1;  // Surface is not defined at this x,y location
+		}
+			
 		Term = sqrt(1.0 - Element->Kappa*(Element->VertexCurvX*Element->VertexCurvX*X*X+Element->VertexCurvY*Element->VertexCurvY*Y*Y));   //new
 		//*FXYZ = Z - Element->VertexCurvX*Rho2/(1.0 + Term) - Sum2;
 		*FXYZ = Z - (Element->VertexCurvX*X*X+Element->VertexCurvY*Y*Y)/(1.0 + Term) - Sum2;   //new
