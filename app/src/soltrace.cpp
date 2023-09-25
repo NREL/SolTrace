@@ -57,7 +57,7 @@
 #include <wx/busyinfo.h>
 
 #ifdef __WXMSW__
-#include <wex/mswfatal.h>
+//#include <wex/mswfatal.h>
 #endif
 
 #include <wex/easycurl.h>
@@ -144,9 +144,9 @@ class MyApp : public wxApp
 public:
 	virtual void OnFatalException()
 	{
-#ifdef __WXMSW__
-		wxMSWHandleApplicationFatalException();
-#endif
+//#ifdef __WXMSW__
+//		wxMSWHandleApplicationFatalException();
+//#endif
 	}
 
 	virtual bool OnInit()
@@ -158,11 +158,11 @@ public:
 
 		bool is64 = (sizeof(void*) == 8);
 
-#ifdef __WXMSW__
-		wxMSWSetupExceptionHandler( "SolTrace", 
-			wxString::Format("%d.%d.%d (%d bit)", version_major, version_minor, version_micro, is64 ? 64 : 32 ), 
-			"soltrace.support@nrel.gov" );
-#endif
+//#ifdef __WXMSW__
+//		wxMSWSetupExceptionHandler( "SolTrace", 
+//			wxString::Format("%d.%d.%d (%d bit)", version_major, version_minor, version_micro, is64 ? 64 : 32 ), 
+//			"soltrace.support@nrel.gov" );
+//#endif
 		
 		wxEasyCurl::Initialize();
 
