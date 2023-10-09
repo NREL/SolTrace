@@ -216,7 +216,7 @@ void IntersectionViewer::RebuildGeometry( ElementListBox *lb )
 		int ielem = abs(R.ElementMap[i])-1;
 		bool absorbed = ( R.ElementMap[i] < 0 );
 
-		bool selected = (lb && lb->IsSelected( istage, ielem ));
+		bool selected = (lb && lb->IsSelected( istage, ielem ) && (absorbed || !m_finalOnly));
 		
 		if ( R.Transform( m_prj, m_coordSys, i, Pos, Cos, Elm, Stg, Ray ) )
 		{
