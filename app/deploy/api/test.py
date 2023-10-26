@@ -2,6 +2,7 @@ from pysoltrace import PySolTrace, Point
 import random
 import pandas as pd
 import copy
+import sys
 
 # def load_system(PT):
 # def load_system(ii):
@@ -10,10 +11,10 @@ PT = PySolTrace()
 
 # Create two optics types - one for reflector, and one for absorber.
 opt_ref = PT.add_optic("Reflector")
-opt_ref.reflectivity = 1.
+opt_ref.front.reflectivity = 1.
 
 opt_abs = PT.add_optic("Absorber")
-opt_abs.reflectivity = 0.
+opt_abs.front.reflectivity = 0.
 
 # Sun
 sun = PT.add_sun()
@@ -66,7 +67,7 @@ ela.surface_flat()
 ela.aperture_rectangle(5,5)  #target is 5x5 
 
 # set simulation parameters
-PT.num_ray_hits = 1e5
+PT.num_ray_hits = 1e3
 PT.max_rays_traced = PT.num_ray_hits*100
 PT.is_sunshape = True 
 PT.is_surface_errors = True
@@ -79,26 +80,29 @@ if __name__ == "__main__":
     
     print("Num rays traced: {:d}".format(PT.raydata.index.size))
 
-    df = PT.raydata
-    # Data for a three-dimensional line
-    loc_x = df.loc_x.values
-    loc_y = df.loc_y.values
-    loc_z = df.loc_z.values
+    PT.plot_flux(PT.stages[-1].elements[-1])
 
+    # if False:
+    if 'plotly' in sys.modules:
+        df = PT.raydata
+        # Data for a three-dimensional line
+        loc_x = df.loc_x.values
+        loc_y = df.loc_y.values
+        loc_z = df.loc_z.values
 
-    # Plotting with plotly
-    import plotly.express as px 
-    import plotly.graph_objects as go
+        # Plotting with plotly
+        import plotly.express as px 
+        import plotly.graph_objects as go
 
-    fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ) )
+        fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ) )
 
-    for i in range(50,100):
-        dfr = df[df.number == i]
-        ray_x = dfr.loc_x 
-        ray_y = dfr.loc_y
-        ray_z = dfr.loc_z
-        raynum = dfr.number
-        fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+        for i in range(50,100):
+            dfr = df[df.number == i]
+            ray_x = dfr.loc_x 
+            ray_y = dfr.loc_y
+            ray_z = dfr.loc_z
+            raynum = dfr.number
+            fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
 
-    fig.update_layout(showlegend=False)
-    fig.show()
+        fig.update_layout(showlegend=False)
+        fig.show()
