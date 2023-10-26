@@ -2,6 +2,8 @@ from datetime import datetime
 import sys, os, copy
 from typing import List
 import pandas as pd
+import matplotlib.pyplot as plt
+import numpy
 from ctypes import *
 c_number = c_double   #must be either c_double or c_float depending on coretrace definition
 import multiprocessing
@@ -186,6 +188,15 @@ class Point:
                 self.z /= mag
             else:
                 return Point(self.x/mag, self.y/mag, self.z/mag)
+    
+    def as_list(self):
+        """
+        Returns:
+        --------
+        coordinates as a python list [x,y,z]
+        """
+        return [self.x, self.y, self.z]
+
 # ----------------------------------------------------------------------
 class PySolTrace:
     """
@@ -1460,6 +1471,7 @@ class PySolTrace:
                     rstart = d.number.iloc[-1]
 
             self.raydata = pd.concat(dfs)
+            self.raydata.reset_index(inplace=True)
             self.sunstats = res.get()[0][1]  #take the first thread result
             # add up all the sunrays from all threads
             srct = 0
@@ -1597,6 +1609,111 @@ class PySolTrace:
 
         return True
 
+    def plot_flux(self, element, nx : int = 25, ny : int = 25, figpath : str=None, display=True, absorbed_only : bool = True, levels=25):
+        """
+        Creates and (optionally) displays a flux plot for a given stage element.
+
+        Parameters
+        ----------
+        element : PySolTrace:Stage:Element
+            Reference to the element for which the plot will be generated
+        nx : int (default 25)
+            Number of flux bins along the aperture x-coordinate
+        ny : int (default 25)
+            Number of flux bins along the aperture y-coordinate
+        figpath : str (default None)
+            Path to file location where figure will be saved. If None, figure is not saved.
+        display : bool (default True)
+            Flag indicating whether the figure should be displayed at runtime
+        absorbed_only : bool (default True)
+            Only include rays that are absorbed by the element, omitting reflected rays
+        levels : int (default 25)
+            Number of contour levels to include in the flux map
+
+        Returns
+        ------------
+        None
+        """
+
+        # Get a pandas dataframe with all of the ray data
+        df = self.raydata
+
+        if self.raydata.empty:
+            raise(RuntimeError("Flux plot not created: no ray data available"))
+
+        el_id = element.id+1
+        st_id = element.stage_id+1
+
+        # Check if surface type is supported 
+        if element.surface not in ['f', 't']:
+            raise(RuntimeError(f"Surface type {element.surface} is not supported for flux plot generation. Must be one of 'f', 't'."))
+
+        dfr = df[df.stage==st_id]
+        if absorbed_only:
+            dfr = dfr[dfr.element==-el_id]  #absorbed rays
+        else:
+            dfr = dfr[(dfr.element==-el_id) & (dfr.element==el_id)]  #absorbed and reflected rays
+
+        dfr = dfr.copy() 
+
+        eu_angles = self.util_calc_euler_angles(element.position.as_list(), element.aim.as_list(), element.zrot)
+
+        # initialize
+        # loc = dfr[['loc_x','loc_y','loc_z']].to_numpy()
+        dfr['loc_xt'] = dfr.loc_x
+        dfr['loc_yt'] = dfr.loc_y
+        dfr['loc_zt'] = dfr.loc_z
+        for i in dfr.index:
+            dfri = dfr.loc[i]
+            pos_t = self.util_transform_to_local([dfri.loc_x, dfri.loc_y, dfri.loc_z], [0,0,1], element.position.as_list(), eu_angles)
+
+            dfr.loc[i, 'loc_xt'] = pos_t['posloc'][0]
+            dfr.loc[i, 'loc_yt'] = pos_t['posloc'][1]
+            dfr.loc[i, 'loc_zt'] = pos_t['posloc'][2]
+            
+        flux_st = numpy.zeros((ny,nx))
+        # handle mapping differently for each surface type
+        if element.surface == 'f':
+            # Flat
+            W,H = element.aperture_params[0:2]
+            dfr['fypos'] = dfr.loc_z - element.position.z
+            dfr['fxpos'] = dfr.loc_x - element.position.x
+            dx = W / nx 
+            dy = H / ny
+            x_rec = numpy.arange(0, W, W/nx)
+            y_rec = numpy.arange(0, H, H/ny)
+        elif element.surface == 't':
+            # Cylindrical
+            D = 2./element.surface_params[0]
+            H = element.aperture_params[2]
+            dfr['fypos'] = dfr.loc_z - element.position.z
+            dfr['fxpos'] = (numpy.arctan2(dfr.loc_x - element.position.x, dfr.loc_y - element.position.y)+math.pi)*D/2
+            dx = D*numpy.pi / nx 
+            dy = H / ny
+            x_rec = numpy.arange(0, numpy.pi*D, numpy.pi*D/nx)
+            y_rec = numpy.arange(0, H, H/ny)
+        
+        anode = dx*dy
+        ppr = self.powerperray / anode #*1e-3
+
+        for ind,ray in dfr.iterrows():
+
+            j = int(ray.fxpos/dx)
+            i = int(ray.fypos/dy)
+
+            flux_st[i,j] += ppr
+        print(dfr.describe())
+        plt.figure()
+        plt.title(f"Flux intensity: element {el_id}, stage {st_id}")
+        Xr,Yr = numpy.meshgrid(x_rec, y_rec)
+        plt.contourf(Xr, Yr, flux_st, levels=levels)
+        plt.colorbar()
+        plt.title(f"max flux {flux_st.max():.0f}, mean flux {flux_st.mean():.1f}")
+        if figpath:
+            plt.savefig(figpath, dpi=200)
+        if display:
+            plt.show()
+        return
 
     # /* utility transform/math functions */
     def util_calc_euler_angles(self, origin, aimpoint, zrot):
@@ -1620,7 +1737,7 @@ class PySolTrace:
 
         a_origin = (c_number*3)()
         a_aimpoint = (c_number*3)()
-        a_euler = (c_number*3)()
+        a_euler = (c_number*9)()
         a_origin[:] = origin
         a_aimpoint[:] = aimpoint
 
@@ -1652,6 +1769,9 @@ class PySolTrace:
             posloc : ([float,]*3) X,Y,Z coordinates of ray point in local system
             cosloc : ([float,]*3) Direction cosines of ray in local system
         """
+
+
+
         pdll = self.__load_dll()
         # Allocate space for input 
         a_posref = (c_number*3)()
