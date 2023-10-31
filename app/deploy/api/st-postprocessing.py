@@ -80,25 +80,25 @@ plt.tight_layout()
 #%% validate against literature
 valdata = {}
 
-filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/StanekFig9.csv'
-valdata['stanek-Q'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'Q'])
-valdata['stanek_aper_area'] = 1.*1.5
+# filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/StanekFig9.csv'
+# valdata['stanek-Q'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'Q'])
+# valdata['stanek_aper_area'] = 1.*1.5
 
-filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig12-Q-case4.csv'
-valdata['yang-Q'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'Q'])
-#convert from mrad to degrees
-valdata['yang-Q']['tracker_error'] = np.degrees(valdata['yang-Q']['tracker_error']/1000.)
-valdata['yang_aper_area'] = 5.*7.8
+# filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig12-Q-case4.csv'
+# valdata['yang-Q'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'Q'])
+# #convert from mrad to degrees
+# valdata['yang-Q']['tracker_error'] = np.degrees(valdata['yang-Q']['tracker_error']/1000.)
+# valdata['yang_aper_area'] = 5.*7.8
 
-filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig12-eta-case4.csv'
-valdata['yang-eta'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'eta'])
-valdata['yang-eta']['tracker_error'] = np.degrees(valdata['yang-eta']['tracker_error']/1000.)
+# filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig12-eta-case4.csv'
+# valdata['yang-eta'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'eta'])
+# valdata['yang-eta']['tracker_error'] = np.degrees(valdata['yang-eta']['tracker_error']/1000.)
 
-filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig10-intercept-case4.csv'
-valdata['yang-intc'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'intercept_factor'])
-valdata['yang-intc']['tracker_error'] = np.degrees(valdata['yang-intc']['tracker_error']/1000.)
+# filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/YangFig10-intercept-case4.csv'
+# valdata['yang-intc'] = pd.read_csv(filedir, header=None, names=['tracker_error', 'intercept_factor'])
+# valdata['yang-intc']['tracker_error'] = np.degrees(valdata['yang-intc']['tracker_error']/1000.)
 
-filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/firstOptic_Tracking.dat'
+filedir = '/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/firstOptic_Tracking.dat'
 valdata['firstoptic'] = pd.read_csv(filedir, header=None, sep=' ', names=['tracker_error', 'intercept_factor'])
 valdata['firstoptic']['tracker_error'] = np.degrees(valdata['firstoptic']['tracker_error'])
 
@@ -130,7 +130,12 @@ plt.rcParams['font.family'] = 'serif'
 plt.rcParams['mathtext.fontset'] = 'dejavuserif'
 plt.rcParams['font.size'] = 14
 
+tracker_angle_input = 'validation'
+
 resolution_value = 300
+# results,_ = pickle.load(open('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/validation_1E+05hits_realistic_optics-nosunshape-noslopeerr.p', 'rb'))
+df,results = pd.read_pickle('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/validation_1E+05hits_ideal_optics.p')
+
 fulldata = results['validation']
 
 critical_angle_error_min = 0.79 #[deg] from firstoptic validation dataset
@@ -140,6 +145,7 @@ fig = plt.figure(dpi=resolution_value)
 # plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='x', label='Yang et al. 2022')
 plt.plot(valdata['firstoptic']['tracker_error'],valdata['firstoptic']['intercept_factor'],color='k', label='FirstOPTIC')
 if tracker_angle_input == 'validation':
+    sensorloc='validation'
     plt.plot(fulldata['trough_angle_dev'],results[sensorloc].intercept_factor, 'kx', label = 'pysoltrace')
 else:
     for sensorloc in sensorlocs:
@@ -151,7 +157,11 @@ plt.xlabel('tracking error ($\epsilon$) [$^\circ$]')
 plt.ylabel('intercept factor ($\gamma$) [-]')
 plt.legend()
 
-plt.savefig('{}validation-firstoptic.pdf'.format(figdir), format='pdf', dpi=resolution_value)
+MSE = np.square(np.subtract(valdata['firstoptic']['intercept_factor'],results[sensorloc].intercept_factor)).mean() 
+ 
+RMSE = MSE**(1/2)
+
+# plt.savefig('{}validation-firstoptic.pdf'.format(figdir), format='pdf', dpi=resolution_value)
 
 #%% plotting median diurnal cycle with intercept factor 
 combineddf = resultsdf.merge(mediandf, left_index = True, right_index = True, how='outer')
@@ -218,6 +228,30 @@ axs[1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
 axs[2].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
 axs[3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
 axs[4].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=12)
+
+#%% comparing sensitvity of sunshape and sfc err
+
+pdata = {}
+path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
+filedirs = ['validation_1E+05hits_realistic_optics-nosunshape-noslopeerr.p',
+            'validation_1E+05hits_realistic_optics-sunshape-noslopeerr.p',
+            'validation_1E+05hits_realistic_optics-nosunshpae-slopeerr.p',
+            'validation_1E+05hits_realistic_optics-sunshape-slopeerr.p']
+
+labels = ['no error','sunshape', 'sfc err', 'sunshape + sfc err']
+
+for n,filedir in enumerate(filedirs):
+    tmpdata = pickle.load(open(path+filedir,'rb'))
+    pdata[labels[n]] = tmpdata['validation']
+
+fig = plt.figure(dpi=300)
+plt.plot(valdata['firstoptic']['tracker_error'],valdata['firstoptic']['intercept_factor'],'k-', label='FirstOPTIC')
+for key in pdata.keys():
+    plt.plot(pdata[key]['trough_angle_dev'],pdata[key].intercept_factor, '.-', label = key)
+
+plt.xlabel('tracking error ($\epsilon$) [$^\circ$]')
+plt.ylabel('intercept factor ($\gamma$) [-]')
+plt.legend()
     
 #%%
 noadjfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/stats_1E+05hits_Dec_June2023_realistic_optics_adj.p'

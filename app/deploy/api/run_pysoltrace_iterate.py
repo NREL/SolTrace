@@ -455,6 +455,8 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
         plot_time_series_fluxmap_results(results, x, nominaldf)
     elif tracker_angle_input_mode == 'stats':
         plot_stats_intercept_factor(results)
+    elif tracker_angle_input_mode == 'validation':
+        plot_validation_intercept_factor(results)
     elif tracker_angle_input_mode == 'nominal':
         plot_time_series_compare_nominal(results, x)
     elif tracker_angle_input_mode == 'char':
@@ -466,12 +468,12 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
 #%% INPUTS ===========================================================================================
 
 # define constant inputs                                                                                                                                                                                                                                                                                                                       
-sunshape_flag = False
-sfcerr_flag = False
+sunshape_flag = True
+sfcerr_flag = True
 optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 plot_rays = False
-save_pickle = False
-number_hits = 1e3 # 5e6 # 1e5 #1e5 
+save_pickle = True
+number_hits = 1e5 # 5e6 # 1e5 #1e5 
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
@@ -509,10 +511,10 @@ times = [''] # in UTC
 field_data_path = '' 
 tracker_angle_input = 'validation'
 sensorlocs = ['validation']
-# error_angles = np.concatenate((np.linspace(0.,critical_angle_error_min, 3), 
-#                     np.linspace(critical_angle_error_min+.06, critical_angle_error_max-.05, 7),
-#                     np.linspace(critical_angle_error_max, 3., 3)))
-error_angles = np.linspace(0,2.5,3) # 0.05 #0.025 # [deg]
+error_angles = np.concatenate((np.linspace(0.,critical_angle_error_min, 2),  #3
+                    np.linspace(critical_angle_error_min+.06, critical_angle_error_max-.05, 3), #7
+                    np.linspace(critical_angle_error_max, 3., 2))) #3
+# error_angles = np.linspace(0,2.5,3) # 0.05 #0.025 # [deg]
 
 # running  nominal (no tracking error) ===================================
 # tracker_angle_input = 'nominal'

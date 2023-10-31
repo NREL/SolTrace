@@ -40,7 +40,7 @@ def set_optics_props(optics_type):
         refl_rho = 0.9 # 1. # trough reflectivity
         absr_alpha = 0.96 # 1. # receiver absorptivity
         absr_rho = 1 - absr_alpha #0. # receiver reflectivity
-        refl_spec = None
+        refl_spec = 0.0 #None
         # tau = 1. # transmittance of glass envelope
     elif optics_type == 'ideal':
         refl_rho = 1. # trough reflectivity
@@ -172,8 +172,8 @@ def create_xy_mesh_cyl(d,l,nx,ny):
     return Xc,Yc,x,y,dx,dy
 
 def create_polar_mesh_cyl(d,l,nx,ny):
-    global dx
-    global dy
+    # global dx
+    # global dy
     # creates mesh of unrolled cylinder surface
     # xmin = -0.11215496988813
     # xmax = 0.11215496988813
@@ -184,10 +184,37 @@ def create_polar_mesh_cyl(d,l,nx,ny):
     # dx = x[1]-x[0]
     
     circumf = math.pi*d
-    x = np.linspace(-circumf/2.,circumf/2., nx)
-    y = np.linspace(-l/2., l/2., ny)
+    # assuming x and y marks the center of the cell on the absorber tube
+    # x = np.linspace(-circumf/2.,circumf/2., nx)
+    # y = np.linspace(-l/2., l/2., ny)
+    # dx = circumf/nx
+    # dy = y[1]-y[0]
+    
+    # assuming x and y mark the edges of the cells on the absorber tube
+    # and also ensures that all the cell sizes are the same (important for same anode in heat flux calc)
     dx = circumf/nx
-    dy = y[1]-y[0]
+    dy = l/ny
+    
+    if (nx % 2) == 0: #even
+       xpositive = np.arange(0.+dx/2, circumf/2., dx)
+       xnegative = -xpositive
+    else: #odd
+       xpositive = np.arange(0., circumf/2., dx)
+       xnegative = -xpositive[1:] #without the initial zero to eliminate the -0., 0. repetition in the combined array
+       
+    if (ny % 2) == 0: #even
+       ypositive = np.arange(0.+dy/2, l/2., dy)
+       ynegative = -ypositive
+    else: #odd
+       ypositive = np.arange(0., l/2., dy)
+       ynegative = -ypositive[1:] #without the initial zero to eliminate the -0., 0. repetition in the combined array
+    
+    y = np.sort(np.concatenate([ynegative, ypositive]))
+    x = np.sort(np.concatenate([xnegative, xpositive]))
+    
+    print('dx = {}, dy = {}'.format(dx,dy))
+    print('x = {}'.format(x))
+    print('y = {}'.format(y))
     X,Y = np.meshgrid(x,y,indexing='ij')
     psi = np.linspace(-180.,180.,nx) # circumferential angle [deg]
     return X,Y,x,y,dx,dy,psi
@@ -201,7 +228,7 @@ def convert_xy_polar_coords(d,x,zloc,focal_len,gui_coords=False):
     # uses s = r*theta and theta = atan(loc_x/loc_z-focal_len)
     if gui_coords:
         #z = zloc - focal_len + d_rec/2. #reset height of tube to z=0
-        cpos = r * np.arctan2(x,(zloc-focal_len))
+        cpos = r * np.arctan2(x,(zloc-focal_len)) # cpos=0 is top, cpos=circumference/2 is bottom
         # print('using gui coords')
     
     # assumes x=0 is at bottom of absorber tube
@@ -233,12 +260,15 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
     flux_st = np.zeros((nx,ny))
     anode = dx*dy
     ppr = PTppr / anode *1e-3
+    print('ppr = {}'.format(ppr))
 
     # count flux at receiver
     for ind,ray in df_rec.iterrows():
+        # i = int(np.where(np.abs(x - ray.loc_x) < tol)[0])
+        # j = int(np.where(np.abs(y - ray.loc_y) < tol)[0])
         # choose index of closest location to coordinates
-        i = np.argmin(np.abs(x - ray.cpos)) # int(np.where(np.abs(x - ray.loc_x) < tol)[0])
-        j = np.argmin(np.abs(y - ray.ypos)) # int(np.where(np.abs(y - ray.loc_y) < tol)[0])
+        i = np.argmin(np.abs(x - ray.cpos)) 
+        j = np.argmin(np.abs(y - ray.ypos)) 
         
         flux_st[i,j] += ppr    
 
@@ -261,7 +291,8 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
 
         #% contour plot
         # plt.figure(figsize=[6,4],dpi=250)
-        cf = axs[1].contourf(Xc, Yc, flux_st, levels=15, cmap='viridis') #, vmin=240, vmax=420)
+        # cf = axs[1].contourf(Xc, Yc, flux_st, levels=15, cmap='viridis') #, vmin=240, vmax=420)
+        cf = axs[1].pcolormesh(Xc, Yc, flux_st, cmap='viridis') #, vmin=240, vmax=420)
         fig.colorbar(cf, ax=axs[1], label='flux [kW/m2]')
         axs[1].set_title(f"pysoltrace: \n max flux {flux_st.max():.2f} kW/m2, mean flux {flux_st.mean():.2f}")
         axs[1].set_xlabel('x [m]')
@@ -271,6 +302,82 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
         plt.show()
         
     return flux_st, c_v
+
+def compute_fluxmap_solarpilot(PTppr, dfr, d_rec, focal_len, nx, ny):
+    # dfr = df[df.stage==df.stage.unique()[-1]] # just receiver stage
+    # dfr = dfr[dfr.element<0]  #absorbed rays should be negative? - shouldn't all rays be absorbed?
+    
+    dfr['ypos'] = dfr.loc_y
+    dfr['cpos'] = convert_xy_polar_coords(d_rec,dfr.loc_x,dfr.loc_z,focal_len,gui_coords=True)
+    
+    Xc,Yc,x,y,dx,dy,psi = create_polar_mesh_cyl(d_rec,focal_len,nx,ny)
+
+    flux_st = np.zeros((ny,nx))
+    # dx = d_rec*np.pi / nx 
+    # dy = h_rec / ny
+    anode = dx*dy
+    ppr = PTppr / anode *1e-3
+
+    for ind,ray in dfr.iterrows():
+
+        j = int(ray.cpos/dx)
+        i = int(ray.ypos/dy)
+
+        flux_st[i,j] += ppr
+    
+    return flux_st
+
+def compute_fluxmap_gui(PTppr, dfr, l_c, r, focal_len, nbinsx, nbinsy):
+    # adapted to python from SolTrace https://github.com/NREL/SolTrace/blob/47b7abd41d281589700ab6199263df53183086f0/app/src/project.cpp#L1226
+    
+    # is partical cylinder
+    # ZVal = r
+    # x = Radius * asin(x / r);
+    dfr['ypos'] = dfr.loc_y
+    dfr['cpos'] = convert_xy_polar_coords(d_rec,dfr.loc_x,dfr.loc_z,focal_len,gui_coords=True)
+        
+    # r = d_rec/2.
+    
+    minx = -math.pi*r
+    maxx = math.pi*r
+    
+    miny = -l_c/2.0
+    maxy = l_c/2.0
+
+    # total grid size
+    gridszx = 2.0 * math.pi * r
+    gridszy = maxy - miny
+    
+    # bin size
+    binszx = gridszx/nbinsx
+    binszy = gridszy/nbinsy
+    
+    zScale = PTppr/(binszx*binszy) # !! CHECK PTppr vs PowerPerRay
+    
+    SumFlux = 0.
+    RayCount = 0
+    fluxGrid = np.zeros((nbinsx,nbinsy))
+    
+    GridIncrementX = -1
+    GridIncrementY = -1
+    for index,row in dfr.iterrows():
+        x = row['cpos']
+        y = row['ypos']
+        
+        while ((minx + (GridIncrementX+1)*binszx) < x):
+            GridIncrementX += 1
+        while ((miny + (GridIncrementY+1)*binszy) < y):
+            GridIncrementY += 1
+        fluxGrid[GridIncrementX,GridIncrementY] += 1 #if ray falls inside a bin, increment count for that bin
+        RayCount += 1 #increment ray intersection counter
+    print('RayCount = ',RayCount)
+    
+    return fluxGrid
+    
+    # for i in range(nbinsx):
+    #     for j in range(nbinsy):
+    #         z = fluxGrid[i,j]*zscale
+    #         SumFlux = SumFlux + z
 
 def plot_sun_trough_deviation_angles(fulldata, sensorloc, adj_flag = True):
     fig, axs = plt.subplots(3,1,figsize=[9,7],dpi=250,sharex=True)
@@ -1045,3 +1152,32 @@ def plot_time_series_median_optical(results, abs_val=False, critical_angle_error
     axs[-1].set_xlabel('hour of the day [UTC]')
     
     plt.tight_layout()
+    
+def plot_validation_intercept_factor(results):
+    valdata = {}
+    filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/firstOptic_Tracking.dat'
+    valdata['firstoptic'] = pd.read_csv(filedir, header=None, sep=' ', names=['tracker_error', 'intercept_factor'])
+    valdata['firstoptic']['tracker_error'] = np.degrees(valdata['firstoptic']['tracker_error'])
+    
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['mathtext.fontset'] = 'dejavuserif'
+    plt.rcParams['font.size'] = 14
+
+    resolution_value = 300
+    fulldata = results['validation']
+
+    critical_angle_error_min = 0.79 #[deg] from firstoptic validation dataset
+    critical_angle_error_max = np.degrees(2.363636e-02) #[deg] from firstoptic validation dataset
+
+    fig = plt.figure(dpi=resolution_value)
+    # plt.scatter(valdata['yang-intc']['tracker_error'],valdata['yang-intc']['intercept_factor'],color='k',marker='x', label='Yang et al. 2022')
+    plt.plot(valdata['firstoptic']['tracker_error'],valdata['firstoptic']['intercept_factor'],color='k', label='FirstOPTIC')
+
+    sensorloc='validation'
+    plt.plot(fulldata['trough_angle_dev'],results[sensorloc].intercept_factor, 'kx', label = 'pysoltrace')
+    # plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, color='r', label = sensorloc)
+    # plt.scatter(fulldata[devkey],results[sensorloc].intercept_factor, label = sensorloc)
+    plt.axvspan(critical_angle_error_min, critical_angle_error_max, color='0.7', alpha=0.6)
+    plt.xlabel('tracking error ($\epsilon$) [$^\circ$]')
+    plt.ylabel('intercept factor ($\gamma$) [-]')
+    plt.legend()

@@ -1,5 +1,5 @@
 import os
-os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
+os.chdir('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
 from pysoltrace import PySolTrace, Point
 import random
 import pandas as pd
@@ -62,7 +62,7 @@ abs_aimz = 0. # focal_len*2. # 0.
 sun_position = [0., 0., 100.] # x, y, z
 
 # sim inputs
-n_hits = 1e5 #10 # 1e5
+n_hits = 5e6 #230995 # 1e5 #10 # 1e5
 sunshape_flag = False
 sfcerr_flag = False
 
@@ -73,6 +73,7 @@ PT = PySolTrace()
 # Create two optics types - one for reflector, and one for absorber.
 opt_ref = PT.add_optic("Reflector")
 opt_ref.front.reflectivity = refl_rho # reflects all power
+opt_ref.back.reflectivity = refl_rho
 
 opt_abs = PT.add_optic("Absorber")
 opt_abs.front.reflectivity = absr_rho
@@ -107,13 +108,15 @@ el.surface_parabolic(focal_len, float('infinity')) # focal_len_y should be 'inf'
 el.aperture_rectangle(a_w,l_c)
     
 # absorber stage
-sta = PT.add_stage()
+# sta = PT.add_stage()
+# ela = sta.add_element()
+# single stage
+ela = st.add_element()
 
 #absorber element height
 abs_pos = Point(ptc_pos[0], ptc_pos[1], abs_height)
 #abs_pos = Point(0., 0., 1.745)
 
-ela = sta.add_element()
 ela.position = abs_pos
 ela.aim.z = abs_aimz
 ela.optic = opt_abs
@@ -144,25 +147,25 @@ if __name__ == "__main__":
     loc_z = df.loc_z.values
     
     # Plotting with plotly
-    import plotly.express as px 
-    import plotly.graph_objects as go
-    import plotly.io as io
-    io.renderers.default='browser'
+    # import plotly.express as px 
+    # import plotly.graph_objects as go
+    # import plotly.io as io
+    # io.renderers.default='browser'
 
-    fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ))
+    # fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ))
 
-    #for i in range(PT.raydata.index.size): # all rays
-    for i in range(50,100):
-    #for i in range(0,100000,500):
-        dfr = df[df.number == i]
-        ray_x = dfr.loc_x 
-        ray_y = dfr.loc_y
-        ray_z = dfr.loc_z
-        raynum = dfr.number
-        fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+    # #for i in range(PT.raydata.index.size): # all rays
+    # for i in range(50,100):
+    # #for i in range(0,100000,500):
+    #     dfr = df[df.number == i]
+    #     ray_x = dfr.loc_x 
+    #     ray_y = dfr.loc_y
+    #     ray_z = dfr.loc_z
+    #     raynum = dfr.number
+    #     fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
 
-    fig.update_layout(showlegend=False)
-    fig.show()
+    # fig.update_layout(showlegend=False)
+    # fig.show()
     
     
     
