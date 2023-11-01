@@ -6,7 +6,7 @@ Created on Tue Jul 25 09:24:15 2023
 @author: bstanisl
 """
 import os
-os.chdir('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
+os.chdir('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/')
 # from os.path import exists
 import glob
 from pysoltrace import PySolTrace, Point
@@ -41,7 +41,7 @@ def find_year_month_day(times):
     
     return year,month,day
 
-def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, tracker_angle_input_mode, sensorlocs,
+def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angle_input_mode, sensorlocs,
                          module_length, aperture_width, focal_length, absorber_diameter, ptc_position, ptc_aim, 
                          sunshape_flag=False, sfcerr_flag=False, optics_type='realistic', plot_rays=False,
                          save_pickle=False, number_hits=1e5, nx=30, ny=30, error_angles=np.array([0., 1.25, 2.5])):
@@ -114,41 +114,8 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
     
     refl_rho, absr_alpha, absr_rho, refl_spec = set_optics_props(optics_type)
     
-    #=======================================================================
-    #% load trough tilt angle  --------------------------------------
-    #=======================================================================
-    if tracker_angle_input_mode == 'field':
-        
-        year, month, day = find_year_month_day(times)
-        fileres = '1min' # '1min' or '20Hz'
-        outres = '0.5H'
-        
-        field_data = load_field_data(field_data_path, year, month, day, fileres, outres)
+    times = field_data.index
     
-        # calculate adjusted tilt angle
-        
-        # select only necessary columns
-        # selcols = list(field_data.filter(regex='Tilt_adj|trough_angle_').columns)
-        # selcols = list(field_data.filter(regex='Tilt_adj').columns)
-        selcols = list(field_data.filter(regex='Tilt$').columns)
-        selcols.extend(['wspd_3m','wdir_3m',])
-        field_data = field_data[selcols]
-        
-        # sample field data at specified times
-        field_data = field_data.loc[times]
-        # else:
-    elif tracker_angle_input_mode == 'char':
-        mediandf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/csp-project-files/NSO-field-data-analysis/median-day-tilts.p','rb'))
-        field_data = mediandf
-        
-        
-    elif tracker_angle_input_mode == 'validation':
-        # array of tracking error values
-        error = error_angles
-        
-    elif tracker_angle_input_mode == 'stats':
-        stats_data = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/tracker_error_stats_calibrated.p','rb'))
-            
     #=======================================================================
     #% calculate sun positions  --------------------------------------
     #=======================================================================
@@ -307,8 +274,8 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
             sun.position.x = row['sun_pos_x']
             sun.position.y = 0. # row['sun_pos_y']
             sun.position.z = row['sun_pos_z']
-            print('sun position x = {}'.format(sun.position.x))
-            print('sun position z = {}'.format(sun.position.z))
+            # print('sun position x = {}'.format(sun.position.x))
+            # print('sun position z = {}'.format(sun.position.z))
             
             # create stage for parabolic trough and absorber
             # (single stage)
@@ -336,7 +303,7 @@ def run_soltrace_iterate(times, latitude, longitude, altitude, field_data_path, 
                 # devkey = [col for col in sensorinputdata.filter(regex='Tilt_adjusted').columns if sensorloc in col]
                 devkey = [col for col in sensorinputdata.filter(regex='Tilt$').columns if sensorloc in col]
                 stage_aim = get_aimpt_from_trough_angle(row[devkey[0]])
-                print('stage aim = {}'.format(stage_aim))
+                # print('stage aim = {}'.format(stage_aim))
             st.aim = Point(stage_aim[0], 0, stage_aim[1])
             
             # create parabolic trough element

@@ -212,9 +212,9 @@ def create_polar_mesh_cyl(d,l,nx,ny):
     y = np.sort(np.concatenate([ynegative, ypositive]))
     x = np.sort(np.concatenate([xnegative, xpositive]))
     
-    print('dx = {}, dy = {}'.format(dx,dy))
-    print('x = {}'.format(x))
-    print('y = {}'.format(y))
+    # print('dx = {}, dy = {}'.format(dx,dy))
+    # print('x = {}'.format(x))
+    # print('y = {}'.format(y))
     X,Y = np.meshgrid(x,y,indexing='ij')
     psi = np.linspace(-180.,180.,nx) # circumferential angle [deg]
     return X,Y,x,y,dx,dy,psi

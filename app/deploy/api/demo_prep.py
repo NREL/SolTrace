@@ -30,7 +30,6 @@ def find_year_month_day(times):
 
 # prepare demo field data
 # copied from run_pysoltrace_iterate.py
-sensorlocs = ['R4_SO'] #,'R1_Mid','R1_SO','R2_DO','R2_Mid','R2_SO','R4_DO','R4_Mid','R4_SO']
 tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
 tend = '2023-01-15 21:00:00' 
 times = pd.date_range(tstart, tend, freq='0.5H') # in UTC
@@ -54,5 +53,5 @@ field_data = field_data[selcols]
 # sample field data at specified times
 field_data = field_data.loc[times]
 
-demo_field_data = field_data[['R4_Mid_Tilt']].copy()
+demo_field_data = field_data[['R4_SO_Tilt','R4_DO_Tilt']].copy()
 demo_field_data.to_pickle('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/demo_field_data.p')
