@@ -6,7 +6,7 @@ Created on Tue Jul 25 09:24:15 2023
 @author: bstanisl
 """
 import os
-os.chdir('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
+os.chdir('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
 # from os.path import exists
 import glob
 from pysoltrace import PySolTrace, Point
