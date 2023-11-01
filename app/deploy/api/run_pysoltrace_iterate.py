@@ -472,8 +472,8 @@ sunshape_flag = True
 sfcerr_flag = True
 optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 plot_rays = False
-save_pickle = True
-number_hits = 1e5 # 5e6 # 1e5 #1e5 
+save_pickle = False
+number_hits = 1e3 # 5e6 # 1e5 #1e5 
 
 # parabolic trough geometry definition ================================
 # NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
@@ -493,28 +493,28 @@ altitude = 543 #m
 save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
 
 # running with field data timeseries =============================================
-#path = 'smb://nrel.gov/shared/Wind-data/Restricted/Projects/NSO/Processed_data/'
-# tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
-# # sensorlocs = ['R1_Mid', 'R1_SO', 'R2_SO'] #,'R1_Mid','R1_SO'] #,'R1_SO'] 
-# sensorlocs = ['R1_DO'] #,'R1_Mid','R1_SO','R2_DO','R2_Mid','R2_SO','R4_DO','R4_Mid','R4_SO']
-# # sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
-# # times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='1H') # in UTC
-# tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
-# tend = '2023-01-15 21:00:00' 
-# times = pd.date_range(tstart, tend, freq='0.5H') # in UTC
-# # field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' CHANGE THIS TO SERVER
-# field_data_path = '/Volumes/Processed_data/'
-# error_angles = []
+# path = 'smb://nrel.gov/shared/Wind-data/Restricted/Projects/NSO/Processed_data/'
+tracker_angle_input = 'field' # 'validation' 'nominal' # 'field'
+# sensorlocs = ['R1_Mid', 'R1_SO', 'R2_SO'] #,'R1_Mid','R1_SO'] #,'R1_SO'] 
+sensorlocs = ['R4_SO'] #,'R1_Mid','R1_SO','R2_DO','R2_Mid','R2_SO','R4_DO','R4_Mid','R4_SO']
+# sensorlocs = ['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
+# times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='1H') # in UTC
+tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
+tend = '2023-01-15 21:00:00' 
+times = pd.date_range(tstart, tend, freq='0.5H') # in UTC
+# field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' CHANGE THIS TO SERVER
+field_data_path = '/Volumes/Processed_data/'
+error_angles = []
 
 # running for validation ===================================
-times = [''] # in UTC
-field_data_path = '' 
-tracker_angle_input = 'validation'
-sensorlocs = ['validation']
-error_angles = np.concatenate((np.linspace(0.,critical_angle_error_min, 2),  #3
-                    np.linspace(critical_angle_error_min+.06, critical_angle_error_max-.05, 3), #7
-                    np.linspace(critical_angle_error_max, 3., 2))) #3
-# error_angles = np.linspace(0,2.5,3) # 0.05 #0.025 # [deg]
+# times = [''] # in UTC
+# field_data_path = '' 
+# tracker_angle_input = 'validation'
+# sensorlocs = ['validation']
+# error_angles = np.concatenate((np.linspace(0.,critical_angle_error_min, 2),  #3
+#                     np.linspace(critical_angle_error_min+.06, critical_angle_error_max-.05, 3), #7
+#                     np.linspace(critical_angle_error_max, 3., 2))) #3
+# # error_angles = np.linspace(0,2.5,3) # 0.05 #0.025 # [deg]
 
 # running  nominal (no tracking error) ===================================
 # tracker_angle_input = 'nominal'
@@ -546,4 +546,13 @@ nx = 30
 ny = 30 #30
 
 if __name__ == "__main__":
-    results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, module_length, aperture_width, focal_len, d_abstube, ptc_pos, ptc_aim, sunshape_flag, sfcerr_flag, optics_type, plot_rays, save_pickle, number_hits, nx, ny, error_angles=error_angles)
+    results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, 
+                                       module_length, aperture_width, focal_len, d_abstube, 
+                                       ptc_pos, ptc_aim, 
+                                       sunshape_flag, sfcerr_flag, optics_type, plot_rays, 
+                                       save_pickle, number_hits, nx, ny, error_angles=error_angles)
+    
+    
+    
+    
+    

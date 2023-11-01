@@ -51,10 +51,11 @@ ptc_aim = [0, 0, 1] # x, y, z
 critical_angle_error = 0.79 #[deg] from firstoptic validation dataset
 lat, lon = 35.8, -114.983 #coordinates of NSO
 altitude = 543 #m
+save_path = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/'
 
 # running with field data timeseries =============================================
 tracker_angle_input_mode = 'field' # 'validation' 'nominal' # 'field'
-sensorlocs = ['R1_DO','R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
+sensorlocs = ['R1_DO'] #,'R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
 times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='4H') # in UTC
 field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
 
@@ -63,3 +64,6 @@ if __name__ == "__main__":
                              module_length, aperture_width, focal_length, d_abstube, 
                              ptc_pos, ptc_aim, 
                              sunshape_flag=False, sfcerr_flag=False, optics_type='realistic', plot_rays=plot_rays, save_pickle=save_pickle, number_hits=n_hits, nx=nx, ny=ny)
+
+
+
