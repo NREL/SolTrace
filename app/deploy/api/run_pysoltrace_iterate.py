@@ -56,14 +56,18 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
     ----------
     Input Dataframe with the following columns:
         *Data Series Inputs*
-        times : pandas.DateTimeIndex in UTC
-            e.g. times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='4H')
+        field_data : pandas.DataFrame 
+            with pandas.DateTimeIndex as index and 2+ columns of trough tilt angle
         latitude : float
+            latitude of the field site
         longitude : float
+            longitude of the field site
         altitude : float
-        field_data_path : str
+            altitude of the field site
         tracker_angle_input_mode : str
+            'field' or 'nominal' or 'validation' (should be 'field' for basic application)
         sensorlocs : list of str
+            list of sensor locations (should appear in the field_data tilt angle column names)
         
         *Parabolic Trough Geometry*
         module_length : float
@@ -78,25 +82,25 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
         sunshape_flag : boolean
         sfcerr_flag : boolean
         optics_type : str
+            'realistic' or 'ideal'
         plot_rays : boolean
         number_hits : float
         nx : int
+            number of grid cells in x to discretize absorber tube for flux map
         ny : int
-    
+            number of grid cells in y to discretize absorber tube for flux map
     Returns
     -------
     Dictionary of DataFrames where each DataFrame contains results from one sensor location with the following columns:
         input tilt angle [deg] (e.g. R1_DO_Tilt) - measured PTC tilt angle in transversal plane
-        wspd_3m [m/s] - measured inflow wind speed at 3 m height
-        wdir_3m [deg] - measured inflow wind direction at 3 m height
         apparent_zenith [deg]
         apparent_elevation [deg]
         azimuth [deg]
         nom_trough_angle [deg] - calculated from sun position
+        projected_sun_angle [deg] - projected onto east-west transversal plane (for single-axis tracking)
         sun_pos_x [m]
         sun_pos_y [m]
         sun_pos_z [m]
-        track_err [deg]
         intercept_factor [-] - num of rays that hit absorber / num of rays that hit collector
         flux_centerline [W/m2] - heat flux values at lateral midpoint of absorber tube
         coeff_var [-] - a measure of heat distribution on absorber (np.std(flux_st)/np.mean(flux_st))
@@ -104,21 +108,28 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
     References
     ----------
     [1] M. Wagner (2023) https://github.com/NREL/SolTrace/tree/develop/app/deploy/api
+    [2] Python Wrapper for NREL's Solar Position Algorithm https://pvlib-python.readthedocs.io/en/v0.4.2/generated/pvlib.solarposition.spa_python.html
     """
     
+    #=======================================================================
+    #% calculate geometric parameters of system  --------------------------------------
+    #=======================================================================
     abs_height = focal_length - absorber_diameter/2. # pt on upper?? sfc of abs tube
     abs_aimz = focal_length*2. # 0. ??
     circumf = math.pi*absorber_diameter
     x = np.linspace(-circumf/2.,circumf/2., nx)
     y = np.linspace(-module_length/2., module_length/2., ny)
     
+    #=======================================================================
+    #% assign optical properties --------------------------------------
+    #=======================================================================
     refl_rho, absr_alpha, absr_rho, refl_spec = set_optics_props(optics_type)
-    
-    times = field_data.index
     
     #=======================================================================
     #% calculate sun positions  --------------------------------------
     #=======================================================================
+    times = field_data.index
+    
     if (tracker_angle_input_mode == 'nominal') or (tracker_angle_input_mode == 'field'):
         # calculate sun positions from SPA directly through pvlib
         sunangles = get_trough_angles_py(times, latitude, longitude, altitude)
@@ -141,67 +152,9 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
         inputdata = field_data
         for sensorloc in sensorlocs:
             plot_sun_trough_deviation_angles(field_data, sensorloc, adj_flag = False)
-            
-    elif tracker_angle_input_mode == 'char':
-        [a, c] = get_aimpt_from_trough_angle(field_data.nom_trough_angle)
-        field_data['sun_pos_x'] = 1000 * a
-        field_data['sun_pos_y'] = 0. #1000 * b
-        field_data['sun_pos_z'] = 1000 * c
-        
-        inputdata = field_data
-        # for debugging
-        # inputdata = field_data[0:4]
-        
-    elif tracker_angle_input_mode == 'stats':
-        # setting sun position at straight up and tracking error will be from trough angle of zero degrees
-        solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
-        
-        # select only the rows that match the senslocs requested in the inputs
-        dfdata = stats_data.loc[(rows, sensorlocs),:]
-        
-        # plot that data
-        plot_stats_deviation(dfdata)
-        
-        # concatenate the mean, mean+sigma, mean-sigma, and max into rows of a dataframe for parsing
-        inputdata = pd.DataFrame()
-        # dfdata = stats_data.loc[(rows, sensorlocs),:]
-        colnames = ['absmean','absmean+std','absmean+2std','absmean-std','absmean-2std','absmax']
-        for col in colnames:
-            if '+std' in col:
-                tmpdf = dfdata['absmean']+dfdata['absstd'] # captures 68% of the data
-                tmpdf = tmpdf.to_frame()
-                tmpdf.columns=[col]
-            elif '+2std' in col:
-                tmpdf = dfdata['absmean']+2*dfdata['absstd'] # captures 95% of the data
-                tmpdf = tmpdf.to_frame()
-                tmpdf.columns=[col]
-            elif '-std' in col:
-                tmpdf = dfdata['absmean']-dfdata['absstd']
-                tmpdf = tmpdf.to_frame()
-                tmpdf.columns=[col]
-            elif '-2std' in col:
-                tmpdf = dfdata['absmean']-2*dfdata['absstd'] # captures 95% of the data
-                tmpdf = tmpdf.to_frame()
-                tmpdf.columns=[col]
-            else: #max?
-                tmpdf = dfdata[col].to_frame()
-            tmpdf.rename(columns={col: 'trough_angle'}, inplace=True)
-            tmpdf['stat'] = col
-            inputdata = pd.concat([inputdata, tmpdf])
-            del tmpdf
-        inputdata['nom_trough_angle'] = 0
-        
-        # combine with sun position
-        for col in solpos.columns:
-            inputdata[col] = solpos[col][0]
-        
-        inputdata = inputdata.set_index(['stat'],append=True)
 
-        
     elif tracker_angle_input_mode == 'validation':
         # if validating, sun position is directly overhead at arbitrary height of 100 m
-        # print('in validation loop')
-        #sun straight above
         solpos = pd.DataFrame([[0., 0., 100.]], columns=['sun_pos_x', 'sun_pos_y', 'sun_pos_z'])
         nom_trough_angle = 0. # 0 degrees = flat, facing the sun directlly overhead
         
@@ -231,19 +184,24 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
         inputdata = pd.concat([inputdata, inputdata2])
     
     print('input data ',inputdata)
-
+    
+    #=======================================================================
+    #% iterate over each row and sensor location  --------------------------------------
+    #=======================================================================
     results = {}
 
     tstart = time.time()
     
-    # iterate through pandas dataframe at all sun positions
-    # iterate over each row and sensor location
     for sensorloc in sensorlocs:
         print(sensorloc)
         
         # remove cols for all other sensors
         dropcols = [col for col in inputdata.filter(regex='Tilt$').columns if sensorloc not in col]
         sensorinputdata = inputdata.drop(columns=dropcols)
+        
+        #=======================================================================
+        #% iterate over each timestep in pandas dataframe --------------------------------------
+        #=======================================================================
         
         # initialize
         intercept_factor = [] # np.ones(len(angles))*np.nan
@@ -256,12 +214,12 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
             
             # Create two optics types - one for reflector, and one for absorber.
             opt_ref = PT.add_optic("Reflector")
-            opt_ref.front.reflectivity = refl_rho
-            opt_ref.back.reflectivity = refl_rho
+            opt_ref.front.reflectivity = refl_rho # assign optical properties
+            opt_ref.back.reflectivity = refl_rho # assign optical properties
             
             if tracker_angle_input_mode == 'validation':
-                opt_ref.front.spec_error = refl_spec
-                opt_ref.back.spec_error = refl_spec
+                opt_ref.front.spec_error = refl_spec # assign optical properties
+                opt_ref.back.spec_error = refl_spec # assign optical properties
                 # ? these values seem to have no impact on intercept factor
         
             opt_abs = PT.add_optic("Absorber")
@@ -270,12 +228,11 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
         
             # define sun
             sun = PT.add_sun()
+            
             # Give sun position
             sun.position.x = row['sun_pos_x']
             sun.position.y = 0. # row['sun_pos_y']
             sun.position.z = row['sun_pos_z']
-            # print('sun position x = {}'.format(sun.position.x))
-            # print('sun position z = {}'.format(sun.position.z))
             
             # create stage for parabolic trough and absorber
             # (single stage)
@@ -285,22 +242,13 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
             # stage origin is global origin = 0, 0, 0
             st.position = Point(0, 0, 0)
             
-            # NOMINAL: stage aim towards sun: only take the x and z components of the sun position (trough doesn't adjust laterally)
-            # st.aim = Point(sun_position[0], 0, sun_position[2]) #Point(1, 0, 1)
-            
-            # stage aim towards pt based on elev angle
-            # stage_aim = get_aimpt_from_sunangles(row.apparent_elevation, row.azimuth) #, 10)
-            # # stage_aim = get_aimpt_from_sunangles_pvlib(solpos.zenith[col], solpos.azimuth[col], focal_length)
-            # st.aim = Point(stage_aim[0], 0, stage_aim[1])
-            
             if tracker_angle_input_mode == 'nominal':
                 # stage aim as tracker angle
                 stage_aim = get_aimpt_from_trough_angle(row.nom_trough_angle)
             elif (tracker_angle_input_mode == 'validation') or (tracker_angle_input_mode == 'stats'):
                 stage_aim = get_aimpt_from_trough_angle(row.trough_angle)
-            else: # 'field'
-                # stage aim using actual tracker angle from field
-                # devkey = [col for col in sensorinputdata.filter(regex='Tilt_adjusted').columns if sensorloc in col]
+            else: # tracker_angle_input_mode == 'field'
+                # stage aim using measured tracker angle from field
                 devkey = [col for col in sensorinputdata.filter(regex='Tilt$').columns if sensorloc in col]
                 stage_aim = get_aimpt_from_trough_angle(row[devkey[0]])
                 # print('stage aim = {}'.format(stage_aim))
@@ -321,6 +269,7 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
             el.aperture_rectangle(aperture_width,module_length)
             
             # create absorber tube
+            # two stage
             #sta = PT.add_stage()
             # single stage
             ela = st.add_element()
@@ -341,11 +290,11 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
             PT.is_sunshape = sunshape_flag # True
             PT.is_surface_errors = sfcerr_flag # True
                 
-            # PT.write_soltrace_input_file('trough-singlestage-{}.stinput'.format(index))
+            # PT.write_soltrace_input_file('trough-singlestage-{}.stinput'.format(index)) # for comparison with SolTrace GUI results
             PT.run(10, False, 4)
             print("Num rays traced: {:d}".format(PT.raydata.index.size))
             
-            # save data frame
+            # save data frame of ray info
             df = PT.raydata
             
             # calculate intercept factor
@@ -355,6 +304,8 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
             ppr = PT.powerperray
             df_rec = generate_receiver_dataframe(df,absorber_diameter,focal_length)
             flux_st, c_v = compute_fluxmap(ppr,df_rec,absorber_diameter,module_length,nx,ny,plotflag=True)
+            
+            # calculate coefficient of variation
             coeff_var.append(c_v)
             
             # save flux centerline for flux map in time
@@ -387,10 +338,8 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
         # read pickle file of nominal results if you haven't already
         if tracker_angle_input_mode == 'field':
             print('reading nominal results dataframe for comparison')
-            # nominaldf = pickle.load(open('/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_12_16_22_1e5.p','rb'))
-            nomfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_{}_{}_*hits_{}_optics.p'.format(sensorinputdata.index[0].month,sensorinputdata.index[0].day,optics_type)
-            if len(glob.glob(nomfn)) > 0:
-            # if exists(nomfn):
+            nomfn = '/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/nominal_{}_{}_*hits_{}_optics.p'.format(sensorinputdata.index[0].month,sensorinputdata.index[0].day,optics_type)
+            if len(glob.glob(nomfn)) > 0: # if file exists
                 tmp = pickle.load(open(glob.glob(nomfn)[-1],'rb'))
                 nominaldf = tmp['nominal']
             else:
@@ -399,35 +348,23 @@ def run_soltrace_iterate(field_data, latitude, longitude, altitude, tracker_angl
                 for col in nominaldf.columns:
                     nominaldf = nominaldf.assign(col=np.nan)
         
-        # if (tracker_angle_input_mode != 'stats') and (tracker_angle_input_mode != 'char'):
-            #% compare nominal to actual
             plot_time_series_compare(nominaldf, sensorinputdata, resultsdf, x, sensorloc)
     
     #% save variables to pickle file
     if save_pickle == True:
         if tracker_angle_input_mode == 'field':
-            pickle.dump(results, open('/{}{}_{}_{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type), 'wb'))
+            pickle.dump(results, open('./{}{}_{}_{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input_mode,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type), 'wb'))
         else:
-            pickle.dump(results, open('/{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
-        # if tracker_angle_input_mode == 'field':
-        #     pickle.dump(results, open('/{}{}_{}_{}_{:.0E}hits_{}_optics_test.p'.format(save_path,tracker_angle_input_mode,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type), 'wb'))
-        # if tracker_angle_input_mode == 'char':
-        #     pickle.dump([inputdata, resultsdf], open('{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
-        # else:
-        #     pickle.dump([inputdata, results], open('{}{}_{:.0E}hits_{}_optics.p'.format(save_path,tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
-    
+            pickle.dump(results, open('./{}{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
+
     if tracker_angle_input_mode == 'field':
         # plot_time_series_compare_sensors(nominaldf, inputdata, results, x, sensorlocs)
         plot_time_series_optical_results(results, nominaldf)
         plot_time_series_fluxmap_results(results, x, nominaldf)
-    elif tracker_angle_input_mode == 'stats':
-        plot_stats_intercept_factor(results)
     elif tracker_angle_input_mode == 'validation':
         plot_validation_intercept_factor(results)
     elif tracker_angle_input_mode == 'nominal':
         plot_time_series_compare_nominal(results, x)
-    elif tracker_angle_input_mode == 'char':
-        plot_time_series_median_optical(results, abs_val=True)
     
     return results, df
 
@@ -512,12 +449,12 @@ error_angles = []
 nx = 30
 ny = 30 #30
 
-if __name__ == "__main__":
-    results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, 
-                                       module_length, aperture_width, focal_len, d_abstube, 
-                                       ptc_pos, ptc_aim, 
-                                       sunshape_flag, sfcerr_flag, optics_type, plot_rays, 
-                                       save_pickle, number_hits, nx, ny, error_angles=error_angles)
+# if __name__ == "__main__":
+#     results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, 
+#                                        module_length, aperture_width, focal_len, d_abstube, 
+#                                        ptc_pos, ptc_aim, 
+#                                        sunshape_flag, sfcerr_flag, optics_type, plot_rays, 
+#                                        save_pickle, number_hits, nx, ny, error_angles=error_angles)
     
     
     

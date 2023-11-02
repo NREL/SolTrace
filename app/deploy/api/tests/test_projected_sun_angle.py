@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 import sys
-sys.path.insert(0, '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/')
+sys.path.insert(0, '/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/')
 from st_processing_functions import get_trough_angles_py
 
 def func(results):
