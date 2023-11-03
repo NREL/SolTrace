@@ -28,17 +28,24 @@ def test_answer():
     lat, lon = 35.8, -114.983 #coordinates of Nevada Solar One
     altitude = 543 #m
     
-    # running  nominal (no tracking error) ===================================
-    tracker_angle_input = 'nominal'
-    sensorlocs = ['nominal']
+    # define tilt angles dataframe ==============================
     tstart = '2023-01-15 16:00:00' # fulldata.index[0] # '2023-02-11 17:00:00'
     tend = '2023-01-15 21:00:00' 
     times = pd.date_range(tstart, tend, freq='3H') # in UTC
-    field_data_path = '/Volumes/Processed_data/'
-    error_angles = []
-
+    nominal_tilt_angles = get_trough_angles_py(times, lat, lon, altitude)
+    nominal_tilt_angles = nominal_tilt_angles[['nom_trough_angle']]
+    nominal_tilt_angles = nominal_tilt_angles.rename(columns={"nom_trough_angle": "nominal_Tilt"})
     
-    results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, tracker_angle_input, sensorlocs, module_length, aperture_width, focal_len, d_abstube, ptc_pos, ptc_aim, sunshape_flag, sfcerr_flag, optics_type, plot_rays, save_pickle, number_hits, nx=30, ny=30, error_angles=error_angles)
+    
+    # running  nominal (no tracking error) ===================================
+    tracker_angle_input = 'nominal'
+    sensorlocs = ['nominal']
+    
+    results, df = run_soltrace_iterate(nominal_tilt_angles, lat, lon, altitude, 
+                                       tracker_angle_input, sensorlocs, module_length, aperture_width, 
+                                       focal_len, d_abstube, ptc_pos, ptc_aim, sunshape_flag, 
+                                       sfcerr_flag, optics_type, plot_rays, save_pickle, 
+                                       number_hits, nx=30, ny=30)
 
     intercept_factor_test = results['nominal'].intercept_factor
 

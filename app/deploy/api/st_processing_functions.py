@@ -1155,7 +1155,7 @@ def plot_time_series_median_optical(results, abs_val=False, critical_angle_error
     
 def plot_validation_intercept_factor(results):
     valdata = {}
-    filedir = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/firstOptic_Tracking.dat'
+    filedir = '/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/firstOptic_Tracking.dat'
     valdata['firstoptic'] = pd.read_csv(filedir, header=None, sep=' ', names=['tracker_error', 'intercept_factor'])
     valdata['firstoptic']['tracker_error'] = np.degrees(valdata['firstoptic']['tracker_error'])
     

@@ -13,10 +13,8 @@ def test_answer():
     error_angles = np.array([0., np.degrees(1.733333e-02), 2.5])
 
     # fake inputs - not used in validation mode
-    times = pd.date_range('2023-03-05 15:00:00', '2023-03-05 23:50:00',freq='4H') # in UTC
     lat, lon = 35.8, -114.983 #coordinates of Nevada Solar One
     altitude = 543 #m
-    field_data_path = '/Users/bstanisl/Documents/seto-csp-project/NSO-field-data/' 
     module_length = 12.0 # module length
     aperture_width = 5.0 #5.77 # aperture width
     focal_len = 1.49 #1.71 # focal length # this must be correct for results to make sense
@@ -30,15 +28,14 @@ def test_answer():
     optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
     plot_rays = False
     save_pickle = False
-    number_hits = 1e6 # 5e6 # 1e5 #1e5 
+    number_hits = 1e6 # 1e6 
 
-    results, df = run_soltrace_iterate(times, lat, lon, altitude, field_data_path, 
+    results, df = run_soltrace_iterate(error_angles, lat, lon, altitude,  
                                    tracker_angle_input, sensorlocs, module_length, 
                                    aperture_width, focal_len, d_abstube, ptc_pos, 
                                    ptc_aim, sunshape_flag, sfcerr_flag, 
                                    optics_type, plot_rays, 
-                                   save_pickle, number_hits, nx=30, ny=30,
-                                   error_angles=error_angles)
+                                   save_pickle, number_hits, nx=30, ny=30)
 
 
     # calculate intercept factor

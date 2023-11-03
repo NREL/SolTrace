@@ -48,18 +48,17 @@ d_abstube = 0.07 # diameter of absorber tube
 ptc_pos = [0, 0, 0] # x, y, z
 ptc_aim = [0, 0, 1] # x, y, z
 
-critical_angle_error_min = 0.79 #[deg] from firstoptic validation dataset
-critical_angle_error_max = np.degrees(2.363636e-02) #[deg] from firstoptic validation dataset
+# NSO field site information
 lat, lon = 35.8, -114.983 #coordinates of NSO
 altitude = 543 #m
 
 # running with field data timeseries =============================================
-tracker_angle_input_mode = 'field' # 'validation' 'nominal' # 'field'
+tracker_angle_input_mode = 'field' # 'validation' 'nominal'
 sensorlocs = ['R4_DO','R4_SO'] #,'R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
 field_data = pd.read_pickle("/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/demo_field_data.p")
 
 if __name__ == "__main__":
     results, df = run_soltrace_iterate(field_data, lat, lon, altitude, tracker_angle_input_mode, sensorlocs, 
-                                       module_length, aperture_width, focal_len, d_abstube, 
+                                       module_length, aperture_width, focal_length, d_abstube, 
                                        ptc_pos, ptc_aim, sunshape_flag, sfcerr_flag, 
                                        optics_type, plot_rays, save_pickle, n_hits, nx, ny)
