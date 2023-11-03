@@ -35,7 +35,7 @@ sfcerr_flag = False
 optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
 plot_rays = False
 save_pickle = False
-n_hits = 1e3 # 5e6 # 1e5 #1e5 
+n_hits = 1e5 # 5e6 # 1e5 #1e5 
 nx = 30
 ny = 30
 
