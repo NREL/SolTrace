@@ -5,7 +5,7 @@ Created on Tue Jul 25 11:11:23 2023
 
 @author: bstanisl
 
-This is an illustrative example using field measurement data from the Nevada Solar One CSP plant [1].
+This is an illustrative example using a snippet of field measurement data (`demo_field_data.py`) from the Nevada Solar One CSP plant [1].
 
 [1] National Renewable Energy Laboratory (NREL). (2021). Wind and Structural Loads on Parabolic Trough Solar Collectors at Nevada Solar One [data set].  Retrieved from https://dx.doi.org/10.25984/2001061.
 
@@ -59,8 +59,8 @@ altitude = 543 #m
 
 # running with field data timeseries =============================================
 tracker_angle_input_mode = 'field' # 'validation' 'nominal'
-sensorlocs = ['R4_DO','R4_SO'] #,'R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
-field_data = pd.read_pickle("./demo_field_data.p")
+sensorlocs = ['R4_DO','R4_SO'] # sensor location names
+field_data = pd.read_pickle("./demo_field_data.p") # previously prepared for this example
 
 if __name__ == "__main__":
     results, df = run_soltrace_iterate(field_data, lat, lon, altitude, tracker_angle_input_mode, sensorlocs, 
