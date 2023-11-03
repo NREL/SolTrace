@@ -32,7 +32,7 @@ from run_pysoltrace_iterate import *
 # define constant inputs                                                                                                                                                                                                                                                                                                                       
 sunshape_flag = False
 sfcerr_flag = False
-optics_type = 'realistic' # 'yang' 'realistic' # 'ideal'
+optics_type = 'realistic' # 'ideal'
 plot_rays = False
 save_pickle = False
 n_hits = 1e5 # 5e6 # 1e5 #1e5 
@@ -40,7 +40,7 @@ nx = 30
 ny = 30
 
 # parabolic trough geometry definition ================================
-# NSO Trough Geometry: using measurements from CAD file from Dave (aka LS-2)
+# Nevada Solar One Trough Geometry (LS-2)
 module_length = 12.0 # module length
 aperture_width = 5.0 #5.77 # aperture width
 focal_length = 1.49 #1.71 # focal length # this must be correct for results to make sense
@@ -48,7 +48,7 @@ d_abstube = 0.07 # diameter of absorber tube
 ptc_pos = [0, 0, 0] # x, y, z
 ptc_aim = [0, 0, 1] # x, y, z
 
-# NSO field site information
+# Nevada Solar One field site information
 lat, lon = 35.8, -114.983 #coordinates of NSO
 altitude = 543 #m
 
