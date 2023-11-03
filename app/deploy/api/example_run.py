@@ -4,6 +4,11 @@
 Created on Tue Jul 25 11:11:23 2023
 
 @author: bstanisl
+
+This is an illustrative example using field measurement data from the Nevada Solar One CSP plant [1].
+
+[1] National Renewable Energy Laboratory (NREL). (2021). Wind and Structural Loads on Parabolic Trough Solar Collectors at Nevada Solar One [data set].  Retrieved from https://dx.doi.org/10.25984/2001061.
+
 """
 import os
 os.chdir('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/')
@@ -33,9 +38,9 @@ from run_pysoltrace_iterate import *
 sunshape_flag = False
 sfcerr_flag = False
 optics_type = 'realistic' # 'ideal'
-plot_rays = False
-save_pickle = False
-n_hits = 1e5 # 5e6 # 1e5 #1e5 
+plot_rays = False # plot rays in ray-tracing simulation using plotly - this can be slow with more than 1e4 rays
+save_pickle = False # save results as pickle file
+n_hits = 1e5 # 5e6 # 1e5 
 nx = 30
 ny = 30
 
@@ -55,7 +60,7 @@ altitude = 543 #m
 # running with field data timeseries =============================================
 tracker_angle_input_mode = 'field' # 'validation' 'nominal'
 sensorlocs = ['R4_DO','R4_SO'] #,'R1_Mid'] #,'R1_SO'] #,'R1_SO'] #['R1_SO','R1_Mid','R1_DO','R2_SO','R2_Mid','R2_DO','R4_SO','R4_Mid','R4_DO']
-field_data = pd.read_pickle("/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/demo_field_data.p")
+field_data = pd.read_pickle("./demo_field_data.p")
 
 if __name__ == "__main__":
     results, df = run_soltrace_iterate(field_data, lat, lon, altitude, tracker_angle_input_mode, sensorlocs, 

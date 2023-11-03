@@ -3,7 +3,7 @@
 Built on top of the existing SolTrace Python API, this tool feeds in time-series measurements of trough tilt angle and sun positions and uses Monte-Carlo-based ray-tracing to generate flux distribution on the absorber tube and optical performance.
 
 
-`example_run.py` is an illustrative example of this capability using field measurement data from the Nevada Solar One CSP plant.
+`example_run.py` is an illustrative example of this capability using field measurement data from the Nevada Solar One CSP plant [1].
 
 ### Inputs
 Parabolic trough collector geometry: module length, aperture width, focal length, absorber tube diameter
@@ -41,3 +41,6 @@ For each sensor location (e.g. R4_SO), a results dataframe is generated that inc
   | 2023-01-15 16:30:00  | 0.930220 | [yy, ..., yy(nx)] | 1.068185
   | 2023-01-15 17:00:00  | 0.931526 | [zz, ..., zz(nx)] | 1.059448
 
+
+### References
+[1] National Renewable Energy Laboratory (NREL). (2021). Wind and Structural Loads on Parabolic Trough Solar Collectors at Nevada Solar One [data set].  Retrieved from https://dx.doi.org/10.25984/2001061.

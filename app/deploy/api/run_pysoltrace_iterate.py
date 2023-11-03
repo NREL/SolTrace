@@ -321,7 +321,7 @@ def run_soltrace_iterate(tilt_angle_data, latitude, longitude, altitude, tracker
         # read pickle file of nominal results if you haven't already
         if tracker_angle_input_mode == 'field':
             print('reading nominal results dataframe for comparison')
-            nomfn = '/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/nominal_{}_{}_*hits_{}_optics.p'.format(sensorinputdata.index[0].month,sensorinputdata.index[0].day,optics_type)
+            nomfn = './nominal_{}_{}_*hits_{}_optics.p'.format(sensorinputdata.index[0].month,sensorinputdata.index[0].day,optics_type)
             if len(glob.glob(nomfn)) > 0: # if file exists
                 tmp = pickle.load(open(glob.glob(nomfn)[-1],'rb'))
                 nominaldf = tmp['nominal']
@@ -336,9 +336,9 @@ def run_soltrace_iterate(tilt_angle_data, latitude, longitude, altitude, tracker
     #% save variables to pickle file
     if save_pickle == True:
         if tracker_angle_input_mode == 'field':
-            pickle.dump(results, open('./{}{}_{}_{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input_mode,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type), 'wb'))
+            pickle.dump(results, open('./{}_{}_{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input_mode,inputdata.index[0].month,inputdata.index[0].day,int(number_hits),optics_type), 'wb'))
         else:
-            pickle.dump(results, open('./{}{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
+            pickle.dump(results, open('./{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
 
     if tracker_angle_input_mode == 'field':
         # plot_time_series_compare_sensors(nominaldf, inputdata, results, x, sensorlocs)
