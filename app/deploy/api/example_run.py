@@ -10,23 +10,7 @@ This is an illustrative example using a snippet of field measurement data (`demo
 [1] National Renewable Energy Laboratory (NREL). (2021). Wind and Structural Loads on Parabolic Trough Solar Collectors at Nevada Solar One [data set].  Retrieved from https://dx.doi.org/10.25984/2001061.
 
 """
-import os
-os.chdir('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/')
-from os.path import exists
-from pysoltrace import PySolTrace, Point
-import random
 import pandas as pd
-import copy
-import matplotlib.pyplot as plt
-from pvlib import solarposition, tracking
-import numpy as np
-import math
-import time
-import pickle
-# import plotly.express as px 
-import plotly.graph_objects as go
-import plotly.io as io
-io.renderers.default='browser'
 
 from st_processing_functions import *
 from run_pysoltrace_iterate import *
