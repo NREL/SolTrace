@@ -182,10 +182,12 @@ enum { ID_OPTIC_SURF_NUMBER = wxID_HIGHEST+696,
 
 class OpticalPropertyForm : public wxPanel
 {
-	wxNumericCtrl *m_opticSurfNumber,
-		*m_aperStopOrGrating,
-		*m_diffractionOrder,
-		*m_refractReal, *m_refractImag,
+	wxNumericCtrl 
+		//*m_opticSurfNumber,
+		//*m_aperStopOrGrating,
+		//*m_diffractionOrder,
+		*m_refractReal, 
+		//*m_refractImag,
 		*m_gratingSpacing[4],
 		*m_reflectivity,
 		*m_transmissivity,
@@ -210,42 +212,42 @@ public:
 
 		wxFlexGridSizer *sizer1 = new wxFlexGridSizer( 2 );
 		sizer1->AddGrowableCol( 1 );
-		sizer1->Add( new wxStaticText( this, wxID_ANY, "Optical surface number" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
-		sizer1->Add( m_opticSurfNumber = new wxNumericCtrl( this, ID_OPTIC_SURF_NUMBER, 1, wxNUMERIC_INTEGER ), 0, wxALL, 2 );
-		sizer1->Add( new wxStaticText( this, wxID_ANY, "Aperture stop or grating type" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
-		sizer1->Add( m_aperStopOrGrating = new wxNumericCtrl( this, ID_APER_STOP_OR_GRATING, 3, wxNUMERIC_INTEGER ), 0, wxALL, 2 );
-		sizer1->Add( new wxStaticText( this, wxID_ANY, "Diffraction order" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
-		sizer1->Add( m_diffractionOrder = new wxNumericCtrl( this, ID_DIFFRACTION_ORDER, 4, wxNUMERIC_INTEGER ), 0, wxALL, 2 );
+		//sizer1->Add( new wxStaticText( this, wxID_ANY, "Optical surface number" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
+		//sizer1->Add( m_opticSurfNumber = new wxNumericCtrl( this, ID_OPTIC_SURF_NUMBER, 1, wxNUMERIC_INTEGER ), 0, wxALL, 2 );
+		//sizer1->Add( new wxStaticText( this, wxID_ANY, "Aperture stop or grating type" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
+		//sizer1->Add( m_aperStopOrGrating = new wxNumericCtrl( this, ID_APER_STOP_OR_GRATING, 3, wxNUMERIC_INTEGER ), 0, wxALL, 2 );
+		//sizer1->Add( new wxStaticText( this, wxID_ANY, "Diffraction order" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
+		//sizer1->Add( m_diffractionOrder = new wxNumericCtrl( this, ID_DIFFRACTION_ORDER, 4, wxNUMERIC_INTEGER ), 0, wxALL, 2 );
 
 
 		wxStaticBoxSizer *sizer2 = new wxStaticBoxSizer( wxHORIZONTAL, this, "Refraction indicies" );
 		sizer2->Add( new wxStaticText( sizer2->GetStaticBox(), wxID_ANY, "Real" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 4 );
 		sizer2->Add( m_refractReal = new wxNumericCtrl( sizer2->GetStaticBox(), ID_REFRACT_REAL, 1.1 ), 0, wxALL, 4 );
-		sizer2->Add( new wxStaticText( sizer2->GetStaticBox(), wxID_ANY, "Imag" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 4 );
-		sizer2->Add( m_refractImag = new wxNumericCtrl( sizer2->GetStaticBox(), ID_REFRACT_IMAG, 1.2 ), 0, wxALL, 4 );
+		//sizer2->Add( new wxStaticText( sizer2->GetStaticBox(), wxID_ANY, "Imag" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 4 );
+		//sizer2->Add( m_refractImag = new wxNumericCtrl( sizer2->GetStaticBox(), ID_REFRACT_IMAG, 1.2 ), 0, wxALL, 4 );
 
-		wxStaticBoxSizer *sizer3 = new wxStaticBoxSizer( wxVERTICAL, this, "Grating spacing coefficients" );		
-		const char *labels[4] = { "1st", "2nd", "3rd", "4th" };
-		wxFlexGridSizer *sizer4 = new wxFlexGridSizer(2 );
-		sizer4->AddGrowableCol(1);
-		for( int i=0;i<4;i++ )
-		{
-			sizer4->Add( new wxStaticText( sizer3->GetStaticBox(), wxID_ANY, labels[i] ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
-			sizer4->Add( m_gratingSpacing[i] = new wxNumericCtrl( sizer3->GetStaticBox(), ID_GRATING_SPACING, 1.1 + i*0.1 ) , 0, wxALL, 2 );
-			m_gratingSpacing[i]->Enable( false );
-		}
-		sizer3->Add( sizer4, 0, wxALL, 5 );
+		//wxStaticBoxSizer *sizer3 = new wxStaticBoxSizer( wxVERTICAL, this, "Grating spacing coefficients" );		
+		//const char *labels[4] = { "1st", "2nd", "3rd", "4th" };
+		//wxFlexGridSizer *sizer4 = new wxFlexGridSizer(2 );
+		//sizer4->AddGrowableCol(1);
+		//for( int i=0;i<4;i++ )
+		//{
+		//	sizer4->Add( new wxStaticText( sizer3->GetStaticBox(), wxID_ANY, labels[i] ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
+		//	sizer4->Add( m_gratingSpacing[i] = new wxNumericCtrl( sizer3->GetStaticBox(), ID_GRATING_SPACING, 1.1 + i*0.1 ) , 0, wxALL, 2 );
+		//	m_gratingSpacing[i]->Enable( false );
+		//}
+		//sizer3->Add( sizer4, 0, wxALL, 5 );
 
-		m_opticSurfNumber->Enable( false );
-		m_aperStopOrGrating->Enable( false );
-		m_diffractionOrder->Enable( false );
-		m_refractImag->Enable( false );
+		//m_opticSurfNumber->Enable( false );
+		//m_aperStopOrGrating->Enable( false );
+		//m_diffractionOrder->Enable( false );
+		//m_refractImag->Enable( false );
 
 
 		wxBoxSizer *r_sizer = new wxBoxSizer( wxVERTICAL );
 		r_sizer->Add( sizer1, 0, wxALL, 5 );
 		r_sizer->Add( sizer2, 0, wxALL, 5 );
-		r_sizer->Add( sizer3, 0, wxALL, 5 );
+		//r_sizer->Add( sizer3, 0, wxALL, 5 );
 
 
 		wxFlexGridSizer *l_sizer = new wxFlexGridSizer( 4 );
@@ -302,13 +304,13 @@ public:
 		m_editReflectivityTable->Enable( surf->UseReflectivityTable );
 		m_transmissivity->Enable(!surf->UseTransmissivityTable);
 		m_editTransmissivityTable->Enable(surf->UseTransmissivityTable);
-		m_opticSurfNumber->SetValue( surf->OpticalSurfaceNumber );
-		m_aperStopOrGrating->SetValue( surf->ApertureStopOrGratingType );
-		m_diffractionOrder->SetValue( surf->DiffractionOrder );
+		//m_opticSurfNumber->SetValue( surf->OpticalSurfaceNumber );
+		//m_aperStopOrGrating->SetValue( surf->ApertureStopOrGratingType );
+		//m_diffractionOrder->SetValue( surf->DiffractionOrder );
 		m_refractReal->SetValue( surf->RefractionIndexReal );
-		m_refractImag->SetValue( surf->RefractionIndexImag );
-		for( int i=0;i<4;i++ )
-			m_gratingSpacing[i]->SetValue( surf->GratingCoeffs[i] );
+		//m_refractImag->SetValue( surf->RefractionIndexImag );
+		//for( int i=0;i<4;i++ )
+		//	m_gratingSpacing[i]->SetValue( surf->GratingCoeffs[i] );
 		m_reflectivity->SetValue( surf->Reflectivity );
 		m_transmissivity->SetValue( surf->Transmissivity );
 		m_slopeError->SetValue( surf->RMSSlope );
@@ -344,15 +346,15 @@ public:
 
 		switch( evt.GetId() )
 		{
-		case ID_OPTIC_SURF_NUMBER: m_surf->OpticalSurfaceNumber = m_opticSurfNumber->AsInteger(); break;
-		case ID_APER_STOP_OR_GRATING: m_surf->ApertureStopOrGratingType = m_aperStopOrGrating->AsInteger(); break;
-		case ID_DIFFRACTION_ORDER: m_surf->DiffractionOrder = m_diffractionOrder->AsInteger(); break;
+		//case ID_OPTIC_SURF_NUMBER: m_surf->OpticalSurfaceNumber = m_opticSurfNumber->AsInteger(); break;
+		//case ID_APER_STOP_OR_GRATING: m_surf->ApertureStopOrGratingType = m_aperStopOrGrating->AsInteger(); break;
+		//case ID_DIFFRACTION_ORDER: m_surf->DiffractionOrder = m_diffractionOrder->AsInteger(); break;
 		case ID_REFRACT_REAL: m_surf->RefractionIndexReal = m_refractReal->Value(); break;
-		case ID_REFRACT_IMAG: m_surf->RefractionIndexImag = m_refractImag->Value(); break;
-		case ID_GRATING_SPACING:
-			for( i=0;i<4;i++ )
-				m_surf->GratingCoeffs[i] = m_gratingSpacing[i]->Value();
-			break;
+		//case ID_REFRACT_IMAG: m_surf->RefractionIndexImag = m_refractImag->Value(); break;
+		//case ID_GRATING_SPACING:
+		//	for( i=0;i<4;i++ )
+		//		m_surf->GratingCoeffs[i] = m_gratingSpacing[i]->Value();
+		//	break;
 		case ID_REFLECTIVITY: m_surf->Reflectivity = m_reflectivity->Value(); break;
 		case ID_TRANSMISSIVITY: m_surf->Transmissivity = m_transmissivity->Value(); break;
 		case ID_SLOPE_ERROR: m_surf->RMSSlope = m_slopeError->Value(); break;
