@@ -228,11 +228,27 @@ at intersection point of ray and surface. Path length is also computed.  From Sp
 
 	// wendelin 5-26-11 chose not use closed form solution for sphere.
 	// this solves for a full spheroid, but can build a full spheroid from two hemispheres with iterative solution
-	if ((Element->SurfaceType == 1) && (Element->SurfaceIndex == 's' || Element->SurfaceIndex == 'S')) //sphere
+	// JM 6/2023: Using closed form solution for sphere with single axis curvature aperture to avoid numerical problems caused by a bad starting point for Newton-Raphson (algorithm needs to start at a location with a defined z-location on the surface)
+	if ((Element->SurfaceType == 1 || Element->SurfaceType == 7) && (Element->SurfaceIndex == 's' || Element->SurfaceIndex == 'S')) //sphere or partial cylinder
 	{
 		QuadricSurfaceClosedForm(Element, PosLoc, CosLoc, PosXYZ, DFXYZ, PathLength, ErrorFlag);
 		return;
 	}
+
+	// JM 6/2023: Adding closed form solution for hyperboloids and hemi-ellipsoids
+	if ((Element->SurfaceType == 1) && (Element->SurfaceIndex == 'o' || Element->SurfaceIndex == 'O')) //hyperboloid or hemiellipsoid
+	{
+		QuadricSurfaceClosedForm(Element, PosLoc, CosLoc, PosXYZ, DFXYZ, PathLength, ErrorFlag);
+		return;
+	}
+
+	// JM 6/2023: Adding closed form solution for parabolas
+	if ((Element->SurfaceIndex == 'p' || Element->SurfaceIndex == 'P'))
+	{
+		QuadricSurfaceClosedForm(Element, PosLoc, CosLoc, PosXYZ, DFXYZ, PathLength, ErrorFlag);
+		return;
+	}
+
 	
 	if (Element->SurfaceType == 10) // torus
 	{
