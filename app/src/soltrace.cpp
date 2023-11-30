@@ -56,9 +56,9 @@
 #include <wx/stdpaths.h>
 #include <wx/busyinfo.h>
 
-#ifdef __WXMSW__
+//#ifdef __WXMSW__
 //#include <wex/mswfatal.h>
-#endif
+//#endif
 
 #include <wex/easycurl.h>
 #include <wex/metro.h>
@@ -420,6 +420,7 @@ bool MainWindow::CloseProject( bool force )
 
 
 	m_project.Sun.ResetToDefaults();
+	m_project.Trace_Settings.ResetToDefaults();
 	m_project.ClearOptics();
 	m_project.ClearStages();	
 	m_project.Results.FreeMemory();
@@ -545,6 +546,7 @@ void MainWindow::UpdateAllInputForms()
 	m_sunShapeForm->UpdateFromData();
 	m_opticsForm->UpdateList( 0 );
 	m_geometryForm->UpdateForm();
+	m_traceForm->UpdateFromData();
 }
 
 void MainWindow::UpdateResults()
