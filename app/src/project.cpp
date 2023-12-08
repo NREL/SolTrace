@@ -664,6 +664,10 @@ bool Project::Write(FILE *fp)
 
 	Trace_Settings.Write(fp);
 
+	fprintf(fp, "FLUX MAP SETTINGS LIST COUNT\t%d\n", (int)user_flux_map_settings.size());
+	for (size_t i = 0; i < user_flux_map_settings.size(); i++)
+		user_flux_map_settings[i]->Write(fp);
+
 	return true;
 }
 
@@ -675,6 +679,8 @@ bool Project::Read(FILE *fp)
 
 	char c = fgetc(fp);
 	bool include_trace_settings = false;
+	bool include_flux_map_settings = false;
+
 	if ( c == '#' )
 	{
 		/* 
@@ -696,8 +702,11 @@ bool Project::Read(FILE *fp)
 				return false;
 		}
 
-		if (vmaj < 2010 && vmaj >= 3 && vmin >= 3) // Trace settings added to output file at version 3.3.0
+		if (vmaj < 2010 && vmaj >= 3 && vmin >= 3) // Trace settings and flux_map_settings added to output file at version 3.3.0
+		{
 			include_trace_settings = true;
+			include_flux_map_settings = true;
+		}
 	}
 	else
 	{
@@ -745,6 +754,25 @@ bool Project::Read(FILE *fp)
 	}
 	else
 		Trace_Settings.ResetToDefaults();
+
+	user_flux_map_settings.clear();
+	if (include_flux_map_settings)
+	{
+		count = 0;
+		read_line(buf, 1023, fp); sscanf(buf, "FLUX MAP SETTINGS LIST COUNT\t%d", &count);
+		for (int i = 0; i < count; i++)
+		{
+			FluxMapSettings *flux_map_settings = new FluxMapSettings;
+			if (!flux_map_settings->Read(fp))
+			{
+				ok = false;
+				delete flux_map_settings;
+			}
+			else
+				user_flux_map_settings.push_back(flux_map_settings);
+		}
+
+	}
 
 
 	return ok;
@@ -1481,5 +1509,34 @@ bool TraceSettings::Read(FILE* fp)
 	}
 	else
 		ResetToDefaults();
+	return true;
+}
+
+bool FluxMapSettings::Write(FILE* fp)
+{
+	if (!fp) return false;
+	fprintf(fp,
+		"%d\t%d\t%d\t%d\t%d\t%d\t%d\t%lg\t%lg\t%lg\t%lg\t%lg\n",
+		stage_id, elem_id, n_bins_x, n_bins_y, n_contour_levels, is_autoscale ? 1 : 0, is_final_only ? 1 : 0, dni, x_min, x_max, y_min, y_max
+	);
+	return true;
+}
+
+bool FluxMapSettings::Read(FILE* fp)
+{
+	if (!fp) return false;
+
+	char buf[1024];
+	int as, fo;
+
+	read_line(buf, 1023, fp);
+
+	int n = sscanf(buf, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%lg\t%lg\t%lg\t%lg\t%lg",
+						&stage_id, &elem_id, &n_bins_x, &n_bins_y, &n_contour_levels, &as, &fo, &dni, &x_min, &x_max, &y_min, &y_max);
+	if (n != 12)
+		return false;
+
+	is_autoscale = (as == 1);
+	is_final_only = (fo == 1);
 	return true;
 }

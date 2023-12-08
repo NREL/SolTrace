@@ -211,6 +211,25 @@ public:
 	bool is_point_focus;
 };
 
+class FluxMapSettings
+{
+public:
+	bool Write(FILE* fp);
+	bool Read(FILE* fp);
+
+	int stage_id;
+	int elem_id;
+	int n_bins_x;
+	int n_bins_y;
+	int n_contour_levels;
+	bool is_autoscale;
+	bool is_final_only;
+	double dni;
+	double x_min;
+	double y_min;
+	double x_max;
+	double y_max;
+};
 
 class Project;
 
@@ -268,6 +287,7 @@ public:
 	std::vector<Optical*> OpticsList;
 	std::vector<Stage*> StageList;
 	TraceSettings Trace_Settings;
+	std::vector<FluxMapSettings*> user_flux_map_settings;
 
 	RayData Results;
 

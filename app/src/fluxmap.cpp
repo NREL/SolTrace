@@ -68,7 +68,8 @@ enum{ ID_ELEMENT_LIST = wxID_HIGHEST+198,
 	ID_DNI, ID_FINAL_ONLY,
 	ID_CONTOUR_LEVELS,
 	ID_COLOR_SCHEME,
-	ID_EXPORT_TECPLOT
+	ID_EXPORT_TECPLOT,
+	ID_SAVE_SETTINGS
 };
 
 BEGIN_EVENT_TABLE( FluxMapForm, wxPanel )
@@ -85,6 +86,7 @@ BEGIN_EVENT_TABLE( FluxMapForm, wxPanel )
 	EVT_CHECKBOX( ID_FINAL_ONLY, FluxMapForm::OnCommand )
 	EVT_BUTTON( ID_EXPORT_TECPLOT, FluxMapForm::OnCommand )
 	EVT_CHOICE( ID_COLOR_SCHEME, FluxMapForm::OnCommand )
+	EVT_CHECKBOX(ID_SAVE_SETTINGS, FluxMapForm::OnCommand)
 END_EVENT_TABLE()
 
 FluxMapForm::FluxMapForm( wxWindow *parent, Project &p )
@@ -132,6 +134,9 @@ FluxMapForm::FluxMapForm( wxWindow *parent, Project &p )
 	sizer2->Add( m_colorScheme = new wxChoice( this, ID_COLOR_SCHEME, wxDefaultPosition, wxDefaultSize, schemes ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 	m_colorScheme->SetSelection( 1 );
 
+	sizer2->Add(m_save_settings = new wxCheckBox(this, ID_SAVE_SETTINGS, "Save settings"), 0, wxALIGN_CENTER_VERTICAL | wxALL, 2);
+
+
 	wxBoxSizer *sizer_left = new wxBoxSizer( wxVERTICAL );
 	sizer_left->Add( new wxStaticText( this, wxID_ANY, "Available elements (flat or cylindrical):" ), 0, wxALL, 2 );
 	sizer_left->Add( m_elementList, 1, wxALL|wxEXPAND, 0 );
@@ -160,6 +165,7 @@ FluxMapForm::FluxMapForm( wxWindow *parent, Project &p )
 	m_maxX->Enable( false );
 	m_minY->Enable( false );
 	m_maxY->Enable( false );
+	m_save_settings->SetValue(false);
 }
 
 FluxMapForm::~FluxMapForm()
@@ -342,8 +348,112 @@ void FluxMapForm::UpdatePlot()
 	m_plot->Refresh();
 }
 
+
+
+int FluxMapForm::FindOptions()
+{
+	int stageIdx = -1, elementIdx = -1;
+	char surfIdx = '0';
+	GetCurrentSelection(&stageIdx, &elementIdx, &surfIdx);
+	if (stageIdx < 0 || elementIdx < 0)
+		return -1;
+
+	int n = m_prj.user_flux_map_settings.size();
+	int idx = -1;
+	for (int j = 0; j < n; j++)
+	{
+		if (m_prj.user_flux_map_settings[j]->stage_id == stageIdx && m_prj.user_flux_map_settings[j]->elem_id == elementIdx)
+		{
+			idx = j;
+			break;
+		}
+	}
+	return idx;
+}
+
+// Set options for the currently selected element from options stored in the project settings.
+// If no options are stored for this element, the values will not change from the previously flux profiles
+void FluxMapForm::SetOptions()
+{
+	int stageIdx = -1, elementIdx = -1;
+	char surfIdx = '0';
+	GetCurrentSelection(&stageIdx, &elementIdx, &surfIdx);
+	if (stageIdx < 0 || elementIdx < 0)
+		return;
+
+	int idx = FindOptions();
+	if (idx >= 0)
+	{
+		m_numXBins->SetValue(m_prj.user_flux_map_settings[idx]->n_bins_x);
+		m_numYBins->SetValue(m_prj.user_flux_map_settings[idx]->n_bins_y);
+		m_contourLevels->SetValue(m_prj.user_flux_map_settings[idx]->n_contour_levels);
+		m_autoExtents->SetValue(m_prj.user_flux_map_settings[idx]->is_autoscale);
+		m_finalOnly->SetValue(m_prj.user_flux_map_settings[idx]->is_final_only);
+		m_dni->SetValue(m_prj.user_flux_map_settings[idx]->dni);
+		m_minX->SetValue(m_prj.user_flux_map_settings[idx]->x_min);
+		m_maxX->SetValue(m_prj.user_flux_map_settings[idx]->x_max);
+		m_minY->SetValue(m_prj.user_flux_map_settings[idx]->y_min);
+		m_maxY->SetValue(m_prj.user_flux_map_settings[idx]->y_max);
+		m_save_settings->SetValue(true);
+
+		m_minX->Enable(!m_autoExtents->GetValue());
+		m_maxX->Enable(!m_autoExtents->GetValue());
+		m_minY->Enable(!m_autoExtents->GetValue());
+		m_maxY->Enable(!m_autoExtents->GetValue());
+	}
+	else
+	{
+		m_save_settings->SetValue(false);
+	}
+	return;
+}
+
+// Update flux settings in project from current form data
+void FluxMapForm::UpdateFluxSettings()
+{
+	int stageIdx = -1, elementIdx = -1;
+	char surfIdx = '0';
+	GetCurrentSelection(&stageIdx, &elementIdx, &surfIdx);
+	if (stageIdx < 0 || elementIdx < 0)
+		return;
+
+	int idx = FindOptions();
+	if (m_save_settings->GetValue())
+	{
+		// Get current settings for this element
+		FluxMapSettings* elem_settings = new FluxMapSettings;
+		elem_settings->stage_id = stageIdx;
+		elem_settings->elem_id = elementIdx;
+		elem_settings->n_bins_x = m_numXBins->AsInteger();
+		elem_settings->n_bins_y = m_numYBins->AsInteger();
+		elem_settings->n_contour_levels = m_contourLevels->AsInteger();
+		elem_settings->is_autoscale = m_autoExtents->GetValue();
+		elem_settings->is_final_only = m_finalOnly->GetValue();
+		elem_settings->dni = m_dni->Value();
+		elem_settings->x_min = m_minX->Value();
+		elem_settings->x_max = m_maxX->Value();
+		elem_settings->y_min = m_minY->Value();
+		elem_settings->y_max = m_maxY->Value();
+
+		if (idx < 0)
+			m_prj.user_flux_map_settings.push_back(elem_settings);
+		else
+			m_prj.user_flux_map_settings[idx] = elem_settings;
+	}
+	else if (idx >= 0)  // Remove currently stored settings  
+	{
+		m_prj.user_flux_map_settings.erase(m_prj.user_flux_map_settings.begin() + idx);
+	}
+	return;
+}
+
+
 void FluxMapForm::OnCommand( wxCommandEvent &evt )
 {
+	int stageIdx = -1, elementIdx = -1;
+	int idx;
+	char surfIdx = '0';
+
 	switch( evt.GetId() )
 	{
 	case ID_AUTO_EXTENT:
@@ -362,7 +472,9 @@ void FluxMapForm::OnCommand( wxCommandEvent &evt )
 	case ID_MAX_Y:
 	case ID_FINAL_ONLY:
 	case ID_COLOR_SCHEME:
+	case ID_SAVE_SETTINGS:
 		UpdatePlot();
+		UpdateFluxSettings();
 		break;
 
 	case ID_ELEMENT_LIST:
@@ -375,6 +487,7 @@ void FluxMapForm::OnCommand( wxCommandEvent &evt )
 				m_elementList->ClearSelections();
 				m_elementList->Select( s, e, !sel );
 				m_elementList->Refresh();
+				SetOptions();
 				UpdatePlot();
 			}
 		}
@@ -383,6 +496,7 @@ void FluxMapForm::OnCommand( wxCommandEvent &evt )
 	case ID_EXPORT_TECPLOT:
 		WriteTecFlx();
 		break;
+
 	}
 }
 

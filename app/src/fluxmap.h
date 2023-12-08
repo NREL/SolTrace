@@ -80,11 +80,15 @@ private:
 	wxStaticText *m_summary;
 	wxNumericCtrl *m_contourLevels;
 	wxChoice *m_colorScheme;
+	wxCheckBox* m_save_settings;
 
 	void OnCommand( wxCommandEvent & );
 
 	void WriteTecFlx();
 	void GetCurrentSelection( int *stage, int *element, char *surfidx = 0 );
+	int FindOptions();
+	void SetOptions();
+	void UpdateFluxSettings();
 
 	DECLARE_EVENT_TABLE();
 };
