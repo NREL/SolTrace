@@ -71,6 +71,8 @@ class TraceForm : public wxPanel
 public:
 	TraceForm( wxWindow *parent, Project &m_prj );
 
+	void UpdateFromData();
+
 	void SetOptions( size_t nrays, size_t nmaxsunrays, int ncpu, int seed,
 		bool sunshape, bool opterr, bool aspowertower );
 	void GetOptions( size_t *nrays, size_t *nmaxsunrays, int *ncpu, int *seed,

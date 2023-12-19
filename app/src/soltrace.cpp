@@ -56,9 +56,9 @@
 #include <wx/stdpaths.h>
 #include <wx/busyinfo.h>
 
-#ifdef __WXMSW__
-#include <wex/mswfatal.h>
-#endif
+//#ifdef __WXMSW__
+//#include <wex/mswfatal.h>
+//#endif
 
 #include <wex/easycurl.h>
 #include <wex/metro.h>
@@ -144,9 +144,9 @@ class MyApp : public wxApp
 public:
 	virtual void OnFatalException()
 	{
-#ifdef __WXMSW__
-		wxMSWHandleApplicationFatalException();
-#endif
+//#ifdef __WXMSW__
+//		wxMSWHandleApplicationFatalException();
+//#endif
 	}
 
 	virtual bool OnInit()
@@ -158,11 +158,11 @@ public:
 
 		bool is64 = (sizeof(void*) == 8);
 
-#ifdef __WXMSW__
-		wxMSWSetupExceptionHandler( "SolTrace", 
-			wxString::Format("%d.%d.%d (%d bit)", version_major, version_minor, version_micro, is64 ? 64 : 32 ), 
-			"soltrace.support@nrel.gov" );
-#endif
+//#ifdef __WXMSW__
+//		wxMSWSetupExceptionHandler( "SolTrace", 
+//			wxString::Format("%d.%d.%d (%d bit)", version_major, version_minor, version_micro, is64 ? 64 : 32 ), 
+//			"soltrace.support@nrel.gov" );
+//#endif
 		
 		wxEasyCurl::Initialize();
 
@@ -420,6 +420,7 @@ bool MainWindow::CloseProject( bool force )
 
 
 	m_project.Sun.ResetToDefaults();
+	m_project.Trace_Settings.ResetToDefaults();
 	m_project.ClearOptics();
 	m_project.ClearStages();	
 	m_project.Results.FreeMemory();
@@ -545,6 +546,7 @@ void MainWindow::UpdateAllInputForms()
 	m_sunShapeForm->UpdateFromData();
 	m_opticsForm->UpdateList( 0 );
 	m_geometryForm->UpdateForm();
+	m_traceForm->UpdateFromData();
 }
 
 void MainWindow::UpdateResults()
