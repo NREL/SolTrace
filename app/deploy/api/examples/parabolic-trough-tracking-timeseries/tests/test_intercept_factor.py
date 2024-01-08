@@ -1,5 +1,6 @@
 import sys
-sys.path.insert(0, '/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/')
+sys.path.append('../')
+sys.path.append('../../../')
 import numpy as np
 from st_processing_functions import *
 from run_pysoltrace_iterate import *
@@ -28,7 +29,7 @@ def test_answer():
     optics_type = 'ideal' # 'yang' 'realistic' # 'ideal'
     plot_rays = False
     save_pickle = False
-    number_hits = 1e6 # 1e6 
+    number_hits = 1e6 # 1e6 # 1e6 
 
     results, df = run_soltrace_iterate(error_angles, lat, lon, altitude,  
                                    tracker_angle_input, sensorlocs, module_length, 

@@ -299,6 +299,7 @@ __pycache__/
 *.lib
 *.dll
 *.d
+*.dylib
 *.bin
 *.mod
 

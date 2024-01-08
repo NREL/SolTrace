@@ -1,5 +1,6 @@
 import sys
-sys.path.insert(0, '/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/')
+sys.path.append('../')
+sys.path.append('../../../')
 import numpy as np
 import pandas as pd
 from st_processing_functions import *

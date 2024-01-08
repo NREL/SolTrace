@@ -5,8 +5,6 @@ Created on Tue Jul 25 09:24:15 2023
 
 @author: bstanisl
 """
-# import os
-# os.chdir('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/')
 import sys
 sys.path.insert(0, '../../')
 
