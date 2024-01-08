@@ -5,18 +5,21 @@ Created on Tue Jul 25 09:24:15 2023
 
 @author: bstanisl
 """
-import os
-os.chdir('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/')
+# import os
+# os.chdir('/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/s_SolTrace_gitclone_10_31_23/SolTrace/app/deploy/api/')
+import sys
+sys.path.insert(0, '../../')
+
 import glob
 from pysoltrace import PySolTrace, Point
 import pandas as pd
 import matplotlib.pyplot as plt
-from pvlib import solarposition, tracking
+# from pvlib import solarposition, tracking
 import numpy as np
 import math
 import time
 import pickle
-import plotly.graph_objects as go
+# import plotly.graph_objects as go
 import plotly.io as io
 io.renderers.default='browser'
 
