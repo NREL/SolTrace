@@ -123,7 +123,7 @@ void SurfaceZatXYPair(
 		//wendelin 5-18-11
 		// *FXYZ = Element->VertexCurvX*Rho2/(1.0+sqrt(1.0-Element->Kappa*Element->VertexCurvX*Element->VertexCurvX*Rho2));
 		*FXYZ = (Element->VertexCurvX*X*X+Element->VertexCurvY*Y*Y)
-				/ (1.0+sqrt(1.0-Element->Kappa*(Element->VertexCurvX*Element->VertexCurvX*X*X+Element->VertexCurvY*Y*Y)));
+				/ (1.0+sqrt(1.0-Element->Kappa*(Element->VertexCurvX*Element->VertexCurvX*X*X+Element->VertexCurvY*Element->VertexCurvY*Y*Y)));
 
 /*        for (i=0;i<5;i++)
              if (Element->Alpha[i] != 0.0) goto Label_130;

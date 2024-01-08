@@ -662,6 +662,8 @@ bool Project::Write(FILE *fp)
 	for (size_t i=0;i<StageList.size();i++)
 		StageList[i]->Write( fp );
 
+	Trace_Settings.Write(fp);
+
 	return true;
 }
 
@@ -672,6 +674,7 @@ bool Project::Read(FILE *fp)
 	char buf[1024];
 
 	char c = fgetc(fp);
+	bool include_trace_settings = false;
 	if ( c == '#' )
 	{
 		/* 
@@ -692,6 +695,9 @@ bool Project::Read(FILE *fp)
 			if (file_version > cur_version || version_major != vmaj)
 				return false;
 		}
+
+		if (vmaj < 2010 && vmaj >= 3 && vmin >= 3) // Trace settings added to output file at version 3.3.0
+			include_trace_settings = true;
 	}
 	else
 	{
@@ -732,6 +738,14 @@ bool Project::Read(FILE *fp)
 		else
 			StageList.push_back(stage);
 	}
+
+	if (include_trace_settings)
+	{
+		if (!Trace_Settings.Read(fp)) return false;
+	}
+	else
+		Trace_Settings.ResetToDefaults();
+
 
 	return ok;
 }
@@ -1421,3 +1435,51 @@ void ElementStatistics::BinRaysXY( Element *elm,
 	}
 }
 
+
+TraceSettings::TraceSettings()
+{
+	ResetToDefaults();
+}
+
+void TraceSettings::ResetToDefaults()
+{
+	n_rays = 10000;
+	n_rays_sun = 100000;
+	n_cpu = 16;
+	seed = 123;
+	is_include_sunshape = false;
+	is_include_errors = false;
+	is_point_focus = false;
+}
+
+bool TraceSettings::Write(FILE* fp)
+{
+	if (!fp) return false;
+
+	fprintf(fp, "TRACE\tNRAY\t%d\tNSUN\t%d\tCPU\t%d\tSEED\t%d\tSUNSHAPE\t%d\tERRORS\t%d\tPTFOCUS\t%d\n",
+		n_rays, n_rays_sun, n_cpu, seed, is_include_sunshape ? 1 : 0, is_include_errors ? 1 : 0, is_point_focus ? 1 : 0);
+	return true;
+}
+
+bool TraceSettings::Read(FILE* fp)
+{
+	if (!fp) return false;
+
+	char buf[1024];
+	int ss, err, pf;
+
+	read_line(buf, 1023, fp);
+	
+	int n = sscanf(buf, "TRACE\tNRAY\t%d\tNSUN\t%d\tCPU\t%d\tSEED\t%d\tSUNSHAPE\t%d\tERRORS\t%d\tPTFOCUS\t%d",
+						&n_rays, &n_rays_sun, &n_cpu, &seed, &ss, &err, &pf);
+	
+	if (n == 7)
+	{
+		is_include_sunshape = (ss == 1);
+		is_include_errors = (err == 1);
+		is_point_focus = (pf == 1);
+	}
+	else
+		ResetToDefaults();
+	return true;
+}
