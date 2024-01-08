@@ -20,20 +20,8 @@ import plotly.io as io
 from scipy import interpolate
 from os.path import exists
 import pickle
-# from scipy import stats as st
-# from field_postprocessing_functions import assign_Color
-
 io.renderers.default='browser'
 
-def assign_Color(x):
-    if x in 'Spring':
-       return 'green'
-    if x in 'Summer':
-       return 'red'
-    if x in 'Fall':
-       return 'orange'
-    else :
-       return 'blue'
 
 def set_optics_props(optics_type):
     if optics_type == 'realistic':
@@ -172,23 +160,8 @@ def create_xy_mesh_cyl(d,l,nx,ny):
     return Xc,Yc,x,y,dx,dy
 
 def create_polar_mesh_cyl(d,l,nx,ny):
-    # global dx
-    # global dy
-    # creates mesh of unrolled cylinder surface
-    # xmin = -0.11215496988813
-    # xmax = 0.11215496988813
-    # ymin = -5.099999
-    # ymax = 5.099999
-    # x = np.linspace(xmin, xmax, nx)
-    # y = np.linspace(ymin, ymax, ny)
-    # dx = x[1]-x[0]
     
     circumf = math.pi*d
-    # assuming x and y marks the center of the cell on the absorber tube
-    # x = np.linspace(-circumf/2.,circumf/2., nx)
-    # y = np.linspace(-l/2., l/2., ny)
-    # dx = circumf/nx
-    # dy = y[1]-y[0]
     
     # assuming x and y mark the edges of the cells on the absorber tube
     # and also ensures that all the cell sizes are the same (important for same anode in heat flux calc)
@@ -236,17 +209,11 @@ def convert_xy_polar_coords(d,x,zloc,focal_len,gui_coords=False):
     else:
         z = zloc - focal_len + d/2. #reset height of tube to z=0
         cpos = r * np.arctan2(x,(r-z))
-    #print('size of cpos = {}'.format(np.shape(cpos)))
-    #print(cpos)
-    #print(cpos.values)
-    #print('c_pos = r * atan(x/(r-z))) = ')
-    #print('{} = {} * atan({}/{})'.format(cpos.values[0],r,x.values[0],r-z.values[0]))
     return cpos
 
 def generate_receiver_dataframe(df,d_rec,focal_len):
     # copied from lines 74+ in https://github.com/NREL/SolarPILOT/blob/develop/deploy/api/test_solarpilot_soltrace.py
     # assumes that receiver is last stage
-    #df_rec = df[df.stage==2] # just receiver stage
     df_rec = df[df.stage==df.stage.unique()[-1]] # just receiver stage
     df_rec = df_rec[df_rec.element<0]  #absorbed rays should be negative? - shouldn't all rays be absorbed?
     df_rec['ypos'] = df_rec.loc_y
@@ -264,8 +231,6 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
 
     # count flux at receiver
     for ind,ray in df_rec.iterrows():
-        # i = int(np.where(np.abs(x - ray.loc_x) < tol)[0])
-        # j = int(np.where(np.abs(y - ray.loc_y) < tol)[0])
         # choose index of closest location to coordinates
         i = np.argmin(np.abs(x - ray.cpos)) 
         j = np.argmin(np.abs(y - ray.ypos)) 
@@ -281,17 +246,12 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
         fig, axs = plt.subplots(1,2,figsize=[6,4],dpi=250)
         
         flux_centerline = np.array(flux_st[:,int(ny/2)])
-        # plt.figure(figsize=[3,4],dpi=250)
         axs[0].plot(x, flux_centerline, 'k.-') #, vmin=240, vmax=420)
         # axs[0].set_title(f"max flux {flux_st.max():.2f} kW/m2, mean flux {flux_st.mean():.1f}")
         axs[0].set_xlabel('x [m]')
         axs[0].set_ylabel('flux at y=0 [kW/m2]')
-        # plt.savefig('flux-line.png')
-        # plt.show()
 
         #% contour plot
-        # plt.figure(figsize=[6,4],dpi=250)
-        # cf = axs[1].contourf(Xc, Yc, flux_st, levels=15, cmap='viridis') #, vmin=240, vmax=420)
         cf = axs[1].pcolormesh(Xc, Yc, flux_st, cmap='viridis') #, vmin=240, vmax=420)
         fig.colorbar(cf, ax=axs[1], label='flux [kW/m2]')
         axs[1].set_title(f"pysoltrace: \n max flux {flux_st.max():.2f} kW/m2, mean flux {flux_st.mean():.2f}")
@@ -304,17 +264,13 @@ def compute_fluxmap(PTppr,df_rec,d_rec,l_c,nx,ny,plotflag=False):
     return flux_st, c_v
 
 def compute_fluxmap_solarpilot(PTppr, dfr, d_rec, focal_len, nx, ny):
-    # dfr = df[df.stage==df.stage.unique()[-1]] # just receiver stage
-    # dfr = dfr[dfr.element<0]  #absorbed rays should be negative? - shouldn't all rays be absorbed?
-    
+
     dfr['ypos'] = dfr.loc_y
     dfr['cpos'] = convert_xy_polar_coords(d_rec,dfr.loc_x,dfr.loc_z,focal_len,gui_coords=True)
     
     Xc,Yc,x,y,dx,dy,psi = create_polar_mesh_cyl(d_rec,focal_len,nx,ny)
 
     flux_st = np.zeros((ny,nx))
-    # dx = d_rec*np.pi / nx 
-    # dy = h_rec / ny
     anode = dx*dy
     ppr = PTppr / anode *1e-3
 
@@ -331,12 +287,8 @@ def compute_fluxmap_gui(PTppr, dfr, l_c, r, focal_len, nbinsx, nbinsy):
     # adapted to python from SolTrace https://github.com/NREL/SolTrace/blob/47b7abd41d281589700ab6199263df53183086f0/app/src/project.cpp#L1226
     
     # is partical cylinder
-    # ZVal = r
-    # x = Radius * asin(x / r);
     dfr['ypos'] = dfr.loc_y
     dfr['cpos'] = convert_xy_polar_coords(d_rec,dfr.loc_x,dfr.loc_z,focal_len,gui_coords=True)
-        
-    # r = d_rec/2.
     
     minx = -math.pi*r
     maxx = math.pi*r
@@ -374,11 +326,6 @@ def compute_fluxmap_gui(PTppr, dfr, l_c, r, focal_len, nbinsx, nbinsy):
     
     return fluxGrid
     
-    # for i in range(nbinsx):
-    #     for j in range(nbinsy):
-    #         z = fluxGrid[i,j]*zscale
-    #         SumFlux = SumFlux + z
-
 def plot_sun_trough_deviation_angles(fulldata, sensorloc, adj_flag = True):
     fig, axs = plt.subplots(3,1,figsize=[9,7],dpi=250,sharex=True)
 
@@ -429,26 +376,6 @@ def plot_stats_deviation(track_error_stats, critical_angle_error=0.79):
     plt.show()
 
 def plot_stats_intercept_factor(results):
-    # rows = inputdata.index.unique(level=0).values
-    # sensorlocs = inputdata.index.unique(level=1).values
-    # fig,axs = plt.subplots(1,3,sharey=True,figsize=[9,3],dpi=250)
-    # for ax,sinputloc in zip(axs.ravel(),sensor_locs):
-    #     rows = inputdata.index.unique(level=0).values
-    #     ys = inputdata.loc[(rows,sinputloc),'absmean']
-    #     stds = inputdata.loc[(rows,sinputloc),'absstd']
-    #     ax.plot(rows, ys,'.-', label='$\overline{\epsilon}$')
-    #     ax.fill_between(rows, ys-stds, ys+stds, color='C0', alpha=0.4, label='$\overline{\epsilon} + \sigma$')
-    #     ax.fill_between(rows, ys-2*stds, ys+2*stds, color='C0', alpha=0.2, label='$\overline{\epsilon} + 2\sigma$')
-    #     ax.plot(rows, track_error_stats.loc[(rows,sinputloc),'absmax'], 'k.', label='peak')
-    #     # ax.plot(rows, track_error_stats.loc[(rows,sloc),'absmin'], 'k.', label='')
-    #     ax.axhline(critical_angle_error, color='0.6', label='critical $\epsilon$')
-    #     ax.axhline(0, color='0.5', linestyle=':')
-    #     ax.set_xlabel('row')
-    #     ax.set_title(sinputloc)
-    
-    # axs[-1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=10)
-    # axs[0].set_ylabel('|trough angle deviation| ($\epsilon$) [deg]')
-    
     resultsdf = results[list(results.keys())[0]]
     rows = resultsdf.index.unique(level=0).values
     sensorlocs = resultsdf.index.unique(level=1).values
@@ -474,69 +401,6 @@ def plot_stats_intercept_factor(results):
     axs[0].set_ylabel('intercept factor ($\gamma$)')
     plt.show()
 
-def plot_diurnal_cycle_optical_performance(mediandf, resultsdf, critical_angle_error):
-    # from "char" mode of running SolTrace
-    
-    # merge dataframes
-    combineddf = mediandf.merge(resultsdf, how='outer', left_index=True, right_index=True)
-    # replace intercept factor values
-    combineddf.loc[combineddf.trough_angle_dev > 1.5, 'intercept_factor'] = 0
-    
-    # get nominal value from wintertime nominal cycle
-    nomfn = '/Users/bstanisl/Documents/seto-csp-project/SolTrace/SolTrace/app/deploy/api/nominal_3_5_1E+05hits_realistic_optics.p'
-    if exists(nomfn):
-        tmp = pickle.load(open(nomfn,'rb'))
-        nominaldf = tmp[1]['nominal']
-    nominaldf['time'] = nominaldf.index.tz_localize('UTC').tz_convert('US/Pacific')
-    nominaldf['time'] = nominaldf.time.dt.hour + nominaldf.time.dt.minute/60.
-
-    f = interpolate.interp1d(nominaldf.time, nominaldf.intercept_factor, bounds_error=False, fill_value = nominaldf.intercept_factor.max())
-    combineddf.loc[combineddf.trough_angle_dev < critical_angle_error, 'intercept_factor'] = f(combineddf.loc[combineddf.trough_angle_dev < critical_angle_error].index)
-
-    # plotting
-    plt.rcParams.update({'font.size': 14})
-    markers = ['.','x','+']
-    propcolors = ['orange','green','blue']
-    colorsdict = {}
-    for n,season in enumerate(combineddf.season.unique()):
-        colorsdict[season] = propcolors[n]
-        
-    markersdict = {}
-    for n,sensor in enumerate(combineddf.sensor.unique()):
-        markersdict[sensor] = markers[n]
-        
-        
-    tilt_col_list = combineddf.sensor.unique()
-    
-    fig,axs = plt.subplots(2, 1, dpi=250, sharex=True, figsize=[12,5])
-    for season, d1 in combineddf.groupby('season'):
-        # print(season)
-        for sensor, d in d1.groupby('sensor'):
-            axs[0].plot(d.trough_angle_dev, linestyle='', color=colorsdict[season], marker = markersdict[sensor]) #, label=column[:6])
-            axs[1].plot(d.intercept_factor, linestyle='', color=colorsdict[season], marker = markersdict[sensor]) #, label=column[-6:])
-    axs[0].axhline(critical_angle_error, color='k', label='critical angle \n deviation')
-
-    # axs[0].set_ylabel('wind speed at 7m \n [m/s]')      
-    # axs[1].set_ylabel('wind dir at 7m \n [deg]')      
-    # axs[2].set_ylabel('nom trough angle \n [deg]')
-    #axs[2].set_ylabel('{} trough angle \n [deg]'.format(srow))
-    axs[0].set_ylabel('abs. val. trough \n angle deviation [deg]')
-    axs[1].set_ylabel('intercept factor')
-
-    axs[0].set_ylim([0, 1.4])
-
-    axs[0].plot(np.nan, np.nan, label='spring', color='green')
-    axs[0].plot(np.nan, np.nan, label='summer', color='red')
-    axs[0].plot(np.nan, np.nan, label='fall', color='orange')
-    axs[0].plot(np.nan, np.nan, label='winter', color='blue')
-
-    for n,column in enumerate(tilt_col_list):
-        axs[0].plot(np.nan, np.nan, label=column[:6], color = 'k', marker=markers[n], linewidth=0)
-        axs[1].plot(np.nan, np.nan, label=column[:6], color = 'k', marker=markers[n], linewidth=0)
-
-    axs[0].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
-    axs[1].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
-    plt.show()
 
 def plot_time_series(solpos, intercept_factor, flux_centerline_time, c_v, x):
     fig, axs = plt.subplots(4,1,figsize=[9,7],dpi=250)
@@ -624,10 +488,6 @@ def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
     fig.colorbar(cf2, ax=axs['E'], label='flux at y=0', extend='both')
      
     fluxcntr = np.stack(outputsdf.flux_centerline.values).T
-    # print('inner function')
-    # print('inputsdf.index = ',inputsdf.index)
-    # print('x = ',x)
-    # print('fluxcntr = ',fluxcntr)
     cf = axs['F'].contourf(inputsdf.index, x, fluxcntr, levels=levels, 
                            cmap='turbo')
     axs['F'].set_ylabel('x [m]')
@@ -641,9 +501,6 @@ def plot_time_series_compare(nominaldf, inputsdf, outputsdf, x, sensorloc):
     plt.show()
 
 def plot_time_series_compare_nominal(results, x):
-    # nom trough angle
-    # intercept factor
-    # flux map
     resultsdf = results['nominal']
     
     fig, axs = plt.subplots(3,1,figsize=[8,8],dpi=250)
@@ -667,74 +524,6 @@ def plot_time_series_compare_nominal(results, x):
     fig.colorbar(cf2, ax=axs[2], label='flux at y=0', extend='both')
      
     
-    # axs['A'].plot(inputsdf.apparent_elevation,'k.:')
-    # axs['A'].set_ylabel('sun elev. angle [deg]')
-    # axs['A'].set_title(sensorloc)
-    
-    # axs['A'].plot(inputsdf.nom_trough_angle, 'k.-', label='nominal')
-    # if sensorloc == 'validation':
-    #     axs['A'].plot(inputsdf.trough_angle, '.-', label='actual')
-    # else:
-    #     devkey = [col for col in inputsdf.filter(regex='Tilt$').columns if sensorloc in col][0]
-    #     axs['A'].plot(inputsdf[devkey],'.', label=sensorloc)
-    # axs['A'].set_ylabel('trough angle [deg]')
-    
-    # if sensorloc == 'validation':
-    #     axs['B'].plot(inputsdf.trough_angle_dev, '.-')
-    # else:
-    #     # devkey = [col for col in inputsdf.filter(regex='trough_angle_dev').columns if sensorloc in col]
-    #     track_error = inputsdf[devkey] - inputsdf['nom_trough_angle']
-    #     axs['B'].plot(track_error,'.-')
-    # axs['B'].set_ylabel('trough angle \n deviation [deg]')
-
-    # if sensorloc == 'validation':
-    #     axs['C'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
-    #     axs['C'].plot(outputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
-    # else:  
-    #     axs['C'].plot(nominaldf.index, nominaldf.intercept_factor, 'k.-', label='nominal')
-    #     axs['C'].plot(inputsdf.index, outputsdf.intercept_factor, '.-', label=sensorloc)
-    # axs['C'].set_ylabel('intercept factor')
-    # axs['C'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
-    #                  format(nominaldf.intercept_factor.mean(),
-    #                         np.mean(outputsdf.intercept_factor)))
-    # ymax = np.maximum(1., np.max(outputsdf.intercept_factor))
-    # axs['C'].set_ylim([0, ymax])
-    # axs['C'].legend()
-    
-    # if sensorloc == 'validation':
-    #     # axs['D'].plot(inputsdf.index, np.ones((len(inputsdf.index))), 'k.-', label='nominal')
-    #     axs['D'].plot(outputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
-    # else: 
-    #     axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
-    #     axs['D'].plot(inputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
-    # axs['D'].set_ylabel('coeff of variation')
-    # axs['D'].set_title('nominal avg = {:2f}, actual avg = {:2f}'.
-    #                  format(nominaldf.coeff_var.mean(),
-    #                         np.mean(outputsdf.coeff_var)))
-    # axs['D'].set_ylim([1, 6])
-    # axs['D'].legend()
-    
-    # vmin = 0.0
-    # vmax = np.max(list(outputsdf.flux_centerline.values))
-    # levels = np.linspace(vmin,vmax,100)
-    
-    # fluxcntr2 = np.stack(nominaldf.flux_centerline.values).T
-    # cf2 = axs['E'].contourf(nominaldf.index, x, fluxcntr2, 
-    #                         levels=levels, cmap='turbo')
-    # axs['E'].set_ylabel('x [m]')
-    # axs['E'].set_title('nominal')
-    # fig.colorbar(cf2, ax=axs['E'], label='flux at y=0', extend='both')
-     
-    # fluxcntr = np.stack(outputsdf.flux_centerline.values).T
-    # cf = axs['F'].contourf(inputsdf.index, x, fluxcntr, levels=levels, 
-    #                        cmap='turbo')
-    # axs['F'].set_ylabel('x [m]')
-    # fig.colorbar(cf, ax=axs['F'], label='flux at y=0')
-    # axs['F'].set_title('actual')
-
-    # axs['D'].tick_params(labelrotation=30)
-    # axs['F'].tick_params(labelrotation=30)
-
     plt.tight_layout()
     plt.show()
 
@@ -797,18 +586,8 @@ def plot_rays_globalcoords(df, PT, st):
     
 def plot_sun_position(solpos):
     #% 3d plot of sun vectors
-    # origin = np.zeros((3,len(solpos['sun_pos_x'])))
-    # xs = np.column_stack((origin[0,:], solpos['sun_pos_x']))
-    # print(xs)
-    # ys = np.column_stack((origin[1,:], solpos['sun_pos_y']))
-    # zs = np.column_stack((origin[2,:], solpos['sun_pos_z']))
-    # fig = go.Figure(go.Scatter3d(x=xs, y=ys, z=zs, mode='markers')) #,marker_color=date_to_val))
     fig = go.Figure(go.Scatter3d(x=solpos['sun_pos_x'], y=solpos['sun_pos_y'], 
                                  z=solpos['sun_pos_z'], mode='markers')) #,marker_color=date_to_val))
-    # xaims, zaims = get_aimpt_from_sunangles(solpos.apparent_elevation, solpos.azimuth)
-    # print(xaims)
-    #yaims = np.zeros((np.shape(xaims)))
-    #fig.add_trace(go.Scatter3d(x=xaims, y=yaims, z=zaims, mode='markers'))
     fig.update_layout(showlegend=False)
     fig.show()
     
@@ -885,14 +664,6 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
     # axs['D'].set_ylim([0.6, 1])
     axs['D'].legend(fontsize=7,loc='upper left')
 
-    # axs['D'].plot(nominaldf.index, nominaldf.coeff_var, 'k.-', label='nominal')
-    # for sensorloc in sensorlocs:
-    #     outputsdf = results[sensorloc]
-    #     axs['D'].plot(inputsdf.index, outputsdf.coeff_var, '.-', label=sensorloc)
-    # axs['D'].set_ylabel('coeff of variation')
-    # axs['D'].set_ylim([1, 6])
-    # axs['D'].legend()
-
     vmin = 0.0
     vmax = 0.0 # just initializing
     for sensorloc in sensorlocs:
@@ -914,10 +685,6 @@ def plot_time_series_compare_sensors(nominaldf, inputsdf, results, x, sensorlocs
         outputsdf = results[sensorloc]
         ax = cntraxs[n]
         fluxcntr = np.stack(outputsdf.flux_centerline.values).T
-        # print('outer function')
-        # print('inputsdf.index = ',inputsdf.index)
-        # print('x = ',x)
-        # print('fluxcntr = ',fluxcntr)
         cf = ax.contourf(inputsdf.index, x, fluxcntr, levels=levels, 
                                 cmap='turbo')
         ax.set_xlim([inputsdf.index[0], inputsdf.index[-1]])
@@ -1023,16 +790,6 @@ def plot_time_series_fluxmap_results(results, x, nominaldf = None):
 
     axs[-1].tick_params(labelrotation=30)
             
-        #     axs[n*3].plot(tracking_error, '.-', label=column)
-        #     axs[n*3+1].plot(results[column].intercept_factor, '.-', label=column)
-        #     axs[n*3+2].plot(results[column].coeff_var, '.-', label=column)
-        #     # axs[0].plot(data[column],'.', markersize=markersize, label='') #, label=column[:6])
-        # axs[n*3].set_ylabel(r'$ |\epsilon| \; [^\circ]$')
-        # axs[n*3].legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
-    
-        # axs[n*3+1].set_ylabel(r'$ \lambda \; [-]$')   
-        # axs[n*3+2].set_ylabel('coeff of var. [-]')   
-
     plt.tight_layout()
     plt.show()
     
@@ -1045,114 +802,7 @@ def assign_marker(x):
         marker = '+'
     return marker
 
-def plot_time_series_median_optical(results, abs_val=False, critical_angle_error_min = 0.79, critical_angle_error_max = 1.3542636710518383):
-    lw = 0.75
-    ms = 8
-    # combineddf = resultsdf.merge(mediandf, left_index = True, right_index = True, how='outer')
-    # combineddf['intercept_factor'] = combineddf['intercept_factor'].fillna(0)
-    # srows = ['R1', 'R2','R4']
-    # markers = ['.','x','+']
-    
-    rows = []
-    for key in list(results.keys()):
-        split_results = key.split('_',1)
-        if split_results[0] not in rows:
-            rows.append(split_results[0])
-            
-    # find min and max vals for c_v
-    ymin = 1.4
-    ymax = 1.4 # just initializing
-    for nk, key in enumerate(results.keys()):
-        outputsdf = results[key]
-        tmpmin = np.min(list(outputsdf.coeff_var.values))
-        if tmpmin > ymin:
-            ymin = tmpmin
-        tmpmax = np.max(list(outputsdf.coeff_var.values))
-        if tmpmax > ymax:
-            ymax = tmpmax
-    
-    fig, axs = plt.subplots(3*len(rows),1,figsize=[8,4*len(rows)],sharex=True,dpi=250)
-
-    for nk, key in enumerate(results.keys()):
-        combineddf = results[key]
-        
-        marker = assign_marker(key)
-        # print(key)
-        # print(marker)
-        # tilt_col_list = [key] # [col for col in combineddf.filter(regex='Tilt').columns if srow in col]
-
-
-        tstart = combineddf.index[0] # '2022-12-17 07:59:06.500000' # '2022-12-16 00:00:00.000000-08:00' 
-        tend = combineddf.index[-1]
-        mediangroupbydf = combineddf.groupby(['timeofday','season']).median(numeric_only=True)
-
-        
-        # fig,axs = plt.subplots(4, 1, dpi=250, sharex=True, figsize=[10,10])
-        # axs[0].set_title('median diurnal cycle from {} to {}'.format(tstart,tend))
-        
-        # for ax in axs:
-        #     ax.axhline(0, color='k', label='')
-        
-        # for ax in axs[1:]:
-        #     if abs_val:
-        #         ax.set_ylabel(r'$|\epsilon| \; [^\circ]$')
-        #         ax.axhline(critical_angle_error, color='0.6', label=r'$critical \; \epsilon$')
-        #     else:
-        #         ax.set_ylabel(r'$\epsilon \; [^\circ]$')
-        #         ax.axhline(critical_angle_error, color='0.6', label=r'$critical \; \epsilon$')
-        #         ax.axhline(-critical_angle_error, color='0.6', label='')
-
-        for s, dfs in mediangroupbydf.groupby('season'):
-            ind = dfs.index.get_level_values(0)
-            color = assign_Color(s)
-                    
-            # axs[0].plot(ind, dfs.nom_trough_angle,"o", fillstyle='none', markeredgecolor='k')
-            
-            for i,srow in enumerate(rows):
-                tilt_col_list = [col for col in combineddf.filter(regex='Tilt$').columns if srow in col]
-                for n,tc in enumerate(tilt_col_list):
-                    # axs[0].plot(ind, dfs[tc],  linestyle='-', linewidth=0.5, color=color, marker = markers[n]) #, label=column[:6])
-                
-                    if abs_val:
-                        calc_trough_dev = abs(dfs[tc] - dfs.nom_trough_angle)
-                    else:
-                        calc_trough_dev = dfs[tc] - dfs.nom_trough_angle
-                    axs[3*i].set_title(srow)
-                    axs[3*i].axhline(critical_angle_error_min, color='0.6')
-                    axs[3*i].plot(ind, calc_trough_dev,  linestyle='-', linewidth=lw, color=color, marker = marker, markersize = ms) #, label=column[-6:])
-                    axs[3*i].set_ylabel(r'$ |\epsilon| \; [^\circ]$')
-                    
-                    
-                    axs[1+3*i].plot(ind, dfs.intercept_factor,  linestyle='-', linewidth=lw, color=color, marker = marker, markersize = ms) #, label=column[-6:])
-                    axs[1+3*i].set_ylabel(r'$ \lambda \; [-]$')   
-                    axs[1+3*i].set_ylim([0, 1])
-                    
-                    axs[2+3*i].plot(ind, dfs.coeff_var,  linestyle='-', linewidth=lw, color=color, marker = marker, markersize = ms) #, label=column[-6:])
-                    axs[2+3*i].set_ylabel(r'$ C_v \; [-]$')   
-                    axs[2+3*i].set_ylim([ymin, ymax])
-                
-                if s == 'Fall' and nk == 0:
-                    axs[3*i].plot(np.nan, np.nan, label='spring', color='green')
-                    axs[3*i].plot(np.nan, np.nan, label='summer', color='red')
-                    axs[3*i].plot(np.nan, np.nan, label='fall', color='orange')
-                    axs[3*i].plot(np.nan, np.nan, label='winter', color='blue')
-                    
-                if s == 'Fall' and srow in key:
-                    # print(tc)
-                    # print(srow)
-                    # print(key)
-                    axs[1+3*i].plot(np.nan, np.nan, label=tc[:6], color = 'k', marker=marker, linewidth=0)
-                    axs[2+3*i].plot(np.nan, np.nan, label=tc[:6], color = 'k', marker=marker, linewidth=0)
-                
-
-
-    
-    for ax in axs:
-        ax.legend(bbox_to_anchor=(1, 1.1), loc='upper left', fontsize=9)
-    axs[-1].set_xlabel('hour of the day [UTC]')
-    
-    plt.tight_layout()
-    
+   
 def plot_validation_intercept_factor(results):
     valdata = {}
     filedir = '/Users/bstanisl/OneDrive - NREL/Documents/seto-csp-project/SolTrace/firstOptic_Tracking.dat'

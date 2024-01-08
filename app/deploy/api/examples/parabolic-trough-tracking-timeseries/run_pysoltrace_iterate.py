@@ -12,14 +12,13 @@ import glob
 from pysoltrace import PySolTrace, Point
 import pandas as pd
 import matplotlib.pyplot as plt
-# from pvlib import solarposition, tracking
 import numpy as np
 import math
 import time
 import pickle
 # import plotly.graph_objects as go
-import plotly.io as io
-io.renderers.default='browser'
+# import plotly.io as io
+# io.renderers.default='browser'
 
 from st_processing_functions import *
 
@@ -66,7 +65,9 @@ def run_soltrace_iterate(tilt_angle_data, latitude, longitude, altitude, tracker
         optics_type : str
             'realistic' or 'ideal'
         plot_rays : boolean
+        save_pickle : boolean
         number_hits : float
+            dictates number of rays used in the SolTrace simulation
         nx : int
             number of grid cells in x to discretize absorber tube for flux map
         ny : int
@@ -110,17 +111,12 @@ def run_soltrace_iterate(tilt_angle_data, latitude, longitude, altitude, tracker
     #=======================================================================
     #% calculate sun positions  --------------------------------------
     #=======================================================================
-    
-    
     if (tracker_angle_input_mode == 'nominal') or (tracker_angle_input_mode == 'field'):
         times = tilt_angle_data.index
         
         # calculate sun positions from SPA directly through pvlib
         sunangles = get_trough_angles_py(times, latitude, longitude, altitude)
         
-        # if tracker_angle_input_mode == 'nominal':
-        #     tilt_angle_data = sunangles
-        # else:
         tilt_angle_data = tilt_angle_data.merge(sunangles, left_index = True, right_index = True, how='inner')
         
         [a, b, c] = get_aimpt_from_sunangles(tilt_angle_data.apparent_elevation, tilt_angle_data.azimuth)
@@ -307,9 +303,6 @@ def run_soltrace_iterate(tilt_angle_data, latitude, longitude, altitude, tracker
                 tend = time.time()
                 elapsed_time = tend - tstart
                 print('Execution time: {:2f} seconds'.format(elapsed_time))
-        
-        #% plot time-varying variables
-        # plot_time_series(nominaldf, inputdata, intercept_factor, flux_centerline_time, coeff_var, x)
     
         # combine results into a dataframe
         resultsdf = pd.DataFrame(list(zip(intercept_factor, flux_centerline_time, coeff_var)),
@@ -342,7 +335,6 @@ def run_soltrace_iterate(tilt_angle_data, latitude, longitude, altitude, tracker
             pickle.dump(results, open('./{}_{:.0E}hits_{}_optics.p'.format(tracker_angle_input_mode,int(number_hits),optics_type), 'wb'))
 
     if tracker_angle_input_mode == 'field':
-        # plot_time_series_compare_sensors(nominaldf, inputdata, results, x, sensorlocs)
         plot_time_series_optical_results(results, nominaldf)
         plot_time_series_fluxmap_results(results, x, nominaldf)
     elif tracker_angle_input_mode == 'validation':

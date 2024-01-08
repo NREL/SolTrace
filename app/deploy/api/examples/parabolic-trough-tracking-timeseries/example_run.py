@@ -24,7 +24,7 @@ sfcerr_flag = False
 optics_type = 'realistic' # 'ideal'
 plot_rays = False # plot rays in ray-tracing simulation using plotly - this can be slow with more than 1e4 rays
 save_pickle = False # save results as pickle file
-n_hits = 1e4 #1e5 # 5e6 # 1e5 
+n_hits = 1e6 #1e5 # 5e6 # 1e5 
 nx = 30
 ny = 30
 
@@ -43,7 +43,7 @@ altitude = 543 #m
 
 # running with field data timeseries =============================================
 tracker_angle_input_mode = 'field' # 'validation' 'nominal'
-sensorlocs = ['R4_DO'] #,'R4_SO'] # sensor location names
+sensorlocs = ['R4_DO','R4_SO'] # sensor location names
 field_data = pd.read_pickle("./example_field_data.p") # previously prepared for this example
 
 if __name__ == "__main__":
