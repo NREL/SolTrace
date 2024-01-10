@@ -16,7 +16,7 @@ You will need to copy your compiled library file (e.g. `.dll`, `.dylib`, `.so`) 
 - Pandas DataFrame containing timeseries data of trough tilt angle for each location along the trough. 
 
 
-The example uses `demo_field_data.p`, in which 'R4' denotes Row 4 of NSO's array and 'SO' and 'DO' are two locations at either end of the solar collector assembly.
+The example uses `example_field_data.csv`, in which 'R4' denotes Row 4 of NSO's array and 'SO' and 'DO' are two locations at either end of the solar collector assembly.
   | Index | R4_SO_Tilt | R4_DO_Tilt | 
   | ------------- | ------------- | ------------- | 
   | 2023-01-15 16:00:00  | 75.975028 | 76.043902 
