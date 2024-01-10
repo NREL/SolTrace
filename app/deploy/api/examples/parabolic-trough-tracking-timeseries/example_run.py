@@ -23,8 +23,8 @@ sunshape_flag = False
 sfcerr_flag = False
 optics_type = 'realistic' # 'ideal'
 plot_rays = False # plot rays in ray-tracing simulation using plotly - this can be slow with more than 1e4 rays
-save_pickle = False # save results as pickle file
-n_hits = 1e6 #1e5 # 5e6 # 1e5 
+save_pickle = False # save results as pickle file (must install pickle in env and uncomment lines in run_soltrace_iterate.py)
+n_hits = 1e5 #1e5 # 5e6 # 1e5 
 nx = 30
 ny = 30
 
@@ -44,7 +44,7 @@ altitude = 543 #m
 # running with field data timeseries =============================================
 tracker_angle_input_mode = 'field' # 'validation' 'nominal'
 sensorlocs = ['R4_DO','R4_SO'] # sensor location names
-field_data = pd.read_pickle("./example_field_data.p") # previously prepared for this example
+field_data = pd.read_csv('example_field_data.csv', index_col=0, parse_dates=True)
 
 if __name__ == "__main__":
     results, df = run_soltrace_iterate(field_data, lat, lon, altitude, tracker_angle_input_mode, sensorlocs, 

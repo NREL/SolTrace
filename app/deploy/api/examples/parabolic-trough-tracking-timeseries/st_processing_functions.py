@@ -44,6 +44,18 @@ def set_optics_props(optics_type):
         # tau = 0.95 # transmittance of glass envelope
     return refl_rho, absr_alpha, absr_rho, refl_spec
 
+def str_to_array(x):
+    return np.array(list(np.float_(x)))
+
+def read_results_csv(filename):
+    df = pd.read_csv(filename, index_col=0, parse_dates=True, converters={"flux_centerline": lambda x: x.strip("[]").replace("\n","").split()})
+    
+    # convert to array of floats
+    new_flux_centerline_col = df.flux_centerline.apply(str_to_array)
+    df['flux_centerline'] = new_flux_centerline_col
+    
+    return df
+
 def get_trough_angles_py(times, lat, lon, alt):
     # tstart and tend in UTC
     #times = pd.date_range(tstart, tend, freq=inpfreq)
