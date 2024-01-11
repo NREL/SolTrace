@@ -70,12 +70,21 @@
 
 static wxThreadProgressDialog *g_currentThreadProgress = NULL;
 
-enum{ ID_NUM_RAYS = wxID_HIGHEST+923 };
+enum{ ID_NUM_RAYS = wxID_HIGHEST+923,
+	  ID_NUM_RAYS_SUN, ID_NUM_CPU, ID_SEED, ID_INCL_SUNSHAPE, ID_INCL_ERRORS, ID_INCL_POINTFOCUS};
 
 BEGIN_EVENT_TABLE( TraceForm, wxPanel )
 	EVT_BUTTON( wxID_SETUP, TraceForm::OnCommand )
 	EVT_BUTTON( wxID_EXECUTE, TraceForm::OnCommand )
 	EVT_NUMERIC( ID_NUM_RAYS, TraceForm::OnCommand )
+	EVT_NUMERIC( ID_NUM_RAYS_SUN, TraceForm::OnCommand)
+	EVT_NUMERIC( ID_NUM_CPU, TraceForm::OnCommand)
+	EVT_NUMERIC( ID_SEED, TraceForm::OnCommand)
+	EVT_CHECKBOX( ID_INCL_SUNSHAPE, TraceForm::OnCommand)
+	EVT_CHECKBOX( ID_INCL_ERRORS, TraceForm::OnCommand)
+	EVT_CHECKBOX( ID_INCL_POINTFOCUS, TraceForm::OnCommand)
+
+
 END_EVENT_TABLE()
 
 TraceForm::TraceForm( wxWindow *parent, Project &prj )
@@ -89,20 +98,20 @@ TraceForm::TraceForm( wxWindow *parent, Project &prj )
 	m_numRays->SetFormat( wxNUMERIC_GENERIC, true );
 	
 	flxsizer->Add( new wxStaticText( sizer1->GetStaticBox(), wxID_ANY, "Maximum number of generated sun rays"), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 3 );
-	flxsizer->Add( m_numMaxSunRays = new wxNumericCtrl( sizer1->GetStaticBox(), wxID_ANY, 1000000, wxNUMERIC_UNSIGNED ), 0, wxALL, 0 );
+	flxsizer->Add( m_numMaxSunRays = new wxNumericCtrl( sizer1->GetStaticBox(), ID_NUM_RAYS_SUN, 1000000, wxNUMERIC_UNSIGNED ), 0, wxALL, 0 );
 	m_numMaxSunRays->SetFormat( wxNUMERIC_GENERIC, true );
 	
 	flxsizer->Add( new wxStaticText( sizer1->GetStaticBox(), wxID_ANY, "Maximum number of CPUs to utilize"), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 3 );
-	flxsizer->Add( m_numCpus = new wxNumericCtrl( sizer1->GetStaticBox(), wxID_ANY, 16, wxNUMERIC_INTEGER ), 0, wxALL, 0 );
+	flxsizer->Add( m_numCpus = new wxNumericCtrl( sizer1->GetStaticBox(), ID_NUM_CPU, 16, wxNUMERIC_INTEGER ), 0, wxALL, 0 );
 	
 	flxsizer->Add( new wxStaticText( sizer1->GetStaticBox(), wxID_ANY, "Seed value (-1 for random)"), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 3 );
-	flxsizer->Add( m_seed = new wxNumericCtrl( sizer1->GetStaticBox(), wxID_ANY, 123, wxNUMERIC_INTEGER ), 0, wxALL, 0 );
+	flxsizer->Add( m_seed = new wxNumericCtrl( sizer1->GetStaticBox(), ID_SEED, 123, wxNUMERIC_INTEGER ), 0, wxALL, 0 );
 
-	flxsizer->Add( m_inclSunShape = new wxCheckBox( sizer1->GetStaticBox(), wxID_ANY, "Include sun shape" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
+	flxsizer->Add( m_inclSunShape = new wxCheckBox( sizer1->GetStaticBox(), ID_INCL_SUNSHAPE, "Include sun shape" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
 	flxsizer->AddStretchSpacer();
-	flxsizer->Add( m_inclOpticalErrors = new wxCheckBox( sizer1->GetStaticBox(), wxID_ANY, "Include optical errors" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
+	flxsizer->Add( m_inclOpticalErrors = new wxCheckBox( sizer1->GetStaticBox(), ID_INCL_ERRORS, "Include optical errors" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
 	flxsizer->AddStretchSpacer();
-	flxsizer->Add( m_asPowerTower      = new wxCheckBox( sizer1->GetStaticBox(), wxID_ANY, "Point-focus system" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
+	flxsizer->Add( m_asPowerTower = new wxCheckBox( sizer1->GetStaticBox(), ID_INCL_POINTFOCUS, "Point-focus system" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
 	flxsizer->AddStretchSpacer();
 
 	sizer1->Add( flxsizer, 0, wxALL, 5 );
@@ -146,6 +155,20 @@ TraceForm::TraceForm( wxWindow *parent, Project &prj )
 	hsizer->Add( vsizer2, 0, wxALL, 10 );
 	SetSizer( hsizer );
 
+	UpdateFromData();
+
+}
+
+void TraceForm::UpdateFromData()
+{
+	TraceSettings& T = m_prj.Trace_Settings;
+	m_numRays->SetValue(T.n_rays);
+	m_numMaxSunRays->SetValue(T.n_rays_sun);
+	m_numCpus->SetValue(T.n_cpu);
+	m_seed->SetValue(T.seed);
+	m_inclSunShape->SetValue(T.is_include_sunshape);
+	m_inclOpticalErrors->SetValue(T.is_include_errors);
+	m_asPowerTower->SetValue(T.is_point_focus);
 }
 
 
@@ -159,6 +182,15 @@ void TraceForm::SetOptions( size_t nrays, size_t nmaxsunrays, int ncpu, int seed
 	m_inclSunShape->SetValue( sunshape );
 	m_inclOpticalErrors->SetValue( opterr );
     m_asPowerTower->SetValue( aspowertower );
+
+	TraceSettings& T = m_prj.Trace_Settings;
+	T.n_rays = m_numRays->AsUnsigned();
+	T.n_rays_sun = m_numMaxSunRays->AsUnsigned();
+	T.n_cpu = m_numCpus->AsInteger();
+	T.seed = m_seed->AsInteger();
+	T.is_include_sunshape = m_inclSunShape->GetValue();
+	T.is_include_errors = m_inclOpticalErrors->GetValue();
+	T.is_point_focus = m_asPowerTower->GetValue();
 }
 
 void TraceForm::GetOptions( size_t *nrays, size_t *nmaxsunrays, int *ncpu, int *seed,
@@ -186,11 +218,32 @@ wxString TraceForm::GetWorkDir()
 
 void TraceForm::OnCommand( wxCommandEvent &evt )
 {
+	TraceSettings& T = m_prj.Trace_Settings;
 	switch( evt.GetId() )
 	{
 	case ID_NUM_RAYS:
 		if ( m_numMaxSunRays->Value() < 100*m_numRays->Value() )
 			m_numMaxSunRays->SetValue( 100*m_numRays->Value() );
+		T.n_rays = m_numRays->AsUnsigned();
+		T.n_rays_sun = m_numMaxSunRays->AsUnsigned();
+		break;
+	case ID_NUM_RAYS_SUN:
+		T.n_rays_sun = m_numMaxSunRays->AsUnsigned();
+		break;
+	case ID_NUM_CPU:
+		T.n_cpu = m_numCpus->AsInteger();
+		break;
+	case ID_SEED:
+		T.seed = m_seed->AsInteger();
+		break;
+	case ID_INCL_SUNSHAPE:
+		T.is_include_sunshape = m_inclSunShape->GetValue();
+		break;
+	case ID_INCL_ERRORS:
+		T.is_include_errors = m_inclOpticalErrors->GetValue();
+		break;
+	case ID_INCL_POINTFOCUS:
+		T.is_point_focus = m_asPowerTower->GetValue();
 		break;
 
 	case wxID_EXECUTE:
