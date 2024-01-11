@@ -696,7 +696,7 @@ bool Project::Read(FILE *fp)
 				return false;
 		}
 
-		if (vmaj < 2010 && vmaj >= 3 && vmin >= 3) // Trace settings added to output file at version 3.3.0
+		if (vmaj < 2010 && vmaj >= 3 && vmin >= 4) // Trace settings added to output file at version 3.3.0
 			include_trace_settings = true;
 	}
 	else

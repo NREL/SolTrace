@@ -26,8 +26,8 @@ ArchitecturesInstallIn64BitMode=x64
 
 
 ; UPDATE THESE TO MATCH THE VERSION
-AppVerName=SolTrace 3.3.0
-DefaultDirName={sd}\SolTrace\3.3.0
+AppVerName=SolTrace 3.4.0
+DefaultDirName={sd}\SolTrace\3.4.0
 
 AppPublisher=National Renewable Energy Laboratory
 AppPublisherURL=http://www.nrel.gov/csp/soltrace
