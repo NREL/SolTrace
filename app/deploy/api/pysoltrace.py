@@ -1463,8 +1463,13 @@ class PySolTrace:
             print("\nSimulation complete. Total simulation time {:.2f} seconds.".format(time.time()-tstart))
 
             # Modify the ray number for threads 2+ to avoid duplication
-            dfs = [r[0] for r in res.get()]
-            rstart = int(dfs[0].iloc[-1].number)
+            try:
+                dfs = [r[0] for r in res.get()]
+                rstart = int(dfs[0].iloc[-1].number)
+            except:
+                print("Unknown error caused the simulation to fail. Try re-running.")
+                return 
+            
             if len(dfs)>1:
                 for d in dfs[1:]:
                     d.number = d.number+rstart
@@ -1656,28 +1661,28 @@ class PySolTrace:
 
         dfr = dfr.copy() 
 
-        eu_angles = self.util_calc_euler_angles(element.position.as_list(), element.aim.as_list(), element.zrot)
+        # Compute the euler angles for the target element
+        eu_angles = self.util_calc_euler_angles(numpy.array(element.position.as_list()), numpy.array(element.aim.as_list()), element.zrot)
+        # Compute the transform matrix
+        transforms = self.util_calc_transforms(eu_angles)
 
         # initialize
-        # loc = dfr[['loc_x','loc_y','loc_z']].to_numpy()
-        dfr['loc_xt'] = dfr.loc_x
-        dfr['loc_yt'] = dfr.loc_y
-        dfr['loc_zt'] = dfr.loc_z
-        for i in dfr.index:
-            dfri = dfr.loc[i]
-            pos_t = self.util_transform_to_local([dfri.loc_x, dfri.loc_y, dfri.loc_z], [0,0,1], element.position.as_list(), eu_angles)
+        loc = dfr[['loc_x','loc_y','loc_z']].to_numpy()
+        e_pos = numpy.array(element.position.as_list())
 
-            dfr.loc[i, 'loc_xt'] = pos_t['posloc'][0]
-            dfr.loc[i, 'loc_yt'] = pos_t['posloc'][1]
-            dfr.loc[i, 'loc_zt'] = pos_t['posloc'][2]
-            
+        pos_t = self.util_transform_to_local(loc, numpy.array([0,0,1]), e_pos, transforms['rreftoloc'])['posloc']
+        dfr['loc_xt'] = pos_t.T[0]
+        dfr['loc_yt'] = pos_t.T[1]
+        dfr['loc_zt'] = pos_t.T[2]
+        
         flux_st = numpy.zeros((ny,nx))
         # handle mapping differently for each surface type
         if element.surface == 'f':
             # Flat
             W,H = element.aperture_params[0:2]
-            dfr['fypos'] = dfr.loc_z - element.position.z
-            dfr['fxpos'] = dfr.loc_x - element.position.x
+            raybins_x = numpy.floor((dfr.loc_xt + W/2)/W*nx).astype(int)
+            raybins_y = numpy.floor((dfr.loc_yt + H/2)/H*ny).astype(int)
+
             dx = W / nx 
             dy = H / ny
             x_rec = numpy.arange(0, W, W/nx)
@@ -1686,6 +1691,13 @@ class PySolTrace:
             # Cylindrical
             D = 2./element.surface_params[0]
             H = element.aperture_params[2]
+
+            # fix this....
+            raybins_x = numpy.floor((numpy.arctan2(dfr.loc_x - element.position.x, dfr.loc_y - element.position.y)+math.pi)*nx/(2*math.pi)).astype(int)
+            raybins_y = numpy.floor((dfr.loc_yt + H/2)/H*ny).astype(int)
+            # are we using loc_yt or loc_y? transform cylinder orientation? 
+            # -----------------
+
             dfr['fypos'] = dfr.loc_z - element.position.z
             dfr['fxpos'] = (numpy.arctan2(dfr.loc_x - element.position.x, dfr.loc_y - element.position.y)+math.pi)*D/2
             dx = D*numpy.pi / nx 
@@ -1696,13 +1708,10 @@ class PySolTrace:
         anode = dx*dy
         ppr = self.powerperray / anode #*1e-3
 
-        for ind,ray in dfr.iterrows():
+        for r in range(len(raybins_x)):
+            flux_st[raybins_x.values[r], raybins_y.values[r]] += ppr                
 
-            j = int(ray.fxpos/dx)
-            i = int(ray.fypos/dy)
 
-            flux_st[i,j] += ppr
-        print(dfr.describe())
         plt.figure()
         plt.title(f"Flux intensity: element {el_id}, stage {st_id}")
         Xr,Yr = numpy.meshgrid(x_rec, y_rec)
@@ -1716,7 +1725,7 @@ class PySolTrace:
         return
 
     # /* utility transform/math functions */
-    def util_calc_euler_angles(self, origin, aimpoint, zrot):
+    def util_calc_euler_angles(self, origin : numpy.array, aimpoint : numpy.array, zrot) -> numpy.array:
         """
         Calculate the Euler angles associated with a given origin, aimpoint, and z-axis rotation. 
 
@@ -1735,32 +1744,32 @@ class PySolTrace:
             Calculated Euler angles (rad)
         """
 
-        a_origin = (c_number*3)()
-        a_aimpoint = (c_number*3)()
-        a_euler = (c_number*9)()
-        a_origin[:] = origin
-        a_aimpoint[:] = aimpoint
+        # This duplicates the built-in function but uses numpy operators directly
+        dv = aimpoint - origin
+        d = math.sqrt(sum(dv**2))
+        if d == 0:
+            return 
+        dv /= d
+        euler = numpy.array([
+            math.atan2(dv[0],dv[2]),
+            math.asin(dv[1]),
+            zrot*0.017453292519943295 # acos(-1)/180.0
+        ])
+        return euler
 
-        pdll = self.__load_dll()
-
-        pdll.st_calc_euler_angles.restype = c_void_p
-        pdll.st_calc_euler_angles(pointer(a_origin), pointer(a_aimpoint), c_number(zrot), pointer(a_euler))
-
-        return list(a_euler)
-
-    def util_transform_to_local(self, posref, cosref, origin, rreftoloc):
+    def util_transform_to_local(self, posref : numpy.array, cosref : numpy.array, origin : numpy.array, rreftoloc : numpy.array):
         """
         Perform coordinate transformation from reference system to local system.
         
         Parameters
         ----------
-        PosRef : [float,]*3
+        PosRef : numpy.array([float,]*3)
             X,Y,Z coordinates of ray point in reference system
-        CosRef : [float,]*3
+        CosRef : numpy.array([float,]*3)
             Direction cosines of ray in reference system
-        Origin : [float,]*3
+        Origin : numpy.array([float,]*3)
             X,Y,Z coordinates of origin of local system as measured in reference system
-        RRefToLoc 
+        RRefToLoc : numpy.array([float,]*3)
             Rotation matrices required for coordinate transform from reference to local
         
         Returns
@@ -1769,28 +1778,16 @@ class PySolTrace:
             posloc : ([float,]*3) X,Y,Z coordinates of ray point in local system
             cosloc : ([float,]*3) Direction cosines of ray in local system
         """
+        assert type(rreftoloc) == type(numpy.array([]))
+        assert rreftoloc.shape == (3,3)
 
+        # This duplicates the built-in function but uses numpy operators directly
+        posdum = posref - origin
+        rreftoloc_m = rreftoloc.reshape((3,3))
+        posloc = numpy.dot(rreftoloc_m, posdum.T).T
+        cosloc = numpy.dot(rreftoloc_m, cosref.T).T
 
-
-        pdll = self.__load_dll()
-        # Allocate space for input 
-        a_posref = (c_number*3)()
-        a_cosref = (c_number*3)()
-        a_origin = (c_number*3)() 
-        a_rreftoloc = (c_number*9)() 
-        #output
-        posloc = (c_number*3)()
-        cosloc = (c_number*3)()
-        # Assign input
-        a_posref[:] = posref
-        a_cosref[:] = cosref
-        a_origin[:] = origin
-        a_rreftoloc[:] = sum([], rreftoloc)
-
-        pdll.st_transform_to_local.restype = c_void_p
-        pdll.st_transform_to_local(pointer(a_posref), pointer(a_cosref), pointer(a_origin), pointer(a_rreftoloc), pointer(posloc), pointer(cosloc))
-
-        return {'cosloc':list(cosloc), 'posloc':list(posloc)}
+        return {'cosloc':cosloc, 'posloc':posloc}
 
     def util_transform_to_ref(self, posloc, cosloc, origin, rloctoref):
         """
@@ -1815,6 +1812,15 @@ class PySolTrace:
             posref : ([float,]*3) X,Y,Z coordinates of ray point in reference system
             cosref : ([float,]*3) Direction cosines of ray in reference system
         """
+        assert type(rloctoref) == type(numpy.array([]))
+        assert rloctoref.shape == (3,3)
+
+        posdum = numpy.dot(rloctoref, posloc)
+        cosref = numpy.dot(rloctoref, cosloc, cosref)
+        posref = posdum + origin
+
+        return {'cosref':cosref, 'posref':posref}
+
         pdll = self.__load_dll()
 
         a_posloc = (c_number*3)()
@@ -1892,11 +1898,12 @@ class PySolTrace:
         pdll.st_calc_transform_matrices(pointer(a_euler), pointer(rreftoloc), pointer(rloctoref))
 
         # reshape
-        a_rreftoloc = []
-        a_rloctoref = []
-        for i in range(0,10,3):
-            a_rreftoloc.append(rreftoloc[i:i+3])
-            a_rloctoref.append(rloctoref[i:i+3])
+        a_rreftoloc = numpy.zeros((3,3))
+        a_rloctoref = numpy.zeros((3,3))
+        for i in range(3):
+            for j in range(3):
+                a_rreftoloc[i,j] = rreftoloc[i*3+j]
+                a_rloctoref[i,j] = rloctoref[i*3+j]
 
         return {'rreftoloc':a_rreftoloc, 'rloctoref':a_rloctoref}
 

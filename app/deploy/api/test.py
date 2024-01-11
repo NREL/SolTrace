@@ -26,13 +26,6 @@ sun.position.z = 100.
 # Reflector stage
 st = PT.add_stage()
 
-# Simple reflector at origin
-# el = st.add_element()
-# el.aim.z = 1
-# el.optic = opt_ref
-# el.surface_flat()
-# el.aperture_rectangle(1,1)
-
 #absorber element height
 abs_pos = Point(0., 0., 10.)
 
@@ -62,12 +55,13 @@ sta = PT.add_stage()
 ela = sta.add_element()
 ela.position = abs_pos
 ela.aim.z = 0.
+ela.aim.x = 5
 ela.optic = opt_abs
 ela.surface_flat()
-ela.aperture_rectangle(5,5)  #target is 5x5 
+ela.aperture_rectangle(2,2)  #target is 5x5 
 
 # set simulation parameters
-PT.num_ray_hits = 1e3
+PT.num_ray_hits = 1e6
 PT.max_rays_traced = PT.num_ray_hits*100
 PT.is_sunshape = True 
 PT.is_surface_errors = True
@@ -76,11 +70,13 @@ PT.is_surface_errors = True
 
 if __name__ == "__main__":
 
-    PT.run(-1, True, 4)         #(seed, is point focus system?, number of threads)
+    PT.run(-1, True, 8)         #(seed, is point focus system?, number of threads)
+
+    PT.write_soltrace_input_file('simpletest.stinput')
     
     print("Num rays traced: {:d}".format(PT.raydata.index.size))
 
-    PT.plot_flux(PT.stages[-1].elements[-1])
+    PT.plot_flux(PT.stages[-1].elements[-1], nx=50, ny=50, levels=50)
 
     # if False:
     if 'plotly' in sys.modules:
