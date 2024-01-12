@@ -22,18 +22,18 @@ opt_abs.back.reflectivity = 0.
 
 # Sun
 sun = PT.add_sun()
-# Give sun an arbitrary position
+# Give sun a position
 sun.position.x = 0.
 sun.position.y = 0.
 sun.position.z = 100.
 
+# Trough system parameters
 W_ap = 2.887*2  #[m] aperture width
 L_f = 1.71  #focal length
 D_abs = 0.07 #[m] absorber tube diameter 
 
 # Reflector stage
 st = PT.add_stage()
-# st.is_tracethrough = True
 
 el = st.add_element()
 el.optic = opt_ref
@@ -43,7 +43,6 @@ el.position.z = -L_f
 
 # assign the aim vector. scale by a large number
 el.aim = Point(0, 0, 100)
-# compute surface z rotation to align with plane of the ground
 el.zrot = 0.
 # Set surface and aperture characteristics
 el.surface_parabolic(L_f, float('inf'))
@@ -78,25 +77,28 @@ PT.is_surface_errors = True
 # Simulation needs to be inside of a __name__ guard to allow multi-threading
 if __name__ == "__main__":
 
-
     import numpy as np 
     import matplotlib.pyplot as plt 
 
+    # Run a sweep over several surface errors and defocus angles
     ns = 4
     surferrs = np.linspace(1, 4, ns)
     nd = 15
-    defocus = np.linspace(0, 4, nd)
+    defocus = np.linspace(0, 4, nd)  #x offset / 100 equals angular displacement in rad
     f_inter = np.zeros((nd,ns))
 
-    for j in range(len(surferrs)):
+    for j in range(len(surferrs)):  #iterate over surface errors
 
-        PT.optics[0].front.slope_error = surferrs[j]
+        PT.optics[0].front.slope_error = surferrs[j]  #assign surface error for collector
 
-        for i in range(len(defocus)):
-            # Run the configuration specified above
-            PT.sun.position.x = defocus[i]
-            PT.run(nthread=4)         #(seed, is point focus system?, number of threads)
+        for i in range(len(defocus)): #iterate over defocus angles
             
+            PT.sun.position.x = defocus[i]  #assign the defocus angle
+
+            # Run the configuration 
+            PT.run(nthread=4)         
+            
+            #compute the intercept factor by examining the spillage
             df = PT.raydata 
             f_inter[i,j] = 1 - df[df.stage==3].size / df[df.stage==1].size
 
