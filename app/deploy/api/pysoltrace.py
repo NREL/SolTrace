@@ -204,14 +204,12 @@ class PySolTrace:
 
     Attributes
     ----------
-    pdll : ctypes.CDLL
-        loaded SolTrace library of exported functions
-    p_data 
-        Memory location for soltrace context
     optics : [PySolTrace.Optics,]
         List of Optics instances
     stages : [PySolTrace.Stage,]
         List of Stage instances
+    sun : PySolTrace.Sun
+        Instance of the Sun class
     num_ray_hits : int
         Minimum number of simulation ray hits 
     max_rays_traced : int
@@ -220,11 +218,21 @@ class PySolTrace:
         Flag indicating whether sunshape should be included
     is_surface_errors : bool
         Flag indicating whether surface errors should be included
+    raydata : Pandas.dataframe
+        Dataframe with ray hit information
+    sunstats : dict
+        Dict containing information on the ray trace bounding box
+    powerperray : float
+        Calculated value of power associated with a single ray hit
+    dni : float
+        Specified direct normal irradiance
 
     Methods
     -------
-    clear_context 
-        Frees SolTrace instance from memory at p_data
+    copy
+        Deep copy of the current PySolTrace instance
+    Create
+        Create soltrace context from data structures
     add_optics 
         Instantiates a new PySolTrace.Optics object
     delete_optic 
@@ -233,26 +241,14 @@ class PySolTrace:
         Adds Sun instance
     add_stage 
         Adds Stage instance
-    validate 
-        Detect common errors in simulation setup 
+    delete_stage
+        Deletes stage instance
     run 
         Runs SolTrace simulation
-    get_num_intersections 
-        Get the number of simulation ray intersections
-    get_ray_dataframe 
-        Get all simulation ray data in pandas dataframe
-    get_intersect_locations 
-        Get ray intersection locations
-    get_intersect_cosines 
-        Get ray intersection cosines / direction vectors
-    get_intersect_elementmap 
-        Get ray intersection associated element
-    get_intersect_stagemap 
-        Get ray intersection associated stage
-    get_intersect_raynumbers 
-        Get ray intersection number
-    get_sun_stats 
-        Get information on sun box
+    plot_trace
+        Creates and (optionally) displays a 3D scatter and trace plot.
+    plot_flux
+        Creates and (optionally) displays a flux plot for a given stage element.
     util_calc_euler_angles 
         Calculate Euler angles for a position, aimpoint, and rotation
     util_transform_to_local 
@@ -265,6 +261,14 @@ class PySolTrace:
         Calculate matrix transforms
     util_matrix_transpose 
         Compute the transpose of a matrix
+    util_rotation_arbitrary
+        Rotation of a point about an arbitrary axis
+    util_calc_unitvect
+        Scales a vector to have total magnitude of 1
+    util_calc_zrot_azel
+        Compute the z-rotation of a vector
+    write_soltrace_input_file
+        Write a SolTrace input file based on the current objects
     """
 
     class Optics:
@@ -277,10 +281,6 @@ class PySolTrace:
 
         Attributes
         ----------
-        p_dll 
-            Reference for API DLL, managed by PySolTrace
-        p_data 
-            Memory location for soltrace context, managed by PySolTrace
         name : str
             Unique name for the optical property set
         id : int
@@ -292,6 +292,8 @@ class PySolTrace:
 
         Methods
         ----------
+        copy 
+            Deep copy of the current Optics instance
         Create 
             Calls methods to instantiate and construct optical surface in the SolTrace context.
         """
@@ -322,6 +324,11 @@ class PySolTrace:
                 Flag specifying use of user transmissivity table to modify transmissivity as a function of incidence angle
             transtable : [[float,float],]
                 [mrad,0..1] 2D list containing pairs of [angle,transmissivity] values.    
+
+            Methods
+            ----------
+            copy 
+                Deep copy of the current Face instance
             """
             def __init__(self):
                 ## Distribution type for surface interactions. One of:
@@ -366,6 +373,14 @@ class PySolTrace:
             self.back = PySolTrace.Optics.Face()
 
         def copy(self, onew):
+            """
+            Deep copy of the current Optics instance
+
+            Inputs
+            ---------
+            onew : Optics.Face
+                Reference to new Optics object to which data will be copied
+            """
             onew.name = copy.copy(self.name)
             onew.id = copy.copy(self.id)
 
@@ -445,10 +460,6 @@ class PySolTrace:
 
         Attributes
         ----------
-        p_dll 
-            Reference for API DLL, managed by PySolTrace
-        p_data 
-            Memory location for soltrace context, managed by PySolTrace
         point_source : bool
             Flag indicating whether the sun is modeled as a point source at a finite distance.
         shape : char
@@ -463,8 +474,11 @@ class PySolTrace:
             A typical table will have angles spanning 0->~5mrad, and inten-
             sities starting at 1 and decreasing to zero. The table must
             contain at least 2 entries.    
+
         Methods
         ----------
+        copy 
+            Deep copy of the current Sun instance
         Create 
             Calls methods to instantiate and construct optical surface in the SolTrace context.
 
@@ -537,10 +551,6 @@ class PySolTrace:
 
         Attributes
         ----------
-        p_dll 
-            Reference for API DLL, managed by PySolTrace
-        p_data 
-            Memory location for soltrace context, managed by PySolTrace
         id : int
             Identifying integer associated with the stage
         position : Point
@@ -562,6 +572,8 @@ class PySolTrace:
             
         Methods
         ----------
+        copy
+            Creates a deepcopy of the current Stage instance
         Create 
             Calls methods to instantiate and construct a stage in the context.
         add_elements 
@@ -575,10 +587,6 @@ class PySolTrace:
 
             Attributes
             ----------
-            p_dll 
-                Reference for API DLL, managed by PySolTrace
-            p_data 
-                Memory location for soltrace context, managed by PySolTrace
             stage_id : int
                 Identifying integer associated with the containing stage
             id : int
@@ -591,10 +599,6 @@ class PySolTrace:
                 Element coordinate system aim point in stage coordinates
             zrot : float
                 [deg] Rotation of coordinate system around z-axis
-            interaction : int
-                Flag indicating optical interaction type. {1:refraction, 2:reflection}
-            optic : Optics
-                Reference to *Optics* instance associated with this element
             aperture : char
                 Charater indicating aperture type. One of:
                 {'c':circle, 'h':hexagon, 't':triangle, 'r':rectangle, 'a':annulus,
@@ -616,14 +620,26 @@ class PySolTrace:
                 *.ply --> 'r' / Polynomial revolution
                 *.csi --> 'i' / Cubic spline interpolation
                 *.fed --> 'e' / Finite element data
+            interaction : int
+                Flag indicating optical interaction type. {1:refraction, 2:reflection}
+            optic : Optics
+                Reference to *Optics* instance associated with this element
             
             Methods
             ----------
             Create 
                 Calls methods to instantiate and construct element in the SolTrace context
-            surface_xxxx 
-                Family of methods that compute surface coefficients
-
+            surface_XXXXXX 
+                Family of methods that compute surface coefficients. Options include: 
+                surface_spherical, surface_parabolic, surface_flat, surface_hypellip, 
+                surface_conical, surface_cylindrical, surface_toroid, surface_zernicke,
+                surface_polynomialrev, surface_cubicspline, surface_finiteelement,
+                surface_vshot
+            aperture_XXXXXX
+                Family of methods that compute aperture coefficients. Options include:
+                aperture_circle, aperture_hexagon, aperture_triangle, aperture_rectangle,
+                aperture_annulus, aperture_singleax_curve, aperture_irr_triangle,
+                aperture_quadrilateral
             """
             
             # STCORE_API int st_element_surface_file(st_context_t pcxt, st_uint_t stage, st_uint_t idx, const char *file);
@@ -657,6 +673,14 @@ class PySolTrace:
                 self.optic = None
 
             def copy(self, enew):
+                """
+                Deep copy of the current Element instance
+
+                Inputs
+                ---------
+                enew : Stage.Element
+                    Reference to new Element object to which data will be copied
+                """
                 c = self.__dict__.copy()
                 for attr in self.__dict__.keys():
                     if attr in ['_pdll','_p_data','optic']:
@@ -712,7 +736,9 @@ class PySolTrace:
 
             def surface_spherical(self, radius):
                 """
-                Set up the surface as spherical type
+                Set up the surface as spherical type. 
+
+                Surface centroid is at x=0, y=0, z=radius.
 
                 Parameters
                 ==========
@@ -723,9 +749,18 @@ class PySolTrace:
                 self.surface_params[0] = 1. / radius
                 self.surface = 's'
                 return True
+            
             def surface_parabolic(self, focal_len_x, focal_len_y):
                 """
-                Set up the surface as parabolic
+                Set up the surface as parabolic. 
+
+                Surface function is:
+                    Z(x,y) = 1/2 * (c_x * x^2 + c_y * y^2) 
+                    where
+                    c_x = 1 / (2 * focal_len_x)
+                    c_y = 1 / (2 * focal_len_y)
+
+                The surface value is z=0 at x=y=0.
 
                 Parameters
                 ==========
@@ -739,6 +774,7 @@ class PySolTrace:
                 self.surface_params[1] = 1. / (2.*focal_len_y)
                 self.surface = 'p'
                 return True
+            
             def surface_flat(self):
                 """
                 Set up the surface as flat
@@ -746,6 +782,7 @@ class PySolTrace:
                 self.surface_params = [0. for i in range(8)]
                 self.surface = 'f'
                 return True
+            
             def surface_hypellip(self, vertex_curv, kappa):
                 """
                 Set up the surface described by equation:
@@ -766,22 +803,30 @@ class PySolTrace:
                 self.surface_params[1] = kappa
                 self.surface = 'o'
                 return True
+            
             def surface_conical(self, theta):
                 """
                 Set up the surface described by cone with half-angle theta. 
 
+                The axis of the cone coincides with the z-axis. The function of the surface is:
+                    Z(x,y) = sqrt(x^2 + y^2)/tan(theta)
+
                 Parameters
                 ----------
-                theta : deg
-                    half-angle of cone
+                theta : float 
+                    (degrees) half-angle of cone
                 """
                 self.surface_params = [0. for i in range(8)]
                 self.surface_params[0] = theta
                 self.surface = 'c'
                 return True
+            
             def surface_cylindrical(self, radius):
                 """
                 Set up the surface as cylindrical.
+
+                The surface centroid is located at x=0, y=0, z=radius. The cylinder's axis 
+                is parallel to the Y-axis.
 
                 Parameters
                 ----------
@@ -792,6 +837,7 @@ class PySolTrace:
                 self.surface_params[0] = 1./radius
                 self.surface = 't'
                 return True
+            
             def surface_toroid(self, rad_annulus, rad_ring):
                 """
                 Set up the surface as a toroid "donut".
@@ -808,6 +854,7 @@ class PySolTrace:
                 self.surface_params[1] = rad_ring
                 self.surface = 'd'
                 return True
+            
             def surface_zernicke(self, file_path):
                 """
                 Set up the surface from a file as a Zernicke surface, where the surface is described by the equation:
@@ -835,6 +882,7 @@ class PySolTrace:
                 self.surface = 'm'
                 self.surface_file = file_path
                 return True
+            
             def surface_polynomialrev(self, file_path):
                 """
                 Set up the surface from a file as a rotationally symmetric polynomial, where the surface is described by
@@ -859,6 +907,7 @@ class PySolTrace:
                 self.surface = 'r'
                 self.surface_file = file_path
                 return True
+            
             def surface_cubicspline(self, file_path):
                 """
                 Set up the surface from a file as a rotationally symmetric cubic spline. Accepts *csi file extension. 
@@ -880,6 +929,7 @@ class PySolTrace:
                 self.surface = 'i'
                 self.surface_file = file_path
                 return True
+            
             def surface_finiteelement(self, file_path):
                 """
                 Set up the surface from a file using finite element data specifying the vertices of the elements in 
@@ -903,6 +953,7 @@ class PySolTrace:
                 self.surface = 'e'
                 self.surface_file = file_path
                 return True
+            
             def surface_vshot(self, file_path):
                 """
                 Set up the surface from a file using VSHOT data specifying matrix coefficients generated by a VSHOT test.
@@ -935,10 +986,13 @@ class PySolTrace:
                 self.surface = 'v'
                 self.surface_file = file_path
                 return True
+            
             # ---------------------
             def aperture_circle(self, diameter):
                 """
                 Set up the aperture as circular with 'diameter'. 
+                
+                Aim: The X and Y directions lie in the plane of the circle. Z is normal to the plane.
 
                 Parameters
                 ----------
@@ -954,6 +1008,14 @@ class PySolTrace:
                 Set up the aperture as a hexagon centered at x=0,y=0. The hexagon is circumscribed
                 by a circle of 'diameter'.
 
+                Aim: The X and Y directions lie in the plane of the hexagon. X crosses through a vertex 
+                between two segments, while Y bisects an edge segment. Z is normal to the plane.
+
+                 y^
+                 __
+                /  \ x->
+                \__/
+
                 Parameters
                 ----------
                 diameter 
@@ -968,6 +1030,16 @@ class PySolTrace:
                 Set up the aperture as a equilateral triangle with centroid at x=0,y=0. The triangle
                 is circumscribed by a circle of 'diameter'.
 
+                Aim: The X and Y directions lie in the plane of the triangle. Y crosses through a vertex between
+                two segments, while X crosses at an intermediate position on one leg of the triangle. Z is normal
+                to the plane. The coordinates are centered at the middle of a circle of diameter 'D' that circumscribes
+                the isoceles triangle
+
+                  y^
+                  /\
+                 /  \  x -> 
+                /____\
+
                 Parameters
                 ----------
                 diameter 
@@ -979,7 +1051,11 @@ class PySolTrace:
                 return True
             def aperture_rectangle(self, length_x, length_y):
                 """
-                Set up the aperture as a rectangle with the centroid at x=0,y=0. 
+                Set up the aperture as a rectangle.
+
+                Aim: The X and Y directions lie in the plane of the rectangle. Y crosses bisects a horzontal leg 
+                of width 'W', while X bisects a vertical leg of height 'H'. Z is normal to the plane. The 
+                coordinates are centered x=W/2, y=H/2.
 
                 Parameters
                 ----------
@@ -997,6 +1073,8 @@ class PySolTrace:
                 """
                 Set up the aperture as annular, where aperture is the annulus between to specified radii
                 and within an angular slice 'theta' which is centered around the x-axis.
+
+                Aim: The X and Y directions lie in the plane of the annulus. Z is normal to the plane.
 
                 Parameters
                 ----------
@@ -1022,6 +1100,17 @@ class PySolTrace:
                 This aperture is often used with a cylindrical surface. In this case, 
                 both x1 and x2 should be zero, and the cylinder height specified with 'L'.
 
+                Aim: X and Z follow radial lines and cross through the curvature section. Y lies along the
+                centerline/axis of the cylindrical section at X=0, Z=0. The radial positions are with 
+                respect to the X and Z coordinates. 
+
+                ^ y
+                |    ___  ....L
+                |   |   |
+                |---|---|---> X
+                |   |___| ....
+                |   x1  x2
+
                 Parameters
                 ----------
                 x1 
@@ -1040,6 +1129,8 @@ class PySolTrace:
             def aperture_irr_triangle(self, x1, y1, x2, y2, x3, y3):
                 """
                 Set up the aperture as a triangle given by three (x,y) coordinate pairs.
+
+                Aim: X and Y are in the plane containing the coordinates. Z is normal to the plane.
 
                 Parameters
                 ----------
@@ -1068,6 +1159,8 @@ class PySolTrace:
             def aperture_quadrilateral(self, x1, y1, x2, y2, x3, y3, x4, y4):
                 """
                 Set up the aperture as a quadrilateral given by four (x,y) coordinate pairs.
+
+                Aim: X and Y are in the plane containing the coordinates. Z is normal to the plane.
 
                 Parameters
                 ----------
@@ -1129,6 +1222,14 @@ class PySolTrace:
             return 
 
         def copy(self, snew):
+            """
+            Deep copy of the current Stage instance
+
+            Inputs
+            ---------
+            snew : Stage
+                Reference to new Stage object to which data will be copied
+            """            
             c = self.__dict__.copy()
             for attr in self.__dict__.keys():
                 if attr in ['elements', '_pdll', '_p_data']:
@@ -1221,6 +1322,14 @@ class PySolTrace:
         self.dni = 1000.  #w/m^2
 
     def copy(self):
+        """
+        Deep copy of the current PySolTrace instance
+
+        Returns:
+        ========
+        Copy of the current PySolTrace instance
+
+        """
         psnew = PySolTrace()
         for attr in ['num_ray_hits','max_rays_traced','is_sunshape','is_surface_errors']:
             psnew.__setattr__(attr, copy.deepcopy(self.__getattribute__(attr)))
@@ -1395,6 +1504,11 @@ class PySolTrace:
         as_power_tower : bool
             Flag indicating simulation should be processed as power 
             tower / central receiver type, with corresponding efficiency adjustments.
+        nthread : int
+            Number of threads to execute. Will be limited by the method to the number
+            available on the machine. 
+        thread_id : int 
+            Argument used by the multi-threading call. Do not manually specify this value.
         
         Returns
         ----------
@@ -1489,7 +1603,7 @@ class PySolTrace:
             
             return 1
 
-    def get_num_intersections(self, pdll, p_data) -> int:
+    def __get_num_intersections(self, pdll, p_data) -> int:
         """
         [Post simulation] Get the number of ray intersections detected in the simulation.
 
@@ -1562,7 +1676,7 @@ class PySolTrace:
         
         data = {}
 
-        n_int = self.get_num_intersections(pdll, p_data)
+        n_int = self.__get_num_intersections(pdll, p_data)
         data['loc_x'] = (c_number*n_int)()
         data['loc_y'] = (c_number*n_int)()
         data['loc_z'] = (c_number*n_int)()
@@ -1599,22 +1713,66 @@ class PySolTrace:
 
         return df
 
-    def validate(self) -> bool:
+    def plot_trace(self, nrays:int = 100000, ntrace:int=100):
         """
-        Validate that the current SolTrace context has been configured correctly, and
-        that commonly missed inputs are specified.
+        Creates and (optionally) displays a 3D scatter and trace plot. This
+        function requires that the Python package `plotly` be installed. 
 
-        Returns
-        ----------
-        bool 
-            False if error is identified, True otherwise
+        Parameters
+        ------------
+        nrays : int
+            Number of individual rays to include in the scatter plot. Very 
+            large values may render slowly.
+        ntrace : int 
+            Number of rays for which traces will be displayed. Large values
+            may render slowly
         """
 
+        print("Generating 3D trace plots")
+        # Plotting with plotly
+        try:
+            import plotly.graph_objects as go
+        except:
+            raise RuntimeError("Missing library: plotly. \n Trace plotting requires the Plotly library to be installed. [$ pip install plotly]")
+        
+        df = self.raydata
 
+        # Choose how many points to plot. 
+        nn = min(nrays, len(df))
+        inds = numpy.random.choice(range(len(df)), size=nn, replace=False)
+        
+        # Data for a three-dimensional line. Randomly choose points if fewer than the full amount are desired.
+        loc_x = df.loc_x.values[inds]
+        loc_y = df.loc_y.values[inds]
+        loc_z = df.loc_z.values[inds]
+        stage = df.stage.values[inds]
+        raynum = df.number.values[inds]
 
-        return True
+        # Generate the 3D scatter plot
+        layout = go.Layout(scene=dict(aspectmode='data'))
 
-    def plot_flux(self, element, nx : int = 25, ny : int = 25, figpath : str=None, display=True, absorbed_only : bool = True, levels=25):
+        if len(list(set(stage))) > 1:
+            md = dict( size=0.75, color=stage, colorscale='jet', opacity=0.7, ) 
+        else:
+            md = dict( size=0.75, color='black', opacity=0.7, ) 
+
+        fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=md ), layout=layout )
+
+        # Generate line traces for a subset of randomly selected rays
+        for i in numpy.random.choice(raynum, size=50, replace=False):
+            dfr = df[df.number == i]    #find all rays numbered 'i'
+            ray_x = dfr.loc_x 
+            ray_y = dfr.loc_y
+            ray_z = dfr.loc_z
+            fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+
+        fig.update_layout(showlegend=False)
+        fig.show()
+
+        return
+
+    def plot_flux(self, element, nx:int = 25, ny:int = 25, figpath:str=None, display=True, figsize=(9,6),
+                  absorbed_only:bool = True, levels=25, dpi:int=300, xlabel:str=None, ylabel:str = None):
         """
         Creates and (optionally) displays a flux plot for a given stage element.
 
@@ -1630,10 +1788,18 @@ class PySolTrace:
             Path to file location where figure will be saved. If None, figure is not saved.
         display : bool (default True)
             Flag indicating whether the figure should be displayed at runtime
+        figsize : tuple (default (9,6))
+            Figure size in inches
         absorbed_only : bool (default True)
             Only include rays that are absorbed by the element, omitting reflected rays
         levels : int (default 25)
             Number of contour levels to include in the flux map
+        dpi : int (default 300)
+            Resolution of the saved image
+        xlabel : str (default None)
+            String specifying label to use on x-axis of plot
+        ylabel : str (default None)
+            String specifying label to use on y-axis of plot
 
         Returns
         ------------
@@ -1687,39 +1853,52 @@ class PySolTrace:
             dy = H / ny
             x_rec = numpy.arange(0, W, W/nx)
             y_rec = numpy.arange(0, H, H/ny)
+            xlabtemp = "X-axis position"
+
         elif element.surface == 't':
             # Cylindrical
             D = 2./element.surface_params[0]
             H = element.aperture_params[2]
 
-            # fix this....
-            raybins_x = numpy.floor((numpy.arctan2(dfr.loc_x - element.position.x, dfr.loc_y - element.position.y)+math.pi)*nx/(2*math.pi)).astype(int)
+            # bin the rays circumferentially and vertically
+            raybins_x = numpy.floor((numpy.arctan2(dfr.loc_xt, dfr.loc_zt-D/2)+math.pi)*nx/(2*math.pi)).astype(int)
             raybins_y = numpy.floor((dfr.loc_yt + H/2)/H*ny).astype(int)
-            # are we using loc_yt or loc_y? transform cylinder orientation? 
-            # -----------------
 
-            dfr['fypos'] = dfr.loc_z - element.position.z
-            dfr['fxpos'] = (numpy.arctan2(dfr.loc_x - element.position.x, dfr.loc_y - element.position.y)+math.pi)*D/2
+            # Create the coordinate meshes
             dx = D*numpy.pi / nx 
             dy = H / ny
             x_rec = numpy.arange(0, numpy.pi*D, numpy.pi*D/nx)
-            y_rec = numpy.arange(0, H, H/ny)
-        
+            y_rec = numpy.arange(-H/2,H/2, H/ny)
+            # plot label for later
+            xlabtemp = "Circumferential position [rad]"
+            
+        # check labels
+        if ylabel != None:
+            ylabtemp = ylabel
+        else: 
+            ylabtemp = "Y-axis position"
+        if xlabel != None:
+            xlabtemp = xlabel
+            
+        # Compute power per ray (ppr) based on node area
         anode = dx*dy
-        ppr = self.powerperray / anode #*1e-3
+        ppr = self.powerperray / anode 
 
         for r in range(len(raybins_x)):
             flux_st[raybins_x.values[r], raybins_y.values[r]] += ppr                
 
-
-        plt.figure()
+        # Generate new plot
+        plt.figure(figsize=figsize)
         plt.title(f"Flux intensity: element {el_id}, stage {st_id}")
-        Xr,Yr = numpy.meshgrid(x_rec, y_rec)
-        plt.contourf(Xr, Yr, flux_st, levels=levels)
+        Xr,Yr = numpy.meshgrid(y_rec, x_rec)
+        plt.contourf(Yr, Xr, flux_st, levels=levels)
         plt.colorbar()
-        plt.title(f"max flux {flux_st.max():.0f}, mean flux {flux_st.mean():.1f}")
+        plt.title(f"Stage {st_id}/Elem. {el_id} | Max {flux_st.max():.0f} | Mean {flux_st.mean():.1f}")
+        plt.xlabel(xlabtemp)
+        plt.ylabel(ylabtemp)
+        plt.tight_layout()
         if figpath:
-            plt.savefig(figpath, dpi=200)
+            plt.savefig(figpath, dpi=dpi)
         if display:
             plt.show()
         return
@@ -1821,35 +2000,15 @@ class PySolTrace:
 
         return {'cosref':cosref, 'posref':posref}
 
-        pdll = self.__load_dll()
-
-        a_posloc = (c_number*3)()
-        a_cosloc = (c_number*3)()
-        a_origin = (c_number*3)() 
-        a_rloctoref = (c_number*9)() 
-        #output
-        posref = (c_number*3)()
-        cosref = (c_number*3)()
-        
-        a_posloc[:] = posloc
-        a_cosloc[:] = cosloc
-        a_origin[:] = origin
-        a_rloctoref[:] = sum([], rloctoref)
-
-        pdll.st_transform_to_reference.restype = c_void_p
-        pdll.st_transform_to_reference(pointer(a_posloc), pointer(a_cosloc), pointer(a_origin), pointer(a_rloctoref), pointer(posref), pointer(cosref))
-
-        return {'cosref':list(cosref), 'posref':list(posref)}
-
     def util_matrix_vector_mult(self, m, v):
         """
         Perform multiplication of a 3x3 matrix and a length-3 vector, returning the result vector.
 
         Parameters
         ----------
-        m : list
+        m : array
             m[3][3] - a 3x3 matrix
-        v : list
+        v : array
             v[3] - a list, length 3
 
         Returns
@@ -1857,18 +2016,12 @@ class PySolTrace:
         list
             m x v [3]
         """
-        pdll = self.__load_dll()
+        assert type(m) == type(numpy.array([]))
+        assert m.shape == (3,3)
+        assert type(v) == type(numpy.array([]))
+        assert m.shape == (3,)
 
-        a_m = (c_number*9)()
-        a_v = (c_number*3)()
-        a_mv = (c_number*3)()
-        a_m[:] = sum([], m)
-        a_v[:] = v 
-
-        pdll.st_matrix_vector_mult.restype = c_void_p
-        pdll.st_matrix_vector_mult(pointer(a_m), pointer(a_v), pointer(a_mv))
-
-        return list(a_mv)
+        return numpy.dot(m,v)
 
     def util_calc_transforms(self, euler):
         """
@@ -1922,20 +2075,8 @@ class PySolTrace:
             Square matrix 3x3, transpose of 'm'
         """
 
-        pdll = self.__load_dll()
-
-        a_m = (c_number*9)()
-        a_m[:] = sum([], m)
-        output = (c_number*9)()
-
-        pdll.st_matrix_transpose.restype = c_void_p
-        pdll.st_matrix_transpose(pointer(a_m), pointer(output))
-
-        a_output = []
-        for i in range(0,10,3):
-            a_output.append(output[i:i+3])
-
-        return a_output
+        assert type(m) == type(numpy.array([]))
+        return m.T
 
     def util_rotation_arbitrary(self, theta, axis, axloc, pt):
         """
@@ -1957,8 +2098,11 @@ class PySolTrace:
         -----------
         Point
             Point after rotation
-
         """
+
+        assert type(axis) == type(Point())
+        assert type(axloc) == type(Point())
+        assert type(pt) == type(Point())
 
         a = axloc.x     #Point through which the axis passes
         b = axloc.y
@@ -1983,6 +2127,19 @@ class PySolTrace:
         return fin
 
     def util_calc_unitvect(self, vect):
+        """
+        Scales a vector to have total magnitude of 1
+
+        Parameters
+        ----------
+        vect : list | Point
+            list or Point containing the vector
+        
+        Returns
+        ----------
+        list | Point
+            Unitized vector of type list or Point, depending on input type
+        """
         if type(vect) == list:
             v = Point()
             v.x = vect[0]
@@ -2148,17 +2305,5 @@ def loaddll():
 
 
 if __name__ == "__main__":
-    # p1 = PySolTrace()
-    # p1.add_sun()
-
-    # p2 = p1.copy()
-
-    # print(p1,p2)
-
-    import time
-    tstart = time.time()
-
-    for i in range(1000):
-        loaddll()
-
-    print(time.time() - tstart)
+    
+    pass 

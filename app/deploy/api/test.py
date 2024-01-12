@@ -1,11 +1,6 @@
 from pysoltrace import PySolTrace, Point
-import random
-import pandas as pd
-import copy
-import sys
+from math import sin,cos, pi
 
-# def load_system(PT):
-# def load_system(ii):
 # Create API class instance
 PT = PySolTrace()
 
@@ -19,7 +14,7 @@ opt_abs.front.reflectivity = 0.
 # Sun
 sun = PT.add_sun()
 # Give sun an arbitrary position
-sun.position.x = 100.
+sun.position.x = 0.
 sun.position.y = 0.
 sun.position.z = 100.
 
@@ -30,8 +25,9 @@ st = PT.add_stage()
 abs_pos = Point(0., 0., 10.)
 
 # Create a heliostat at some random x,y position, reflecting to the receiver
-for i in range(5):
-    hpos = [random.uniform(-10,10), random.uniform(-10,10)]
+for i in range(-1,2):
+    hpos = [sin(i*pi/2)*5, cos(i*pi/2)*5]
+    # hpos = [random.uniform(-10,10), random.uniform(-10,10)]
     el = st.add_element()
     el.optic = opt_ref
     el.position.x = hpos[0]
@@ -46,19 +42,31 @@ for i in range(5):
     el.zrot = PT.util_calc_zrot_azel(avec)
     # Set surface and aperture characteristics
     el.surface_flat()
-    el.aperture_rectangle(0.5,1.0)
+    el.aperture_rectangle(1.0,1.95)
     
 
-# absorber stage
 sta = PT.add_stage()
+    
+# cylindrical absorber element. 
+# r = 0.5
+# ela = sta.add_element()
+# abs_pos.y = -r
+# ela.position = abs_pos
+# ela.zrot = 0
+# ela.aim = Point(0, 100, -r-50)
+# ela.optic = opt_abs
+# ela.surface_cylindrical(r)
+# ela.aperture_singleax_curve(0,0,5)
 
+# flat absorber element
 ela = sta.add_element()
 ela.position = abs_pos
 ela.aim.z = 0.
-ela.aim.x = 5
+ela.aim.x = 0.
+ela.aim.y = 5.
 ela.optic = opt_abs
 ela.surface_flat()
-ela.aperture_rectangle(2,2)  #target is 5x5 
+ela.aperture_rectangle(2,2)  
 
 # set simulation parameters
 PT.num_ray_hits = 1e6
@@ -66,39 +74,20 @@ PT.max_rays_traced = PT.num_ray_hits*100
 PT.is_sunshape = True 
 PT.is_surface_errors = True
 
-
-
+# Simulation needs to be inside of a __name__ guard to allow multi-threading
 if __name__ == "__main__":
 
+    # Run the configuration specified above
     PT.run(-1, True, 8)         #(seed, is point focus system?, number of threads)
 
-    PT.write_soltrace_input_file('simpletest.stinput')
-    
+    # Print a message after completion
     print("Num rays traced: {:d}".format(PT.raydata.index.size))
+    
+    # Generate a solatrace input file if desired
+    PT.write_soltrace_input_file('simpletest.stinput')
 
+    # Create a 3D trace plot of the simulation (requires plotly library)
+    PT.plot_trace()
+
+    # Plot the flux map on the last element of the last stage (the receiver in this case)
     PT.plot_flux(PT.stages[-1].elements[-1], nx=50, ny=50, levels=50)
-
-    # if False:
-    if 'plotly' in sys.modules:
-        df = PT.raydata
-        # Data for a three-dimensional line
-        loc_x = df.loc_x.values
-        loc_y = df.loc_y.values
-        loc_z = df.loc_z.values
-
-        # Plotting with plotly
-        import plotly.express as px 
-        import plotly.graph_objects as go
-
-        fig = go.Figure(data=go.Scatter3d(x=loc_x, y=loc_y, z=loc_z, mode='markers', marker=dict( size=1, color=df.stage, colorscale='bluered', opacity=0.8, ) ) )
-
-        for i in range(50,100):
-            dfr = df[df.number == i]
-            ray_x = dfr.loc_x 
-            ray_y = dfr.loc_y
-            ray_z = dfr.loc_z
-            raynum = dfr.number
-            fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
-
-        fig.update_layout(showlegend=False)
-        fig.show()
