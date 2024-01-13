@@ -12,15 +12,17 @@ The desktop version of SolTrace for Windows or Linux builds from the following o
 
 * This repository, **SolTrace**, provides the user interface to assign values to inputs of the computational modules, run the modules in the correct order, and display calculation results. It also includes tools for editing LK scripts and viewing ray intersection and flux map data.
 
-## Quick Steps for Building SolTrace
+## SolTrace Python API
 
-For detailed build instructions see the [wiki](https://github.com/NREL/SolTrace/wiki), with specific instructions for:
+Users can also run simulations via the [`pysoltrace`](https://github.com/NREL/SolTrace/blob/develop/app/deploy/api/pysoltrace.py) SolTrace Python API found in the folder `app/deploy/api`. Example files for running the API are found in the `app/deploy/api/examples` subfolder. Documentation is available in HTML or PDF format in the corresponding API subfolder. 
 
-* [Windows](https://github.com/NREL/SolTrace/wiki/build-windows)
-* [OSX](https://github.com/NREL/SolTrace/wiki/build-osx)
-* [Linux](https://github.com/NREL/SolTrace/wiki/build-linux)
+The `pysoltrace` API is capable of running multi-threaded simulations, generating flux maps, creating 3D interactive trace plots, and provides other capabilities that are found in the SolTrace graphical interface. The functionality and flexibility of the API generally exceeds that of the graphical interface. 
 
-These are the general quick steps you need to follow to set up your computer for developing SolTrace:
+The API requires the compiled coretrace library. Project files for building this library are generated using CMake as outlined in the steps below. It is possible to build only coretrace and not build the graphical interface by following the steps 1-7, but only building the `coretrace_api` project in step 7.vii.
+
+## Steps for Building SolTrace
+
+These are the general steps you need to follow to set up your computer for developing SolTrace:
 
 1. Set up your development tools:
 
@@ -61,7 +63,7 @@ These are the general quick steps you need to follow to set up your computer for
     3. Create a directory in the main parent folder to store the build files. 
     E.g., ```C:/stdev/build-soltrace/```
     
-    4. Open a shell or command window in the build folder from step 3
+    4. Open a shell or command window, and navigate to the build folder you just created. 
 
     5. Copy the following cmake command to the shell and run. Replace the cmake target with a [supported generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#manual:cmake-generators(7))
     

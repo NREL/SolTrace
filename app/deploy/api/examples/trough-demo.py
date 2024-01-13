@@ -6,6 +6,12 @@ varying the position of the sun while keeping the collector fixed.
 The set of simulations take about 3 minutes to run.
 """
 
+# Load the pysoltrace api from the parent directory ---
+import sys
+import os
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+# ----------
+
 from pysoltrace import PySolTrace, Point
 
 # Create API class instance

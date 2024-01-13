@@ -1,5 +1,19 @@
+"""
+This file demonstrates the modeling of a simple 3-mirror and tower system. 
+The mirrors are placed at regular positions in a circle. The receiver can
+be a flat surface or a cylindrical surface. The simulation runs in a few
+seconds and generates a flux map and a trace plot (requires plotly).
+"""
+
+# Load the pysoltrace api from the parent directory ---
+import sys
+import os
+sys.path.insert(1, os.path.join(sys.path[0], '..'))
+# ----------
+
 from pysoltrace import PySolTrace, Point
 from math import sin,cos, pi
+
 
 # Create API class instance
 PT = PySolTrace()
