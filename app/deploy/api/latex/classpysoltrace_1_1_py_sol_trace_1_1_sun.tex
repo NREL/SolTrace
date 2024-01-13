@@ -1,24 +1,27 @@
-\hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun}{}\doxysection{pysoltrace.\+Py\+Sol\+Trace.\+Sun Class Reference}
-\label{classpysoltrace_1_1_py_sol_trace_1_1_sun}\index{pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}}
-\doxysubsection*{Public Member Functions}
+\doxysection{pysoltrace.\+Py\+Sol\+Trace.\+Sun Class Reference}
+\hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun}{}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun}\index{pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}}
+\doxysubsubsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a98b672525ad4067ca95b7d10c6af01cb}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a98b672525ad4067ca95b7d10c6af01cb}} 
-def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, pdll, p\+\_\+data)
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a2e4537404abce677bfdeecc91d4d6262}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a2e4537404abce677bfdeecc91d4d6262} 
+{\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_sun_a29b0ec46faeb9a387e386877fa8a0002}{Create}} (self)
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a66c8a13817ab249cf0e06201c54fff79}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a66c8a13817ab249cf0e06201c54fff79} 
+{\bfseries copy} (self, snew)
+\item 
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_sun_ae42365f01df235d6126d2be967c0974e}{Create}} (self, pdll, p\+\_\+data)
 \end{DoxyCompactItemize}
-\doxysubsection*{Public Attributes}
+\doxysubsubsection*{Public Attributes}
 \begin{DoxyCompactItemize}
 \item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_ab3251187b8bad6c1028514e5f8a12796}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_ab3251187b8bad6c1028514e5f8a12796}} 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_ab3251187b8bad6c1028514e5f8a12796}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_ab3251187b8bad6c1028514e5f8a12796} 
 {\bfseries point\+\_\+source}
 \begin{DoxyCompactList}\small\item\em Flag indicating whether the sun is modeled as a point source at a finite distance. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_sun_a3354b649c3e867028a3d9a4cdd704b1f}{shape}}
-\begin{DoxyCompactList}\small\item\em \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_sun}{Sun}} shape model. \end{DoxyCompactList}\item 
+\begin{DoxyCompactList}\small\item\em Sun shape model. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_sun_a2f6f9ab8406313ff72ce82a1fb760910}{sigma}}
 \begin{DoxyCompactList}\small\item\em \mbox{[}mrad\mbox{]} Half-\/width or std. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a323192060fbd0c682f65ff7261636c16}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a323192060fbd0c682f65ff7261636c16}} 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a323192060fbd0c682f65ff7261636c16}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a323192060fbd0c682f65ff7261636c16} 
 {\bfseries position}
 \begin{DoxyCompactList}\small\item\em Location of the sun/sun vector in global coordinates. \end{DoxyCompactList}\item 
 \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_sun_a5e1a4a260044c8951fc62efd7a7ab9f4}{user\+\_\+intensity\+\_\+table}}
@@ -32,10 +35,6 @@ PySolTrace.sun member.
 
 Attributes
 ----------
-p_dll 
-    Reference for API DLL, managed by PySolTrace
-p_data 
-    Memory location for soltrace context, managed by PySolTrace
 point_source : bool
     Flag indicating whether the sun is modeled as a point source at a finite distance.
 shape : char
@@ -50,18 +49,21 @@ user_intensity_table : [[float,float],]
     A typical table will have angles spanning 0->~5mrad, and inten-
     sities starting at 1 and decreasing to zero. The table must
     contain at least 2 entries.    
+
 Methods
 ----------
+copy 
+    Deep copy of the current Sun instance
 Create 
     Calls methods to instantiate and construct optical surface in the SolTrace context.\end{DoxyVerb}
  
 
 \doxysubsection{Member Function Documentation}
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a29b0ec46faeb9a387e386877fa8a0002}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a29b0ec46faeb9a387e386877fa8a0002}} 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_ae42365f01df235d6126d2be967c0974e}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_ae42365f01df235d6126d2be967c0974e} 
 \index{pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}!Create@{Create}}
 \index{Create@{Create}!pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}}
 \doxysubsubsection{\texorpdfstring{Create()}{Create()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+Sun.\+Create (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+Sun.\+Create (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{pdll,  }\item[{}]{p\+\_\+data }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Create Sun instance in the SolTrace context.
 
@@ -73,7 +75,7 @@ int
  
 
 \doxysubsection{Member Data Documentation}
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a3354b649c3e867028a3d9a4cdd704b1f}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a3354b649c3e867028a3d9a4cdd704b1f}} 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a3354b649c3e867028a3d9a4cdd704b1f}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a3354b649c3e867028a3d9a4cdd704b1f} 
 \index{pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}!shape@{shape}}
 \index{shape@{shape}!pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}}
 \doxysubsubsection{\texorpdfstring{shape}{shape}}
@@ -81,9 +83,9 @@ int
 
 
 
-\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_sun}{Sun}} shape model. 
+Sun shape model. 
 
-One of\+: \{\textquotesingle{}p\textquotesingle{}\+:Pillbox, \textquotesingle{}g\textquotesingle{}\+:Gaussian, \textquotesingle{}d\textquotesingle{}\+:data table, \textquotesingle{}f\textquotesingle{}\+:gray diffuse\} \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a2f6f9ab8406313ff72ce82a1fb760910}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a2f6f9ab8406313ff72ce82a1fb760910}} 
+One of\+: \{\textquotesingle{}p\textquotesingle{}\+:Pillbox, \textquotesingle{}g\textquotesingle{}\+:Gaussian, \textquotesingle{}d\textquotesingle{}\+:data table, \textquotesingle{}f\textquotesingle{}\+:gray diffuse\} \Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a2f6f9ab8406313ff72ce82a1fb760910}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a2f6f9ab8406313ff72ce82a1fb760910} 
 \index{pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}!sigma@{sigma}}
 \index{sigma@{sigma}!pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}}
 \doxysubsubsection{\texorpdfstring{sigma}{sigma}}
@@ -93,7 +95,7 @@ One of\+: \{\textquotesingle{}p\textquotesingle{}\+:Pillbox, \textquotesingle{}g
 
 \mbox{[}mrad\mbox{]} Half-\/width or std. 
 
-dev. of the error distribution \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a5e1a4a260044c8951fc62efd7a7ab9f4}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a5e1a4a260044c8951fc62efd7a7ab9f4}} 
+dev. of the error distribution \Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_sun_a5e1a4a260044c8951fc62efd7a7ab9f4}\label{classpysoltrace_1_1_py_sol_trace_1_1_sun_a5e1a4a260044c8951fc62efd7a7ab9f4} 
 \index{pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}!user\_intensity\_table@{user\_intensity\_table}}
 \index{user\_intensity\_table@{user\_intensity\_table}!pysoltrace.PySolTrace.Sun@{pysoltrace.PySolTrace.Sun}}
 \doxysubsubsection{\texorpdfstring{user\_intensity\_table}{user\_intensity\_table}}
@@ -103,7 +105,7 @@ dev. of the error distribution \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_tra
 
 \mbox{[}mrad, 0..1\mbox{]} 2D list containing pairs of angle deviation from sun vector and irradiation intensity. 
 
-A typical table will have angles spanning 0-\/\texorpdfstring{$>$}{>}$\sim$5mrad, and inten-\/ sities starting at 1 and decreasing to zero. The table must contain at least 2 entries. ~\newline
+A typical table will have angles spanning 0-\/\texorpdfstring{$>$}{>}\texorpdfstring{$\sim$}{\string~}5mrad, and inten-\/ sities starting at 1 and decreasing to zero. The table must contain at least 2 entries. ~\newline
  
 
 The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
