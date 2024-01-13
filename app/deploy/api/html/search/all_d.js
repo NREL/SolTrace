@@ -1,8 +1,27 @@
 var searchData=
 [
-  ['radius_0',['radius',['../classpysoltrace_1_1_point.html#af57adf4f57b487c51514faaa4879cc1a',1,'pysoltrace::Point']]],
-  ['reflectivity_1',['reflectivity',['../classpysoltrace_1_1_py_sol_trace_1_1_optics_1_1_face.html#a5abbb7bb7dc837feb296c4ea3a6293ff',1,'pysoltrace::PySolTrace::Optics::Face']]],
-  ['refltable_2',['refltable',['../classpysoltrace_1_1_py_sol_trace_1_1_optics_1_1_face.html#a1f5eff7e99478e21eb00b89bce802291',1,'pysoltrace::PySolTrace::Optics::Face']]],
-  ['refraction_5freal_3',['refraction_real',['../classpysoltrace_1_1_py_sol_trace_1_1_optics_1_1_face.html#ab78780a86269e28319a0742499ddb5c2',1,'pysoltrace::PySolTrace::Optics::Face']]],
-  ['run_4',['run',['../classpysoltrace_1_1_py_sol_trace.html#a94edc099c9ce0d62d9619a41c2ea844b',1,'pysoltrace::PySolTrace']]]
+  ['shape_0',['shape',['../classpysoltrace_1_1_py_sol_trace_1_1_sun.html#a3354b649c3e867028a3d9a4cdd704b1f',1,'pysoltrace::PySolTrace::Sun']]],
+  ['sigma_1',['sigma',['../classpysoltrace_1_1_py_sol_trace_1_1_sun.html#a2f6f9ab8406313ff72ce82a1fb760910',1,'pysoltrace::PySolTrace::Sun']]],
+  ['slope_5ferror_2',['slope_error',['../classpysoltrace_1_1_py_sol_trace_1_1_optics_1_1_face.html#af694221cb4eafffac0e0711112ebcb94',1,'pysoltrace::PySolTrace::Optics::Face']]],
+  ['spec_5ferror_3',['spec_error',['../classpysoltrace_1_1_py_sol_trace_1_1_optics_1_1_face.html#a645ea0a3f35709d70b6b6292c7cb1c5a',1,'pysoltrace::PySolTrace::Optics::Face']]],
+  ['stage_4',['Stage',['../classpysoltrace_1_1_py_sol_trace_1_1_stage.html',1,'pysoltrace::PySolTrace']]],
+  ['stage_5fid_5',['stage_id',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a01a2162a3dd88ab83ecfeb85e837fb72',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['stages_6',['stages',['../classpysoltrace_1_1_py_sol_trace.html#a6f6cfafdcdbf02bac23dd52d31672b3a',1,'pysoltrace::PySolTrace']]],
+  ['sun_7',['Sun',['../classpysoltrace_1_1_py_sol_trace_1_1_sun.html',1,'pysoltrace::PySolTrace']]],
+  ['sun_8',['sun',['../classpysoltrace_1_1_py_sol_trace.html#a60c7ba3b669493365fcb9b7a9870ce27',1,'pysoltrace::PySolTrace']]],
+  ['surface_9',['surface',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#ad4d1bef0097e89a01ff5d8940ee023ed',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fconical_10',['surface_conical',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a6b5ec0c3daea9f496985aa81f4cd2a23',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fcubicspline_11',['surface_cubicspline',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a8c253d1c2d88f15a64b394da69d22850',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fcylindrical_12',['surface_cylindrical',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#abdbbea72631714ae7aed865981e3a838',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5ffile_13',['surface_file',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a3a873efd3b44b3c28e7526c3e4d57936',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5ffiniteelement_14',['surface_finiteelement',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#ac6b7acd27b4990984539ced0dc7f1318',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fflat_15',['surface_flat',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#ac5134dad6be77950731c89057816e293',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fhypellip_16',['surface_hypellip',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a0e3ea3c483f02f90af9d5ea6bdc8a8f3',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fparabolic_17',['surface_parabolic',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a13641e60835cf766e38b8d696fbe299c',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fparams_18',['surface_params',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#aced2dfa9a2a3afe2a42092cea5f58505',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fpolynomialrev_19',['surface_polynomialrev',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#ad02c46533a9086c4b77ab1fefd01bd0b',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fspherical_20',['surface_spherical',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a548e86ea8657ff35be018b31b8daf564',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5ftoroid_21',['surface_toroid',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a2f839d0623081d0e709ac01deaa0423f',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fvshot_22',['surface_vshot',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a2cb5c74d6edafefb8ba30d0b282b9c48',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['surface_5fzernicke_23',['surface_zernicke',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a4cf330335006c5741a57b9407adde96c',1,'pysoltrace::PySolTrace::Stage::Element']]]
 ];
