@@ -3,6 +3,8 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+*.p
+
 # User-specific files
 *.suo
 *.user
@@ -297,6 +299,7 @@ __pycache__/
 *.lib
 *.dll
 *.d
+*.dylib
 *.bin
 *.mod
 

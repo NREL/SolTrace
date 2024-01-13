@@ -1480,7 +1480,7 @@ class PySolTrace:
             # print("Loaded win32")
             #pdll = CDLL(cwd + "/coretraced.dll") # for debugging
         elif sys.platform == 'darwin':
-            pdll = CDLL(cwd + "/coretrace.dylib")  # Never tested
+            pdll = CDLL(cwd + "/coretrace_api.dylib")  # Never tested
         elif sys.platform.startswith('linux'):
             pdll = CDLL(cwd +"/coretrace_api.so")  
         else:
