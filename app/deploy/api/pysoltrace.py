@@ -579,7 +579,7 @@ class PySolTrace:
             y = numpy.cos(Azimuth) * numpy.cos(Elevation)
             z = numpy.sin(Elevation)
 
-            return numpy.array([x,y,z])
+            return Point(x,y,z)
 
     # ===========end of the Sun class===========================================================
 
@@ -1815,9 +1815,12 @@ class PySolTrace:
             tmp = df[df.stage==1].iloc[0]  #sun is coming from the cos vector of the elements in the first stage. Just take the first.
             sun_vec = numpy.array([-tmp.cos_x,-tmp.cos_y,-tmp.cos_z])  #negative of the vector
             # scale the vector based on the overall size of the sun bounding box
-            sun_scale = ((self.sunstats['xmax']-self.sunstats['xmin'])**2 + (self.sunstats['ymax']-self.sunstats['ymin'])**2)**.5 *0.75
-            sun_vec *= sun_scale
+            sunrange = numpy.array([df.loc_x.max()-df.loc_x.min(), df.loc_y.max()-df.loc_y.min(), df.loc_z.max()-df.loc_z.min()])
+            # sun_scale = ((self.sunstats['xmax']-self.sunstats['xmin'])**2 + (self.sunstats['ymax']-self.sunstats['ymin'])**2)**.5 *0.75
+            # sun_scale = min([sun_scale, df.loc_x.max()])
+            sun_vec *= (sunrange*sun_vec).max()
             fig.add_trace(go.Scatter3d(x=[0,sun_vec[0]], y=[0,sun_vec[1]], z=[0,sun_vec[2]], mode='lines', line=dict(color='orange', width=3)))
+            fig.add_trace(go.Scatter3d(x=[0,sun_vec[0]], y=[0,sun_vec[1]], z=[0,0], mode='lines', line=dict(color='gray', width=2)))
 
         fig.update_layout(showlegend=False)
         fig.show()
@@ -1923,7 +1926,7 @@ class PySolTrace:
             x_rec = numpy.arange(0, numpy.pi*D, numpy.pi*D/nx)
             y_rec = numpy.arange(-H/2,H/2, H/ny)
             # plot label for later
-            xlabtemp = "Circumferential position [rad]"
+            xlabtemp = "Circumferential position"
             
         # check labels
         if ylabel != None:
