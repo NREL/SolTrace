@@ -28,7 +28,7 @@ def api_callback(ntracedtotal, ntraced, ntotrace, curstage, nstages, thread_id):
 
 
 def _thread_func(pobj, seed, id):
-    pobj.run(seed,True, 1, id)
+    pobj.run(seed,True, 0, id)
     return copy.deepcopy(pobj.raydata), copy.copy(pobj.sunstats)
 
 
@@ -1543,13 +1543,25 @@ class PySolTrace:
         Parameters
         ----------
         seed : int
-            Seed for random number generator. [-1] for random seed.
+            Seed for random number generator. [-1] for random seed. Seeding happens 
+            differently for single vs multi-thread modes. 
+                * If nthreads == 1 and seed < 0: a random int is chosen as the seed value.
+                * If nthreads > 1 and seed < 0: a random int is chosen for the first 
+                  thread seed value. Other threads i=1..(nthreads-1) are assigned 
+                  (first value) + i*123. 
         as_power_tower : bool
             Flag indicating simulation should be processed as power 
             tower / central receiver type, with corresponding efficiency adjustments.
         nthread : int
             Number of threads to execute. Will be limited by the method to the number
             available on the machine. 
+                * If nthreads > 1, the function will call recursively while setting 
+                  nthreads=0 for each thread spawned. 
+                * If nthreads == 1, the function will run in single-thread mode. Seed
+                  values are checked.
+                * If nthreads == 0, the function will run in single-thread mode. Seed
+                  values are not checked and should be handled prior to calling in 
+                  this mode. 
         thread_id : int 
             Argument used by the multi-threading call. Do not manually specify this value.
         
@@ -1560,8 +1572,13 @@ class PySolTrace:
         """
 
         pdll = self.__load_dll()
+
+        if seed<0:
+            runseed = random.randint(1,int(1e9))
+        else:
+            runseed = seed
         
-        if nthread == 1:
+        if nthread in [0,1]:
             
             # Create an instance of soltrace in memory
             pdll.st_create_context.restype = c_void_p
@@ -1579,7 +1596,7 @@ class PySolTrace:
                 tstart = time.time()
 
             pdll.st_sim_run.restype = c_int 
-            res = pdll.st_sim_run( c_void_p(p_data), c_uint16(seed), 
+            res = pdll.st_sim_run( c_void_p(p_data), c_uint16(runseed), 
                     c_bool(as_power_tower), api_callback, thread_id)
             
             if thread_id == 0:
@@ -1596,7 +1613,7 @@ class PySolTrace:
 
             return res
         else:
-            seeds = [seed + i if seed>0 else random.randint(1,int(1e9)) for i in range(nthread)]
+            seeds = [seed + i*123 for i in range(nthread)]
 
             P = [[self.copy(), seeds[i], i+1] for i in range(nthread)]
 
