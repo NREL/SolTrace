@@ -49,7 +49,7 @@ These are the general steps you need to follow to set up your computer for devel
 
     ```
     cd wex
-    git checkout tags/2022.11.21.r0.ssc.278
+    git checkout tags/2021.12.02.r2.ssc.274
     ```
 
 

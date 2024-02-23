@@ -71,7 +71,7 @@ Source: "x64/soltrace.exe"; DestDir: "{app}/x64"; Excludes: ".svn,*.map";  Flags
 Name: "{group}\SolTrace"; Filename: "{app}\x64\soltrace.exe"  ; Check: Is64BitInstallMode
 ;Name: "{group}\{cm:ProgramOnTheWeb,SolTrace}"; Filename: "http://soltrace.nrel.gov"
 ;Name: "{group}\{cm:UninstallProgram,SolTrace}"; Filename: "{uninstallexe}"
-Name: "{commondesktop}\SolTrace (x64)"; Filename: "{app}\x64\soltrace.exe"; Tasks: desktopicon; Check: Is64BitInstallMode
+Name: "{autodesktop}\SolTrace (x64)"; Filename: "{app}\x64\soltrace.exe"; Tasks: desktopicon; Check: Is64BitInstallMode
 
 [Registry]
 ; 12/4/08 - delete left over entry to prevent issue reported by Paul - opening with earlier version when new verions installed
