@@ -538,6 +538,49 @@ class PySolTrace:
                 return pdll.st_sun_userdata(c_void_p(p_data), c_uint32(len(self.user_intensity_table)), pointer(user_angles), pointer(user_ints))
 
             return 1
+        
+        def calc_sun_vector(self, hour, day, lat):
+            """
+            Computes the sun vector associated with a given latitude, hour, and day. The coordinate system
+            follows the left hand rule:
+                +x = east
+                +y = north
+                +z = zenith
+
+            Note that this sun position algorithm is not especially accurate compared to NREL/Solpos or the like.
+            If a very accurate method is required, use another calculation.
+
+            Parameters
+            ===========
+            hour : float
+                Hour of the day, can be fractional. 12 corresponds to solar noon.
+            day : float
+                Day of the year. 1 is january 1st
+            lat : float
+                [rad] Lattitude (+ north, - south)
+
+            Returns
+            ========
+                numpy.array([x,y,z]) unit vector in the direction of the sun
+            """
+
+            Declination = numpy.arcsin(0.39795 * numpy.cos(0.01720248870643171 * (day - 173)))   #[rad]
+            HourAngle = (hour/12 - 1)*numpy.pi  #[rad]
+            cos_Declination = numpy.cos(Declination)
+            sin_Declination = numpy.sin(Declination)
+            cos_HourAngle = numpy.cos(HourAngle)
+            sin_lat = numpy.sin(lat)
+            cos_lat = numpy.cos(lat)
+            Elevation = numpy.arcsin(sin_Declination * sin_lat + cos_Declination * cos_HourAngle * cos_lat)
+            Azimuth = numpy.arccos((sin_Declination * cos_lat - cos_Declination * sin_lat * cos_HourAngle) / numpy.cos(Elevation) + 0.0000000001)
+            if (numpy.sin(HourAngle) > 0.0):
+                Azimuth = 2*numpy.pi - Azimuth
+            x = numpy.sin(Azimuth) * numpy.cos(Elevation)
+            y = numpy.cos(Azimuth) * numpy.cos(Elevation)
+            z = numpy.sin(Elevation)
+
+            return numpy.array([x,y,z])
+
     # ===========end of the Sun class===========================================================
 
     # ==========================================================================================
@@ -1713,7 +1756,7 @@ class PySolTrace:
 
         return df
 
-    def plot_trace(self, nrays:int = 100000, ntrace:int=100):
+    def plot_trace(self, nrays:int = 100000, ntrace:int=100, show_sun_vector:bool=True):
         """
         Creates and (optionally) displays a 3D scatter and trace plot. This
         function requires that the Python package `plotly` be installed. 
@@ -1726,6 +1769,8 @@ class PySolTrace:
         ntrace : int 
             Number of rays for which traces will be displayed. Large values
             may render slowly
+        show_sun_vector : bool
+            Flag indicating whether the sun vector should be rendered on the plot
         """
 
         print("Generating 3D trace plots")
@@ -1765,6 +1810,14 @@ class PySolTrace:
             ray_y = dfr.loc_y
             ray_z = dfr.loc_z
             fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+        # Add a trace for the sun vector
+        if show_sun_vector:
+            tmp = df[df.stage==1].iloc[0]  #sun is coming from the cos vector of the elements in the first stage. Just take the first.
+            sun_vec = numpy.array([-tmp.cos_x,-tmp.cos_y,-tmp.cos_z])  #negative of the vector
+            # scale the vector based on the overall size of the sun bounding box
+            sun_scale = ((self.sunstats['xmax']-self.sunstats['xmin'])**2 + (self.sunstats['ymax']-self.sunstats['ymin'])**2)**.5 *0.75
+            sun_vec *= sun_scale
+            fig.add_trace(go.Scatter3d(x=[0,sun_vec[0]], y=[0,sun_vec[1]], z=[0,sun_vec[2]], mode='lines', line=dict(color='orange', width=3)))
 
         fig.update_layout(showlegend=False)
         fig.show()

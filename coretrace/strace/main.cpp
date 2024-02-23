@@ -103,17 +103,7 @@ static bool read_sun( FILE *fp, st_context_t cxt )
 		
 	if ( UseLDHSpec )
 	{
-		double Declination, HourAngle, Elevation, Azimuth;
-
-		Declination = 180/M_PI*asin(0.39795*cos(0.98563*M_PI/180*(Day-173)));
-		HourAngle = 15*(Hour-12);
-		Elevation = 180/M_PI*asin(sin(Declination*M_PI/180)*sin(Latitude*M_PI/180)+cos(Declination*M_PI/180)*cos(HourAngle*M_PI/180)*cos(Latitude*M_PI/180));
-		Azimuth = 180/M_PI*acos((sin(M_PI/180*Declination)*cos(M_PI/180*Latitude)-cos(M_PI/180*Declination)*sin(M_PI/180*Latitude)*cos(M_PI/180*HourAngle))/cos(M_PI/180*Elevation)+0.0000000001);
-		if ( sin(HourAngle*M_PI/180) > 0.0 )
-			Azimuth = 360 - Azimuth;
-		X = -sin(Azimuth*M_PI/180)*cos(Elevation*M_PI/180);
-		Y = sin(Elevation*M_PI/180);
-		Z = cos(Azimuth*M_PI/180)*cos(Elevation*M_PI/180);
+		st_sun_position(cxt, Latitude, Day, Hour, &X, &Y, &Z);
 	}
 
 	st_sun_xyz( cxt, X, Y, Z );

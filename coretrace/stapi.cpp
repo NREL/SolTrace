@@ -497,6 +497,35 @@ STCORE_API int st_sun_xyz( st_context_t pcxt, double x, double y, double z )
 	return 1;
 }
 
+STCORE_API int st_sun_position(st_context_t pcxt, double lat, double day, double hour, double* x, double* y, double* z)
+{
+	/* 
+	computes the sun vector xyz given arguments
+	lat : [deg] latitude 
+	day : [] day of the year 
+	hour : [hour] solar time. 12.00 corresponds to sun at maximum elevation and does not necessarily match local time
+
+	xyz coordinate system:
+		x: +west
+		y: +zenith
+		z: +north
+	*/
+
+	double Declination, HourAngle, Elevation, Azimuth;
+
+	Declination = 180 / M_PI * asin(0.39795 * cos(0.98563 * M_PI / 180 * (day - 173)));
+	HourAngle = 15 * (hour - 12);
+	Elevation = 180 / M_PI * asin(sin(Declination * M_PI / 180) * sin(lat * M_PI / 180) + cos(Declination * M_PI / 180) * cos(HourAngle * M_PI / 180) * cos(lat * M_PI / 180));
+	Azimuth = 180 / M_PI * acos((sin(M_PI / 180 * Declination) * cos(M_PI / 180 * lat) - cos(M_PI / 180 * Declination) * sin(M_PI / 180 * lat) * cos(M_PI / 180 * HourAngle)) / cos(M_PI / 180 * Elevation) + 0.0000000001);
+	if (sin(HourAngle * M_PI / 180) > 0.0)
+		Azimuth = 360 - Azimuth;
+	*x = -sin(Azimuth * M_PI / 180) * cos(Elevation * M_PI / 180);
+	*y = sin(Elevation * M_PI / 180);
+	*z = cos(Azimuth * M_PI / 180) * cos(Elevation * M_PI / 180);
+
+	return 1;
+}
+
 STCORE_API int st_sun_userdata( st_context_t pcxt, st_uint_t npoints, double angle[], double intensity[])
 {
 	SYSTEM(pcxt,-1);
