@@ -28,7 +28,7 @@ def api_callback(ntracedtotal, ntraced, ntotrace, curstage, nstages, thread_id):
 
 
 def _thread_func(pobj, seed, id):
-    pobj.run(seed,True, 1, id)
+    pobj.run(seed,True, 0, id)
     return copy.deepcopy(pobj.raydata), copy.copy(pobj.sunstats)
 
 
@@ -538,6 +538,49 @@ class PySolTrace:
                 return pdll.st_sun_userdata(c_void_p(p_data), c_uint32(len(self.user_intensity_table)), pointer(user_angles), pointer(user_ints))
 
             return 1
+        
+        def calc_sun_vector(self, hour, day, lat):
+            """
+            Computes the sun vector associated with a given latitude, hour, and day. The coordinate system
+            follows the left hand rule:
+                +x = east
+                +y = north
+                +z = zenith
+
+            Note that this sun position algorithm is not especially accurate compared to NREL/Solpos or the like.
+            If a very accurate method is required, use another calculation.
+
+            Parameters
+            ===========
+            hour : float
+                Hour of the day, can be fractional. 12 corresponds to solar noon.
+            day : float
+                Day of the year. 1 is january 1st
+            lat : float
+                [rad] Lattitude (+ north, - south)
+
+            Returns
+            ========
+                numpy.array([x,y,z]) unit vector in the direction of the sun
+            """
+
+            Declination = numpy.arcsin(0.39795 * numpy.cos(0.01720248870643171 * (day - 173)))   #[rad]
+            HourAngle = (hour/12 - 1)*numpy.pi  #[rad]
+            cos_Declination = numpy.cos(Declination)
+            sin_Declination = numpy.sin(Declination)
+            cos_HourAngle = numpy.cos(HourAngle)
+            sin_lat = numpy.sin(lat)
+            cos_lat = numpy.cos(lat)
+            Elevation = numpy.arcsin(sin_Declination * sin_lat + cos_Declination * cos_HourAngle * cos_lat)
+            Azimuth = numpy.arccos((sin_Declination * cos_lat - cos_Declination * sin_lat * cos_HourAngle) / numpy.cos(Elevation) + 0.0000000001)
+            if (numpy.sin(HourAngle) > 0.0):
+                Azimuth = 2*numpy.pi - Azimuth
+            x = numpy.sin(Azimuth) * numpy.cos(Elevation)
+            y = numpy.cos(Azimuth) * numpy.cos(Elevation)
+            z = numpy.sin(Elevation)
+
+            return Point(x,y,z)
+
     # ===========end of the Sun class===========================================================
 
     # ==========================================================================================
@@ -1500,13 +1543,25 @@ class PySolTrace:
         Parameters
         ----------
         seed : int
-            Seed for random number generator. [-1] for random seed.
+            Seed for random number generator. [-1] for random seed. Seeding happens 
+            differently for single vs multi-thread modes. 
+                * If nthreads == 1 and seed < 0: a random int is chosen as the seed value.
+                * If nthreads > 1 and seed < 0: a random int is chosen for the first 
+                  thread seed value. Other threads i=1..(nthreads-1) are assigned 
+                  (first value) + i*123. 
         as_power_tower : bool
             Flag indicating simulation should be processed as power 
             tower / central receiver type, with corresponding efficiency adjustments.
         nthread : int
             Number of threads to execute. Will be limited by the method to the number
             available on the machine. 
+                * If nthreads > 1, the function will call recursively while setting 
+                  nthreads=0 for each thread spawned. 
+                * If nthreads == 1, the function will run in single-thread mode. Seed
+                  values are checked.
+                * If nthreads == 0, the function will run in single-thread mode. Seed
+                  values are not checked and should be handled prior to calling in 
+                  this mode. 
         thread_id : int 
             Argument used by the multi-threading call. Do not manually specify this value.
         
@@ -1517,8 +1572,13 @@ class PySolTrace:
         """
 
         pdll = self.__load_dll()
+
+        if seed<0:
+            runseed = random.randint(1,int(1e9))
+        else:
+            runseed = seed
         
-        if nthread == 1:
+        if nthread in [0,1]:
             
             # Create an instance of soltrace in memory
             pdll.st_create_context.restype = c_void_p
@@ -1536,7 +1596,7 @@ class PySolTrace:
                 tstart = time.time()
 
             pdll.st_sim_run.restype = c_int 
-            res = pdll.st_sim_run( c_void_p(p_data), c_uint16(seed), 
+            res = pdll.st_sim_run( c_void_p(p_data), c_uint16(runseed), 
                     c_bool(as_power_tower), api_callback, thread_id)
             
             if thread_id == 0:
@@ -1553,7 +1613,7 @@ class PySolTrace:
 
             return res
         else:
-            seeds = [seed + i if seed>0 else random.randint(1,int(1e9)) for i in range(nthread)]
+            seeds = [seed + i*123 for i in range(nthread)]
 
             P = [[self.copy(), seeds[i], i+1] for i in range(nthread)]
 
@@ -1713,7 +1773,7 @@ class PySolTrace:
 
         return df
 
-    def plot_trace(self, nrays:int = 100000, ntrace:int=100):
+    def plot_trace(self, nrays:int = 100000, ntrace:int=100, show_sun_vector:bool=True):
         """
         Creates and (optionally) displays a 3D scatter and trace plot. This
         function requires that the Python package `plotly` be installed. 
@@ -1726,6 +1786,8 @@ class PySolTrace:
         ntrace : int 
             Number of rays for which traces will be displayed. Large values
             may render slowly
+        show_sun_vector : bool
+            Flag indicating whether the sun vector should be rendered on the plot
         """
 
         print("Generating 3D trace plots")
@@ -1765,6 +1827,17 @@ class PySolTrace:
             ray_y = dfr.loc_y
             ray_z = dfr.loc_z
             fig.add_trace(go.Scatter3d(x=ray_x, y=ray_y, z=ray_z, mode='lines', line=dict(color='black', width=0.5)))
+        # Add a trace for the sun vector
+        if show_sun_vector:
+            tmp = df[df.stage==1].iloc[0]  #sun is coming from the cos vector of the elements in the first stage. Just take the first.
+            sun_vec = numpy.array([-tmp.cos_x,-tmp.cos_y,-tmp.cos_z])  #negative of the vector
+            # scale the vector based on the overall size of the sun bounding box
+            sunrange = numpy.array([df.loc_x.max()-df.loc_x.min(), df.loc_y.max()-df.loc_y.min(), df.loc_z.max()-df.loc_z.min()])
+            # sun_scale = ((self.sunstats['xmax']-self.sunstats['xmin'])**2 + (self.sunstats['ymax']-self.sunstats['ymin'])**2)**.5 *0.75
+            # sun_scale = min([sun_scale, df.loc_x.max()])
+            sun_vec *= (sunrange*sun_vec).max()
+            fig.add_trace(go.Scatter3d(x=[0,sun_vec[0]], y=[0,sun_vec[1]], z=[0,sun_vec[2]], mode='lines', line=dict(color='orange', width=3)))
+            fig.add_trace(go.Scatter3d(x=[0,sun_vec[0]], y=[0,sun_vec[1]], z=[0,0], mode='lines', line=dict(color='gray', width=2)))
 
         fig.update_layout(showlegend=False)
         fig.show()
@@ -1870,7 +1943,7 @@ class PySolTrace:
             x_rec = numpy.arange(0, numpy.pi*D, numpy.pi*D/nx)
             y_rec = numpy.arange(-H/2,H/2, H/ny)
             # plot label for later
-            xlabtemp = "Circumferential position [rad]"
+            xlabtemp = "Circumferential position"
             
         # check labels
         if ylabel != None:
