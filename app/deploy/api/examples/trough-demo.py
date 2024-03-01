@@ -108,7 +108,7 @@ if __name__ == "__main__":
             df = PT.raydata 
             f_inter[i,j] = 1 - df[df.stage==3].size / df[df.stage==1].size
 
-        plt.plot(defocus, f_inter[:,j], label=f'error={surferrs[j]:.1f} mrad')
+        plt.plot(defocus*10, f_inter[:,j], label=f'error={surferrs[j]:.1f} mrad')
     plt.legend()
     plt.xlabel("Defocusing angle (mrad)")
     plt.ylabel("Intercept factor")
