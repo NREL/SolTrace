@@ -151,9 +151,9 @@ STCORE_API int st_raynumbers(st_context_t pcxt, int *ray_numbers);
 STCORE_API int st_sun_stats(st_context_t pcxt, double *xmin, double *xmax, double *ymin, double *ymax, int *nsunrays );
 	
 /* functions to control simulation */
-STCORE_API int st_sim_params(st_context_t pcxt, int raycount, int maxcount);
+STCORE_API int st_sim_params(st_context_t pcxt, int raycount, int maxcount, int include_dynamic_group);
 STCORE_API int st_sim_errors(st_context_t pcxt, int include_sun_shape, int include_optics);
-STCORE_API int st_sim_run( st_context_t pcxt, unsigned int seed, bool AsPowerTower,
+STCORE_API int st_sim_run( st_context_t pcxt, unsigned int seed,
 						  int (*callback)(st_uint_t ntracedtotal, st_uint_t ntraced, st_uint_t ntotrace, st_uint_t curstage, st_uint_t nstages, void *data), void *data);
 
 /*
