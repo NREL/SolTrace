@@ -137,7 +137,8 @@ STCORE_API int st_element_optic(st_context_t pcxt, st_uint_t stage, st_uint_t id
 
 /* functions to configure sun geometry and shape */
 STCORE_API int st_sun(st_context_t pcxt, int point_source, char shape, double sigma_halfwidth);
-STCORE_API int st_sun_xyz(st_context_t pcxt,  double x, double y, double z );
+STCORE_API int st_sun_xyz(st_context_t pcxt, double x, double y, double z);
+STCORE_API int st_sun_position(st_context_t pcxt,  double lat, double day, double hour, double* x, double* y, double* z );
 STCORE_API int st_sun_userdata(st_context_t pcxt,  st_uint_t npoints, double angle[], double intensity[]);
 
 /* function to retrieve intersection data */

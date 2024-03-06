@@ -341,22 +341,7 @@ static int LoadSystemIntoContext( Project *System, st_context_t spcxt, wxArraySt
 	double x,y,z;
 	if (System->Sun.UseLDHSpec)
 	{
-		double lat, day, hour;
-		double Declination, HourAngle, Elevation, Azimuth;
-
-		lat = System->Sun.Latitude;
-		day = System->Sun.Day;
-		hour = System->Sun.Hour;
-
-		Declination = 180/M_PI*asin(0.39795*cos(0.98563*M_PI/180*(day-173)));
-		HourAngle = 15*(hour-12);
-		Elevation = 180/M_PI*asin(sin(Declination*M_PI/180)*sin(lat*M_PI/180)+cos(Declination*M_PI/180)*cos(HourAngle*M_PI/180)*cos(lat*M_PI/180));
-		Azimuth = 180/M_PI*acos((sin(M_PI/180*Declination)*cos(M_PI/180*lat)-cos(M_PI/180*Declination)*sin(M_PI/180*lat)*cos(M_PI/180*HourAngle))/cos(M_PI/180*Elevation)+0.0000000001);
-		if ( sin(HourAngle*M_PI/180) > 0.0 )
-			Azimuth = 360 - Azimuth;
-		x = -sin(Azimuth*M_PI/180)*cos(Elevation*M_PI/180);
-		y = sin(Elevation*M_PI/180);
-		z = cos(Azimuth*M_PI/180)*cos(Elevation*M_PI/180);
+		st_sun_position(spcxt, System->Sun.Latitude, System->Sun.Day, System->Sun.Hour, &x, &y, &z);
 	}
 	else
 	{

@@ -1,14 +1,10 @@
 var searchData=
 [
-  ['get_5fintersect_5fcosines_0',['get_intersect_cosines',['../classpysoltrace_1_1_py_sol_trace.html#aeeec345624b1c13c8c81ce05b3cf1d60',1,'pysoltrace::PySolTrace']]],
-  ['get_5fintersect_5felementmap_1',['get_intersect_elementmap',['../classpysoltrace_1_1_py_sol_trace.html#a838d8fa54ce720eec45b6ac9966c3c52',1,'pysoltrace::PySolTrace']]],
-  ['get_5fintersect_5flocations_2',['get_intersect_locations',['../classpysoltrace_1_1_py_sol_trace.html#afd7dacb40a08758f33b7ddd7a13aa203',1,'pysoltrace::PySolTrace']]],
-  ['get_5fintersect_5fraynumbers_3',['get_intersect_raynumbers',['../classpysoltrace_1_1_py_sol_trace.html#aa7f665a07f81e2957bd9a55c02163108',1,'pysoltrace::PySolTrace']]],
-  ['get_5fintersect_5fstagemap_4',['get_intersect_stagemap',['../classpysoltrace_1_1_py_sol_trace.html#a7dd465903843cbef48f9407572a03807',1,'pysoltrace::PySolTrace']]],
-  ['get_5fnum_5felements_5',['get_num_elements',['../classpysoltrace_1_1_py_sol_trace_1_1_stage.html#a2b14f5596135309c0b82423eb83bf6eb',1,'pysoltrace::PySolTrace::Stage']]],
-  ['get_5fnum_5fintersections_6',['get_num_intersections',['../classpysoltrace_1_1_py_sol_trace.html#a7a981000d4125020f387e54113c64291',1,'pysoltrace::PySolTrace']]],
-  ['get_5fnum_5foptics_7',['get_num_optics',['../classpysoltrace_1_1_py_sol_trace.html#ac7c0f2dfeb4c61a710e1d8f616abdba8',1,'pysoltrace::PySolTrace']]],
-  ['get_5fnum_5fstages_8',['get_num_stages',['../classpysoltrace_1_1_py_sol_trace.html#a7acc829eed011aed7688308e7a3f79fe',1,'pysoltrace::PySolTrace']]],
-  ['get_5fray_5fdataframe_9',['get_ray_dataframe',['../classpysoltrace_1_1_py_sol_trace.html#a3abc62a49c76f1e9f1956c7e136f29b3',1,'pysoltrace::PySolTrace']]],
-  ['get_5fsun_5fstats_10',['get_sun_stats',['../classpysoltrace_1_1_py_sol_trace.html#a5eea6c46e195a5316e0a4d7239824c67',1,'pysoltrace::PySolTrace']]]
+  ['id_0',['id',['../classpysoltrace_1_1_py_sol_trace_1_1_optics.html#a53caf38b24415bc9f8bdf8671df628e8',1,'pysoltrace.PySolTrace.Optics.id'],['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#a3b31f205015e39e850d30882449d255a',1,'pysoltrace.PySolTrace.Stage.Element.id'],['../classpysoltrace_1_1_py_sol_trace_1_1_stage.html#a094086458c0d337d879a92a664d8292d',1,'pysoltrace.PySolTrace.Stage.id']]],
+  ['interaction_1',['interaction',['../classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element.html#ab91f9efc668f6cee2214991f30040b7a',1,'pysoltrace::PySolTrace::Stage::Element']]],
+  ['is_5fmultihit_2',['is_multihit',['../classpysoltrace_1_1_py_sol_trace_1_1_stage.html#a6d0d15687806a0e055e1c028ffcba8a9',1,'pysoltrace::PySolTrace::Stage']]],
+  ['is_5fsunshape_3',['is_sunshape',['../classpysoltrace_1_1_py_sol_trace.html#ae21e812c154add5398a500a06f9e5732',1,'pysoltrace::PySolTrace']]],
+  ['is_5fsurface_5ferrors_4',['is_surface_errors',['../classpysoltrace_1_1_py_sol_trace.html#a0dbeee876ff8ac38d65de4c28de66273',1,'pysoltrace::PySolTrace']]],
+  ['is_5ftracethrough_5',['is_tracethrough',['../classpysoltrace_1_1_py_sol_trace_1_1_stage.html#a67bb58d6cf03489ab7f73d25402b54b2',1,'pysoltrace::PySolTrace::Stage']]],
+  ['is_5fvirtual_6',['is_virtual',['../classpysoltrace_1_1_py_sol_trace_1_1_stage.html#a4adf56c27c411dcfeb2a195991b18c76',1,'pysoltrace::PySolTrace::Stage']]]
 ];

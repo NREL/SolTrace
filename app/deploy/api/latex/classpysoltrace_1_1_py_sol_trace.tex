@@ -1,6 +1,6 @@
-\hypertarget{classpysoltrace_1_1_py_sol_trace}{}\doxysection{pysoltrace.\+Py\+Sol\+Trace Class Reference}
-\label{classpysoltrace_1_1_py_sol_trace}\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsection*{Classes}
+\doxysection{pysoltrace.\+Py\+Sol\+Trace Class Reference}
+\hypertarget{classpysoltrace_1_1_py_sol_trace}{}\label{classpysoltrace_1_1_py_sol_trace}\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
+\doxysubsubsection*{Classes}
 \begin{DoxyCompactItemize}
 \item 
 class \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_optics}{Optics}}
@@ -9,93 +9,87 @@ class \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_stage}{Stage}}
 \item 
 class \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_sun}{Sun}}
 \end{DoxyCompactItemize}
-\doxysubsection*{Public Member Functions}
+\doxysubsubsection*{Public Member Functions}
 \begin{DoxyCompactItemize}
 \item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a42165049122ad01472c01674c003b1fe}\label{classpysoltrace_1_1_py_sol_trace_a42165049122ad01472c01674c003b1fe}} 
-def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self)
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_aeecf2e102c95fb341b2251ca292cefb8}\label{classpysoltrace_1_1_py_sol_trace_aeecf2e102c95fb341b2251ca292cefb8} 
+{\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a9eeadcf9efd43a08078dac709c8e7c0f}{clear\+\_\+context}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_ad41d6eff82a4de44e6ed69ea83516422}{copy}} (self)
 \item 
-int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_ac7c0f2dfeb4c61a710e1d8f616abdba8}{get\+\_\+num\+\_\+optics}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_ac28cf0f5e43e801012dadb6b4dd6b7fb}{Create}} (self, pdll, p\+\_\+data)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_aa0681f78104e3f6894222097343883b1}{add\+\_\+optic}} (self, str optic\+\_\+name)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a57b83224348f0aa2b5b30f7de6ea2ba6}{add\+\_\+optic}} (self, str optic\+\_\+name)
 \item 
 int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a6a7f6c2dde7a73f773967baeb02e887a}{delete\+\_\+optic}} (self, int optic\+\_\+id)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_aab094a9f2747a5875228e4c875f30e65}{add\+\_\+sun}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a59b4e52eec1fa47592d06471ae45830f}{add\+\_\+sun}} (self)
 \item 
-int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a7acc829eed011aed7688308e7a3f79fe}{get\+\_\+num\+\_\+stages}} (self)
-\item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_ad8f398b1a500cbf0cdf8ed52238c3544}{add\+\_\+stage}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_af6b6764ecaaeef19505d5e01c4be9960}{add\+\_\+stage}} (self)
 \item 
 int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a3e7acc7cf17a930a36c42d0ddaf86374}{delete\+\_\+stage}} (self, int stage\+\_\+id)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a94edc099c9ce0d62d9619a41c2ea844b}{run}} (self, int seed=-\/1, as\+\_\+power\+\_\+tower=False)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a68146449e218fa7113dd605ffa34fb4c}{run}} (self, int seed=-\/1, as\+\_\+power\+\_\+tower=False, nthread=1, thread\+\_\+id=0)
 \item 
-int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a7a981000d4125020f387e54113c64291}{get\+\_\+num\+\_\+intersections}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_ae44d334a3ad46c7d7f8a2cf6e22dd952}{plot\+\_\+trace}} (self, int nrays=100000, int ntrace=100)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_afd7dacb40a08758f33b7ddd7a13aa203}{get\+\_\+intersect\+\_\+locations}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a5fdaaf43753641f297c9fd7d34b288ff}{plot\+\_\+flux}} (self, element, int nx=25, int ny=25, str figpath=None, display=True, figsize=(9, 6), bool absorbed\+\_\+only=True, levels=25, int dpi=300, str xlabel=None, str ylabel=None)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_aeeec345624b1c13c8c81ce05b3cf1d60}{get\+\_\+intersect\+\_\+cosines}} (self)
+numpy.\+array \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a370bc0e59ea2a72a1f9f353cc2163756}{util\+\_\+calc\+\_\+euler\+\_\+angles}} (self, numpy.\+array origin, numpy.\+array aimpoint, zrot)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a838d8fa54ce720eec45b6ac9966c3c52}{get\+\_\+intersect\+\_\+elementmap}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a27326ae6d2a9fcddcdaa2a61e5a9fd92}{util\+\_\+transform\+\_\+to\+\_\+local}} (self, numpy.\+array posref, numpy.\+array cosref, numpy.\+array origin, numpy.\+array rreftoloc)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a7dd465903843cbef48f9407572a03807}{get\+\_\+intersect\+\_\+stagemap}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a9e67dddbb4fc38062f1ccbf3e6a88ed6}{util\+\_\+transform\+\_\+to\+\_\+ref}} (self, posloc, cosloc, origin, rloctoref)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_aa7f665a07f81e2957bd9a55c02163108}{get\+\_\+intersect\+\_\+raynumbers}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a0e3d231bba926e4b0ad862540f9c6b49}{util\+\_\+matrix\+\_\+vector\+\_\+mult}} (self, m, v)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a5eea6c46e195a5316e0a4d7239824c67}{get\+\_\+sun\+\_\+stats}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a53bbf3f44c41cdd61f3e70eeecf1adf4}{util\+\_\+calc\+\_\+transforms}} (self, euler)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a3abc62a49c76f1e9f1956c7e136f29b3}{get\+\_\+ray\+\_\+dataframe}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a51dcf442637ae890f3c314e1117d736a}{util\+\_\+matrix\+\_\+transpose}} (self, m)
 \item 
-bool \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a2f8f2afc0d50794f8286a214b9015fe3}{validate}} (self)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_ad5ad1335f815a58e2e89922fd5ed8070}{util\+\_\+rotation\+\_\+arbitrary}} (self, theta, axis, axloc, pt)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a3795434bcda6b1d5010268caccc89876}{util\+\_\+calc\+\_\+euler\+\_\+angles}} (self, origin, aimpoint, zrot)
-\item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a61152a58b3fce9f1ee977ed652820008}{util\+\_\+transform\+\_\+to\+\_\+local}} (self, posref, cosref, origin, rreftoloc)
-\item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a60eaa62e41ad6d2b5441b815cb30660e}{util\+\_\+transform\+\_\+to\+\_\+ref}} (self, posloc, cosloc, origin, rloctoref)
-\item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a4236679544a6427ef0db48bb9a5c7e98}{util\+\_\+matrix\+\_\+vector\+\_\+mult}} (self, m, v)
-\item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a333bbf5acbf5c1cb32e604b32d4f948e}{util\+\_\+calc\+\_\+transforms}} (self, euler)
-\item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_aa5541b68fab7b61ae6497944a9e2ec8d}{util\+\_\+matrix\+\_\+transpose}} (self, m)
-\item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_ab4875d628e1f02b6429498116afe2683}{util\+\_\+rotation\+\_\+arbitrary}} (self, theta, axis, axloc, pt)
-\item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_ace20213bdc5aa78b94a210cf55582987}\label{classpysoltrace_1_1_py_sol_trace_ace20213bdc5aa78b94a210cf55582987}} 
-def {\bfseries util\+\_\+calc\+\_\+unitvect} (self, vect)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_afaa2d36ecfcfb80d1beb10c03d31b61b}{util\+\_\+calc\+\_\+unitvect}} (self, vect)
 \item 
 float \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_aed7abf720015680fbfff07bd96609987}{util\+\_\+calc\+\_\+zrot\+\_\+azel}} (self, vect)
 \item 
-def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a2bee17e5e943c63646f691ebaff4a1eb}{write\+\_\+soltrace\+\_\+input\+\_\+file}} (self, str path)
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a03d79b54430230561114e8a72190f81c}{write\+\_\+soltrace\+\_\+input\+\_\+file}} (self, str path)
 \end{DoxyCompactItemize}
-\doxysubsection*{Public Attributes}
+\doxysubsubsection*{Public Attributes}
 \begin{DoxyCompactItemize}
 \item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a18527338d8a83fa4b59f5811887adcbf}\label{classpysoltrace_1_1_py_sol_trace_a18527338d8a83fa4b59f5811887adcbf}} 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_a18527338d8a83fa4b59f5811887adcbf}\label{classpysoltrace_1_1_py_sol_trace_a18527338d8a83fa4b59f5811887adcbf} 
 {\bfseries optics}
-\begin{DoxyCompactList}\small\item\em List of \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_optics}{Optics}} instances. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a6f6cfafdcdbf02bac23dd52d31672b3a}\label{classpysoltrace_1_1_py_sol_trace_a6f6cfafdcdbf02bac23dd52d31672b3a}} 
+\begin{DoxyCompactList}\small\item\em List of Optics instances. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_a6f6cfafdcdbf02bac23dd52d31672b3a}\label{classpysoltrace_1_1_py_sol_trace_a6f6cfafdcdbf02bac23dd52d31672b3a} 
 {\bfseries stages}
-\begin{DoxyCompactList}\small\item\em List of \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_stage}{Stage}} instances. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_ab565b43f63fb7b455621fb483a743126}\label{classpysoltrace_1_1_py_sol_trace_ab565b43f63fb7b455621fb483a743126}} 
+\begin{DoxyCompactList}\small\item\em List of Stage instances. \end{DoxyCompactList}\item 
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a60c7ba3b669493365fcb9b7a9870ce27}{sun}}
+\begin{DoxyCompactList}\small\item\em sun \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_ab565b43f63fb7b455621fb483a743126}\label{classpysoltrace_1_1_py_sol_trace_ab565b43f63fb7b455621fb483a743126} 
 {\bfseries num\+\_\+ray\+\_\+hits}
 \begin{DoxyCompactList}\small\item\em Minimum number of simulation ray hits. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_af92927665911b78086efada939bd4a5a}\label{classpysoltrace_1_1_py_sol_trace_af92927665911b78086efada939bd4a5a}} 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_af92927665911b78086efada939bd4a5a}\label{classpysoltrace_1_1_py_sol_trace_af92927665911b78086efada939bd4a5a} 
 {\bfseries max\+\_\+rays\+\_\+traced}
 \begin{DoxyCompactList}\small\item\em Maximum number of ray hits in a simulation. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_ae21e812c154add5398a500a06f9e5732}\label{classpysoltrace_1_1_py_sol_trace_ae21e812c154add5398a500a06f9e5732}} 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_ae21e812c154add5398a500a06f9e5732}\label{classpysoltrace_1_1_py_sol_trace_ae21e812c154add5398a500a06f9e5732} 
 {\bfseries is\+\_\+sunshape}
 \begin{DoxyCompactList}\small\item\em Flag indicating whether sunshape should be included. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a0dbeee876ff8ac38d65de4c28de66273}\label{classpysoltrace_1_1_py_sol_trace_a0dbeee876ff8ac38d65de4c28de66273}} 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_a0dbeee876ff8ac38d65de4c28de66273}\label{classpysoltrace_1_1_py_sol_trace_a0dbeee876ff8ac38d65de4c28de66273} 
 {\bfseries is\+\_\+surface\+\_\+errors}
 \begin{DoxyCompactList}\small\item\em Flag indicating whether surface errors should be included. \end{DoxyCompactList}\item 
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a60c7ba3b669493365fcb9b7a9870ce27}\label{classpysoltrace_1_1_py_sol_trace_a60c7ba3b669493365fcb9b7a9870ce27}} 
-{\bfseries sun}
-\begin{DoxyCompactList}\small\item\em Object containing \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_sun}{Sun}} class data. \end{DoxyCompactList}\end{DoxyCompactItemize}
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_a4732ece8bc31ebc87b255147e8f53497}\label{classpysoltrace_1_1_py_sol_trace_a4732ece8bc31ebc87b255147e8f53497} 
+{\bfseries raydata}
+\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_a2d073b1534fc4104c30ffb3c16f4ff0a}\label{classpysoltrace_1_1_py_sol_trace_a2d073b1534fc4104c30ffb3c16f4ff0a} 
+{\bfseries sunstats}
+\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_af1b5992d1777aff6ed3c6e2c27f78ea3}\label{classpysoltrace_1_1_py_sol_trace_af1b5992d1777aff6ed3c6e2c27f78ea3} 
+{\bfseries powerperray}
+\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_ac687183b9c832ecf5a37359877f90753}\label{classpysoltrace_1_1_py_sol_trace_ac687183b9c832ecf5a37359877f90753} 
+{\bfseries dni}
+\end{DoxyCompactItemize}
 
 
 \doxysubsection{Detailed Description}
@@ -103,14 +97,12 @@ def \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_a2bee17e5e943c63646f691eba
 
 Attributes
 ----------
-pdll : ctypes.CDLL
-    loaded SolTrace library of exported functions
-p_data 
-    Memory location for soltrace context
 optics : [PySolTrace.Optics,]
     List of Optics instances
 stages : [PySolTrace.Stage,]
     List of Stage instances
+sun : PySolTrace.Sun
+    Instance of the Sun class
 num_ray_hits : int
     Minimum number of simulation ray hits 
 max_rays_traced : int
@@ -119,43 +111,37 @@ is_sunshape : bool
     Flag indicating whether sunshape should be included
 is_surface_errors : bool
     Flag indicating whether surface errors should be included
+raydata : Pandas.dataframe
+    Dataframe with ray hit information
+sunstats : dict
+    Dict containing information on the ray trace bounding box
+powerperray : float
+    Calculated value of power associated with a single ray hit
+dni : float
+    Specified direct normal irradiance
 
 Methods
 -------
-clear_context 
-    Frees SolTrace instance from memory at p_data
-get_num_optics 
-    Get number of optical elements in the SolTrace context
+copy
+    Deep copy of the current PySolTrace instance
+Create
+    Create soltrace context from data structures
 add_optics 
     Instantiates a new PySolTrace.Optics object
 delete_optic 
     Delete Optics instance
 add_sun 
     Adds Sun instance
-get_num_stages 
-    Get number of Stages
 add_stage 
     Adds Stage instance
-validate 
-    Detect common errors in simulation setup 
+delete_stage
+    Deletes stage instance
 run 
     Runs SolTrace simulation
-get_num_intersections 
-    Get the number of simulation ray intersections
-get_ray_dataframe 
-    Get all simulation ray data in pandas dataframe
-get_intersect_locations 
-    Get ray intersection locations
-get_intersect_cosines 
-    Get ray intersection cosines / direction vectors
-get_intersect_elementmap 
-    Get ray intersection associated element
-get_intersect_stagemap 
-    Get ray intersection associated stage
-get_intersect_raynumbers 
-    Get ray intersection number
-get_sun_stats 
-    Get information on sun box
+plot_trace
+    Creates and (optionally) displays a 3D scatter and trace plot.
+plot_flux
+    Creates and (optionally) displays a flux plot for a given stage element.
 util_calc_euler_angles 
     Calculate Euler angles for a position, aimpoint, and rotation
 util_transform_to_local 
@@ -168,19 +154,26 @@ util_calc_transforms
     Calculate matrix transforms
 util_matrix_transpose 
     Compute the transpose of a matrix
+util_rotation_arbitrary
+    Rotation of a point about an arbitrary axis
+util_calc_unitvect
+    Scales a vector to have total magnitude of 1
+util_calc_zrot_azel
+    Compute the z-rotation of a vector
+write_soltrace_input_file
+    Write a SolTrace input file based on the current objects
 \end{DoxyVerb}
  
 
 \doxysubsection{Member Function Documentation}
-\mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_aa0681f78104e3f6894222097343883b1}\label{classpysoltrace_1_1_py_sol_trace_aa0681f78104e3f6894222097343883b1}} 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_a57b83224348f0aa2b5b30f7de6ea2ba6}\label{classpysoltrace_1_1_py_sol_trace_a57b83224348f0aa2b5b30f7de6ea2ba6} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!add\_optic@{add\_optic}}
 \index{add\_optic@{add\_optic}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{add\_optic()}{add\_optic()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+add\+\_\+optic (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{str}]{optic\+\_\+name }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+add\+\_\+optic (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{str}]{optic\+\_\+name }\end{DoxyParamCaption})}
 
-\begin{DoxyVerb}Instantiates a new PySolTrace.Optics object, adding it to the optics list, and
-creating the optics in the SolTrace context. This method does not set optics
-properties, which instead is done using the Optics.Create method.
+\begin{DoxyVerb}Instantiates a new PySolTrace.Optics object, adding it to the optics list. 
+This method does not set optics properties, which instead is done using the Optics.Create method.
 
 Parameters
 ----------
@@ -192,14 +185,13 @@ Returns
 Optics 
     Reference to the Optics object that was just created.
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_ad8f398b1a500cbf0cdf8ed52238c3544}\label{classpysoltrace_1_1_py_sol_trace_ad8f398b1a500cbf0cdf8ed52238c3544}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_af6b6764ecaaeef19505d5e01c4be9960}\label{classpysoltrace_1_1_py_sol_trace_af6b6764ecaaeef19505d5e01c4be9960} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!add\_stage@{add\_stage}}
 \index{add\_stage@{add\_stage}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{add\_stage()}{add\_stage()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+add\+\_\+stage (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+add\+\_\+stage (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
 
-\begin{DoxyVerb}Adds a new Stage instance to the PySolTrace.stages list and creates the stage in
-the SolTrace context. The Stage ID is automatically generated based on the number 
+\begin{DoxyVerb}Adds a new Stage instance to the PySolTrace.stages list. The Stage ID is automatically generated based on the number 
 of current stages.
 
 Returns
@@ -207,11 +199,11 @@ Returns
 PySolTrace.Stage 
     Reference to the newly created Stage object. 
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_aab094a9f2747a5875228e4c875f30e65}\label{classpysoltrace_1_1_py_sol_trace_aab094a9f2747a5875228e4c875f30e65}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a59b4e52eec1fa47592d06471ae45830f}\label{classpysoltrace_1_1_py_sol_trace_a59b4e52eec1fa47592d06471ae45830f} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!add\_sun@{add\_sun}}
 \index{add\_sun@{add\_sun}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{add\_sun()}{add\_sun()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+add\+\_\+sun (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+add\+\_\+sun (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Instantiates a PySolTrace.Sun object and associates it with the PySolTrace.sun member.
 This does not create or modify the Sun data in the SolTrace context.
@@ -221,20 +213,26 @@ Returns
 PySolTrace.Sun 
     Reference to newly created Sun instance.
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a9eeadcf9efd43a08078dac709c8e7c0f}\label{classpysoltrace_1_1_py_sol_trace_a9eeadcf9efd43a08078dac709c8e7c0f}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!clear\_context@{clear\_context}}
-\index{clear\_context@{clear\_context}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{clear\_context()}{clear\_context()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+clear\+\_\+context (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_ad41d6eff82a4de44e6ed69ea83516422}\label{classpysoltrace_1_1_py_sol_trace_ad41d6eff82a4de44e6ed69ea83516422} 
+\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!copy@{copy}}
+\index{copy@{copy}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
+\doxysubsubsection{\texorpdfstring{copy()}{copy()}}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+copy (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
 
-\begin{DoxyVerb}Frees SolTrace instance from memory
+\begin{DoxyVerb}Deep copy of the current PySolTrace instance
 
-Returns
--------
-bool
-    True if successful, False otherwise
+Returns:
+========
+Copy of the current PySolTrace instance\end{DoxyVerb}
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_ac28cf0f5e43e801012dadb6b4dd6b7fb}\label{classpysoltrace_1_1_py_sol_trace_ac28cf0f5e43e801012dadb6b4dd6b7fb} 
+\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!Create@{Create}}
+\index{Create@{Create}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
+\doxysubsubsection{\texorpdfstring{Create()}{Create()}}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+Create (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{pdll,  }\item[{}]{p\+\_\+data }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Create soltrace context from data structures
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a6a7f6c2dde7a73f773967baeb02e887a}\label{classpysoltrace_1_1_py_sol_trace_a6a7f6c2dde7a73f773967baeb02e887a}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a6a7f6c2dde7a73f773967baeb02e887a}\label{classpysoltrace_1_1_py_sol_trace_a6a7f6c2dde7a73f773967baeb02e887a} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!delete\_optic@{delete\_optic}}
 \index{delete\_optic@{delete\_optic}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{delete\_optic()}{delete\_optic()}}
@@ -253,7 +251,7 @@ Returns
 int 
     1 if successful, 0 otherwise
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a3e7acc7cf17a930a36c42d0ddaf86374}\label{classpysoltrace_1_1_py_sol_trace_a3e7acc7cf17a930a36c42d0ddaf86374}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a3e7acc7cf17a930a36c42d0ddaf86374}\label{classpysoltrace_1_1_py_sol_trace_a3e7acc7cf17a930a36c42d0ddaf86374} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!delete\_stage@{delete\_stage}}
 \index{delete\_stage@{delete\_stage}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{delete\_stage()}{delete\_stage()}}
@@ -272,161 +270,74 @@ Returns
 int 
     1 if successful, 0 otherwise 
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_aeeec345624b1c13c8c81ce05b3cf1d60}\label{classpysoltrace_1_1_py_sol_trace_aeeec345624b1c13c8c81ce05b3cf1d60}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_intersect\_cosines@{get\_intersect\_cosines}}
-\index{get\_intersect\_cosines@{get\_intersect\_cosines}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_intersect\_cosines()}{get\_intersect\_cosines()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+intersect\+\_\+cosines (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a5fdaaf43753641f297c9fd7d34b288ff}\label{classpysoltrace_1_1_py_sol_trace_a5fdaaf43753641f297c9fd7d34b288ff} 
+\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!plot\_flux@{plot\_flux}}
+\index{plot\_flux@{plot\_flux}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
+\doxysubsubsection{\texorpdfstring{plot\_flux()}{plot\_flux()}}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+plot\+\_\+flux (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{element,  }\item[{int }]{nx = {\ttfamily 25},  }\item[{int }]{ny = {\ttfamily 25},  }\item[{str}]{figpath = {\ttfamily None},  }\item[{}]{display = {\ttfamily True},  }\item[{}]{figsize = {\ttfamily (9,6)},  }\item[{bool }]{absorbed\+\_\+only = {\ttfamily True},  }\item[{}]{levels = {\ttfamily 25},  }\item[{int}]{dpi = {\ttfamily 300},  }\item[{str}]{xlabel = {\ttfamily None},  }\item[{str }]{ylabel = {\ttfamily None} }\end{DoxyParamCaption})}
 
-\begin{DoxyVerb}[Post simulation] Get the ray intersection cosines (direction vectors) in global coordinates.
+\begin{DoxyVerb}Creates and (optionally) displays a flux plot for a given stage element.
+
+Parameters
+----------
+element : PySolTrace:Stage:Element
+    Reference to the element for which the plot will be generated
+nx : int (default 25)
+    Number of flux bins along the aperture x-coordinate
+ny : int (default 25)
+    Number of flux bins along the aperture y-coordinate
+figpath : str (default None)
+    Path to file location where figure will be saved. If None, figure is not saved.
+display : bool (default True)
+    Flag indicating whether the figure should be displayed at runtime
+figsize : tuple (default (9,6))
+    Figure size in inches
+absorbed_only : bool (default True)
+    Only include rays that are absorbed by the element, omitting reflected rays
+levels : int (default 25)
+    Number of contour levels to include in the flux map
+dpi : int (default 300)
+    Resolution of the saved image
+xlabel : str (default None)
+    String specifying label to use on x-axis of plot
+ylabel : str (default None)
+    String specifying label to use on y-axis of plot
 
 Returns
-----------
-[[cx,cy,cz],]
-    2D array of ray vectors associated with the intersection at the same index.
+------------
+None
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a838d8fa54ce720eec45b6ac9966c3c52}\label{classpysoltrace_1_1_py_sol_trace_a838d8fa54ce720eec45b6ac9966c3c52}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_intersect\_elementmap@{get\_intersect\_elementmap}}
-\index{get\_intersect\_elementmap@{get\_intersect\_elementmap}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_intersect\_elementmap()}{get\_intersect\_elementmap()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+intersect\+\_\+elementmap (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_ae44d334a3ad46c7d7f8a2cf6e22dd952}\label{classpysoltrace_1_1_py_sol_trace_ae44d334a3ad46c7d7f8a2cf6e22dd952} 
+\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!plot\_trace@{plot\_trace}}
+\index{plot\_trace@{plot\_trace}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
+\doxysubsubsection{\texorpdfstring{plot\_trace()}{plot\_trace()}}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+plot\+\_\+trace (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{int }]{nrays = {\ttfamily 100000},  }\item[{int}]{ntrace = {\ttfamily 100} }\end{DoxyParamCaption})}
 
-\begin{DoxyVerb}[Post simulation] Get the elements associated with the ray intersection. The element numbers are
-interpreted as follows:
-    0     | Ray did not hit an element in this stage 
-    >= +1 | Ray hit this element ID and was reflected / refracted 
-    <= -1 | Ray hit this element ID and was absorbed
+\begin{DoxyVerb}Creates and (optionally) displays a 3D scatter and trace plot. This
+function requires that the Python package `plotly` be installed. 
 
-Returns
-----------
-[int,] 
-    2D array of integers associated with the intersection at the same index.
+Parameters
+------------
+nrays : int
+    Number of individual rays to include in the scatter plot. Very 
+    large values may render slowly.
+ntrace : int 
+    Number of rays for which traces will be displayed. Large values
+    may render slowly
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_afd7dacb40a08758f33b7ddd7a13aa203}\label{classpysoltrace_1_1_py_sol_trace_afd7dacb40a08758f33b7ddd7a13aa203}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_intersect\_locations@{get\_intersect\_locations}}
-\index{get\_intersect\_locations@{get\_intersect\_locations}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_intersect\_locations()}{get\_intersect\_locations()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+intersect\+\_\+locations (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
-
-\begin{DoxyVerb}[Post simulation] Get the ray intersection locations in global coordinates.
-
-Returns
-----------
-[[x,y,z],] 
-    2D array of ray positions
-\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_aa7f665a07f81e2957bd9a55c02163108}\label{classpysoltrace_1_1_py_sol_trace_aa7f665a07f81e2957bd9a55c02163108}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_intersect\_raynumbers@{get\_intersect\_raynumbers}}
-\index{get\_intersect\_raynumbers@{get\_intersect\_raynumbers}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_intersect\_raynumbers()}{get\_intersect\_raynumbers()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+intersect\+\_\+raynumbers (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
-
-\begin{DoxyVerb}[Post simulation] Get the ray intersection numbers. 
-
-Returns
-----------
-[int,]
-    List of ray intersection numbers.
-\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a7dd465903843cbef48f9407572a03807}\label{classpysoltrace_1_1_py_sol_trace_a7dd465903843cbef48f9407572a03807}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_intersect\_stagemap@{get\_intersect\_stagemap}}
-\index{get\_intersect\_stagemap@{get\_intersect\_stagemap}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_intersect\_stagemap()}{get\_intersect\_stagemap()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+intersect\+\_\+stagemap (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
-
-\begin{DoxyVerb}[Post simulation] Get the stage associated with the ray intersection at the same positional index.
-
-Returns
-----------
-[int,] 
-    List of stages associated with the intersection at the same index.
-\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a7a981000d4125020f387e54113c64291}\label{classpysoltrace_1_1_py_sol_trace_a7a981000d4125020f387e54113c64291}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_num\_intersections@{get\_num\_intersections}}
-\index{get\_num\_intersections@{get\_num\_intersections}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_num\_intersections()}{get\_num\_intersections()}}
-{\footnotesize\ttfamily  int pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+num\+\_\+intersections (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
-
-\begin{DoxyVerb}[Post simulation] Get the number of ray intersections detected in the simulation.
-
-Returns
-----------
-int 
-    Number of intersections
-\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_ac7c0f2dfeb4c61a710e1d8f616abdba8}\label{classpysoltrace_1_1_py_sol_trace_ac7c0f2dfeb4c61a710e1d8f616abdba8}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_num\_optics@{get\_num\_optics}}
-\index{get\_num\_optics@{get\_num\_optics}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_num\_optics()}{get\_num\_optics()}}
-{\footnotesize\ttfamily  int pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+num\+\_\+optics (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
-
-\begin{DoxyVerb}Get number of optical elements in the SolTrace context
-
-Returns
-----------
-int 
-    number of elements
-\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a7acc829eed011aed7688308e7a3f79fe}\label{classpysoltrace_1_1_py_sol_trace_a7acc829eed011aed7688308e7a3f79fe}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_num\_stages@{get\_num\_stages}}
-\index{get\_num\_stages@{get\_num\_stages}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_num\_stages()}{get\_num\_stages()}}
-{\footnotesize\ttfamily  int pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+num\+\_\+stages (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
-
-\begin{DoxyVerb}Retrieve the number of stages that have been created in the SolTrace context. 
-
-Returns
-----------
-int 
-    Number of stages.
-\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a3abc62a49c76f1e9f1956c7e136f29b3}\label{classpysoltrace_1_1_py_sol_trace_a3abc62a49c76f1e9f1956c7e136f29b3}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_ray\_dataframe@{get\_ray\_dataframe}}
-\index{get\_ray\_dataframe@{get\_ray\_dataframe}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_ray\_dataframe()}{get\_ray\_dataframe()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+ray\+\_\+dataframe (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
-
-\begin{DoxyVerb}Get a pandas dataframe with all of the ray data from the simulation. 
-
-Returns
-----------
-Pandas.DataFrame 
-    with columns:
-    loc_x   | Ray hit location, x-coordinate 
-    loc_y   | Ray hit location, y-coordinate 
-    loc_z   | Ray hit location, z-coordinate 
-    cos_x   | Ray directional vector, x-component
-    cos_y   | Ray directional vector, y-component
-    cos_z   | Ray directional vector, z-component
-    element | Element associated with ray hit
-    stage   | Stage associated with ray hit
-    number  | Ray number
-\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a5eea6c46e195a5316e0a4d7239824c67}\label{classpysoltrace_1_1_py_sol_trace_a5eea6c46e195a5316e0a4d7239824c67}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!get\_sun\_stats@{get\_sun\_stats}}
-\index{get\_sun\_stats@{get\_sun\_stats}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{get\_sun\_stats()}{get\_sun\_stats()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+get\+\_\+sun\+\_\+stats (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
-
-\begin{DoxyVerb}Get information on the sun box. 
-
-Returns
-----------
-dict      
-    Keys in the return dictionary are:
-    'xmin' --> Minimum x extent of the bounding box for hit testing 
-    'xmax' --> Maximum x extent of the bounding box for hit testing 
-    'ymin' --> Minimum y extent of the bounding box for hit testing 
-    'ymax' --> Maximum y extent of the bounding box for hit testing 
-    'nsunrays' --> Number of sun rays simulated
-\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a94edc099c9ce0d62d9619a41c2ea844b}\label{classpysoltrace_1_1_py_sol_trace_a94edc099c9ce0d62d9619a41c2ea844b}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a68146449e218fa7113dd605ffa34fb4c}\label{classpysoltrace_1_1_py_sol_trace_a68146449e218fa7113dd605ffa34fb4c} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!run@{run}}
 \index{run@{run}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{run()}{run()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+run (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{int }]{seed = {\ttfamily -\/1},  }\item[{}]{as\+\_\+power\+\_\+tower = {\ttfamily False} }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+run (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{int }]{seed = {\ttfamily -\/1},  }\item[{}]{as\+\_\+power\+\_\+tower = {\ttfamily False},  }\item[{}]{nthread = {\ttfamily 1},  }\item[{}]{thread\+\_\+id = {\ttfamily 0} }\end{DoxyParamCaption})}
 
-\begin{DoxyVerb}Run SolTrace simulation.
+\begin{DoxyVerb}Run SolTrace simulation. 
+
+If calling this function in multithread mode, note that the run() function
+**must** be called inside an import guard, e.g.:
+> if __name__ == "__main__":
+>    mypst_obj.run(...)
+Otherwise, you'll receive an error.
 
 Parameters
 ----------
@@ -435,17 +346,22 @@ seed : int
 as_power_tower : bool
     Flag indicating simulation should be processed as power 
     tower / central receiver type, with corresponding efficiency adjustments.
+nthread : int
+    Number of threads to execute. Will be limited by the method to the number
+    available on the machine. 
+thread_id : int 
+    Argument used by the multi-threading call. Do not manually specify this value.
 
 Returns
 ----------
 int 
     Simulation return value
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a3795434bcda6b1d5010268caccc89876}\label{classpysoltrace_1_1_py_sol_trace_a3795434bcda6b1d5010268caccc89876}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a370bc0e59ea2a72a1f9f353cc2163756}\label{classpysoltrace_1_1_py_sol_trace_a370bc0e59ea2a72a1f9f353cc2163756} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!util\_calc\_euler\_angles@{util\_calc\_euler\_angles}}
 \index{util\_calc\_euler\_angles@{util\_calc\_euler\_angles}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{util\_calc\_euler\_angles()}{util\_calc\_euler\_angles()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+calc\+\_\+euler\+\_\+angles (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{origin,  }\item[{}]{aimpoint,  }\item[{}]{zrot }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily  numpy.\+array pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+calc\+\_\+euler\+\_\+angles (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{numpy.\+array}]{origin,  }\item[{numpy.\+array}]{aimpoint,  }\item[{}]{zrot }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Calculate the Euler angles associated with a given origin, aimpoint, and z-axis rotation. 
 
@@ -463,11 +379,11 @@ Returns
 list
     Calculated Euler angles (rad)
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a333bbf5acbf5c1cb32e604b32d4f948e}\label{classpysoltrace_1_1_py_sol_trace_a333bbf5acbf5c1cb32e604b32d4f948e}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a53bbf3f44c41cdd61f3e70eeecf1adf4}\label{classpysoltrace_1_1_py_sol_trace_a53bbf3f44c41cdd61f3e70eeecf1adf4} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!util\_calc\_transforms@{util\_calc\_transforms}}
 \index{util\_calc\_transforms@{util\_calc\_transforms}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{util\_calc\_transforms()}{util\_calc\_transforms()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+calc\+\_\+transforms (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{euler }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+calc\+\_\+transforms (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{euler }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Calculate matrix transforms
 
@@ -482,7 +398,25 @@ Returns
     rreftoloc : Transformation matrix from Reference to Local system
     rloctoref : Transformation matrix from Local to Reference system
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_aed7abf720015680fbfff07bd96609987}\label{classpysoltrace_1_1_py_sol_trace_aed7abf720015680fbfff07bd96609987}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_afaa2d36ecfcfb80d1beb10c03d31b61b}\label{classpysoltrace_1_1_py_sol_trace_afaa2d36ecfcfb80d1beb10c03d31b61b} 
+\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!util\_calc\_unitvect@{util\_calc\_unitvect}}
+\index{util\_calc\_unitvect@{util\_calc\_unitvect}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
+\doxysubsubsection{\texorpdfstring{util\_calc\_unitvect()}{util\_calc\_unitvect()}}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+calc\+\_\+unitvect (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{vect }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Scales a vector to have total magnitude of 1
+
+Parameters
+----------
+vect : list | Point
+    list or Point containing the vector
+
+Returns
+----------
+list | Point
+    Unitized vector of type list or Point, depending on input type
+\end{DoxyVerb}
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_aed7abf720015680fbfff07bd96609987}\label{classpysoltrace_1_1_py_sol_trace_aed7abf720015680fbfff07bd96609987} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!util\_calc\_zrot\_azel@{util\_calc\_zrot\_azel}}
 \index{util\_calc\_zrot\_azel@{util\_calc\_zrot\_azel}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{util\_calc\_zrot\_azel()}{util\_calc\_zrot\_azel()}}
@@ -501,11 +435,11 @@ Returns
 float
     Computed z-rotation (degrees)
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_aa5541b68fab7b61ae6497944a9e2ec8d}\label{classpysoltrace_1_1_py_sol_trace_aa5541b68fab7b61ae6497944a9e2ec8d}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a51dcf442637ae890f3c314e1117d736a}\label{classpysoltrace_1_1_py_sol_trace_a51dcf442637ae890f3c314e1117d736a} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!util\_matrix\_transpose@{util\_matrix\_transpose}}
 \index{util\_matrix\_transpose@{util\_matrix\_transpose}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{util\_matrix\_transpose()}{util\_matrix\_transpose()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+matrix\+\_\+transpose (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{m }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+matrix\+\_\+transpose (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{m }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Calculate matrix transpose 
 
@@ -519,19 +453,19 @@ Returns
 [[float,]*3]*3
     Square matrix 3x3, transpose of 'm'
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a4236679544a6427ef0db48bb9a5c7e98}\label{classpysoltrace_1_1_py_sol_trace_a4236679544a6427ef0db48bb9a5c7e98}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a0e3d231bba926e4b0ad862540f9c6b49}\label{classpysoltrace_1_1_py_sol_trace_a0e3d231bba926e4b0ad862540f9c6b49} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!util\_matrix\_vector\_mult@{util\_matrix\_vector\_mult}}
 \index{util\_matrix\_vector\_mult@{util\_matrix\_vector\_mult}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{util\_matrix\_vector\_mult()}{util\_matrix\_vector\_mult()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+matrix\+\_\+vector\+\_\+mult (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{m,  }\item[{}]{v }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+matrix\+\_\+vector\+\_\+mult (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{m,  }\item[{}]{v }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Perform multiplication of a 3x3 matrix and a length-3 vector, returning the result vector.
 
 Parameters
 ----------
-m : list
+m : array
     m[3][3] - a 3x3 matrix
-v : list
+v : array
     v[3] - a list, length 3
 
 Returns
@@ -539,11 +473,11 @@ Returns
 list
     m x v [3]
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_ab4875d628e1f02b6429498116afe2683}\label{classpysoltrace_1_1_py_sol_trace_ab4875d628e1f02b6429498116afe2683}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_ad5ad1335f815a58e2e89922fd5ed8070}\label{classpysoltrace_1_1_py_sol_trace_ad5ad1335f815a58e2e89922fd5ed8070} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!util\_rotation\_arbitrary@{util\_rotation\_arbitrary}}
 \index{util\_rotation\_arbitrary@{util\_rotation\_arbitrary}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{util\_rotation\_arbitrary()}{util\_rotation\_arbitrary()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+rotation\+\_\+arbitrary (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{theta,  }\item[{}]{axis,  }\item[{}]{axloc,  }\item[{}]{pt }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+rotation\+\_\+arbitrary (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{theta,  }\item[{}]{axis,  }\item[{}]{axloc,  }\item[{}]{pt }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Rotation of a point 'pt' about an arbitrary axis with direction 'axis' centered at point 'axloc'. 
 The point is rotated through 'theta' radians.
@@ -562,24 +496,25 @@ pt : Point()
 Returns
 -----------
 Point
-    Point after rotation\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a61152a58b3fce9f1ee977ed652820008}\label{classpysoltrace_1_1_py_sol_trace_a61152a58b3fce9f1ee977ed652820008}} 
+    Point after rotation
+\end{DoxyVerb}
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a27326ae6d2a9fcddcdaa2a61e5a9fd92}\label{classpysoltrace_1_1_py_sol_trace_a27326ae6d2a9fcddcdaa2a61e5a9fd92} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!util\_transform\_to\_local@{util\_transform\_to\_local}}
 \index{util\_transform\_to\_local@{util\_transform\_to\_local}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{util\_transform\_to\_local()}{util\_transform\_to\_local()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+transform\+\_\+to\+\_\+local (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{posref,  }\item[{}]{cosref,  }\item[{}]{origin,  }\item[{}]{rreftoloc }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+transform\+\_\+to\+\_\+local (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{numpy.\+array}]{posref,  }\item[{numpy.\+array}]{cosref,  }\item[{numpy.\+array}]{origin,  }\item[{numpy.\+array}]{rreftoloc }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Perform coordinate transformation from reference system to local system.
 
 Parameters
 ----------
-PosRef : [float,]*3
+PosRef : numpy.array([float,]*3)
     X,Y,Z coordinates of ray point in reference system
-CosRef : [float,]*3
+CosRef : numpy.array([float,]*3)
     Direction cosines of ray in reference system
-Origin : [float,]*3
+Origin : numpy.array([float,]*3)
     X,Y,Z coordinates of origin of local system as measured in reference system
-RRefToLoc 
+RRefToLoc : numpy.array([float,]*3)
     Rotation matrices required for coordinate transform from reference to local
 
 Returns
@@ -588,11 +523,11 @@ Returns
     posloc : ([float,]*3) X,Y,Z coordinates of ray point in local system
     cosloc : ([float,]*3) Direction cosines of ray in local system
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a60eaa62e41ad6d2b5441b815cb30660e}\label{classpysoltrace_1_1_py_sol_trace_a60eaa62e41ad6d2b5441b815cb30660e}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a9e67dddbb4fc38062f1ccbf3e6a88ed6}\label{classpysoltrace_1_1_py_sol_trace_a9e67dddbb4fc38062f1ccbf3e6a88ed6} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!util\_transform\_to\_ref@{util\_transform\_to\_ref}}
 \index{util\_transform\_to\_ref@{util\_transform\_to\_ref}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{util\_transform\_to\_ref()}{util\_transform\_to\_ref()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+transform\+\_\+to\+\_\+ref (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{posloc,  }\item[{}]{cosloc,  }\item[{}]{origin,  }\item[{}]{rloctoref }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+util\+\_\+transform\+\_\+to\+\_\+ref (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{posloc,  }\item[{}]{cosloc,  }\item[{}]{origin,  }\item[{}]{rloctoref }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Perform coordinate transformation from local system to reference system.
 
@@ -615,25 +550,11 @@ dict
     posref : ([float,]*3) X,Y,Z coordinates of ray point in reference system
     cosref : ([float,]*3) Direction cosines of ray in reference system
 \end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a2f8f2afc0d50794f8286a214b9015fe3}\label{classpysoltrace_1_1_py_sol_trace_a2f8f2afc0d50794f8286a214b9015fe3}} 
-\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!validate@{validate}}
-\index{validate@{validate}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
-\doxysubsubsection{\texorpdfstring{validate()}{validate()}}
-{\footnotesize\ttfamily  bool pysoltrace.\+Py\+Sol\+Trace.\+validate (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
-
-\begin{DoxyVerb}Validate that the current SolTrace context has been configured correctly, and
-that commonly missed inputs are specified.
-
-Returns
-----------
-bool 
-    False if error is identified, True otherwise
-\end{DoxyVerb}
- \mbox{\Hypertarget{classpysoltrace_1_1_py_sol_trace_a2bee17e5e943c63646f691ebaff4a1eb}\label{classpysoltrace_1_1_py_sol_trace_a2bee17e5e943c63646f691ebaff4a1eb}} 
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_a03d79b54430230561114e8a72190f81c}\label{classpysoltrace_1_1_py_sol_trace_a03d79b54430230561114e8a72190f81c} 
 \index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!write\_soltrace\_input\_file@{write\_soltrace\_input\_file}}
 \index{write\_soltrace\_input\_file@{write\_soltrace\_input\_file}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
 \doxysubsubsection{\texorpdfstring{write\_soltrace\_input\_file()}{write\_soltrace\_input\_file()}}
-{\footnotesize\ttfamily def pysoltrace.\+Py\+Sol\+Trace.\+write\+\_\+soltrace\+\_\+input\+\_\+file (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{str}]{path }\end{DoxyParamCaption})}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+write\+\_\+soltrace\+\_\+input\+\_\+file (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{str}]{path }\end{DoxyParamCaption})}
 
 \begin{DoxyVerb}Write a SolTrace input file (.stinput) based on the currently created API objects. This file is written
 using the objects and data in the PySolTrace instance, not necessarily on what has been created in the 
@@ -650,6 +571,19 @@ Returns
 None
 \end{DoxyVerb}
  
+
+\doxysubsection{Member Data Documentation}
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_a60c7ba3b669493365fcb9b7a9870ce27}\label{classpysoltrace_1_1_py_sol_trace_a60c7ba3b669493365fcb9b7a9870ce27} 
+\index{pysoltrace.PySolTrace@{pysoltrace.PySolTrace}!sun@{sun}}
+\index{sun@{sun}!pysoltrace.PySolTrace@{pysoltrace.PySolTrace}}
+\doxysubsubsection{\texorpdfstring{sun}{sun}}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+sun}
+
+
+
+sun 
+
+Object containing Sun class data. 
 
 The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
 \item 

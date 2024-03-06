@@ -81,7 +81,7 @@
 #include "soltrace.h"
 
 int version_major = 3;
-int version_minor = 3;
+int version_minor = 4;
 int version_micro = 0;
 
 class CustomThemeProvider : public wxMetroThemeProvider
@@ -584,11 +584,19 @@ void MainWindow::ShowHelpTopic( const wxString &topic )
 		{
 			wxString help = wxString::Format("HH.EXE \"ms-its:%s/SolTrace.chm::/%s.htm\"", help_dir.GetPath().ToStdString(), topic_map);
 			wxExecute(help);
+
+			// wxExecute doesn't throw an error when it can't find the SolTrace.chm file... adding it here instead
+			wxString helpfile = wxString::Format("%s/SolTrace.chm", help_dir.GetPath().ToStdString());
+			FILE* fp = fopen(helpfile.ToStdString().c_str(), "r");
+			if (!fp)
+				throw 0;
+			else
+				fclose(fp);
 		}
 		catch (...)
 		{
 			//wxFileName fn(MainWindow::Instance().GetAppDataDir() + "/help/59163.pdf");
-			wxFileName fn( MainWindow::Instance().GetAppDataDir() + "SolTrace.pdf" );
+			wxFileName fn( MainWindow::Instance().GetAppDataDir() + "/help/SolTrace.pdf" );
 			fn.Normalize( );
 			wxLaunchDefaultBrowser( "file:///" + fn.GetFullPath( ) );
 		}
