@@ -241,6 +241,20 @@ void QuadricSurfaceClosedForm(
 					*PathLength = t1;
 				}
 			}
+
+			// Partial cylinder (sphere with single-axis curvature) needs the same check as cylinder. 
+			// Two intersections are possible, check if the first intersection along the ray path occurs within the length bounds and, if not, return the second intersection
+			// The final test for a positive ray path and a valid intersection location is in DetermineElementIntersectionNew. If t1 is negative, this intersection location will be ignored in DetermineElementIntersectionNew
+			if (((Element->SurfaceIndex == 's') || (Element->SurfaceIndex == 'S')) && (Element->SurfaceType == 7)) 
+			{
+				if ((PosXYZ[1] < -Element->ParameterC / 2.0) || (PosXYZ[1] > Element->ParameterC / 2.0))
+				{
+					PosXYZ[0] = PosLoc[0] + t1*CosLoc[0];
+					PosXYZ[1] = PosLoc[1] + t1*CosLoc[1];
+					PosXYZ[2] = PosLoc[2] + t1*CosLoc[2];
+					*PathLength = t1;
+				}
+			}
            //***********************************************************************************************************
 
 			goto Label_100;
