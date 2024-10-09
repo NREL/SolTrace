@@ -412,7 +412,7 @@ bool Trace(TSystem *System, unsigned int seed,
             }
 
             //set up the layout data object that provides configuration details for the hash tree
-            LayoutData sun_ld;
+            KDLayoutData sun_ld;
             sun_ld.xlim[0] = System->Sun.MinXSun;
             sun_ld.xlim[1] = System->Sun.MaxXSun;
             sun_ld.ylim[0] = System->Sun.MinYSun;
@@ -420,7 +420,7 @@ bool Trace(TSystem *System, unsigned int seed,
             sun_ld.min_unit_dx = d_elm_max;
             sun_ld.min_unit_dy = d_elm_max;
 
-            sun_hash.create_mesh( &sun_ld );
+            sun_hash.create_mesh( sun_ld );
             time("Adding solar mesh elements:\t", &fout);
             
            //load stage 0 elements into the mesh
@@ -437,7 +437,7 @@ bool Trace(TSystem *System, unsigned int seed,
             if(AsPowerTower)
             {
                 //Set things up for the polar coordinate tree
-                LayoutData rec_ld;
+                KDLayoutData rec_ld;
                 rec_ld.xlim[0] = -M_PI;
                 rec_ld.xlim[1] = M_PI;
                 rec_ld.ylim[0] = -M_PI/2.;
@@ -445,7 +445,7 @@ bool Trace(TSystem *System, unsigned int seed,
                 //use smallest element to set the minimum size
                 rec_ld.min_unit_dx = rec_ld.min_unit_dy = el_proj_dat.back().d_proj; //radians at equator
             
-                rec_hash.create_mesh( &rec_ld );
+                rec_hash.create_mesh( rec_ld );
                 time("Adding polar mesh elements:\t", &fout);
 
                 //load stage 0 elements into the receiver mesh in the order of largest projection to smallest
@@ -886,7 +886,31 @@ Label_FlagMiss:
 			switch(optelm->InteractionType )
 			{
 			case 1: // refraction
-				TestValue = optics->Transmissivity; 
+				if (optics->UseTransmissivityTable)
+				{
+					int npoints = optics->TransmissivityTable.size();
+					int m = 0;
+					UnitLastDFXYZ[0] = -LastDFXYZ[0] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
+					UnitLastDFXYZ[1] = -LastDFXYZ[1] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
+					UnitLastDFXYZ[2] = -LastDFXYZ[2] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
+					IncidentAngle = acos(DOT(LastCosRaySurfElement, UnitLastDFXYZ))*1000.;  //[mrad]
+					if (IncidentAngle >= optics->TransmissivityTable[npoints - 1].angle)
+					{
+						TestValue = optics->TransmissivityTable[npoints - 1].trans;
+					}
+					else
+					{
+						while (optics->TransmissivityTable[m].angle < IncidentAngle)
+							m++;
+
+						if (m == 0)
+							TestValue = optics->TransmissivityTable[m].trans;
+						else
+							TestValue = (optics->TransmissivityTable[m].trans + optics->TransmissivityTable[m - 1].trans) / 2.0;
+					}
+				}
+				else
+					TestValue = optics->Transmissivity; 
 				break;
 			case 2: // reflection
 
@@ -897,7 +921,7 @@ Label_FlagMiss:
 					UnitLastDFXYZ[0] = -LastDFXYZ[0]/sqrt(DOT(LastDFXYZ,LastDFXYZ));
 					UnitLastDFXYZ[1] = -LastDFXYZ[1]/sqrt(DOT(LastDFXYZ,LastDFXYZ));
 					UnitLastDFXYZ[2] = -LastDFXYZ[2]/sqrt(DOT(LastDFXYZ,LastDFXYZ));
-					IncidentAngle = acos(DOT(LastCosRaySurfElement,UnitLastDFXYZ));
+					IncidentAngle = acos(DOT(LastCosRaySurfElement,UnitLastDFXYZ)) * 1000.;  //[mrad]
 					if (IncidentAngle >= optics->ReflectivityTable[ npoints-1 ].angle )
 					{
 						TestValue = optics->ReflectivityTable[ npoints-1 ].refl;
@@ -985,7 +1009,11 @@ Label_TransformBackToGlobal:
 				// {Apply specularity optical error to PERTURBED (i.e. after interaction) ray at intersection point}
 				if( IncludeErrors )
 				{
-					CopyVec3(CosIn, CosRayOutElement);
+					if (optics->DistributionType == 'F' || optics->DistributionType == 'f')
+						CopyVec3(CosIn, LastDFXYZ);  // Apply diffuse errors relative to surface normal
+					else
+						CopyVec3(CosIn, CosRayOutElement); // Apply all other errors relative to the specularly-reflected direction
+
 					Errors(myrng, CosIn, 2, &System->Sun,
 						   Stage->ElementList[k], optics, CosOut, LastDFXYZ);  //optical errors
 					CopyVec3(CosRayOutElement, CosOut);

@@ -85,7 +85,7 @@ void DetermineElementIntersectionNew(
 	Intersect(PosRayIn, CosRayIn, Element, PosRayOut, CosRayOut, DFXYZ, PathLength, ErrorFlag);
 	if (*ErrorFlag > 0 || *PathLength < 0)
 	{
-		*Intercept = false;
+		*Intercept = 0;
 		PosRayOut[0] = 0.0;
 		PosRayOut[1] = 0.0;
 		PosRayOut[2] = 0.0;
@@ -95,7 +95,7 @@ void DetermineElementIntersectionNew(
 		DFXYZ[0] = 0.0;
 		DFXYZ[1] = 0.0;
 		DFXYZ[2] = 0.0;
-		*BacksideFlag = false;
+		*BacksideFlag = 0;
 		*PathLength = 0.0;
 		goto Label_100;
 	}
@@ -114,7 +114,7 @@ void DetermineElementIntersectionNew(
 
 			if (r > Ro) //ray falls outsideside circular aperture
 			{
-			   *Intercept = false;
+			   *Intercept = 0;
 			   PosRayOut[0] = 0.0;
 			   PosRayOut[1] = 0.0;
 			   PosRayOut[2] = 0.0;
@@ -126,16 +126,16 @@ void DetermineElementIntersectionNew(
 			   DFXYZ[2] = 0.0;
 			   *PathLength = 0.0;
 			   *ErrorFlag = 0;
-			   *BacksideFlag = false;
+			   *BacksideFlag = 0;
 			   goto Label_100;
 			}
 			else
 			{
 				if (DOT(CosRayIn, DFXYZ) < 0)
-					*BacksideFlag = false;
+					*BacksideFlag = 0;
 				else
-					*BacksideFlag = true;
-				*Intercept = true;
+					*BacksideFlag = 1;
+				*Intercept = 1;
 				goto Label_100;
 			}
 		break;
@@ -146,7 +146,7 @@ void DetermineElementIntersectionNew(
 
 			if (r > Ro) //ray falls outside circular circumference aperture
 			{
-			   Intercept = false;
+			   *Intercept = 0;
 			   PosRayOut[0] = 0.0;
 			   PosRayOut[1] = 0.0;
 			   PosRayOut[2] = 0.0;
@@ -158,7 +158,7 @@ void DetermineElementIntersectionNew(
 			   DFXYZ[2] = 0.0;
 			   *PathLength = 0.0;
 			   *ErrorFlag = 0;
-			   *BacksideFlag = false;
+			   *BacksideFlag = 0;
 			   goto Label_100;
 			}
 			Ri = Ro*cos(30.0*(ACOSM1O180));
@@ -166,10 +166,10 @@ void DetermineElementIntersectionNew(
 			if ( r <= Ri ) //ray falls inside inscribed circle
 			{
 				if ( DOT(CosRayIn, DFXYZ) < 0 )
-					*BacksideFlag = false;
+					*BacksideFlag = 0;
 				else
-					*BacksideFlag = true;
-				*Intercept = true;
+					*BacksideFlag = 1;
+				*Intercept = 1;
 				goto Label_100;
 			}
 
@@ -181,14 +181,14 @@ void DetermineElementIntersectionNew(
 				if ( (y >= Y1) && (y <= Y2) )
 				{
 					if ( DOT(CosRayIn, DFXYZ) < 0 )
-						*BacksideFlag = false;
+						*BacksideFlag = 0;
 					else
-						*BacksideFlag = true;
+						*BacksideFlag = 1;
 						
-					*Intercept = true;
+					*Intercept = 1;
 					goto Label_100;
 				}
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -199,7 +199,7 @@ void DetermineElementIntersectionNew(
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
@@ -209,13 +209,13 @@ void DetermineElementIntersectionNew(
 				if ( (y >= -Ri) && (y <= Ri) )
 				{
 					if ( DOT(CosRayIn, DFXYZ) < 0 )
-						*BacksideFlag = false;
+						*BacksideFlag = 0;
 					else
-						*BacksideFlag = true;
-					*Intercept = true;
+						*BacksideFlag = 1;
+					*Intercept = 1;
 					goto Label_100;
 				}
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -226,7 +226,7 @@ void DetermineElementIntersectionNew(
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
@@ -238,13 +238,13 @@ void DetermineElementIntersectionNew(
 				if ( (y >= Y4) && (y <= Y3) )
 				{
 					if ( DOT(CosRayIn, DFXYZ) < 0 )
-						*BacksideFlag = false;
+						*BacksideFlag = 0;
 					else
-						*BacksideFlag = true;
-					*Intercept = true;
+						*BacksideFlag = 1;
+					*Intercept = 1;
 					goto Label_100;
 				}
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -255,7 +255,7 @@ void DetermineElementIntersectionNew(
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
@@ -267,7 +267,7 @@ void DetermineElementIntersectionNew(
 
 			if ( r > Ro ) //ray falls outside circular circumference aperture
 			{
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -278,7 +278,7 @@ void DetermineElementIntersectionNew(
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
@@ -287,10 +287,10 @@ void DetermineElementIntersectionNew(
 			if ( r <= Ri )  //ray falls inside inscribed circle
 			{
 				if ( DOT(CosRayIn, DFXYZ) < 0 )
-					*BacksideFlag = false;
+					*BacksideFlag = 0;
 				else
-					*BacksideFlag = true;
-				*Intercept = true;
+					*BacksideFlag = 1;
+				*Intercept = 1;
 				goto Label_100;
 			}
 
@@ -301,13 +301,13 @@ void DetermineElementIntersectionNew(
 				if ( (y <= Y1) && (y >= Y2) )
 				{
 					if ( DOT(CosRayIn, DFXYZ) < 0 )
-						*BacksideFlag = false;
+						*BacksideFlag = 0;
 					else
-						*BacksideFlag = true;
-					*Intercept = true;
+						*BacksideFlag = 1;
+					*Intercept = 1;
 					goto Label_100;
 				}
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -318,7 +318,7 @@ void DetermineElementIntersectionNew(
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
@@ -329,13 +329,13 @@ void DetermineElementIntersectionNew(
 				if ( (y >= Y4) && (y <= Y3) )
 				{
 					if ( DOT(CosRayIn, DFXYZ) < 0 )
-						*BacksideFlag = false;
+						*BacksideFlag = 0;
 					else
-						*BacksideFlag = true;
-					*Intercept = true;
+						*BacksideFlag = 1;
+					*Intercept = 1;
 					goto Label_100;
 				}
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -346,7 +346,7 @@ void DetermineElementIntersectionNew(
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
@@ -357,7 +357,7 @@ void DetermineElementIntersectionNew(
                
 			if ( (x > Element->ParameterA/2.0) || (x < -Element->ParameterA/2.0) )
 			{
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -368,14 +368,14 @@ void DetermineElementIntersectionNew(
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
 			
 			if ( (y > Element->ParameterB/2.0) || (y < -Element->ParameterB/2.0) )
 			{
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -386,17 +386,17 @@ void DetermineElementIntersectionNew(
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
 
 			if ( DOT(CosRayIn, DFXYZ) < 0 ) //successfully falls on rectangle
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 			else
-				*BacksideFlag = true;
+				*BacksideFlag = 1;
 				
-			*Intercept = true;
+			*Intercept = 1;
 			goto Label_100;
 
 		break;
@@ -408,7 +408,7 @@ void DetermineElementIntersectionNew(
 
 			if ( (r < Element->ParameterA) || (r > Element->ParameterB) )
 			{
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -419,7 +419,7 @@ void DetermineElementIntersectionNew(
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
@@ -428,7 +428,7 @@ Label_5:
 			{
 				if ( (asin(y/r) > Element->ParameterC*(ACOSM1O180)/2.0) || (asin(y/r) < -Element->ParameterC*(ACOSM1O180)/2.0) )
 				{
-					*Intercept = false;
+					*Intercept = 0;
 					PosRayOut[0] = 0.0;
 					PosRayOut[1] = 0.0;
 					PosRayOut[2] = 0.0;
@@ -439,16 +439,16 @@ Label_5:
 					DFXYZ[1] = 0.0;
 					DFXYZ[2] = 0.0;
 					*PathLength = 0.0;
-					*BacksideFlag = false;
+					*BacksideFlag = 0;
 					*ErrorFlag = 0;
 					goto Label_100;
 				}
 
 				if ( DOT(CosRayIn, DFXYZ) < 0 ) //successfully falls on annular section
-					*BacksideFlag = false;
+					*BacksideFlag = 0;
 				else
-					*BacksideFlag = true;
-				*Intercept = true;
+					*BacksideFlag = 1;
+				*Intercept = 1;
 				goto Label_100;
 			}
 			
@@ -456,7 +456,7 @@ Label_5:
 			{
 				if ( (y >= 0) && ((acos(y/r)+M_PI/2.0) > Element->ParameterC*(ACOSM1O180)/2.0) )
 				{
-					*Intercept = false;
+					*Intercept = 0;
 					PosRayOut[0] = 0.0;
 					PosRayOut[1] = 0.0;
 					PosRayOut[2] = 0.0;
@@ -467,13 +467,13 @@ Label_5:
 					DFXYZ[1] = 0.0;
 					DFXYZ[2] = 0.0;
 					*PathLength = 0.0;
-					*BacksideFlag = false;
+					*BacksideFlag = 0;
 					*ErrorFlag = 0;
 					goto Label_100;
 				}
 				else if ( (y < 0) && ((-acos(-y/r)-M_PI/2.0) < -Element->ParameterC*(ACOSM1O180)/2.0) )
 				{
-					*Intercept = false;
+					*Intercept = 0;
 					PosRayOut[0] = 0.0;
 					PosRayOut[1] = 0.0;
 					PosRayOut[2] = 0.0;
@@ -484,16 +484,16 @@ Label_5:
 					DFXYZ[1] = 0.0;
 					DFXYZ[2] = 0.0;
 					*PathLength = 0.0;
-					*BacksideFlag = false;
+					*BacksideFlag = 0;
 					*ErrorFlag = 0;
 					goto Label_100;
 				}
 
 				if ( DOT(CosRayIn, DFXYZ) < 0 ) //successfully falls on annular section
-					*BacksideFlag = false;
+					*BacksideFlag = 0;
 				else
-					*BacksideFlag = true;
-				*Intercept = true;
+					*BacksideFlag = 1;
+				*Intercept = 1;
 				goto Label_100;
 			}
 		break;
@@ -504,7 +504,7 @@ Label_5:
 
 			if ( (x < Element->ParameterA) || (x > Element->ParameterB) )
 			{
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -515,7 +515,7 @@ Label_5:
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
@@ -523,7 +523,7 @@ Label_5:
 Label_10:
 			if ( (y < -Element->ParameterC/2.0) || (y > Element->ParameterC/2.0) )
 			{
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -534,17 +534,17 @@ Label_10:
 				DFXYZ[1] = 0.0;
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				*ErrorFlag = 0;
 				goto Label_100;
 			}
 
 			if ( DOT(CosRayIn, DFXYZ) < 0 ) //successfully falls on line focus or cylindrical section
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 			else
-				*BacksideFlag = true;
+				*BacksideFlag = 1;
 				
-			*Intercept = true;
+			*Intercept = 1;
 			goto Label_100;
 		break;
 
@@ -559,7 +559,7 @@ Label_10:
 
 			if (!intri( P1x, P1y, P2x, P2y, P3x, P3y, x, y ))
 			{
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -571,15 +571,15 @@ Label_10:
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
 				*ErrorFlag = 0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				goto Label_100;
 			}
 
 			if ( DOT(CosRayIn, DFXYZ) < 0 )
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 			else
-				*BacksideFlag = true;
-			*Intercept = true;
+				*BacksideFlag = 1;
+			*Intercept = 1;
 			goto Label_100;
 		break;
 
@@ -598,7 +598,7 @@ Label_10:
 
 			if (!in_quad)
 			{
-				*Intercept = false;
+				*Intercept = 0;
 				PosRayOut[0] = 0.0;
 				PosRayOut[1] = 0.0;
 				PosRayOut[2] = 0.0;
@@ -610,15 +610,15 @@ Label_10:
 				DFXYZ[2] = 0.0;
 				*PathLength = 0.0;
 				*ErrorFlag = 0;
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 				goto Label_100;
 			}
 
 			if ( DOT(CosRayIn, DFXYZ) < 0 )
-				*BacksideFlag = false;
+				*BacksideFlag = 0;
 			else
-				*BacksideFlag = true;
-			*Intercept = true;
+				*BacksideFlag = 1;
+			*Intercept = 1;
 			goto Label_100;
 		break;
 	} //end select case

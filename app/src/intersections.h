@@ -133,7 +133,7 @@ private:
 	wxChoice *m_pointColors;
 	wxSlider *m_axisTextSize;
 	wxCheckBox *m_showAxes, *m_showTicks;
-	wxNumericCtrl *m_scaleX, *m_scaleY, *m_scaleZ;
+    wxNumericCtrl *m_scaleX, *m_scaleY, *m_scaleZ, *m_scaleZoom;
 	
 	std::vector<wxColour> m_colourList;
 	

@@ -123,7 +123,7 @@ SunShapeForm::SunShapeForm( wxWindow *parent, Project &prj )
 	box_sizer1->Add( xyz_sizer, 0, wxLEFT|wxEXPAND, 20 );
 
 	pos_sizer->Add( box_sizer1, 0, wxALL|wxEXPAND, 0 );
-	m_dirLabel = new wxStaticText( pos_sizer->GetStaticBox(), wxID_ANY, "Note: global X axis points west, Y to zenith, Z to north.");
+	m_dirLabel = new wxStaticText( pos_sizer->GetStaticBox(), wxID_ANY, "Note: When using the (Latitude, day, hour) option the global X axis points west, Y to zenith, Z to north.");
 	pos_sizer->Add( m_dirLabel, 0, wxALL, 8 );
 
 

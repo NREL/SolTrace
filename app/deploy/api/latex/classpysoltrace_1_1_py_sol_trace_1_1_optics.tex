@@ -1,0 +1,94 @@
+\doxysection{pysoltrace.\+Py\+Sol\+Trace.\+Optics Class Reference}
+\hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics}{}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics}\index{pysoltrace.PySolTrace.Optics@{pysoltrace.PySolTrace.Optics}}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_optics_1_1_face}{Face}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a2a25679fceec7956d889ea0e4e6dcdd9}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a2a25679fceec7956d889ea0e4e6dcdd9} 
+{\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} (self, int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_optics_a53caf38b24415bc9f8bdf8671df628e8}{id}})
+\item 
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_optics_aa5cb476348544f0d703381905eaaf8af}{copy}} (self, onew)
+\item 
+int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_optics_ac2dc6016a403bc3eb4de8f09b9f4b5d5}{Create}} (self, pdll, p\+\_\+data)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a180dde54e6829dc94d2a7a9d7f2caf05}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a180dde54e6829dc94d2a7a9d7f2caf05} 
+{\bfseries name}
+\begin{DoxyCompactList}\small\item\em Unique name for the optical property set. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a53caf38b24415bc9f8bdf8671df628e8}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a53caf38b24415bc9f8bdf8671df628e8} 
+{\bfseries id}
+\begin{DoxyCompactList}\small\item\em Identifying integer associated with the property set. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a1dd375a52b06373e59d77755522ae198}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a1dd375a52b06373e59d77755522ae198} 
+{\bfseries front}
+\begin{DoxyCompactList}\small\item\em properties associated with the front of the optical surface \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_a76abc7d59546a01954d7f6af8409c6b0}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_a76abc7d59546a01954d7f6af8409c6b0} 
+{\bfseries back}
+\begin{DoxyCompactList}\small\item\em properties associated with the back of the optical surface \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb} *Optics* is a subclass of PySolTrace, and represents an optical property set. 
+A PySolTrace instance may have multiple Optics member instances, which are stored in 
+the PySolTrace.optics list.
+
+Optics contains a subclass *Face*, which collects properties associated with the front 
+or back face of an optical surface.
+
+Attributes
+----------
+name : str
+    Unique name for the optical property set
+id : int
+    Identifying integer associated with the property set
+front : Face
+    properties associated with the front of the optical surface
+back : Face
+    properties associated with the back of the optical surface
+
+Methods
+----------
+copy 
+    Deep copy of the current Optics instance
+Create 
+    Calls methods to instantiate and construct optical surface in the SolTrace context.
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_aa5cb476348544f0d703381905eaaf8af}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_aa5cb476348544f0d703381905eaaf8af} 
+\index{pysoltrace.PySolTrace.Optics@{pysoltrace.PySolTrace.Optics}!copy@{copy}}
+\index{copy@{copy}!pysoltrace.PySolTrace.Optics@{pysoltrace.PySolTrace.Optics}}
+\doxysubsubsection{\texorpdfstring{copy()}{copy()}}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+Optics.\+copy (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{onew }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Deep copy of the current Optics instance
+
+Inputs
+---------
+onew : Optics.Face
+    Reference to new Optics object to which data will be copied
+\end{DoxyVerb}
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_optics_ac2dc6016a403bc3eb4de8f09b9f4b5d5}\label{classpysoltrace_1_1_py_sol_trace_1_1_optics_ac2dc6016a403bc3eb4de8f09b9f4b5d5} 
+\index{pysoltrace.PySolTrace.Optics@{pysoltrace.PySolTrace.Optics}!Create@{Create}}
+\index{Create@{Create}!pysoltrace.PySolTrace.Optics@{pysoltrace.PySolTrace.Optics}}
+\doxysubsubsection{\texorpdfstring{Create()}{Create()}}
+{\footnotesize\ttfamily  int pysoltrace.\+Py\+Sol\+Trace.\+Optics.\+Create (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{pdll,  }\item[{}]{p\+\_\+data }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Create Optics instance in the SolTrace context.
+
+Returns
+----------
+int 
+    1 if successful, 0 otherwise
+\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+pysoltrace.\+py\end{DoxyCompactItemize}

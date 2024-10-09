@@ -66,7 +66,7 @@
 #include "optics.h"
 #include "soltrace.h"
 
-class ReflectivityDialog : public wxDialog
+class AngularInputDialog : public wxDialog
 {
 	enum { ID_NPOINTS = wxID_HIGHEST + 239, ID_GRID };
 
@@ -74,14 +74,14 @@ class ReflectivityDialog : public wxDialog
 	wxNumericCtrl *m_npoints;
 
 public:
-	ReflectivityDialog( wxWindow *parent )
-		: wxDialog( parent, wxID_ANY, "Edit reflectivity table", wxDefaultPosition,
+	AngularInputDialog( wxWindow *parent, const char* quantity_str = "Reflectivity" )
+		: wxDialog( parent, wxID_ANY, "Edit angular dependence table", wxDefaultPosition,
 			wxSize( 450, 400 ), wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER )
 	{
 		m_grid = new wxExtGridCtrl( this, ID_GRID );
 		m_grid->CreateGrid( 3, 2 );
 		m_grid->SetColLabelValue( 0, "Incidence angle\n(mrad)" );
-		m_grid->SetColLabelValue( 1, "Reflectivity\n(0..1)" );
+		m_grid->SetColLabelValue(1, wxString::Format("%s \n(0..1)", quantity_str));
 		m_grid->AutoSizeColumns();
 
 		m_npoints = new wxNumericCtrl( this, ID_NPOINTS, 3, wxNUMERIC_INTEGER );
@@ -165,11 +165,11 @@ public:
 	DECLARE_EVENT_TABLE();
 };
 
-BEGIN_EVENT_TABLE( ReflectivityDialog, wxDialog )
-	EVT_BUTTON( wxID_COPY, ReflectivityDialog::OnCommand )
-	EVT_BUTTON( wxID_PASTE, ReflectivityDialog::OnCommand )
-	EVT_NUMERIC( ReflectivityDialog::ID_NPOINTS, ReflectivityDialog::OnCommand )
-	EVT_GRID_CMD_CELL_CHANGED( ReflectivityDialog::ID_GRID, ReflectivityDialog::OnCellChange )
+BEGIN_EVENT_TABLE( AngularInputDialog, wxDialog )
+	EVT_BUTTON( wxID_COPY, AngularInputDialog::OnCommand )
+	EVT_BUTTON( wxID_PASTE, AngularInputDialog::OnCommand )
+	EVT_NUMERIC( AngularInputDialog::ID_NPOINTS, AngularInputDialog::OnCommand )
+	EVT_GRID_CMD_CELL_CHANGED( AngularInputDialog::ID_GRID, AngularInputDialog::OnCellChange )
 END_EVENT_TABLE()
 
 enum { ID_OPTIC_SURF_NUMBER = wxID_HIGHEST+696,
@@ -177,14 +177,13 @@ enum { ID_OPTIC_SURF_NUMBER = wxID_HIGHEST+696,
 	ID_REFRACT_REAL, ID_REFRACT_IMAG,
 	ID_GRATING_SPACING, ID_REFLECTIVITY, ID_TRANSMISSIVITY,
 	ID_SLOPE_ERROR, ID_SPECULARITY_ERROR, ID_ERROR_TYPE, 
-	ID_USE_REFLECTIVITY_TABLE, ID_EDIT_REFLECTIVITY_TABLE };
+	ID_USE_REFLECTIVITY_TABLE, ID_USE_TRANSMISSIVITY_TABLE, 
+	ID_EDIT_REFLECTIVITY_TABLE, ID_EDIT_TRANSMISSIVITY_TABLE };
 
 class OpticalPropertyForm : public wxPanel
 {
-	wxNumericCtrl *m_opticSurfNumber,
-		*m_aperStopOrGrating,
-		*m_diffractionOrder,
-		*m_refractReal, *m_refractImag,
+	wxNumericCtrl 
+		*m_refractReal, 
 		*m_gratingSpacing[4],
 		*m_reflectivity,
 		*m_transmissivity,
@@ -192,8 +191,10 @@ class OpticalPropertyForm : public wxPanel
 		*m_specularityError;
 
 	wxChoice *m_errorType;
-	wxCheckBox *m_useReflectivityTable;
+	wxCheckBox* m_useReflectivityTable;
+	wxCheckBox *m_useTransmissivityTable;
 	wxButton *m_editReflectivityTable;
+	wxButton* m_editTransmissivityTable;
 
 	SurfaceOptic *m_surf;
 	OpticsForm *m_optForm;
@@ -207,55 +208,27 @@ public:
 
 		wxFlexGridSizer *sizer1 = new wxFlexGridSizer( 2 );
 		sizer1->AddGrowableCol( 1 );
-		sizer1->Add( new wxStaticText( this, wxID_ANY, "Optical surface number" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
-		sizer1->Add( m_opticSurfNumber = new wxNumericCtrl( this, ID_OPTIC_SURF_NUMBER, 1, wxNUMERIC_INTEGER ), 0, wxALL, 2 );
-		sizer1->Add( new wxStaticText( this, wxID_ANY, "Aperture stop or grating type" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
-		sizer1->Add( m_aperStopOrGrating = new wxNumericCtrl( this, ID_APER_STOP_OR_GRATING, 3, wxNUMERIC_INTEGER ), 0, wxALL, 2 );
-		sizer1->Add( new wxStaticText( this, wxID_ANY, "Diffraction order" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
-		sizer1->Add( m_diffractionOrder = new wxNumericCtrl( this, ID_DIFFRACTION_ORDER, 4, wxNUMERIC_INTEGER ), 0, wxALL, 2 );
-
 
 		wxStaticBoxSizer *sizer2 = new wxStaticBoxSizer( wxHORIZONTAL, this, "Refraction indicies" );
 		sizer2->Add( new wxStaticText( sizer2->GetStaticBox(), wxID_ANY, "Real" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 4 );
 		sizer2->Add( m_refractReal = new wxNumericCtrl( sizer2->GetStaticBox(), ID_REFRACT_REAL, 1.1 ), 0, wxALL, 4 );
-		sizer2->Add( new wxStaticText( sizer2->GetStaticBox(), wxID_ANY, "Imag" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 4 );
-		sizer2->Add( m_refractImag = new wxNumericCtrl( sizer2->GetStaticBox(), ID_REFRACT_IMAG, 1.2 ), 0, wxALL, 4 );
-
-		wxStaticBoxSizer *sizer3 = new wxStaticBoxSizer( wxVERTICAL, this, "Grating spacing coefficients" );		
-		const char *labels[4] = { "1st", "2nd", "3rd", "4th" };
-		wxFlexGridSizer *sizer4 = new wxFlexGridSizer(2 );
-		sizer4->AddGrowableCol(1);
-		for( int i=0;i<4;i++ )
-		{
-			sizer4->Add( new wxStaticText( sizer3->GetStaticBox(), wxID_ANY, labels[i] ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
-			sizer4->Add( m_gratingSpacing[i] = new wxNumericCtrl( sizer3->GetStaticBox(), ID_GRATING_SPACING, 1.1 + i*0.1 ) , 0, wxALL, 2 );
-			m_gratingSpacing[i]->Enable( false );
-		}
-		sizer3->Add( sizer4, 0, wxALL, 5 );
-
-		m_opticSurfNumber->Enable( false );
-		m_aperStopOrGrating->Enable( false );
-		m_diffractionOrder->Enable( false );
-		m_refractImag->Enable( false );
-
 
 		wxBoxSizer *r_sizer = new wxBoxSizer( wxVERTICAL );
 		r_sizer->Add( sizer1, 0, wxALL, 5 );
 		r_sizer->Add( sizer2, 0, wxALL, 5 );
-		r_sizer->Add( sizer3, 0, wxALL, 5 );
-
 
 		wxFlexGridSizer *l_sizer = new wxFlexGridSizer( 4 );
 		l_sizer->AddGrowableCol( 1 );
+		
 		l_sizer->Add( new wxStaticText( this, wxID_ANY, "Reflectivity" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
 		l_sizer->Add( m_reflectivity = new wxNumericCtrl( this, ID_REFLECTIVITY, 0.96 ), 0, wxALL, 2 );
-		l_sizer->Add( m_useReflectivityTable = new wxCheckBox( this, ID_USE_REFLECTIVITY_TABLE, L"\u03c1(\u03b8)" ), 0, wxLEFT|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 25 );
-		l_sizer->Add( m_editReflectivityTable = new wxButton( this, ID_EDIT_REFLECTIVITY_TABLE, "...", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
+		l_sizer->Add(m_useReflectivityTable = new wxCheckBox(this, ID_USE_REFLECTIVITY_TABLE, L"\u03c1(\u03b8)"), 0, wxLEFT | wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT, 25);
+		l_sizer->Add(m_editReflectivityTable = new wxButton(this, ID_EDIT_REFLECTIVITY_TABLE, "...", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT), 0, wxALL | wxALIGN_CENTER_VERTICAL, 0);
 		
 		l_sizer->Add( new wxStaticText( this, wxID_ANY, "Transmissivity" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
 		l_sizer->Add( m_transmissivity = new wxNumericCtrl( this, ID_TRANSMISSIVITY, 1.0 ), 0, wxALL, 2 );
-		l_sizer->AddStretchSpacer();
-		l_sizer->AddStretchSpacer();
+		l_sizer->Add(m_useTransmissivityTable= new wxCheckBox( this, ID_USE_TRANSMISSIVITY_TABLE, L"\u03c4(\u03b8)" ), 0, wxLEFT|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 25 );
+		l_sizer->Add(m_editTransmissivityTable = new wxButton( this, ID_EDIT_TRANSMISSIVITY_TABLE, "...", wxDefaultPosition, wxDefaultSize, wxBU_EXACTFIT ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 0 );
 		
 		l_sizer->Add( new wxStaticText( this, wxID_ANY, "Slope error" ), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 2 );
 		l_sizer->Add( m_slopeError = new wxNumericCtrl( this, ID_SLOPE_ERROR, 0.95 ), 0, wxALL, 2 );
@@ -296,18 +269,13 @@ public:
 
 		m_reflectivity->Enable( !surf->UseReflectivityTable );
 		m_editReflectivityTable->Enable( surf->UseReflectivityTable );
-		m_opticSurfNumber->SetValue( surf->OpticalSurfaceNumber );
-		m_aperStopOrGrating->SetValue( surf->ApertureStopOrGratingType );
-		m_diffractionOrder->SetValue( surf->DiffractionOrder );
+		m_transmissivity->Enable(!surf->UseTransmissivityTable);
+		m_editTransmissivityTable->Enable(surf->UseTransmissivityTable);
 		m_refractReal->SetValue( surf->RefractionIndexReal );
-		m_refractImag->SetValue( surf->RefractionIndexImag );
-		for( int i=0;i<4;i++ )
-			m_gratingSpacing[i]->SetValue( surf->GratingCoeffs[i] );
 		m_reflectivity->SetValue( surf->Reflectivity );
 		m_transmissivity->SetValue( surf->Transmissivity );
 		m_slopeError->SetValue( surf->RMSSlope );
 		m_specularityError->SetValue( surf->RMSSpecularity );
-		//m_errorType->SetSelection( surf->ErrorDistribution=='g' ? 0 : 1 );
 		if (surf->ErrorDistribution == 'g')
 		{
 			m_errorType->SetSelection(0);
@@ -322,6 +290,7 @@ public:
 		}
 
 		m_useReflectivityTable->SetValue(surf->UseReflectivityTable);
+		m_useTransmissivityTable->SetValue(surf->UseTransmissivityTable);
 
 		Enable( true );
 	}
@@ -337,15 +306,7 @@ public:
 
 		switch( evt.GetId() )
 		{
-		case ID_OPTIC_SURF_NUMBER: m_surf->OpticalSurfaceNumber = m_opticSurfNumber->AsInteger(); break;
-		case ID_APER_STOP_OR_GRATING: m_surf->ApertureStopOrGratingType = m_aperStopOrGrating->AsInteger(); break;
-		case ID_DIFFRACTION_ORDER: m_surf->DiffractionOrder = m_diffractionOrder->AsInteger(); break;
 		case ID_REFRACT_REAL: m_surf->RefractionIndexReal = m_refractReal->Value(); break;
-		case ID_REFRACT_IMAG: m_surf->RefractionIndexImag = m_refractImag->Value(); break;
-		case ID_GRATING_SPACING:
-			for( i=0;i<4;i++ )
-				m_surf->GratingCoeffs[i] = m_gratingSpacing[i]->Value();
-			break;
 		case ID_REFLECTIVITY: m_surf->Reflectivity = m_reflectivity->Value(); break;
 		case ID_TRANSMISSIVITY: m_surf->Transmissivity = m_transmissivity->Value(); break;
 		case ID_SLOPE_ERROR: m_surf->RMSSlope = m_slopeError->Value(); break;
@@ -370,9 +331,14 @@ public:
 			m_editReflectivityTable->Enable( m_useReflectivityTable->GetValue() );
 			m_reflectivity->Enable( !m_useReflectivityTable->GetValue() );
 			break;
+		case ID_USE_TRANSMISSIVITY_TABLE:
+			m_surf->UseTransmissivityTable = m_useTransmissivityTable->GetValue();
+			m_editTransmissivityTable->Enable(m_useTransmissivityTable->GetValue());
+			m_transmissivity->Enable(!m_useTransmissivityTable->GetValue());
+			break;
 		case ID_EDIT_REFLECTIVITY_TABLE:
 			{
-				ReflectivityDialog dlg( this );
+				AngularInputDialog dlg( this, "Reflectivity");
 				dlg.CenterOnParent();
 				dlg.SetData( m_surf->ReflectivityTable );
 				if (  wxID_OK == dlg.ShowModal() )
@@ -381,6 +347,17 @@ public:
 					return; // skip modifiying the project if refl. table not changed.
 			}
 			break;
+		case ID_EDIT_TRANSMISSIVITY_TABLE:
+		{
+			AngularInputDialog dlg(this, "Transmissivity");
+			dlg.CenterOnParent();
+			dlg.SetData(m_surf->TransmissivityTable);
+			if (wxID_OK == dlg.ShowModal())
+				m_surf->TransmissivityTable = dlg.GetData();
+			else
+				return; // skip modifiying the project if refl. table not changed.
+		}
+		break;
 		}
 
 		Modified();
@@ -401,8 +378,10 @@ BEGIN_EVENT_TABLE( OpticalPropertyForm, wxPanel )
 	EVT_NUMERIC( ID_SLOPE_ERROR, OpticalPropertyForm::HandleEvent )
 	EVT_NUMERIC( ID_SPECULARITY_ERROR, OpticalPropertyForm::HandleEvent )
 	EVT_CHOICE( ID_ERROR_TYPE, OpticalPropertyForm::HandleEvent )
-	EVT_CHECKBOX( ID_USE_REFLECTIVITY_TABLE, OpticalPropertyForm::HandleEvent )
+	EVT_CHECKBOX(ID_USE_REFLECTIVITY_TABLE, OpticalPropertyForm::HandleEvent)
 	EVT_BUTTON( ID_EDIT_REFLECTIVITY_TABLE, OpticalPropertyForm::HandleEvent )
+	EVT_CHECKBOX( ID_USE_TRANSMISSIVITY_TABLE, OpticalPropertyForm::HandleEvent )
+	EVT_BUTTON(ID_EDIT_TRANSMISSIVITY_TABLE, OpticalPropertyForm::HandleEvent)
 END_EVENT_TABLE()
 
 enum { ID_ADDOPTIC= wxID_HIGHEST+239, ID_REMOVEOPTIC, ID_OPTNAME, ID_OPTICLIST, ID_IMPORT, ID_EXPORT, ID_CLEARALL };

@@ -163,8 +163,10 @@ STCORE_API int st_optic(st_context_t pcxt, st_uint_t idx, int fb, /* 1=front,2=b
 				double ref, double tra,
 				double gratingab12[3],
 				double rmsslope, double rmsspec,
-				int userefltable, int npoints,
-				double *angles, double *refls  )
+				int userefltable, int refl_npoints,
+				double* refl_angles, double* refls,
+				int usetranstable, int trans_npoints,
+				double* trans_angles, double* transs)
 {
 	SYSTEM(pcxt,-1);
 
@@ -191,14 +193,24 @@ STCORE_API int st_optic(st_context_t pcxt, st_uint_t idx, int fb, /* 1=front,2=b
 	topt->RMSSlopeError = rmsslope;
 	topt->RMSSpecError = rmsspec;
 
-	if (userefltable && npoints > 0 && angles != 0 && refls != 0)
+	if (userefltable && refl_npoints > 0 && refl_angles != 0 && refls != 0)
 	{
 		topt->UseReflectivityTable = true;
-		topt->ReflectivityTable.resize( npoints );
-		for (int i=0;i<npoints;i++)
+		topt->ReflectivityTable.resize( refl_npoints );
+		for (int i=0;i<refl_npoints;i++)
 		{
-			topt->ReflectivityTable[i].angle = angles[i];
+			topt->ReflectivityTable[i].angle = refl_angles[i];
 			topt->ReflectivityTable[i].refl = refls[i];
+		}
+	}
+	if (usetranstable && trans_npoints > 0 && trans_angles != 0 && transs != 0)
+	{
+		topt->UseTransmissivityTable = true;
+		topt->TransmissivityTable.resize(trans_npoints);
+		for (int i = 0; i < trans_npoints; i++)
+		{
+			topt->TransmissivityTable[i].angle = trans_angles[i];
+			topt->TransmissivityTable[i].trans = transs[i];
 		}
 	}
 
@@ -485,6 +497,35 @@ STCORE_API int st_sun_xyz( st_context_t pcxt, double x, double y, double z )
 	return 1;
 }
 
+STCORE_API int st_sun_position(st_context_t pcxt, double lat, double day, double hour, double* x, double* y, double* z)
+{
+	/* 
+	computes the sun vector xyz given arguments
+	lat : [deg] latitude 
+	day : [] day of the year 
+	hour : [hour] solar time. 12.00 corresponds to sun at maximum elevation and does not necessarily match local time
+
+	xyz coordinate system:
+		x: +west
+		y: +zenith
+		z: +north
+	*/
+
+	double Declination, HourAngle, Elevation, Azimuth;
+
+	Declination = 180 / M_PI * asin(0.39795 * cos(0.98563 * M_PI / 180 * (day - 173)));
+	HourAngle = 15 * (hour - 12);
+	Elevation = 180 / M_PI * asin(sin(Declination * M_PI / 180) * sin(lat * M_PI / 180) + cos(Declination * M_PI / 180) * cos(HourAngle * M_PI / 180) * cos(lat * M_PI / 180));
+	Azimuth = 180 / M_PI * acos((sin(M_PI / 180 * Declination) * cos(M_PI / 180 * lat) - cos(M_PI / 180 * Declination) * sin(M_PI / 180 * lat) * cos(M_PI / 180 * HourAngle)) / cos(M_PI / 180 * Elevation) + 0.0000000001);
+	if (sin(HourAngle * M_PI / 180) > 0.0)
+		Azimuth = 360 - Azimuth;
+	*x = -sin(Azimuth * M_PI / 180) * cos(Elevation * M_PI / 180);
+	*y = sin(Elevation * M_PI / 180);
+	*z = cos(Azimuth * M_PI / 180) * cos(Elevation * M_PI / 180);
+
+	return 1;
+}
+
 STCORE_API int st_sun_userdata( st_context_t pcxt, st_uint_t npoints, double angle[], double intensity[])
 {
 	SYSTEM(pcxt,-1);
@@ -619,11 +660,12 @@ STCORE_API int st_sun_stats( st_context_t pcxt, double *xmin, double *xmax, doub
 
 
 /* functions to control simulation */
-STCORE_API int st_sim_params(st_context_t pcxt, int raycount, int maxcount)
+STCORE_API int st_sim_params(st_context_t pcxt, int raycount, int maxcount, int include_dynamic_group)
 {
 	SYSTEM(pcxt,-1);
 	sys->sim_raycount = raycount;
 	sys->sim_raymax = maxcount;
+	sys->sim_dynamic_group = include_dynamic_group ? true : false;
 	return 1;
 }
 
@@ -636,7 +678,6 @@ STCORE_API int st_sim_errors(st_context_t pcxt, int include_sun_shape, int inclu
 }
 
 STCORE_API int st_sim_run_data( st_context_t pcxt, unsigned int seed, 
-                            bool AsPowerTower,
                             std::vector<std::vector< double > > *data_s1, 
                             std::vector<std::vector< double > > *data_s2, 
                             bool save_st_data,
@@ -667,7 +708,7 @@ STCORE_API int st_sim_run_data( st_context_t pcxt, unsigned int seed,
 
 	if ( !Trace(sys, seed,
 		rayct, sys->sim_raymax,
-		sys->sim_errors_sunshape, sys->sim_errors_optical, AsPowerTower,
+		sys->sim_errors_sunshape, sys->sim_errors_optical, sys->sim_dynamic_group,
 		callback, cbdata, data_s1, data_s2, save_st_data) )
 		return -1;
 
@@ -686,10 +727,10 @@ STCORE_API int st_sim_run_data( st_context_t pcxt, unsigned int seed,
 	}
 }
 
-STCORE_API int st_sim_run( st_context_t pcxt, unsigned int seed, bool AsPowerTower,
+STCORE_API int st_sim_run( st_context_t pcxt, unsigned int seed,
 						  int (*callback)(st_uint_t ntracedtotal, st_uint_t ntraced, st_uint_t ntotrace, st_uint_t curstage, st_uint_t nstages, void *data), void *cbdata)
 {
-    return st_sim_run_data( pcxt, seed, AsPowerTower, 0, 0, false, callback, cbdata);
+    return st_sim_run_data( pcxt, seed, 0, 0, false, callback, cbdata);
 }
 
 

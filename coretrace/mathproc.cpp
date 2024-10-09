@@ -304,7 +304,7 @@ void spline( std::vector<double> &x,
 		y2[0] = -0.5;
 		u[0] = (3.0/(x[1]-x[0]))*((y[1]-y[0])/(x[1]-x[0])-yp1);
 	}
-	for (i=2;i<n-1;i++)
+	for (i=1;i<n-1;i++)
 	{
 		sig = (x[i]-x[i-1])/(x[i+1]-x[i-1]);
 		p = sig*y2[i-1]+2.0;

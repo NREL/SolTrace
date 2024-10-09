@@ -228,11 +228,27 @@ at intersection point of ray and surface. Path length is also computed.  From Sp
 
 	// wendelin 5-26-11 chose not use closed form solution for sphere.
 	// this solves for a full spheroid, but can build a full spheroid from two hemispheres with iterative solution
-	if ((Element->SurfaceType == 1) && (Element->SurfaceIndex == 's' || Element->SurfaceIndex == 'S')) //sphere
+	// JM 6/2023: Using closed form solution for sphere with single axis curvature aperture to avoid numerical problems caused by a bad starting point for Newton-Raphson (algorithm needs to start at a location with a defined z-location on the surface)
+	if ((Element->SurfaceType == 1 || Element->SurfaceType == 7) && (Element->SurfaceIndex == 's' || Element->SurfaceIndex == 'S')) //sphere or partial cylinder
 	{
 		QuadricSurfaceClosedForm(Element, PosLoc, CosLoc, PosXYZ, DFXYZ, PathLength, ErrorFlag);
 		return;
 	}
+
+	// JM 6/2023: Adding closed form solution for hyperboloids and hemi-ellipsoids
+	if ((Element->SurfaceType == 1) && (Element->SurfaceIndex == 'o' || Element->SurfaceIndex == 'O')) //hyperboloid or hemiellipsoid
+	{
+		QuadricSurfaceClosedForm(Element, PosLoc, CosLoc, PosXYZ, DFXYZ, PathLength, ErrorFlag);
+		return;
+	}
+
+	// JM 6/2023: Adding closed form solution for parabolas
+	if ((Element->SurfaceIndex == 'p' || Element->SurfaceIndex == 'P'))
+	{
+		QuadricSurfaceClosedForm(Element, PosLoc, CosLoc, PosXYZ, DFXYZ, PathLength, ErrorFlag);
+		return;
+	}
+
 	
 	if (Element->SurfaceType == 10) // torus
 	{
@@ -939,6 +955,19 @@ Label_10:
 		 
 	SJ1 = 0.0;
 
+	// JM 10/2023: Check upper and lower bounds for S (distance along ray path from (X1,Y1,Zstart)) to restrict step size for cubic spline
+	// This may slow down the solution - previously the iterations would find an intersection point for the spline, but it would be later disgarded because it is out of bounds, now the loop below will reach the iteration limit before failing is there is no intersection
+	double lower_bound = -1e10;
+	double upper_bound = 1e10;
+	if (Element->SurfaceType == 9)
+	{
+		double s_to_xmin = (Element->CubicSplineXData[0] - X1) / (CosKLM[0] + 0.00000000001);  // Distance along ray path from (X1,Y1,Zstart) to smallest x-coordinate on surface 
+		double s_to_xmax = (Element->CubicSplineXData[Element->CubicSplineXData.size() - 1] - X1) / (CosKLM[0] + 0.00000000001);  // Distance along ray path from (X1,Y1,Zstart) to largest x-coordinate on surface 
+		lower_bound = fmin(s_to_xmin, s_to_xmax);
+		upper_bound = fmax(s_to_xmin, s_to_xmax);
+	}
+
+
 	i = 0;
 //Begin the Newton-Raphson Iteration
 	while ( i++ < NumIterations)
@@ -960,6 +989,20 @@ Label_40:
 		if ( fabs(FXYZ) <= Epsilon*fabs(DFDXYZ) ) goto Label_100;
 		
 		SJ1 = SJ - FXYZ/DFDXYZ;
+
+		// JM 10/2023: Enforce bounds to restrict next guess for cubic spline
+		if (Element->SurfaceType == 9)
+		{
+			if ((FXYZ < 0 && CosKLM[2]>0) || (FXYZ > 0 && CosKLM[2] < 0)) // FXYZ < 0 if current point is below surface, FXYZ > 0 if current point is above surface
+				lower_bound = fmax(SJ, lower_bound);
+			else if ((FXYZ < 0 && CosKLM[2]<0) || (FXYZ > 0 && CosKLM[2] > 0))
+				upper_bound = fmin(SJ, upper_bound);
+			if (SJ1 < lower_bound || SJ1 > upper_bound)
+				SJ1 = 0.5 * (lower_bound + upper_bound);
+			if (upper_bound <= lower_bound)
+				break;
+		}
+
 	}
 	*ErrorFlag = 1;   //Failed to converge
 

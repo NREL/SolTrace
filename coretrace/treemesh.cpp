@@ -352,7 +352,7 @@ st_hash_tree::st_hash_tree()
 	log2inv = 1./log(2.);
 }
 
-bool st_hash_tree::create_mesh(LayoutData *data){
+bool st_hash_tree::create_mesh(KDLayoutData &data){
 	/*
 	Create a mesh of the heliostat field according to the performance surface
 	provided by the 'integrals' class.
@@ -360,11 +360,11 @@ bool st_hash_tree::create_mesh(LayoutData *data){
 	Data = data;
         
 	//Calculate min and max recursion levels based on user zone size limitations
-	double dextx = (Data->xlim[1] - Data->xlim[0]);
-	nx_req = (int)floor( log(dextx/Data->min_unit_dx)*log2inv );
+	double dextx = (Data.xlim[1] - Data.xlim[0]);
+	nx_req = (int)floor( log(dextx/Data.min_unit_dx)*log2inv );
     nx_req = nx_req < 1 ? 1 : nx_req;
-	double dexty = (Data->ylim[1] - Data->ylim[0]);
-	ny_req = (int)floor( log(dexty/Data->min_unit_dy)*log2inv );
+	double dexty = (Data.ylim[1] - Data.ylim[0]);
+	ny_req = (int)floor( log(dexty/Data.min_unit_dy)*log2inv );
     ny_req = ny_req < 1 ? 1 : ny_req;
 
 	//estimate the maximum number of nodes and reserve memory
@@ -388,18 +388,22 @@ bool st_hash_tree::create_mesh(LayoutData *data){
 	}
 	
     //set up the head node's range. This doesn't actually create the tree yet.
-	head_node.set_range(Data->xlim[0], Data->xlim[1], Data->ylim[0], Data->ylim[1]);
+	head_node.set_range(Data.xlim[0], Data.xlim[1], Data.ylim[0], Data.ylim[1]);
     
     return true;
 }
 
 string st_hash_tree::pos_to_binary_base(double x, double y){
-    double res = fmin(Data->min_unit_dx, Data->min_unit_dy);
+    double res = fmin(Data.min_unit_dx, Data.min_unit_dy);
 	return pos_to_binary(x, y, res);
 }
 
 void st_hash_tree::reset(){
-	Data = 0;
+    Data.min_unit_dx = 
+        Data.min_unit_dy = 
+        Data.xlim[0] = Data.xlim[1] = Data.ylim[0] = Data.ylim[1] =
+            std::numeric_limits<double>::quiet_NaN();
+    
 	head_node = st_opt_element();
 	nodes.clear();
 	nx_req = -1;
@@ -762,10 +766,10 @@ string st_hash_tree::pos_to_binary(double x, double y, double res){
 	bool x_mode = true; //start with radius
         
 	double 
-		y0 = Data->ylim[0],
-		y1 = Data->ylim[1],
-		x0 = Data->xlim[0],
-		x1 = Data->xlim[1];
+		y0 = Data.ylim[0],
+		y1 = Data.ylim[1],
+		x0 = Data.xlim[0],
+		x1 = Data.xlim[1];
 	    
 	int nc = max(nx_req, ny_req)*2;
         
@@ -805,10 +809,10 @@ void st_hash_tree::binary_to_pos(const string &binary, double *x, double *y)
     bool x_mode = true; //start with radius
         
 	double 
-		y0 = Data->ylim[0],
-		y1 = Data->ylim[1],
-		x0 = Data->xlim[0],
-		x1 = Data->xlim[1];
+		y0 = Data.ylim[0],
+		y1 = Data.ylim[1],
+		x0 = Data.xlim[0],
+		x1 = Data.xlim[1];
 
     *x = (x0 + x1)/2.;
     *y = (y0 + y1)/2.;

@@ -1,0 +1,28 @@
+#######################################################################################
+#  Instructions
+#######################################################################################
+# 1. Copy this file into the parent directory containing soltrace/ lk/ wex/ and wxwidgets/ folders.
+# 2. Rename this file to 'CMakeLists.txt' before running cmake. You may need to temporarily rename
+#    any other file in this directory with the same name.
+#    E.g., the file should be at C:/stdev/CMakeLists.txt
+# 3. Create a directory in the main parent folder to store the build files. 
+#    E.g., C:/stdev/build-soltrace/
+# 4. Open a shell or command window in the build folder from step 3
+# 5. copy this cmake command to the shell and run. Replace the cmake target with a supported generator.
+#     see https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#manual:cmake-generators(7)
+#
+#    > cmake -G "Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES="Debug;Release" -DCMAKE_SYSTEM_VERSION=10.0 -DSAM_SKIP_TOOLS=1 .. 
+#
+# 6. Confirm the project files built. If running visual studio, you should see a soltrace_ui.sln file in the build-soltrace/ directory.
+# 7. Build all files. The output is stored in the soltrace repository folder, e.g., C:/stdev/soltrace/app/deploy/soltrace.exe. 
+#    Note that output is NOT stored in the build-soltrace/ directory!
+#######################################################################################
+
+cmake_minimum_required(VERSION 3.19)
+
+Project(soltrace_ui VERSION 1.0.0)
+
+add_subdirectory(lk)
+add_subdirectory(wex)
+add_subdirectory(soltrace)
+

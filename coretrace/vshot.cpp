@@ -50,10 +50,11 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <algorithm>
 
 #include "types.h"
 #include "procs.h"
-
+#include "interpolate.h"
 
 void EvalMono(double ax, double ay, HPM2D &B, int order, double DeltaX, double DeltaY, double *az)
 {
@@ -109,69 +110,6 @@ void EvalMono(double ax, double ay, HPM2D &B, int order, double DeltaX, double D
 	*az = z;
 }
 //End of Procedure--------------------------------------------------------------
-void FEInterpolate(double Xray, double Yray, double Delta, double Density, 
-			double *FEData[5], int NumFEPoints, 
-			double *z, double *zx, double *zy)
-{
-/* {Interpolation scheme for random finite element data. Given a location defined by
-xray and yray, interpolates to find the best guess for the corresponding residual z.
-    Input - Xray = x coordinate of incoming ray
-            Yray = y coordinate of incoming ray
-            Delta = change in x-y coordinates used to calculate the corresponding slopes.
-            Density = density of surface data points (np/pi*radish^2)
-            FEData = array of FE data
-                        (in the form of FEData[1] = x location of data point
-                                        FEData[2] = y  location of data point
-                                        FEData[3] = Residual z (displacement in z)) ???
-            NumFEPoints = number of FE datum points
-
-    Output - z = best residual z
-             zx = best residual z at point Delta away in x-direction
-             zy = best residual z at point delta away in y-direction}*/
-
-	double SUMRR2 = 0.0, SUMWHT = 0.0, sumrx2 = 0.0, sumry2 = 0.0, sumwtx = 0.0, sumwty = 0.0, Delta2 = 0.0;
-	int i=0;
-	double XX = 0.0, YY = 0.0, rx2 = 0.0, ry2 = 0.0, R2 = 0.0;
-	
-    //initialize
-    Delta2 = Delta*Delta;
-    SUMRR2 = 0.0;
-    SUMWHT = 0.0;
-    sumrx2 = 0.0;
-    sumry2 = 0.0;
-    sumwtx = 0.0;
-    sumwty = 0.0;
-
-	for (i = 0;i< NumFEPoints;i++)
-	{
-		XX = FEData[i][0] - Xray;
-		YY = FEData[i][1] - Yray;
-
-		//test to see if ray coincides with datum point
-		if (XX == 0.0 && YY == 0.0)
-		{
-			*z = FEData[i][2];
-			*zx = *z;
-			*zy = *z;
-			return;
-		}
-
-		R2 = XX*XX + YY*YY;
-		rx2 = R2 - 2.0*Delta*XX + Delta2;
-		ry2 = R2 - 2.0*Delta*YY + Delta2;
-		SUMRR2 = SUMRR2 + 1.0/R2;
-		sumrx2 = sumrx2 + 1.0/rx2;
-		sumry2 = sumry2 + 1.0/ry2;
-		SUMWHT = SUMWHT + FEData[i][2]/R2;
-		sumwtx = sumwtx + FEData[i][2]/rx2;
-		sumwty = sumwty + FEData[i][2]/ry2;
-	}
-
-    *z = SUMWHT/(Density + SUMRR2);
-    *zx = sumwtx/(Density + sumrx2);
-    *zy = sumwty/(Density + sumry2);
-}
-//End of Procedure--------------------------------------------------------------
 
 void MonoSlope(HPM2D &B, int order, double sxp, double syp, double *dzdx, double *dzdy)
 {
@@ -201,6 +139,108 @@ void MonoSlope(HPM2D &B, int order, double sxp, double syp, double *dzdx, double
 }
 
 //End of Procedure--------------------------------------------------------------
+
+void FEInterpGM(double Xray, double Yray, GaussMarkov* gm, double* zr)
+{
+	/*
+	
+	*/
+	VectDoub xy = { Xray, Yray };
+
+	*zr = gm->interp(xy);
+}
+
+struct __r_el
+{
+	double r;
+	VectDoub* v;
+	__r_el() {};
+	__r_el(double _r, VectDoub* _v) { r = _r; v = _v; };
+};
+
+bool __rcomp(__r_el &a, __r_el &b)
+{
+	return a.r < b.r;
+}
+
+void FEInterpKD(double Xray, double Yray, FEDataObj* kd, double step, double* zr, double* dzrdx, double* dzrdy)
+{
+	/*
+	Interpolate using a local kriging model of the surface. The model is constructed using adjacent nodes to the 
+	ray position {Xray,Yray} determined using a K-d tree. The derivatives of the surface in x and y are also
+	computed numerically using the kriging model.
+	*/
+
+	// Retrieve ND nearest neighbors and linearly interpolate 
+	std::vector<void*> nearby_nodes;
+	bool ok = kd->get_all_data_at_loc(nearby_nodes, Xray, Yray);
+	if (!ok || nearby_nodes.size() < 3)
+		throw std::runtime_error("Interpolation failed to find nearby nodes to ray hit in FEA surface.");
+	
+	int nn = (int)nearby_nodes.size();
+	
+	std::vector<__r_el> ndist;
+
+	//sort to find nearest neighbors
+	for (int i = 0; i < nn; i++)
+	{
+		VectDoub* v = static_cast<VectDoub*>(nearby_nodes.at(i));
+
+		double r = std::sqrt(std::pow(Xray - v->at(0), 2) + std::pow(Yray - v->at(1), 2));
+
+		ndist.push_back(__r_el(r, v));
+	}
+
+	// Find the nearest points
+	std::sort(ndist.begin(), ndist.end(), __rcomp);
+
+	// build a local model of the surface using kriging. Use nearest 7 points max (number selected based on limited testing)
+	GaussMarkov gm;
+	for (int i = 0; i < (nn > 7 ? 7 : nn); i++)
+	{
+		gm.x.push_back({ ndist.at(i).v->at(0), ndist.at(i).v->at(1) });
+		gm.y.push_back(ndist.at(i).v->at(2));
+	}
+
+	gm.setup(1.999,0);
+
+	VectDoub xy = { Xray,Yray };
+	*zr = gm.interp(xy);
+
+	// evaluate the slopes using numerical derivative
+	xy.at(0) += step;
+	double za = gm.interp(xy);
+	xy.at(0) -= step;
+	xy.at(1) += step;
+	double zb = gm.interp(xy);
+	*dzrdx = (*zr - za) / step;
+	*dzrdy = (*zr - zb) / step;
+
+	//--> the following was also tried. Barycentric interpolation doesn't work very well for low-quality meshes.
+	//keep this code for now as a reference.
+	//VectDoub* p1 = ndist.at(0).v;
+	//VectDoub* p2 = ndist.at(1).v;
+	//VectDoub* p3 = ndist.at(2).v;
+	//
+	//double det = (p2->at(1) - p3->at(1)) * (p1->at(0) - p3->at(0)) + (p3->at(0) - p2->at(0)) * (p1->at(1) - p3->at(1));
+	//double u = ((p2->at(1) - p3->at(1)) * (Xray - p3->at(0)) + (p3->at(0) - p2->at(0)) * (Yray - p3->at(1))) / det;
+	//double v = ((p3->at(1) - p1->at(1)) * (Xray - p3->at(0)) + (p1->at(0) - p3->at(0)) * (Yray - p3->at(1))) / det;
+	//double w = (1 - u - v);
+	//*zr = u * p1->at(2) + v * p2->at(2) + w * p3->at(2);
+	//// slopes
+	//VectDoub r_12 = { p2->at(0) - p1->at(0), p2->at(1) - p1->at(1), p2->at(2) - p1->at(2) };
+	//VectDoub r_13 = { p3->at(0) - p1->at(0), p3->at(1) - p1->at(1), p3->at(2) - p1->at(2) };
+	//double a = r_12.at(1) * r_13.at(2) - r_12.at(2) * r_13.at(1);
+	//double b = r_12.at(2) * r_13.at(0) - r_12.at(0) * r_13.at(2);
+	////double c = r_12.at(0) * r_13.at(1) - r_12.at(1) * r_13.at(0);
+	//double tiny = 1e-19;
+	//*dzrdx = a / (det == 0 ? tiny : det);
+	//*dzrdy = b / (det == 0 ? tiny : det);
+	//<---
+
+	return;
+}
+
 
 void FEInterpNew(double Xray, double Yray, double Density,
 			HPM2D &FEData, int NumFEPoints,

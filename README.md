@@ -12,41 +12,87 @@ The desktop version of SolTrace for Windows or Linux builds from the following o
 
 * This repository, **SolTrace**, provides the user interface to assign values to inputs of the computational modules, run the modules in the correct order, and display calculation results. It also includes tools for editing LK scripts and viewing ray intersection and flux map data.
 
-# Quick Steps for Building SolTrace
+## SolTrace Python API
 
-For detailed build instructions see the [wiki](https://github.com/NREL/SolTrace/wiki), with specific instructions for:
+Users can also run simulations via the [`pysoltrace`](https://github.com/NREL/SolTrace/blob/develop/app/deploy/api/pysoltrace.py) SolTrace Python API found in the folder `app/deploy/api`. Example files for running the API are found in the `app/deploy/api/examples` subfolder. Documentation is available in HTML or PDF format in the corresponding API subfolder. 
 
-  * [Windows](https://github.com/NREL/SolTrace/wiki/build-windows)
-  * [OSX](https://github.com/NREL/SolTrace/wiki/build-osx)
-  * [Linux](https://github.com/NREL/SolTrace/wiki/build-linux)
+The `pysoltrace` API is capable of running multi-threaded simulations, generating flux maps, creating 3D interactive trace plots, and provides other capabilities that are found in the SolTrace graphical interface. The functionality and flexibility of the API generally exceeds that of the graphical interface. 
 
-These are the general quick steps you need to follow to set up your computer for developing SolTrace:
+The API requires the compiled coretrace library. Project files for building this library are generated using CMake as outlined in the steps below. It is possible to build only coretrace and not build the graphical interface by following the steps 1-7, but only building the `coretrace_api` project in step 7.vii.
+
+## Steps for Building SolTrace
+
+These are the general steps you need to follow to set up your computer for developing SolTrace:
 
 1. Set up your development tools:
 
-    * Windows: Visual Studio 2017 Community or other editions available at https://www.visualstudio.com/.
-    * Linux: g++ compiler available at http://www.cprogramming.com/g++.html or as part of the Linux distribution.
+    * Windows: Visual Studio 2022 Community or other editions available at [https://www.visualstudio.com/](https://www.visualstudio.com/).
+    * Linux: g++ compiler available at [http://www.cprogramming.com/g++.html](http://www.cprogramming.com/g++.html) or as part of the Linux distribution.
 
-2. Download the wxWidgets 3.1.0 source code for your operating system from https://www.wxwidgets.org/downloads/.
+2. Download and install CMake 3.28 or higher from [https://cmake.org/download/](https://cmake.org/download/) with the ```Add CMake to the System Path for ...``` option selected.
 
-3. Build wxWidgets.
+3. Download the wxWidgets 3.2.4 source code for your operating system from [https://www.wxwidgets.org/downloads/](https://www.wxwidgets.org/downloads/).
 
-4. In Windows, create the WXMSW3 environment variable on your computer to point to the wxWidgets installation folder, or Linux, create the dynamic link `/usr/<USERNAME>/local/bin/wx-config-3` to point to `/path/to/wxWidgets/bin/wx-config`.
+4. Build wxWidgets.
 
-5. As you did for wxWidgets, for each of the following projects, clone (download) the repository, build the project, and then (Windows only) create an environment variable pointing to the project folder. Build the projects in the following order, and assign the environment variable for each project before you build the next one:
+5. In Windows, create the WXMSW3 environment variable on your computer to point to the wxWidgets installation folder, or Linux, create the dynamic link `/usr/<USERNAME>/local/bin/wx-config-3` to point to `/path/to/wxWidgets/bin/wx-config`.
 
-<table>
-<tr><th>Project</th><th>Repository URL</th><th>Windows Environment Variable</th></tr>
-<tr><td>LK</td><td>https://github.com/NREL/lk</td><td>LKDIR</td></tr>
-<tr><td>WEX</td><td>https://github.com/NREL/wex</td><td>WEXDIR</td></tr>
-</table>
+6. As you did for wxWidgets, clone (download) the LK and WEX repositories and then (Windows only) create an environment variable pointing to the project folder. 
 
-# Contributing
+    <table>
+    <tr><th>Project</th><th>Repository URL</th><th>Windows Environment Variable</th><th>Environment Variable Path</th></tr>
+    <tr><td>LK</td><td>https://github.com/NREL/lk</td><td>LKDIR</td><td>/path/to/lk</td></tr>
+    <tr><td>WEX</td><td>https://github.com/NREL/wex</td><td>WEXDIR</td><td>/path/to/wex</td></tr>
+    </table>
+
+    Open a Git Bash window and navigate to the WEX directory. Check out the following tag:
+
+    ```
+    cd wex
+    git checkout tags/2021.12.02.r2.ssc.274
+    ```
+
+
+7. Run CMake to create the project build files
+    1. Copy the file ```parent-dir-CMakeLists.txt``` into the parent directory also containing ```soltrace/ lk/ wex/``` and ```wxwidgets-3.x.x/``` folders.
+    
+    2. Rename this file to ```CMakeLists.txt``` before running cmake. You may need to temporarily rename any other file in this directory with the same name. 
+    
+        E.g., the file should be at ```C:/stdev/CMakeLists.txt```
+
+    3. Create a directory in the main parent folder to store the build files. 
+    E.g., ```C:/stdev/build-soltrace/```
+    
+    4. Open a shell or command window, and navigate to the build folder you just created. 
+
+    5. Copy the following cmake command to the shell and run. Replace the cmake target with a [supported generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#manual:cmake-generators(7))
+    
+        ```
+        cmake -G "Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES="Debug;Release" -DCMAKE_SYSTEM_VERSION=10.0 -DSAM_SKIP_TOOLS=1 .. 
+        ```
+
+    6. Confirm the project files built. If running visual studio, you should see a ```soltrace_ui.sln``` file in the build-soltrace/ directory.
+    
+    7. Build all files. The output is stored in the soltrace repository folder, e.g., ```C:/stdev/soltrace/app/deploy/soltrace.exe```. 
+
+        Note that output is NOT stored in the ```build-soltrace/``` directory!
+
+## Contributing
 
 If you would like to report an issue with SolTrace or make a feature request, please let us know by adding a new issue on the [issues page](https://github.com/NREL/SolTrace/issues).
 
 If you would like to submit code to fix an issue or add a feature, you can use GitHub to do so. Please see [Contributing](CONTRIBUTING.md) for instructions.
 
-# License
+## License
 
 SolTrace's open source code is copyrighted by the Alliance for Sustainable Energy and licensed under a [mixed MIT and GPLv3 license](LICENSE.md). It allows for-profit and not-for-profit organizations to develop and redistribute software based on SolTrace under terms of an MIT license and requires that research entities including national laboratories, colleges and universities, and non-profit organizations make the source code of any redistribution publicly available under terms of a GPLv3 license.
+
+## Citing SolTrace
+
+We appreciate your use of SolTrace, and ask that you appropriately cite the software in exchange for its open-source publication. Please use one of the following references in documentation that you provide on your work. For general usage citations, the preferred option is:
+
+> Wendelin, T. (2003). "SolTRACE: A New Optical Modeling Tool for Concentrating Solar Optics." Proceedings of the ISEC 2003: International Solar Energy Conference, 15-18 March 2003, Kohala Coast, Hawaii. New York: American Society of Mechanical Engineers, pp. 253-260; NREL Report No. CP-550-32866.
+
+For citations in work that involves substantial development or extension of the existing code, the preferred option is:
+
+> Wendelin, T., Wagner, M.J. (2018). "SolTrace Open-Source Software Project: [github.com/NREL/SolTrace](https://github.com/NREL/SolTrace)". National Renewable Energy Laboratory. Golden, Colorado.

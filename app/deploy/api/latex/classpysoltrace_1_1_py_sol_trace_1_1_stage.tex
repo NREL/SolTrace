@@ -1,0 +1,149 @@
+\doxysection{pysoltrace.\+Py\+Sol\+Trace.\+Stage Class Reference}
+\hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage}{}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage}\index{pysoltrace.PySolTrace.Stage@{pysoltrace.PySolTrace.Stage}}
+\doxysubsubsection*{Classes}
+\begin{DoxyCompactItemize}
+\item 
+class \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_stage_1_1_element}{Element}}
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_stage_a2c38a3cb9b5058c9668b2c3c4b2e9258}{\+\_\+\+\_\+init\+\_\+\+\_\+}} (self, int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_stage_a094086458c0d337d879a92a664d8292d}{id}})
+\item 
+\mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_stage_a6945604ffef0551019076cfe97fc61ff}{copy}} (self, snew)
+\item 
+int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_stage_a9503d33c27aa121afe596327e16b77ae}{Create}} (self, pdll, p\+\_\+data)
+\item 
+int \mbox{\hyperlink{classpysoltrace_1_1_py_sol_trace_1_1_stage_a9079e5fd10c4c98c338b0756e2541695}{add\+\_\+element}} (self)
+\end{DoxyCompactItemize}
+\doxysubsubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a094086458c0d337d879a92a664d8292d}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a094086458c0d337d879a92a664d8292d} 
+{\bfseries id}
+\begin{DoxyCompactList}\small\item\em Identifying integer associated with the stage. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a66fa4de22103748b496e4f03945149d3}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a66fa4de22103748b496e4f03945149d3} 
+{\bfseries position}
+\begin{DoxyCompactList}\small\item\em Stage location in global coordinates. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a7f9a553442903a4cbc11fc76283363d1}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a7f9a553442903a4cbc11fc76283363d1} 
+{\bfseries aim}
+\begin{DoxyCompactList}\small\item\em Coordinate system aim point in global coordinates. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_ac3fe8442124eba605feee1d4d99fdfa8}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_ac3fe8442124eba605feee1d4d99fdfa8} 
+{\bfseries zrot}
+\begin{DoxyCompactList}\small\item\em \mbox{[}deg\mbox{]} Rotation of coordinate system around z-\/axis \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a4adf56c27c411dcfeb2a195991b18c76}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a4adf56c27c411dcfeb2a195991b18c76} 
+{\bfseries is\+\_\+virtual}
+\begin{DoxyCompactList}\small\item\em Flag indicating virtual stage. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a6d0d15687806a0e055e1c028ffcba8a9}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a6d0d15687806a0e055e1c028ffcba8a9} 
+{\bfseries is\+\_\+multihit}
+\begin{DoxyCompactList}\small\item\em Flag indicating that rays can have multiple interactions within a single stage. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a67bb58d6cf03489ab7f73d25402b54b2}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a67bb58d6cf03489ab7f73d25402b54b2} 
+{\bfseries is\+\_\+tracethrough}
+\begin{DoxyCompactList}\small\item\em Flag indicating the stage is in trace-\/through mode. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a6892d5c354146e43b84ee7d6722238c0}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a6892d5c354146e43b84ee7d6722238c0} 
+{\bfseries name}
+\begin{DoxyCompactList}\small\item\em Descriptive name for this stage. \end{DoxyCompactList}\item 
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a8fee6bb4ae8eb6b1902d93bd3ce3f8c5}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a8fee6bb4ae8eb6b1902d93bd3ce3f8c5} 
+{\bfseries elements}
+\begin{DoxyCompactList}\small\item\em list of all elements in the stage \end{DoxyCompactList}\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb} *Stage* is a subclass of PySolTrace, and represents a grouping of elements. 
+A PySolTrace instance may have multiple Stage member instances, which are stored in 
+the PySolTrace.stages list.
+
+Stage contains a subclass *Element*, which collects properties and geometry associated
+with individual geometric elements.
+
+Attributes
+----------
+id : int
+    Identifying integer associated with the stage
+position : Point
+    Stage location in global coordinates 
+aim : Point
+    Coordinate system aim point in global coordinates
+zrot : float
+    [deg] Rotation of coordinate system around z-axis
+is_virtual : bool
+    Flag indicating virtual stage
+is_multihit : bool
+    Flag indicating that rays can have multiple interactions within a single stage.
+is_tracethrough : bool
+    Flag indicating the stage is in trace-through mode
+name : str 
+    Descriptive name for this stage
+elements : [Stage.Element,]
+    list of all elements in the stage
+    
+Methods
+----------
+copy
+    Creates a deepcopy of the current Stage instance
+Create 
+    Calls methods to instantiate and construct a stage in the context.
+add_elements 
+    Creates new element in Stage.element[] list
+\end{DoxyVerb}
+ 
+
+\doxysubsection{Constructor \& Destructor Documentation}
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a2c38a3cb9b5058c9668b2c3c4b2e9258}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a2c38a3cb9b5058c9668b2c3c4b2e9258} 
+\index{pysoltrace.PySolTrace.Stage@{pysoltrace.PySolTrace.Stage}!\_\_init\_\_@{\_\_init\_\_}}
+\index{\_\_init\_\_@{\_\_init\_\_}!pysoltrace.PySolTrace.Stage@{pysoltrace.PySolTrace.Stage}}
+\doxysubsubsection{\texorpdfstring{\_\_init\_\_()}{\_\_init\_\_()}}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+Stage.\+\_\+\+\_\+init\+\_\+\+\_\+ (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{int}]{id }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}\end{DoxyVerb}
+ 
+
+\doxysubsection{Member Function Documentation}
+\Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a9079e5fd10c4c98c338b0756e2541695}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a9079e5fd10c4c98c338b0756e2541695} 
+\index{pysoltrace.PySolTrace.Stage@{pysoltrace.PySolTrace.Stage}!add\_element@{add\_element}}
+\index{add\_element@{add\_element}!pysoltrace.PySolTrace.Stage@{pysoltrace.PySolTrace.Stage}}
+\doxysubsubsection{\texorpdfstring{add\_element()}{add\_element()}}
+{\footnotesize\ttfamily  int pysoltrace.\+Py\+Sol\+Trace.\+Stage.\+add\+\_\+element (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Add one element to the stage. This method appends an Element object to the
+stage's Stage.elements list. 
+To update element properties and settings, call the Element.Create method 
+on each element.
+
+Returns
+----------
+PySolTrace.Stage.Element 
+    Reference to the newly created element
+\end{DoxyVerb}
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a6945604ffef0551019076cfe97fc61ff}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a6945604ffef0551019076cfe97fc61ff} 
+\index{pysoltrace.PySolTrace.Stage@{pysoltrace.PySolTrace.Stage}!copy@{copy}}
+\index{copy@{copy}!pysoltrace.PySolTrace.Stage@{pysoltrace.PySolTrace.Stage}}
+\doxysubsubsection{\texorpdfstring{copy()}{copy()}}
+{\footnotesize\ttfamily pysoltrace.\+Py\+Sol\+Trace.\+Stage.\+copy (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{snew }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Deep copy of the current Stage instance
+
+Inputs
+---------
+snew : Stage
+    Reference to new Stage object to which data will be copied
+\end{DoxyVerb}
+ \Hypertarget{classpysoltrace_1_1_py_sol_trace_1_1_stage_a9503d33c27aa121afe596327e16b77ae}\label{classpysoltrace_1_1_py_sol_trace_1_1_stage_a9503d33c27aa121afe596327e16b77ae} 
+\index{pysoltrace.PySolTrace.Stage@{pysoltrace.PySolTrace.Stage}!Create@{Create}}
+\index{Create@{Create}!pysoltrace.PySolTrace.Stage@{pysoltrace.PySolTrace.Stage}}
+\doxysubsubsection{\texorpdfstring{Create()}{Create()}}
+{\footnotesize\ttfamily  int pysoltrace.\+Py\+Sol\+Trace.\+Stage.\+Create (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{pdll,  }\item[{}]{p\+\_\+data }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Create Stage instance in the SolTrace context. 
+Note: This does not create any associated Elements, which must have their Create method called separately. 
+
+Returns
+----------
+int 
+    1 if successful, 0 otherwise
+\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+pysoltrace.\+py\end{DoxyCompactItemize}

@@ -99,8 +99,10 @@ STCORE_API int st_optic(st_context_t pcxt, st_uint_t idx, int fb, /* 1=front,2=b
 				double ref, double tra,
 				double gratingab12[3],
 				double rmsslope, double rmsspec,
-				int userefltable, int npoints,
-				double *angles, double *refls );
+				int userefltable, int refl_npoints,
+				double *refl_angles, double *refls,
+				int usetranstable, int trans_npoints,
+				double* trans_angles, double* transs);
 
 /* functions to add/remove stages */
 STCORE_API int st_num_stages(st_context_t pcxt);
@@ -135,7 +137,8 @@ STCORE_API int st_element_optic(st_context_t pcxt, st_uint_t stage, st_uint_t id
 
 /* functions to configure sun geometry and shape */
 STCORE_API int st_sun(st_context_t pcxt, int point_source, char shape, double sigma_halfwidth);
-STCORE_API int st_sun_xyz(st_context_t pcxt,  double x, double y, double z );
+STCORE_API int st_sun_xyz(st_context_t pcxt, double x, double y, double z);
+STCORE_API int st_sun_position(st_context_t pcxt,  double lat, double day, double hour, double* x, double* y, double* z );
 STCORE_API int st_sun_userdata(st_context_t pcxt,  st_uint_t npoints, double angle[], double intensity[]);
 
 /* function to retrieve intersection data */
@@ -148,9 +151,9 @@ STCORE_API int st_raynumbers(st_context_t pcxt, int *ray_numbers);
 STCORE_API int st_sun_stats(st_context_t pcxt, double *xmin, double *xmax, double *ymin, double *ymax, int *nsunrays );
 	
 /* functions to control simulation */
-STCORE_API int st_sim_params(st_context_t pcxt, int raycount, int maxcount);
+STCORE_API int st_sim_params(st_context_t pcxt, int raycount, int maxcount, int include_dynamic_group);
 STCORE_API int st_sim_errors(st_context_t pcxt, int include_sun_shape, int include_optics);
-STCORE_API int st_sim_run( st_context_t pcxt, unsigned int seed, bool AsPowerTower,
+STCORE_API int st_sim_run( st_context_t pcxt, unsigned int seed,
 						  int (*callback)(st_uint_t ntracedtotal, st_uint_t ntraced, st_uint_t ntotrace, st_uint_t curstage, st_uint_t nstages, void *data), void *data);
 
 /*
