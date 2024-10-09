@@ -442,8 +442,9 @@ TSystem::TSystem()
 
 	sim_raycount=1000;
 	sim_raymax=100000;
-	sim_errors_sunshape=true;
-	sim_errors_optical=true;
+	sim_dynamic_group = false;
+	sim_errors_sunshape = true;
+	sim_errors_optical = true;
 }
 
 TSystem::~TSystem()
