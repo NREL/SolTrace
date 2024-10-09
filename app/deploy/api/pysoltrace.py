@@ -1590,14 +1590,13 @@ class PySolTrace:
             pdll.st_sim_errors(c_void_p(p_data), c_int(1 if self.is_sunshape else 0), c_int(1 if self.is_surface_errors else 0))
 
             pdll.st_sim_params.restype = c_int 
-            pdll.st_sim_params(c_void_p(p_data), c_int(int(self.num_ray_hits)), c_int(int(self.max_rays_traced)))
+            pdll.st_sim_params(c_void_p(p_data), c_int(int(self.num_ray_hits)), c_int(int(self.max_rays_traced)), c_int(as_power_tower))
 
             if thread_id == 0:
                 tstart = time.time()
 
             pdll.st_sim_run.restype = c_int 
-            res = pdll.st_sim_run( c_void_p(p_data), c_uint16(runseed), 
-                    c_bool(as_power_tower), api_callback, thread_id)
+            res = pdll.st_sim_run( c_void_p(p_data), c_uint16(runseed), api_callback, thread_id)
             
             if thread_id == 0:
                 print("\nSimulation complete. Total simulation time {:.2f} seconds.".format(time.time()-tstart))
