@@ -58,12 +58,13 @@
 #include "stapi.h"
 #include "mtrand.h"
 #include "hpvm.h"
+#include "interpolate.h"
+#include "treemesh.h"
 
 #define ACOSM1O180 0.017453292519943295 // acos(-1)/180.0
 #ifndef M_PI
 	#define M_PI 3.141592653589793238462643
 #endif
-
 
 class nanexcept : public std::exception
 {
@@ -73,6 +74,13 @@ public:
 	virtual ~nanexcept() throw() {  }
 	virtual const char *what() const throw() { return m_text.c_str(); }
 };
+
+class FEDataObj : public st_hash_tree
+{
+public:
+	MatDoub nodes;
+};
+
 
 class TOpticalProperties
 {
@@ -95,6 +103,9 @@ public:
 	bool UseReflectivityTable;
 	struct refldat { double angle; double refl; };
 	std::vector<refldat> ReflectivityTable;
+	bool UseTransmissivityTable;
+	struct transdat { double angle; double trans; };
+	std::vector<transdat> TransmissivityTable;
 };
 
 class TOpticalPropertySet
@@ -174,7 +185,10 @@ struct TElement
 	double VSHOTTarDis;
 	
 	// Finite Element data coeffs
-	HPM2D FEData;	
+	//HPM2D FEData;	
+	//GaussMarkov* FEMeshInterp;
+	//GaussMarkov FEData;
+	FEDataObj FEData;
 	
 	/////////// OPTICAL PARAMETERS ///////////////
 	int InteractionType;
@@ -315,6 +329,7 @@ struct TSystem
 	// system simulation context data
 	int sim_raycount;
 	int sim_raymax;
+	bool sim_dynamic_group;		// point-focus heliostat dynamic grouping to reduce stage one computation
 	bool sim_errors_sunshape;
 	bool sim_errors_optical;
 

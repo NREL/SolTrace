@@ -170,11 +170,16 @@ FluxMapForm::~FluxMapForm()
 void FluxMapForm::UpdateList()
 {
 	m_elementList->Clear();
-	for( size_t i=0;i<m_prj.StageList.size();i++ )
-		for (size_t j=0;j<m_prj.StageList[i]->ElementList.size();j++)
-			if ( m_prj.StageList[i]->ElementList[j]->SurfaceIndex == 't'
-				|| m_prj.StageList[i]->ElementList[j]->SurfaceIndex == 'f' )
-				m_elementList->Add( i, j );
+	for (size_t i = 0; i < m_prj.StageList.size(); i++)
+	{
+		for (size_t j = 0; j < m_prj.StageList[i]->ElementList.size(); j++)
+		{
+			if (m_prj.StageList[i]->ElementList[j]->SurfaceIndex == 't' || m_prj.StageList[i]->ElementList[j]->SurfaceIndex == 'f')
+				m_elementList->Add(i, j);
+			if (m_prj.StageList[i]->ElementList[j]->SurfaceIndex == 's' && m_prj.StageList[i]->ElementList[j]->ApertureIndex == 'l')
+				m_elementList->Add(i, j);
+		}
+	}
 	
 	m_elementList->Invalidate(); // update scrollbar	
 	m_elementList->Refresh();
@@ -238,7 +243,7 @@ void FluxMapForm::UpdatePlot()
 	ylabel = "Y";
 	title = "Flat Surface Flux Plot";
 
-	if ( surfIdx =='t')
+	if ( surfIdx =='t' || surfIdx == 's')
 	{
 		xlabel = "Circumference";
 		ylabel = "Length";

@@ -154,6 +154,12 @@ geometric surfaces.
 
 		//wendelin 5-18-11 changes to allow different vertex curvature in the x and y directions for the parabola only
 		// Term = sqrt(1.0 - Element->Kappa*Element->VertexCurvX*Element->VertexCurvX*Rho2);
+
+		if (1.0 - Element->Kappa * (Element->VertexCurvX * Element->VertexCurvX * X * X + Element->VertexCurvY * Element->VertexCurvY * Y * Y) < 0)
+		{
+			*ErrorFlag = 1;  // Surface is not defined at this x,y location
+		}
+			
 		Term = sqrt(1.0 - Element->Kappa*(Element->VertexCurvX*Element->VertexCurvX*X*X+Element->VertexCurvY*Element->VertexCurvY*Y*Y));   //new
 		//*FXYZ = Z - Element->VertexCurvX*Rho2/(1.0 + Term) - Sum2;
 		*FXYZ = Z - (Element->VertexCurvX*X*X+Element->VertexCurvY*Y*Y)/(1.0 + Term) - Sum2;   //new
@@ -223,23 +229,14 @@ Label_160:
 		}
 		
 		//Interpolate to find the z
-		density = Element->FEData.nrows()/Element->ApertureArea;
-		delta = 0.1/sqrt(density);
-		FEInterpNew(X, Y, density, Element->FEData, Element->FEData.nrows(), &zr);
-		
-		//Now evaluate the slopes
-		FEInterpNew(X+delta, Y, density, Element->FEData, Element->FEData.nrows(), &zx);
-		FEInterpNew(X, Y+delta, density, Element->FEData, Element->FEData.nrows(), &zy);
-		dzrdx = (zx-zr)/delta;
-		dzrdy = (zy-zr)/delta;
+		density = Element->FEData.nodes.size()/Element->ApertureArea;
+		delta = 0.001/sqrt(density);
+		FEInterpKD(X, Y, &Element->FEData, delta, &zr, &dzrdx, &dzrdy);
 		
 		PosXYZ[2] = zr;
 		*FXYZ = Z - zr;
 		DFDX = dzrdx;
 		DFDY = dzrdy;
-		//change sign of derivatives to agree with SurfaceType = 1
-		DFDX = -DFDX;
-		DFDY = -DFDY;
 		DFDZ = 1.0;
 		goto Label_990;
 	}

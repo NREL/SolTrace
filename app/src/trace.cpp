@@ -70,12 +70,21 @@
 
 static wxThreadProgressDialog *g_currentThreadProgress = NULL;
 
-enum{ ID_NUM_RAYS = wxID_HIGHEST+923 };
+enum{ ID_NUM_RAYS = wxID_HIGHEST+923,
+	  ID_NUM_RAYS_SUN, ID_NUM_CPU, ID_SEED, ID_INCL_SUNSHAPE, ID_INCL_ERRORS, ID_INCL_POINTFOCUS};
 
 BEGIN_EVENT_TABLE( TraceForm, wxPanel )
 	EVT_BUTTON( wxID_SETUP, TraceForm::OnCommand )
 	EVT_BUTTON( wxID_EXECUTE, TraceForm::OnCommand )
 	EVT_NUMERIC( ID_NUM_RAYS, TraceForm::OnCommand )
+	EVT_NUMERIC( ID_NUM_RAYS_SUN, TraceForm::OnCommand)
+	EVT_NUMERIC( ID_NUM_CPU, TraceForm::OnCommand)
+	EVT_NUMERIC( ID_SEED, TraceForm::OnCommand)
+	EVT_CHECKBOX( ID_INCL_SUNSHAPE, TraceForm::OnCommand)
+	EVT_CHECKBOX( ID_INCL_ERRORS, TraceForm::OnCommand)
+	EVT_CHECKBOX( ID_INCL_POINTFOCUS, TraceForm::OnCommand)
+
+
 END_EVENT_TABLE()
 
 TraceForm::TraceForm( wxWindow *parent, Project &prj )
@@ -89,20 +98,20 @@ TraceForm::TraceForm( wxWindow *parent, Project &prj )
 	m_numRays->SetFormat( wxNUMERIC_GENERIC, true );
 	
 	flxsizer->Add( new wxStaticText( sizer1->GetStaticBox(), wxID_ANY, "Maximum number of generated sun rays"), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 3 );
-	flxsizer->Add( m_numMaxSunRays = new wxNumericCtrl( sizer1->GetStaticBox(), wxID_ANY, 1000000, wxNUMERIC_UNSIGNED ), 0, wxALL, 0 );
+	flxsizer->Add( m_numMaxSunRays = new wxNumericCtrl( sizer1->GetStaticBox(), ID_NUM_RAYS_SUN, 1000000, wxNUMERIC_UNSIGNED ), 0, wxALL, 0 );
 	m_numMaxSunRays->SetFormat( wxNUMERIC_GENERIC, true );
 	
 	flxsizer->Add( new wxStaticText( sizer1->GetStaticBox(), wxID_ANY, "Maximum number of CPUs to utilize"), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 3 );
-	flxsizer->Add( m_numCpus = new wxNumericCtrl( sizer1->GetStaticBox(), wxID_ANY, 16, wxNUMERIC_INTEGER ), 0, wxALL, 0 );
+	flxsizer->Add( m_numCpus = new wxNumericCtrl( sizer1->GetStaticBox(), ID_NUM_CPU, 16, wxNUMERIC_INTEGER ), 0, wxALL, 0 );
 	
 	flxsizer->Add( new wxStaticText( sizer1->GetStaticBox(), wxID_ANY, "Seed value (-1 for random)"), 0, wxALL|wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT, 3 );
-	flxsizer->Add( m_seed = new wxNumericCtrl( sizer1->GetStaticBox(), wxID_ANY, 123, wxNUMERIC_INTEGER ), 0, wxALL, 0 );
+	flxsizer->Add( m_seed = new wxNumericCtrl( sizer1->GetStaticBox(), ID_SEED, 123, wxNUMERIC_INTEGER ), 0, wxALL, 0 );
 
-	flxsizer->Add( m_inclSunShape = new wxCheckBox( sizer1->GetStaticBox(), wxID_ANY, "Include sun shape" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
+	flxsizer->Add( m_inclSunShape = new wxCheckBox( sizer1->GetStaticBox(), ID_INCL_SUNSHAPE, "Include sun shape" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
 	flxsizer->AddStretchSpacer();
-	flxsizer->Add( m_inclOpticalErrors = new wxCheckBox( sizer1->GetStaticBox(), wxID_ANY, "Include optical errors" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
+	flxsizer->Add( m_inclOpticalErrors = new wxCheckBox( sizer1->GetStaticBox(), ID_INCL_ERRORS, "Include optical errors" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
 	flxsizer->AddStretchSpacer();
-	flxsizer->Add( m_asPowerTower      = new wxCheckBox( sizer1->GetStaticBox(), wxID_ANY, "Point-focus system" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
+	flxsizer->Add( m_asPowerTower = new wxCheckBox( sizer1->GetStaticBox(), ID_INCL_POINTFOCUS, "Point-focus system" ), 0, wxALL|wxALIGN_CENTER_VERTICAL, 3 );
 	flxsizer->AddStretchSpacer();
 
 	sizer1->Add( flxsizer, 0, wxALL, 5 );
@@ -146,6 +155,20 @@ TraceForm::TraceForm( wxWindow *parent, Project &prj )
 	hsizer->Add( vsizer2, 0, wxALL, 10 );
 	SetSizer( hsizer );
 
+	UpdateFromData();
+
+}
+
+void TraceForm::UpdateFromData()
+{
+	TraceSettings& T = m_prj.Trace_Settings;
+	m_numRays->SetValue(T.n_rays);
+	m_numMaxSunRays->SetValue(T.n_rays_sun);
+	m_numCpus->SetValue(T.n_cpu);
+	m_seed->SetValue(T.seed);
+	m_inclSunShape->SetValue(T.is_include_sunshape);
+	m_inclOpticalErrors->SetValue(T.is_include_errors);
+	m_asPowerTower->SetValue(T.is_point_focus);
 }
 
 
@@ -159,6 +182,15 @@ void TraceForm::SetOptions( size_t nrays, size_t nmaxsunrays, int ncpu, int seed
 	m_inclSunShape->SetValue( sunshape );
 	m_inclOpticalErrors->SetValue( opterr );
     m_asPowerTower->SetValue( aspowertower );
+
+	TraceSettings& T = m_prj.Trace_Settings;
+	T.n_rays = m_numRays->AsUnsigned();
+	T.n_rays_sun = m_numMaxSunRays->AsUnsigned();
+	T.n_cpu = m_numCpus->AsInteger();
+	T.seed = m_seed->AsInteger();
+	T.is_include_sunshape = m_inclSunShape->GetValue();
+	T.is_include_errors = m_inclOpticalErrors->GetValue();
+	T.is_point_focus = m_asPowerTower->GetValue();
 }
 
 void TraceForm::GetOptions( size_t *nrays, size_t *nmaxsunrays, int *ncpu, int *seed,
@@ -186,11 +218,32 @@ wxString TraceForm::GetWorkDir()
 
 void TraceForm::OnCommand( wxCommandEvent &evt )
 {
+	TraceSettings& T = m_prj.Trace_Settings;
 	switch( evt.GetId() )
 	{
 	case ID_NUM_RAYS:
 		if ( m_numMaxSunRays->Value() < 100*m_numRays->Value() )
 			m_numMaxSunRays->SetValue( 100*m_numRays->Value() );
+		T.n_rays = m_numRays->AsUnsigned();
+		T.n_rays_sun = m_numMaxSunRays->AsUnsigned();
+		break;
+	case ID_NUM_RAYS_SUN:
+		T.n_rays_sun = m_numMaxSunRays->AsUnsigned();
+		break;
+	case ID_NUM_CPU:
+		T.n_cpu = m_numCpus->AsInteger();
+		break;
+	case ID_SEED:
+		T.seed = m_seed->AsInteger();
+		break;
+	case ID_INCL_SUNSHAPE:
+		T.is_include_sunshape = m_inclSunShape->GetValue();
+		break;
+	case ID_INCL_ERRORS:
+		T.is_include_errors = m_inclOpticalErrors->GetValue();
+		break;
+	case ID_INCL_POINTFOCUS:
+		T.is_point_focus = m_asPowerTower->GetValue();
 		break;
 
 	case wxID_EXECUTE:
@@ -288,22 +341,7 @@ static int LoadSystemIntoContext( Project *System, st_context_t spcxt, wxArraySt
 	double x,y,z;
 	if (System->Sun.UseLDHSpec)
 	{
-		double lat, day, hour;
-		double Declination, HourAngle, Elevation, Azimuth;
-
-		lat = System->Sun.Latitude;
-		day = System->Sun.Day;
-		hour = System->Sun.Hour;
-
-		Declination = 180/M_PI*asin(0.39795*cos(0.98563*M_PI/180*(day-173)));
-		HourAngle = 15*(hour-12);
-		Elevation = 180/M_PI*asin(sin(Declination*M_PI/180)*sin(lat*M_PI/180)+cos(Declination*M_PI/180)*cos(HourAngle*M_PI/180)*cos(lat*M_PI/180));
-		Azimuth = 180/M_PI*acos((sin(M_PI/180*Declination)*cos(M_PI/180*lat)-cos(M_PI/180*Declination)*sin(M_PI/180*lat)*cos(M_PI/180*HourAngle))/cos(M_PI/180*Elevation)+0.0000000001);
-		if ( sin(HourAngle*M_PI/180) > 0.0 )
-			Azimuth = 360 - Azimuth;
-		x = -sin(Azimuth*M_PI/180)*cos(Elevation*M_PI/180);
-		y = sin(Elevation*M_PI/180);
-		z = cos(Azimuth*M_PI/180)*cos(Elevation*M_PI/180);
+		st_sun_position(spcxt, System->Sun.Latitude, System->Sun.Day, System->Sun.Hour, &x, &y, &z);
 	}
 	else
 	{
@@ -314,19 +352,19 @@ static int LoadSystemIntoContext( Project *System, st_context_t spcxt, wxArraySt
 
 	st_sun_xyz(spcxt, x, y, z );
 
-	int npoints = System->Sun.UserShapeData.size();
-	if ( npoints > 0)
+	int sun_npoints = System->Sun.UserShapeData.size();
+	if (sun_npoints > 0)
 	{
-		double *angle = new double[npoints];
-		double *intensity = new double[npoints];
+		double *angle = new double[sun_npoints];
+		double *intensity = new double[sun_npoints];
 
-		for (int i=0;i<npoints;i++)
+		for (int i=0;i< sun_npoints;i++)
 		{
 			angle[i] = System->Sun.UserShapeData[i].x;
 			intensity[i] = System->Sun.UserShapeData[i].y;
 		}
 
-		st_sun_userdata(spcxt, npoints, angle, intensity );
+		st_sun_userdata(spcxt, sun_npoints, angle, intensity );
 
 		delete [] angle;
 		delete [] intensity;
@@ -337,69 +375,66 @@ static int LoadSystemIntoContext( Project *System, st_context_t spcxt, wxArraySt
 	{
 		int idx = st_add_optic(spcxt, (const char*)System->OpticsList[nopt]->Name.c_str() );
 
-		// FRONT SIDE
-		SurfaceOptic *f = &System->OpticsList[nopt]->Front;
+		// iterate over the front and back surfaces using a pointer to each
+		SurfaceOptic* surfs[2] = { &System->OpticsList[nopt]->Front, &System->OpticsList[nopt]->Back };
 
-		double *angles = 0;
-		double *refls = 0;
-		int npoints = f->ReflectivityTable.size();
-
-		if (f->UseReflectivityTable && npoints > 0)
+		for (size_t si = 0; si < 2; si++)
 		{
-			angles = new double[npoints];
-			refls = new double[npoints];
-			for (int k=0;k<npoints;k++)
+			//si==0 -> Front, si==1 -> Back
+			SurfaceOptic* f = surfs[si];
+
+			double *refl_angles = 0;
+			double *refls = 0;
+			int refl_npoints = f->ReflectivityTable.size();
+
+			if (f->UseReflectivityTable && refl_npoints > 0)
 			{
-				angles[k] = f->ReflectivityTable[k].x;
-				refls[k] = f->ReflectivityTable[k].y;
+				refl_angles = new double[refl_npoints];
+				refls = new double[refl_npoints];
+				for (int k = 0; k < refl_npoints; k++)
+				{
+					refl_angles[k] = f->ReflectivityTable[k].x;
+					refls[k] = f->ReflectivityTable[k].y;
+				}
 			}
 
-		}
+			double* trans_angles = 0;
+			double* transs = 0;
+			int trans_npoints = f->TransmissivityTable.size();
 
-		st_optic(spcxt, idx, 1, f->ErrorDistribution,
-			f->OpticalSurfaceNumber, f->ApertureStopOrGratingType, f->DiffractionOrder,
-			f->RefractionIndexReal, f->RefractionIndexImag,
-			f->Reflectivity, f->Transmissivity,
-			f->GratingCoeffs, f->RMSSlope, f->RMSSpecularity,
-			f->UseReflectivityTable ? 1 : 0, npoints,
-			angles, refls);
-
-		if (angles) delete [] angles;
-		if (refls) delete [] refls;
-
-		angles = 0;
-		refls = 0;
-
-		// BACK SIDE
-
-
-		f = &System->OpticsList[nopt]->Back;
-		npoints = f->ReflectivityTable.size();
-
-		if (f->UseReflectivityTable && npoints > 0)
-		{
-			angles = new double[npoints];
-			refls = new double[npoints];
-			for (int k=0;k<npoints;k++)
+			if (f->UseTransmissivityTable && trans_npoints > 0)
 			{
-				angles[k] = f->ReflectivityTable[k].x;
-				refls[k] = f->ReflectivityTable[k].y;
+				trans_angles = new double[trans_npoints];
+				transs = new double[trans_npoints];
+				for (int k = 0; k < trans_npoints; k++)
+				{
+					trans_angles[k] = f->TransmissivityTable[k].x;
+					transs[k] = f->TransmissivityTable[k].y;
+				}
+
 			}
 
+			st_optic(spcxt, idx, si+1, f->ErrorDistribution,
+				f->OpticalSurfaceNumber, f->ApertureStopOrGratingType, f->DiffractionOrder,
+				f->RefractionIndexReal, f->RefractionIndexImag,
+				f->Reflectivity, f->Transmissivity,
+				f->GratingCoeffs, f->RMSSlope, f->RMSSpecularity,
+				f->UseReflectivityTable ? 1 : 0, refl_npoints,
+				refl_angles, refls,
+				f->UseTransmissivityTable ? 1 : 0, trans_npoints,
+				trans_angles, transs
+			);
+
+			if (refl_angles) delete[] refl_angles;
+			if (refls) delete[] refls;
+			if (trans_angles) delete[] trans_angles;
+			if (transs) delete[] transs;
+
+			refl_angles = 0;
+			refls = 0;
+			trans_angles = 0;
+			transs = 0;
 		}
-		st_optic(spcxt, idx, 2, f->ErrorDistribution,
-			f->OpticalSurfaceNumber, f->ApertureStopOrGratingType, f->DiffractionOrder,
-			f->RefractionIndexReal, f->RefractionIndexImag,
-			f->Reflectivity, f->Transmissivity,
-			f->GratingCoeffs, f->RMSSlope, f->RMSSpecularity,
-			f->UseReflectivityTable ? 1 : 0, npoints,
-			angles, refls );
-
-		if (angles) delete [] angles;
-		if (refls) delete [] refls;
-
-		angles = 0;
-		refls = 0;
 	}
 
 	st_clear_stages(spcxt);
@@ -531,6 +566,10 @@ private:
 	st_context_t m_contextId;
 	bool m_cancelFlag;
     bool m_asPowerTower;
+	bool m_sunshape;
+	bool m_opterrs;
+	int m_nrays;
+	int m_nmaxrays;
 
 	size_t m_nTraceTotal;
 	size_t m_nTraced;
@@ -541,9 +580,12 @@ private:
 	int m_seedVal;
 	int m_resultCode;
 
+	Project* m_system;
+	wxArrayString* m_errmsg;
+
 	wxMutex m_statusLock;
 public:
-	TraceThread( st_context_t spcxt, int ithread, int seed, bool aspowertower )
+	TraceThread( Project* system, st_context_t spcxt, wxArrayString* errmsg, int ithread, int seed, bool aspowertower, int nrays, int nmaxrays, bool sunshape, bool opterrs )
 		: wxThread( wxTHREAD_JOINABLE ), m_cancelFlag( false )
 	{
 		m_iThread = ithread;
@@ -551,6 +593,13 @@ public:
 		m_seedVal = seed;
 		m_resultCode = -1;
         m_asPowerTower = aspowertower;
+		m_nrays = nrays;
+		m_nmaxrays = nmaxrays;
+		m_sunshape = sunshape;
+		m_opterrs = opterrs;
+		m_errmsg = errmsg;
+
+		m_system = system;
 
 		m_nTraceTotal = m_nTraced = m_nToTrace = m_curStage = m_nStages = 0;
 	}
@@ -604,9 +653,11 @@ public:
 	
 	virtual ExitCode Entry()
 	{
+		::st_sim_errors(m_contextId, m_sunshape ? 1 : 0, m_opterrs ? 1 : 0);
+		::st_sim_params(m_contextId, m_nrays, m_nmaxrays, m_asPowerTower);
+
 		m_resultCode = ::st_sim_run( m_contextId, 
 			(unsigned int) m_seedVal,
-            m_asPowerTower,
 			trace_callback_multi_thread, this );
 
 		return 0;
@@ -650,46 +701,35 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
     }
 		
 	std::vector<TraceThread*> ThreadList;
+	int SeedVal = *seed;
+	wxStopWatch sw;
 
 	bool ok = true;
-	size_t i;
 
-	int SeedVal = *seed;
-
-	for (i=0;i<ncpus && ok==true; i++)
+	for (size_t i = 0; i < ncpus && ok == true; i++)
 	{
 		st_context_t spcxt = ::st_create_context();
 
-		int result = LoadSystemIntoContext( System, spcxt, errors );
+		int result = LoadSystemIntoContext(System, spcxt, errors);
 		if (result < 0)
 		{
-			errors.Add( "error loading system into simulation context" );
+			errors.Add("error loading system into simulation context");
 			ok = false;
 			continue;
 		}
 
-		int rays_this_thread = nrays/ncpus;
-		if (i==0) rays_this_thread += (nrays%ncpus);
+		int rays_this_thread = nrays / ncpus;
+		if (i == 0) rays_this_thread += (nrays % ncpus);
 
-		::st_sim_errors( spcxt, sunshape?1:0, opterrs?1:0 );
-		::st_sim_params( spcxt, rays_this_thread, nmaxrays );
-		SeedVal += i*123;
+		::st_sim_errors(spcxt, sunshape ? 1 : 0, opterrs ? 1 : 0);
+		::st_sim_params(spcxt, rays_this_thread, nmaxrays, aspowertower);
+		SeedVal += i * 123;
 
-		ThreadList.push_back( new TraceThread( spcxt, i, SeedVal, aspowertower ) );
+		ThreadList.push_back(new TraceThread(System, spcxt, &errors, i, SeedVal, aspowertower, rays_this_thread, nmaxrays, sunshape, opterrs));
 	}
 
-	if (!ok)
-	{
-		for (i=0;i<ThreadList.size();i++)
-			delete ThreadList[i];
-		
-		return -777;
-	}
-
-	
 	g_currentThreadProgress = tpd;
-	wxStopWatch sw;
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 	{
 		ThreadList[i]->Create();
 		ThreadList[i]->Run();
@@ -700,7 +740,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	while (1)
 	{
 		size_t num_finished = 0;
-		for (i=0;i<ThreadList.size();i++)
+		for (size_t i=0;i<ThreadList.size();i++)
 			if ( !ThreadList[i]->IsRunning() )
 				num_finished++;
 
@@ -710,7 +750,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 		int ntotaltraces = 0;
         wxString cmd_threadstate; cmd_threadstate.clear();
 		
-        for (i=0;i<ThreadList.size();i++)
+        for (size_t i=0;i<ThreadList.size();i++)
 		{
 			ThreadList[i]->status(&ntotal, &ntraced, &ntotrace, &stagenum, &nstages);
 			if( is_cmd )
@@ -734,7 +774,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
         {
 		    if (tpd->IsCanceled())
 		    {
-			    for (i=0;i<ThreadList.size();i++)
+			    for (size_t i=0;i<ThreadList.size();i++)
 				    ThreadList[i]->cancelTrace();
 		    }
         }
@@ -745,11 +785,11 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	
 	// wait on the joinable threads
 	// make sure all have finished before continuing
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 		ThreadList[i]->Wait();
 
 	bool errors_found = false;
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 	{
 		st_context_t cxt = ThreadList[i]->contextId();
 		int code = ThreadList[i]->resultCode();
@@ -773,7 +813,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	if (!errors_found)
 	{
 		std::vector<st_context_t> ContextList;
-		for (i=0;i<ThreadList.size();i++)
+		for (size_t i=0;i<ThreadList.size();i++)
 			ContextList.push_back( ThreadList[i]->contextId() );
 
 		if (!System->Results.ReadResultsFromContextList( ContextList ))
@@ -787,7 +827,7 @@ int RunTraceMultiThreaded( Project *System, int nrays, int nmaxrays,
 	else
 		System->Results.FreeMemory();
 
-	for (i=0;i<ThreadList.size();i++)
+	for (size_t i=0;i<ThreadList.size();i++)
 		delete ThreadList[i];
 
 	ThreadList.clear();

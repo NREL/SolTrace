@@ -106,7 +106,9 @@ public:
 	double RefractionIndexImag;
 	double GratingCoeffs[4];
 	bool UseReflectivityTable;
+	bool UseTransmissivityTable;
 	std::vector<PointF> ReflectivityTable;
+	std::vector<PointF> TransmissivityTable;
 };
 
 class Optical
@@ -190,6 +192,26 @@ public:
 	double RLocToRef[3][3];
 };
 
+
+class TraceSettings
+{
+public:
+	TraceSettings();
+
+	void ResetToDefaults();
+	bool Write(FILE* fp);
+	bool Read(FILE* fp);
+
+	int n_rays;
+	int n_rays_sun;
+	int n_cpu;
+	int seed;
+	bool is_include_sunshape;
+	bool is_include_errors;
+	bool is_point_focus;
+};
+
+
 class Project;
 
 class RayData
@@ -245,6 +267,7 @@ public:
 	SunShape Sun;
 	std::vector<Optical*> OpticsList;
 	std::vector<Stage*> StageList;
+	TraceSettings Trace_Settings;
 
 	RayData Results;
 
@@ -290,6 +313,5 @@ private:
 					size_t &RayCount);
 	Project &m_prj;
 };
-
 
 #endif

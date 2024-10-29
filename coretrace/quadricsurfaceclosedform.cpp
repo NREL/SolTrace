@@ -79,7 +79,10 @@ void QuadricSurfaceClosedForm(
 			b2 = 1;
 			c2 = 1;
 			Kx = 1;
-			Ky = 1;
+			if (Element->SurfaceType == 7)  //Single-axis curvature aperture
+				Ky = 0;
+			else
+				Ky = 1;
 			Kz = 1;
 			r = 1.0/Element->VertexCurvX;
 			r2 = r*r;
@@ -93,14 +96,22 @@ void QuadricSurfaceClosedForm(
 			
 			A = CosLoc[0]*CosLoc[0]*Kx/a2 + CosLoc[1]*CosLoc[1]*Ky/b2 + CosLoc[2]*CosLoc[2]*Kz/c2;
 			B = 2.0*(Kx*Xdelta*CosLoc[0]/a2 + Ky*Ydelta*CosLoc[1]/b2 + Kz*Zdelta*CosLoc[2]/c2);
-			C = Kx*Xdelta*Xdelta/a2 + Ky*Ydelta*Ydelta/a2 + Kz*Zdelta*Zdelta/c2 - r2;
+			C = Kx*Xdelta*Xdelta/a2 + Ky*Ydelta*Ydelta/b2 + Kz*Zdelta*Zdelta/c2 - r2;
 		break;
 
 	case 'p':
 	case 'P':   //parabola
-			a2 = 4.0*(1.0/Element->VertexCurvX)/2.0;
-			b2 = a2;
+			a2 = 2.0/Element->VertexCurvX;
+			b2 = Element->VertexCurvY > 0.0 ? 2.0/Element->VertexCurvY : 1e10;
 			c2 = 1.0;
+
+			Kx = 1;
+			if (Element->SurfaceType == 7)  //Single-axis curvature aperture
+				Ky = 0;
+			else
+				Ky = 1;
+			Kz = 0;
+
 			Xc = 0.0;
 			Yc = 0.0;
 			Zc = 0.0;
@@ -108,14 +119,32 @@ void QuadricSurfaceClosedForm(
 			Xdelta = PosLoc[0] - Xc;
 			Ydelta = PosLoc[1] - Yc;
 			Zdelta = PosLoc[2] - Zc;
-			
-			A = sqr(CosLoc[0])/a2 + sqr(CosLoc[1])/b2;
-			B = 2.0*CosLoc[0]*Xdelta/a2 + 2.0*CosLoc[1]*Ydelta/b2 - CosLoc[2]/c2;
-			C = sqr(Xdelta)/a2 + sqr(Ydelta)/b2 - Zdelta/c2;
+
+			A = CosLoc[0] * CosLoc[0] * Kx / a2 + CosLoc[1] * CosLoc[1] * Ky / b2;  // Note A can be zero
+			B = 2.0 * (Kx * Xdelta * CosLoc[0] / a2 + Ky * Ydelta * CosLoc[1] / b2) - CosLoc[2] / c2;
+			C = Kx * Xdelta * Xdelta / a2 + Ky * Ydelta * Ydelta / b2 - Zdelta / c2;
+
 		break;
 		
 	case 'o':
 	case 'O':   //other
+		a2 = 1;
+		b2 = 1;
+		c2 = 1;
+		Kx = 1;
+		Ky = 1;
+		Kz = Element->Kappa;
+		Xc = 0.0;
+		Yc = 0.0;
+		Zc = 1.0/Element->Kappa/Element->VertexCurvX;  // VertexCurvX = VertexCurvY for this surface type
+
+		Xdelta = PosLoc[0] - Xc;
+		Ydelta = PosLoc[1] - Yc;
+		Zdelta = PosLoc[2] - Zc;
+
+		A = CosLoc[0] * CosLoc[0] * Kx / a2 + CosLoc[1] * CosLoc[1] * Ky / b2 + CosLoc[2] * CosLoc[2] * Kz / c2;
+		B = 2.0 * (Kx * Xdelta * CosLoc[0] / a2 + Ky * Ydelta * CosLoc[1] / b2 + Kz * Zdelta * CosLoc[2] / c2);
+		C = Kx * Xdelta * Xdelta / a2 + Ky * Ydelta * Ydelta / b2 + Kz * Zdelta * Zdelta / c2 - 1.0/Element->Kappa/(Element->VertexCurvX * Element->VertexCurvX);
 		break;
 
 	case 't':
@@ -149,6 +178,27 @@ void QuadricSurfaceClosedForm(
 	case 'F':   //flat
 		break;
 	}
+
+	if (fabs(A) < 1e-12)  // Should only happen for parabolas
+	{
+		t1 = -C / B;
+		if (t1 > 0)
+		{
+			PosXYZ[0] = PosLoc[0] + t1 * CosLoc[0];
+			PosXYZ[1] = PosLoc[1] + t1 * CosLoc[1];
+			PosXYZ[2] = PosLoc[2] + t1 * CosLoc[2];
+			*PathLength = t1;
+			goto Label_100;
+		}
+		else
+		{
+			*PathLength = 0.0; //ray tangent or missed
+			*ErrorFlag = 1;
+			return;
+		}
+	}
+
+
 
 	if (sqr(B) > 4.0*A*C)
 	{
@@ -191,6 +241,20 @@ void QuadricSurfaceClosedForm(
 					*PathLength = t1;
 				}
 			}
+
+			// Partial cylinder (sphere with single-axis curvature) needs the same check as cylinder. 
+			// Two intersections are possible, check if the first intersection along the ray path occurs within the length bounds and, if not, return the second intersection
+			// The final test for a positive ray path and a valid intersection location is in DetermineElementIntersectionNew. If t1 is negative, this intersection location will be ignored in DetermineElementIntersectionNew
+			if (((Element->SurfaceIndex == 's') || (Element->SurfaceIndex == 'S')) && (Element->SurfaceType == 7)) 
+			{
+				if ((PosXYZ[1] < -Element->ParameterC / 2.0) || (PosXYZ[1] > Element->ParameterC / 2.0))
+				{
+					PosXYZ[0] = PosLoc[0] + t1*CosLoc[0];
+					PosXYZ[1] = PosLoc[1] + t1*CosLoc[1];
+					PosXYZ[2] = PosLoc[2] + t1*CosLoc[2];
+					*PathLength = t1;
+				}
+			}
            //***********************************************************************************************************
 
 			goto Label_100;
@@ -226,9 +290,20 @@ void QuadricSurfaceClosedForm(
 	}
 
 Label_100:
-	slopemag = sqrt(sqr(2.0*Kx*(PosXYZ[0] - Xc)/a2)+sqr(2.0*Ky*(PosXYZ[1] - Yc)/b2)+sqr(2.0*Kz*(PosXYZ[2] - Zc)/c2));
-	DFXYZ[0] = -(2.0*Kx*(PosXYZ[0] - Xc)/a2)/slopemag;
-	DFXYZ[1] = -(2.0*Ky*(PosXYZ[1] - Yc)/b2)/slopemag;
-	DFXYZ[2] = -(2.0*Kz*(PosXYZ[2] - Zc)/c2)/slopemag;
+
+	if (Element->SurfaceIndex == 'p' || Element->SurfaceIndex == 'P')
+	{
+		slopemag = sqrt(sqr(2.0 * Kx * (PosXYZ[0] - Xc) / a2) + sqr(2.0 * Ky * (PosXYZ[1] - Yc) / b2) + 1.0);
+		DFXYZ[0] = -(2.0 * Kx * (PosXYZ[0] - Xc) / a2) / slopemag;
+		DFXYZ[1] = -(2.0 * Ky * (PosXYZ[1] - Yc) / b2) / slopemag;
+		DFXYZ[2] = 1.0 / slopemag;
+	}
+	else
+	{
+		slopemag = sqrt(sqr(2.0 * Kx * (PosXYZ[0] - Xc) / a2) + sqr(2.0 * Ky * (PosXYZ[1] - Yc) / b2) + sqr(2.0 * Kz * (PosXYZ[2] - Zc) / c2));
+		DFXYZ[0] = -(2.0 * Kx * (PosXYZ[0] - Xc) / a2) / slopemag;
+		DFXYZ[1] = -(2.0 * Ky * (PosXYZ[1] - Yc) / b2) / slopemag;
+		DFXYZ[2] = -(2.0 * Kz * (PosXYZ[2] - Zc) / c2) / slopemag;
+	}
 }
 //end of procedure--------------------------------------------------------------

@@ -56,6 +56,7 @@
 
 #include "types.h"
 #include "procs.h"
+#include "interpolate.h"
 
 #define sqr(x) ((x)*(x))
 
@@ -512,15 +513,48 @@ bool ReadSurfaceFile( const char *file, TElement *elm , TSystem *sys)
 		READLN; // skip FE file name
 		READLN; NumPoints = atoi(line);
 
-		elm->FEData.resize( NumPoints, 3 );
+		//elm->FEData.x.resize(NumPoints, VectDoub(2, 0.));
+		//elm->FEData.y.resize(NumPoints, 0.);
+		elm->FEData.nodes.resize(NumPoints, VectDoub(3));
+
+		double xmax, xmin, ymax, ymin;
+		xmax = ymax = -std::numeric_limits<double>::max();
+		xmin = ymin = std::numeric_limits<double>::max();
+
+		
 		for (int i=0;i<NumPoints;i++)
 		{
-			double a,b,c;
-			READLN; sscanf(line, "%lg %lg %lg", &a, &b, &c );
-			elm->FEData.at(i,0) = a;
-			elm->FEData.at(i,1) = b;
-			elm->FEData.at(i,2) = c;
+			double x,y,z;
+			READLN; sscanf(line, "%lg %lg %lg", &x, &y, &z);
+			elm->FEData.nodes.at(i).at(0) = x;
+			elm->FEData.nodes.at(i).at(1) = y;
+			elm->FEData.nodes.at(i).at(2) = z;
+
+			//track largest/smallest
+			xmax = x > xmax ? x : xmax;
+			ymax = y > ymax ? y : ymax;
+			xmin = x < xmin ? x : xmin;
+			ymin = y < ymin ? y : ymin;
 		}
+
+		KDLayoutData node_ld;
+		node_ld.xlim[0] = xmin;
+		node_ld.xlim[1] = xmax;
+		node_ld.ylim[0] = ymin;
+		node_ld.ylim[1] = ymax;
+		double rapprox = 1.5*std::sqrt(((xmax - xmin) * (ymax - ymin)) / (double)NumPoints);
+		node_ld.min_unit_dx = node_ld.min_unit_dy = rapprox;
+
+		elm->FEData.create_mesh(node_ld);
+
+		//Load node objects into the mesh
+		for (int i = 0; i < NumPoints; i++)
+		{
+			VectDoub* v = &elm->FEData.nodes.at(i);
+			elm->FEData.add_object((void*)v, v->at(0), v->at(1));
+		}
+		elm->FEData.add_neighborhood_data();
+
 
 		elm->SurfaceIndex = 'e';
 		elm->SurfaceType = 4;

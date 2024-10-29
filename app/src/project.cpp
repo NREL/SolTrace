@@ -181,6 +181,7 @@ SurfaceOptic::SurfaceOptic()
 	GratingCoeffs[2] = 1.3;
 	GratingCoeffs[3] = 1.4;
 	UseReflectivityTable = false;
+	UseTransmissivityTable = false;
 }
 
 bool SurfaceOptic::Write(FILE *fp)
@@ -192,6 +193,7 @@ bool SurfaceOptic::Write(FILE *fp)
 		"%lg\t%lg\t%lg\t%lg\t"
 		"%lg\t%lg\t"
 		"%lg\t%lg\t%lg\t%lg\t"
+		"%d\t%d\t"
 		"%d\t%d\n",
 
 		ErrorDistribution,
@@ -199,11 +201,16 @@ bool SurfaceOptic::Write(FILE *fp)
 		Reflectivity, Transmissivity, RMSSlope, RMSSpecularity,
 		RefractionIndexReal, RefractionIndexImag,
 		GratingCoeffs[0], GratingCoeffs[1], GratingCoeffs[2], GratingCoeffs[3],
-		UseReflectivityTable ? 1 : 0, (int)ReflectivityTable.size());
+		UseReflectivityTable ? 1 : 0, (int)ReflectivityTable.size(),
+		UseTransmissivityTable ? 1 : 0, (int)TransmissivityTable.size()
+		);
 
 	if (UseReflectivityTable)
 		for (size_t i=0;i<ReflectivityTable.size();i++)
 			fprintf(fp, "%lg %lg\n", ReflectivityTable[i].x, ReflectivityTable[i].y );
+	if (UseTransmissivityTable)
+		for (size_t i = 0; i < TransmissivityTable.size(); i++)
+			fprintf(fp, "%lg %lg\n", TransmissivityTable[i].x, TransmissivityTable[i].y);
 
 	return true;
 }
@@ -243,6 +250,10 @@ bool SurfaceOptic::Read(FILE *fp, bool oldfmt)
 		read_line( buf, 1023, fp ); if (strlen(buf) > 0) ErrorDistribution = buf[0];
 		UseReflectivityTable = false;
 		ReflectivityTable.clear();
+		/*
+		>> not sure this is needed for old format?? mjw
+		UseTransmissivityTable= false;
+		TransmissivityTable.clear();*/
 	}
 	else
 	{
@@ -275,23 +286,45 @@ bool SurfaceOptic::Read(FILE *fp, bool oldfmt)
 
 		UseReflectivityTable = false;
 		ReflectivityTable.clear();
-
-		if (parts.size() >= 17)
+		UseTransmissivityTable = false;
+		TransmissivityTable.clear();
+		
+		int refl_count = 0;
+		int trans_count = 0;
+		if (parts.size() > 15)
 		{
 			UseReflectivityTable = (wxAtoi( parts[15] ) > 0);
-			int count = wxAtoi( parts[16] );
-			if (UseReflectivityTable)
+			refl_count = wxAtoi( parts[16] );
+			if (parts.size() > 17)
 			{
-				ReflectivityTable.clear();
-				for (int i=0;i<count;i++)
-				{
-					read_line(buf,1023,fp);
-					double x = 0.0, y = 0.0;
-					sscanf(buf, "%lg %lg", &x, &y);
-					ReflectivityTable.push_back( PointF(x, y) );
-				}
+				UseTransmissivityTable = (wxAtoi(parts[17]) > 0);
+				trans_count = wxAtoi(parts[18]);
 			}
 		}
+
+		if (UseReflectivityTable)
+		{
+			ReflectivityTable.clear();
+			for (int i=0;i< refl_count;i++)
+			{
+				read_line(buf,1023,fp);
+				double x = 0.0, y = 0.0;
+				sscanf(buf, "%lg %lg", &x, &y);
+				ReflectivityTable.push_back( PointF(x, y) );
+			}
+		}
+		if (UseTransmissivityTable)
+		{
+			TransmissivityTable.clear();
+			for (int i = 0; i < trans_count; i++)
+			{
+				read_line(buf, 1023, fp);
+				double x = 0.0, y = 0.0;
+				sscanf(buf, "%lg %lg", &x, &y);
+				TransmissivityTable.push_back(PointF(x, y));
+			}
+		}
+
 	}
 
 	return true;
@@ -629,6 +662,8 @@ bool Project::Write(FILE *fp)
 	for (size_t i=0;i<StageList.size();i++)
 		StageList[i]->Write( fp );
 
+	Trace_Settings.Write(fp);
+
 	return true;
 }
 
@@ -639,6 +674,7 @@ bool Project::Read(FILE *fp)
 	char buf[1024];
 
 	char c = fgetc(fp);
+	bool include_trace_settings = false;
 	if ( c == '#' )
 	{
 		/* 
@@ -659,6 +695,9 @@ bool Project::Read(FILE *fp)
 			if (file_version > cur_version || version_major != vmaj)
 				return false;
 		}
+
+		if (vmaj < 2010 && vmaj >= 3 && vmin >= 4) // Trace settings added to output file at version 3.3.0
+			include_trace_settings = true;
 	}
 	else
 	{
@@ -699,6 +738,14 @@ bool Project::Read(FILE *fp)
 		else
 			StageList.push_back(stage);
 	}
+
+	if (include_trace_settings)
+	{
+		if (!Trace_Settings.Read(fp)) return false;
+	}
+	else
+		Trace_Settings.ResetToDefaults();
+
 
 	return ok;
 }
@@ -1107,9 +1154,11 @@ bool ElementStatistics::Compute(
 
 	Element *elm = m_prj.StageList[stageIdx]->ElementList[elementIdx];
 	char surf = tolower(elm->SurfaceIndex);
+	char aper = tolower(elm->ApertureIndex);
 	if (surf != 't' && surf != 'f')
 	{
-		return false;
+		if (aper !='l' || surf !='s')
+			return false;
 	}
 
 	RayData *rd = &m_prj.Results;
@@ -1160,12 +1209,24 @@ bool ElementStatistics::Compute(
 	double gridszx = maxx - minx;
 	double gridszy = maxy - miny;
 
-	if (tolower(elm->SurfaceIndex)=='t')
+	if (tolower(elm->SurfaceIndex)=='t' || tolower(elm->SurfaceIndex)=='s')
 	{
 		Radius = 1.0/elm->SurfaceParams[0]; // CurvOfRev
-		minx = -M_PI*Radius;
-		maxx = M_PI*Radius;
-		gridszx = 2.0*M_PI*Radius;
+		if (tolower(elm->SurfaceIndex) == 't') // Full cylinder
+		{
+			minx = -M_PI * Radius;
+			maxx = M_PI * Radius;
+			gridszx = 2.0 * M_PI * Radius;
+		}
+		else  // Partial cylinder
+		{
+			double angle_min, angle_max;
+			angle_min = asin(elm->ApertureParams[0] / Radius);
+			angle_max = asin(elm->ApertureParams[1] / Radius);
+			minx = Radius * angle_min;
+			maxx = Radius * angle_max;
+			gridszx = (angle_max - angle_min) * Radius;
+		}
 	}
 
 	binszx = gridszx / nbinsx;
@@ -1279,6 +1340,7 @@ void ElementStatistics::BinRaysXY( Element *elm,
 	Origin[2] = elm->Z;
 
 	bool iscylinder = (tolower(elm->SurfaceIndex)=='t');
+	bool ispartialcylinder = (tolower(elm->SurfaceIndex) == 's' && tolower(elm->ApertureIndex) == 'l');
 
 	for (size_t j=0;j<ElementIndexArray.size();j++)
 	{
@@ -1321,6 +1383,11 @@ void ElementStatistics::BinRaysXY( Element *elm,
 					if (x < 0) x = -(M_PI*Radius/2.0 + Radius*acos(fabs(x)/Radius));
 					if (x >= 0) x = M_PI*Radius/2.0 + Radius*acos(x/Radius);
 				}
+			}
+			else if (ispartialcylinder)
+			{
+				ZVal = Radius;
+				x = Radius * asin(x / Radius);
 			}
 			else
 			{
@@ -1368,3 +1435,51 @@ void ElementStatistics::BinRaysXY( Element *elm,
 	}
 }
 
+
+TraceSettings::TraceSettings()
+{
+	ResetToDefaults();
+}
+
+void TraceSettings::ResetToDefaults()
+{
+	n_rays = 10000;
+	n_rays_sun = 100000;
+	n_cpu = 16;
+	seed = 123;
+	is_include_sunshape = false;
+	is_include_errors = false;
+	is_point_focus = false;
+}
+
+bool TraceSettings::Write(FILE* fp)
+{
+	if (!fp) return false;
+
+	fprintf(fp, "TRACE\tNRAY\t%d\tNSUN\t%d\tCPU\t%d\tSEED\t%d\tSUNSHAPE\t%d\tERRORS\t%d\tPTFOCUS\t%d\n",
+		n_rays, n_rays_sun, n_cpu, seed, is_include_sunshape ? 1 : 0, is_include_errors ? 1 : 0, is_point_focus ? 1 : 0);
+	return true;
+}
+
+bool TraceSettings::Read(FILE* fp)
+{
+	if (!fp) return false;
+
+	char buf[1024];
+	int ss, err, pf;
+
+	read_line(buf, 1023, fp);
+	
+	int n = sscanf(buf, "TRACE\tNRAY\t%d\tNSUN\t%d\tCPU\t%d\tSEED\t%d\tSUNSHAPE\t%d\tERRORS\t%d\tPTFOCUS\t%d",
+						&n_rays, &n_rays_sun, &n_cpu, &seed, &ss, &err, &pf);
+	
+	if (n == 7)
+	{
+		is_include_sunshape = (ss == 1);
+		is_include_errors = (err == 1);
+		is_point_focus = (pf == 1);
+	}
+	else
+		ResetToDefaults();
+	return true;
+}

@@ -94,7 +94,7 @@ static TypeInfo surface_types[] = {
 	{ 'v', -1, "", "vshot", "VSHOT Data File" },
 	{ 'r', -1, "", "polynomial", "Rotationally Symmetric Polynomial File" },
 	{ 'i', -1, "", "cubicspline", "Rotationally Symmetric Cubic Spline File" },
-/*	{ 'e', -1, "", "finiteelement", "Finite Element Data File" }, */
+	{ 'e', -1, "", "finiteelement", "Finite Element Data File" }, 
 	{ 'p', 2, "Cx Cy", "parabola", "Parabolic" },
 	{ 's', 1, "C", "sphere", "Spherical" },
 	{ 'o', 2, "C Kappa", "hyperhemi", "Hyperboloids and Hemiellipsoids" },
@@ -1028,7 +1028,8 @@ BEGIN_EVENT_TABLE( StageForm, wxPanel )
 
 	EVT_GRID_CMD_CELL_CHANGED( ID_ELEMENT_GRID, StageForm::OnGridCellChange)
 	EVT_GRID_CMD_SELECT_CELL( ID_ELEMENT_GRID, StageForm::OnGridCellSelect)
-	EVT_GRID_CMD_RANGE_SELECT( ID_ELEMENT_GRID, StageForm::OnGridRangeSelect)
+	EVT_GRID_CMD_RANGE_SELECTED( ID_ELEMENT_GRID, StageForm::OnGridRangeSelect)  //<< use for wx3.5+
+	//EVT_GRID_CMD_RANGE_SELECT( ID_ELEMENT_GRID, StageForm::OnGridRangeSelect)  //<< use for wx3.1-3.4
 	EVT_GRID_CMD_CELL_LEFT_DCLICK( ID_ELEMENT_GRID, StageForm::OnGridCellDClick )
 	EVT_GRID_CMD_CELL_RIGHT_CLICK( ID_ELEMENT_GRID, StageForm::OnGridCellRightClick )
 
