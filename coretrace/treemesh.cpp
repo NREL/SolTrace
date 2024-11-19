@@ -49,15 +49,13 @@
 
 
 #include "treemesh.h"
-#include <math.h>
+
 #include <algorithm>
-
-#include <unordered_map>
+#include <limits>
+#include <math.h>
 #include <set>
-
 #include <stdio.h>
-
-
+#include <unordered_map>
 
 //-------------------------------------------------------------------------------------------------
 

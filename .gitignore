@@ -308,3 +308,6 @@ __pycache__/
 #*.js
 #*.css
 #*.tex
+
+# Out of source build directories
+build*
