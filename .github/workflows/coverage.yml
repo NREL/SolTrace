@@ -1,0 +1,63 @@
+name: coverage
+
+on:
+  push:
+    branches: [ develop, coveralls ]
+  pull_request:
+    branches: [ develop, coveralls ]
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -o Acquire::Retries=3 lcov
+        sudo apt-get install -y libfontconfig1-dev
+
+    - name: Set reusable strings
+      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+      id: strings
+      shell: bash
+      run: |
+        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+
+    - name: Setup cmake
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.24.x'
+
+    - name: Test cmake version
+      run: cmake --version
+
+    - name: Configure CMake
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      run: >
+        cmake -B ${{ steps.strings.outputs.build-output-dir }}
+        -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
+        -DSOLTRACE_BUILD_GUI=OFF
+        -DENABLE_COVERAGE=ON
+        -S ${{ github.workspace }}
+            
+    - name: Test
+      shell: bash
+      run: |
+        set -e
+        ${{ steps.strings.outputs.build-output-dir }}/google-tests/Test
+    
+    - name: Coverage
+      working-directory: ${{ github.workspace }}/build
+      shell: bash
+      run: make coverage 
+
+    - name: Coveralls
+      uses: coverallsapp/github-action@v2
+      with:
+        path-to-lcov: ${{ github.workspace }}/build/coverage.info
+        github-token: ${{ secrets.GITHUB_TOKEN }}      

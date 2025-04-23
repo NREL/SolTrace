@@ -37,11 +37,12 @@ add_executable( Test
 	${STRACE}
 )
 
-target_link_libraries(
-	Test
-	coretrace
-	GTest::gtest_main
-)
+if (ENABLE_COVERAGE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+	target_link_options(Test PRIVATE --coverage)
+	target_link_libraries(Test coretrace gcov GTest::gtest_main)
+else()
+	target_link_libraries(Test coretrace GTest::gtest_main)
+endif()
 
 if(UNIX)
 	target_link_libraries(Test pthread)
