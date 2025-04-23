@@ -2,9 +2,9 @@ name: coverage
 
 on:
   push:
-    branches: [ develop, coveralls ]
+    branches: [ develop ]
   pull_request:
-    branches: [ develop, coveralls ]
+    branches: [ develop ]
 env:
   BUILD_TYPE: Debug
 
