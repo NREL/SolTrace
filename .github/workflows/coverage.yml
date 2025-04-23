@@ -46,17 +46,8 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build
-      # Build your program with the given configuration
-      run: |
-        cd ${{ steps.strings.outputs.build-output-dir }}
-        make -j4
-            
-    - name: Test
-      shell: bash
-      run: |
-        set -e
-        ${{ steps.strings.outputs.build-output-dir }}/google-tests/Test
-    
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ env.BUILD_TYPE }} --target strace Test
+                
     - name: Coverage
       working-directory: ${{ github.workspace }}/build
       shell: bash
