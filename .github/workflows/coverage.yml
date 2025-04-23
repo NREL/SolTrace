@@ -46,15 +46,15 @@ jobs:
         -S ${{ github.workspace }}
 
     - name: Build
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ env.BUILD_TYPE }} --target strace Test
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ env.BUILD_TYPE }}
                 
     - name: Coverage
-      working-directory: ${{ steps.strings.outputs.build-output-dir }}/google-tests
+      working-directory: ${{ steps.strings.outputs.build-output-dir }}
       shell: bash
       run: make coverage 
 
     - name: Coveralls
       uses: coverallsapp/github-action@v2
       with:
-        path-to-lcov: ${{ steps.strings.outputs.build-output-dir }}/google-tests/coverage.info
+        path-to-lcov: ${{ steps.strings.outputs.build-output-dir }}/coverage.info
         github-token: ${{ secrets.GITHUB_TOKEN }}      
