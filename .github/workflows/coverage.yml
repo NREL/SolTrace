@@ -44,6 +44,12 @@ jobs:
         -DSOLTRACE_BUILD_GUI=OFF
         -DENABLE_COVERAGE=ON
         -S ${{ github.workspace }}
+
+    - name: Build
+      # Build your program with the given configuration
+      run: |
+        cd ${{ steps.strings.outputs.build-output-dir }}
+        make -j4
             
     - name: Test
       shell: bash
