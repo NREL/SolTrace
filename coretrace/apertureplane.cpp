@@ -213,7 +213,10 @@ bool AperturePlane(
 // *************************************************************************
 	case 'p':
 	case 'P': //{Surface described by Parabola}
-			FocalLength = 1.0/(2.0*Element->VertexCurvX);
+	{
+			// Get greater of two parabola parameters to calc focal length
+			double c_max = std::max(Element->VertexCurvX, Element->VertexCurvY);
+			FocalLength = 1.0 / (2.0 * c_max);
 			switch (Element->ShapeIndex)
 			{
 			case 'c':
@@ -252,6 +255,7 @@ bool AperturePlane(
 			}
 			
 		break;
+	}
 // *************************************************************************                 
 	case 'f':
 	case 'F': //      {Surface described by flat plane}
