@@ -36,9 +36,13 @@ namespace SolTrace::NativeRunner
         double fy = para->focal_length_y;
 
         // Validate focal lengths
-        if (std::isnan(fx) || std::isnan(fy) || std::isinf(fx) || std::isinf(fy))
+        if (std::isnan(fx) || std::isnan(fy))
         {
-            throw std::invalid_argument("ParabolaCalculator: Focal lengths cannot be NaN or infinite");
+            throw std::invalid_argument("ParabolaCalculator: Focal lengths cannot be NaN");
+        }
+        if (std::isinf(fx) && std::isinf(fy))
+        {
+            throw std::invalid_argument("ParabolaCalculator: Both focal lengths cannot be infinite");
         }
 
         this->cx = fabs(fx) < 1e-12 ? 0.0 : 0.5 / fx;
