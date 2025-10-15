@@ -4,9 +4,9 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ develop, trace_refactor, jm-dev-tmb ]
+    branches: [ develop ]
   pull_request:
-    branches: [ develop, trace_refactor, jm-dev-tmb ]
+    branches: [ develop ]
 
 jobs:
   build:

@@ -20,12 +20,6 @@ enum InteractionType
     REFRACTION
 };
 
-// enum DistributionType
-// {
-//     GAUSSIAN,
-//     PILLBOX
-// };
-
 struct OpticalProperties
 {
     InteractionType my_type;

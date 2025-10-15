@@ -132,6 +132,9 @@ TEST(Heliostat, ErrorChecking_CreateGeometryWithoutParameters)
     hs->set_number_panels(3, 4);
     EXPECT_THROW(hs->create_geometry(), std::invalid_argument);
 
+    hs->set_gaps(0.0, 0.0);
+    EXPECT_THROW(hs->create_geometry(), std::invalid_argument);
+
     // Set canting and test again
     hs->set_canting(SolTrace::Data::Heliostat::NONE, 0.0, 0.0);
     EXPECT_THROW(hs->create_geometry(), std::invalid_argument);
@@ -325,6 +328,51 @@ TEST(Heliostat, Trace)
 
     EXPECT_TRUE(n >= NRAYS);
     EXPECT_TRUE(num_absorbed > N_ABSORBED_THRESH);
+}
+
+TEST(Heliostat, ErrorChecking_UpdateGeometry)
+{
+    OpticalProperties mirror;
+    mirror.set_ideal_reflection();
+
+    Vector3d sun_pos(0.0, 0.0, 1000.0);
+    Vector3d hs_origin(1.0, 1.0, 0.0);
+    Vector3d abs_origin(0.0, 0.0, 10.0);
+    Vector3d v1;
+    Vector3d v2;
+    Vector3d aim;
+    Vector3d aim_point;
+    vector_add(1.0, sun_pos, -1.0, hs_origin, v1);
+    vector_add(1.0, abs_origin, -1.0, hs_origin, v2);
+    vector_add(0.5, v1, 0.5, v2, aim);
+    vector_add(1.0, hs_origin, 1.0, aim, aim_point);
+
+    auto hs = SolTrace::Data::make_element<Heliostat>();
+    hs->set_optics(mirror);
+    // hs->set_origin(hs_origin);
+    // hs->set_aim_vector(0.0, 0.0, 2.0);
+    // hs->set_zrot(0.0);
+    // hs->compute_coordinate_rotations();
+    // hs->convert_global_to_local(aim, abs_origin);
+    hs->set_reference_frame_geometry(hs_origin, aim_point, 0.0);
+    hs->set_aperture_size(12.0, 12.0);
+    hs->set_number_panels(3, 4);
+    hs->set_gaps(0.1, 0.1);
+    hs->set_focal_length(0.0);
+    hs->set_canting(Heliostat::NONE, 0.0, 0.0);
+    hs->set_target_position(abs_origin);
+
+    EXPECT_THROW(hs->update_geometry(10.0, -10.0), std::invalid_argument);
+    EXPECT_THROW(hs->update_geometry(10.0, 100.0), std::invalid_argument);
+    EXPECT_THROW(hs->update_geometry(-200.0, 40.0), std::invalid_argument);
+    EXPECT_THROW(hs->update_geometry(200.0, 40.0), std::invalid_argument);
+    EXPECT_THROW(hs->update_geometry(0.0, 40.0), std::runtime_error);
+
+    hs->create_geometry();
+    hs->set_name("Heliostat");
+    hs->enable();
+
+    EXPECT_NO_THROW(hs->update_geometry(0.0, 40.0));
 }
 
 TEST(Heliostat, UpdateGeometry)
