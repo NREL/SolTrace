@@ -20,6 +20,7 @@ public:
                           double PosXYZ[3],
                           double CosKLM[3],
                           double DFXYZ[3],
+                          double ZAperture,
                           double *PathLength);
 
     // For x = PosXYZ[0], y = PosXYZ[1], make a guess at

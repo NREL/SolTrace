@@ -61,7 +61,7 @@ TEST(FlatCalculator, Case1)
 
     FlatCalculator fcalc(create_flat_surface());
     int sts = fcalc.intersect(x0.data, m.data,
-                              xt.data, mt.data, gradf.data, &t);
+                              xt.data, mt.data, gradf.data, 0, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
     EXPECT_TRUE(is_identical(xt, zero));
@@ -87,7 +87,7 @@ TEST(FlatCalculator, Case2)
 
     FlatCalculator fcalc(create_flat_surface());
     int sts = fcalc.intersect(x0.data, m.data,
-                              xt.data, mt.data, gradf.data, &t);
+                              xt.data, mt.data, gradf.data, 0, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
     EXPECT_TRUE(is_identical(xt, zero));
@@ -116,7 +116,7 @@ TEST(FlatCalculator, Case3)
 
     FlatCalculator fcalc(create_flat_surface());
     int sts = fcalc.intersect(x0.data, m.data,
-                              xt.data, mt.data, gradf.data, &t);
+                              xt.data, mt.data, gradf.data, 0, &t);
     EXPECT_EQ(sts, 0);
     EXPECT_NEAR(t, T, TOL);
     EXPECT_NEAR(xt[0], x0[0] + m[0] * T, TOL);

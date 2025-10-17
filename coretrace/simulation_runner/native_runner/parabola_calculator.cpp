@@ -64,6 +64,7 @@ namespace SolTrace::NativeRunner
                                       double PosXYZ[3],
                                       double CosKLM[3],
                                       double DFXYZ[3],
+                                      double ZAperture,
                                       double *PathLength)
     {
         int sts = 0;
@@ -127,6 +128,16 @@ namespace SolTrace::NativeRunner
                 {
                     *PathLength = t1;
                     SetVec3(PosXYZ, x0 + t1 * mx, y0 + t1 * my, z0 + t1 * mz);
+
+                    // Add check for PosXYZ[2] > ZAperture
+                    // If yes, use t2 values
+                    if (PosXYZ[2] > ZAperture)
+                    {
+                        PosXYZ[0] = PosLoc[0] + t2 * CosLoc[0];
+                        PosXYZ[1] = PosLoc[1] + t2 * CosLoc[1];
+                        PosXYZ[2] = PosLoc[2] + t2 * CosLoc[2];
+                        *PathLength = t2;
+                    }
                 }
                 else if (t2 > 0.0)
                 {

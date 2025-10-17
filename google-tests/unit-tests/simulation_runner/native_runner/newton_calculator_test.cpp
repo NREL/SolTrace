@@ -70,7 +70,7 @@ TEST(NewtonCalculator, Case1)
 
     ParabolaNewton pnewt(cx, cy, TOL, MAX_ITERS);
     int sts = pnewt.intersect(x0.data, m.data,
-                              xt.data, mt.data, gradf.data, &t);
+                              xt.data, mt.data, gradf.data, 0, &t);
     EXPECT_EQ(sts, 0);
     EXPECT_NEAR(t, T, TOL);
     EXPECT_NEAR(xt[0], m[0] * T + x0[0], TOL);
@@ -107,7 +107,7 @@ TEST(NewtonCalculator, Case2)
 
     ParabolaNewton pnewt(cx, cy, TOL, MAX_ITERS);
     int sts = pnewt.intersect(x0.data, m.data,
-                              xt.data, mt.data, gradf.data, &t);
+                              xt.data, mt.data, gradf.data, 0, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
     EXPECT_TRUE(is_identical(xt, zero));

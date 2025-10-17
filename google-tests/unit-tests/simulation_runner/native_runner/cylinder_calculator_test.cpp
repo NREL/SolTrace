@@ -142,7 +142,7 @@ TEST(CylinderCalculator, ValidIntersection)
     double pos_xyz[3], cos_klm[3], df_xyz[3];
     double path_length;
     
-    int result = calc.intersect(pos_loc, cos_loc, pos_xyz, cos_klm, df_xyz, &path_length);
+    int result = calc.intersect(pos_loc, cos_loc, pos_xyz, cos_klm, df_xyz, 0, &path_length);
     
     // Should find intersection (result == 0 means success)
     EXPECT_EQ(result, 0);

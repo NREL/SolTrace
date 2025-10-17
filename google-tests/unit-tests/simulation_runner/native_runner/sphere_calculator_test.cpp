@@ -110,7 +110,7 @@ TEST(SphereCalculator, Case1)
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
     SphereCalculator scalc(sph);
-    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
+    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, 0, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
     EXPECT_TRUE(is_identical(xt, zero));
@@ -139,7 +139,7 @@ TEST(SphereCalculator, Case2)
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
     SphereCalculator scalc(sph);
-    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
+    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, 0, &t);
 
     EXPECT_EQ(sts, 0);
     EXPECT_NEAR(t, T, TOL);
@@ -176,7 +176,7 @@ TEST(SphereCalculator, Case3)
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
     SphereCalculator scalc(sph);
-    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
+    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, 0, &t);
 
     EXPECT_EQ(sts, 0);
     EXPECT_NEAR(t, T, TOL);
@@ -211,7 +211,7 @@ TEST(SphereCalculator, Case4)
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
     SphereCalculator scalc(sph);
-    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
+    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, 0, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
     EXPECT_TRUE(is_identical(xt, zero));
@@ -238,7 +238,7 @@ TEST(SphereCalculator, Case5)
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
     SphereCalculator scalc(sph);
-    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
+    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, 0, &t);
 
     EXPECT_EQ(sts, 0);
     EXPECT_NEAR(t, T, TOL);
@@ -270,7 +270,7 @@ TEST(SphereCalculator, Case6)
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
     SphereCalculator scalc(sph);
-    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
+    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, 0, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
     EXPECT_TRUE(is_identical(xt, zero));
@@ -297,7 +297,7 @@ TEST(SphereCalculator, Case7)
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
     SphereCalculator scalc(sph);
-    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
+    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, 0, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
     EXPECT_TRUE(is_identical(xt, zero));
@@ -324,7 +324,7 @@ TEST(SphereCalculator, Case8)
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
     SphereCalculator scalc(sph);
-    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
+    sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, 0, &t);
 
     EXPECT_EQ(sts, 0);
     EXPECT_NEAR(t, T, TOL);

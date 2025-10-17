@@ -17,6 +17,7 @@ public:
                           double PosXYZ[3],
                           double CosKLM[3],
                           double DFXYZ[3],
+                          double ZAperture,
                           double *PathLength);
 
     virtual double compute_z_aperture(SolTrace::Data::aperture_ptr ap);

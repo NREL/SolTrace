@@ -25,7 +25,7 @@ void DetermineElementIntersectionNew(
     //           PosRayOut, CosRayOut, DFXYZ, PathLength, ErrorFlag);
     *ErrorFlag = Element->icalc->intersect(PosRayIn, CosRayIn,
                                            PosRayOut, CosRayOut,
-                                           DFXYZ, PathLength);
+                                           DFXYZ, Element->ZAperture, PathLength);
     if (*ErrorFlag > 0 || *PathLength < 0)
     {
         *Intercept = 0;

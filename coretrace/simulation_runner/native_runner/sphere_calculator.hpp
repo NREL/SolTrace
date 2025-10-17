@@ -18,6 +18,7 @@ public:
                           double PosXYZ[3],
                           double CosKLM[3],
                           double DFXYZ[3],
+                          double ZAperture,
                           double *PathLength);
 
     void surface_normal(const double PosXYZ[3], double DFXYZ[3]);

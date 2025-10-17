@@ -92,6 +92,7 @@ int CylinderCalculator::intersect(const double PosLoc[3],
                                   double PosXYZ[3],
                                   double CosKLM[3],
                                   double DFXYZ[3],
+                                  double ZAperture,
                                   double *PathLength)
 {
     // std::cout << "Computing cylinder intersection" << std::endl;

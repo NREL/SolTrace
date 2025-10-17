@@ -43,7 +43,7 @@ aperture_ptr Aperture::make_aperture_from_type(ApertureType type,
         if (args.size() < 3)
             break;
         return make_aperture<Rectangle>(
-            args[1] - args[0], args[2], args[0], 0.5 * args[2]);
+            args[1] - args[0], args[2], args[0], -0.5 * args[2]);
     case ApertureType::IRREGULAR_TRIANGLE:
         if (args.size() < 6)
             break;
