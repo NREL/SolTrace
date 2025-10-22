@@ -110,7 +110,7 @@ TEST(ParabolicDish, Tracing)
     auto sun = SolTrace::Data::make_ray_source<Sun>();
     sun->set_position(0.0, 0.0, 1000.0);
     // double NaN = std::numeric_limits<double>::quiet_NaN();
-    sun->set_shape(SolTrace::Data::DistributionType::PILLBOX, 0.0, 1.0);
+    sun->set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 1.0);
     my_sim.add_ray_source(sun);
 
     // Assumes that reference and global coordinates are the same
@@ -212,7 +212,7 @@ TEST(ParabolicDish, UpdateGeometry)
     auto sun = SolTrace::Data::make_ray_source<Sun>();
     // sun->set_position(0.0, 0.0, 1000.0);
     // double NaN = std::numeric_limits<double>::quiet_NaN();
-    sun->set_shape(SolTrace::Data::DistributionType::PILLBOX, 0.0, 1.0);
+    sun->set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 1.0);
     sun_position_vector_degrees(sun->get_position(), sun_az, sun_el);
     // sun->get_position().scalar_mult(1000.0);
     // std::cout << "Sun Position: " << sun->get_position() << std::endl;

@@ -76,13 +76,13 @@ namespace SolTrace::NativeRunner
         // Set sunshape data
         switch (sun->get_shape())
         {
-        case DistributionType::GAUSSIAN:
+        case SunShape::GAUSSIAN:
             this->tsys.Sun.Sigma = sun->get_sigma();
             break;
-        case DistributionType::PILLBOX:
+        case SunShape::PILLBOX:
             this->tsys.Sun.Sigma = sun->get_half_width();
             break;
-        case DistributionType::USER_DEFINED:
+        case SunShape::USER_DEFINED:
             std::vector<double> angle, intensity;
             sun->get_user_data(angle, intensity);
             int npoints = angle.size();

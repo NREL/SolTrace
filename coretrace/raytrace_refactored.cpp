@@ -258,7 +258,7 @@ void ProcessInteraction(
 			if (optics->DistributionType == 'F' || optics->DistributionType == 'f')
 				CopyVec3(CosIn, LastDFXYZ);  // Apply diffuse errors relative to surface normal
 			else
-				CopyVec3(CosIn, CosRayOutElement); // Apply all other errors relative to the specularly-reflected direction
+				CopyVec3(CosIn, CosRayOutElement); // Apply all other errors relative to the secularly-reflected direction
 
 			Errors(myrng, CosIn, 2, &System->Sun,
 				Stage->ElementList[k], optics, CosOut, LastDFXYZ);  //optical errors

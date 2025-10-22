@@ -192,7 +192,7 @@ namespace SolTrace::NativeRunner
 		// void set_values(ray_source_ptr rsrc);
 
 		// char ShapeIndex;
-		SolTrace::Data::DistributionType ShapeIndex;
+		SolTrace::Data::SunShape ShapeIndex;
 		double Sigma;
 		bool PointSource;
 

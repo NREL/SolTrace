@@ -87,7 +87,7 @@ void Sun::set_user_defined_distribution(std::vector<double> _user_angle,
     user_intensity = std::move(_user_intensity);
 }
 
-void Sun::set_shape(DistributionType shape,
+void Sun::set_shape(SunShape shape,
                     double _sigma,
                     double _half_width,
                     std::vector<double> _user_angle,
@@ -103,13 +103,13 @@ void Sun::set_shape(DistributionType shape,
 
     switch (shape)
     {
-    case (DistributionType::GAUSSIAN):
+    case (SunShape::GAUSSIAN):
         set_gaussian_distribution(_sigma);
         break;
-    case (DistributionType::PILLBOX):
+    case (SunShape::PILLBOX):
         set_pillbox_distribution(_half_width);
         break;
-    case (DistributionType::USER_DEFINED):
+    case (SunShape::USER_DEFINED):
         set_user_defined_distribution(std::move(_user_angle), std::move(_user_intensity));
         break;
     default:

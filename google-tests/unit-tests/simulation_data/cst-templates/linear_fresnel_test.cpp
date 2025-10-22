@@ -249,7 +249,7 @@ TEST(LinearFresnel, Tracing)
     auto sun = SolTrace::Data::make_ray_source<Sun>();
     sun->set_position(0.0, 0.0, 1000.0);
     // double NaN = std::numeric_limits<double>::quiet_NaN();
-    sun->set_shape(SolTrace::Data::DistributionType::GAUSSIAN, 1.0, 0.0);
+    sun->set_shape(SolTrace::Data::SunShape::GAUSSIAN, 1.0, 0.0);
     my_sim.add_ray_source(sun);
 
     // Assumes that reference and global coordinates are the same
@@ -377,7 +377,7 @@ TEST(LinearFresnel, UpdateGeometry)
     sun_position_vector_degrees(sun_pos, sun_az, sun_el);
     sun_pos.scalar_mult(1000.0);
     sun->set_position(sun_pos);
-    sun->set_shape(SolTrace::Data::DistributionType::GAUSSIAN, 1.0, 0.0);
+    sun->set_shape(SolTrace::Data::SunShape::GAUSSIAN, 1.0, 0.0);
     my_sim.add_ray_source(sun);
 
     auto lf = SolTrace::Data::make_element<LinearFresnel>();

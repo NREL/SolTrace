@@ -80,7 +80,7 @@ TEST(Element, SingleElementAccessors)
     EXPECT_EQ(opf->slope_error, opb->slope_error);
     EXPECT_EQ(opf->specularity_error, opb->specularity_error);
 
-    OpticalProperties op(SolTrace::Data::REFLECTION, SolTrace::Data::GAUSSIAN,
+    OpticalProperties op(SolTrace::Data::REFLECTION, SolTrace::Data::DistributionType::GAUSSIAN,
                          0.75, 0.25, 0.1, 0.001, 1.0, 1.0);
     ref.set_front_optical_properties(op);
     // EXPECT_EQ(*opf, op);
@@ -852,7 +852,7 @@ TEST(Element, SingleElementEnforceUserFieldsSet)
     EXPECT_NO_THROW(elem->enforce_user_fields_set());
 
     // Test with optical properties set as well
-    OpticalProperties op(SolTrace::Data::REFLECTION, SolTrace::Data::GAUSSIAN,
+    OpticalProperties op(SolTrace::Data::REFLECTION, SolTrace::Data::DistributionType::GAUSSIAN,
                          0.75, 0.25, 0.1, 0.001, 1.0, 1.0);
     elem->set_front_optical_properties(op);
     elem->set_back_optical_properties(op);

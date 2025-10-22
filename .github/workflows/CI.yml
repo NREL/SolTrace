@@ -4,9 +4,9 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ develop new_sun_models ]
   pull_request:
-    branches: [ develop ]
+    branches: [ develop new_sun_models ]
 
 jobs:
   build:

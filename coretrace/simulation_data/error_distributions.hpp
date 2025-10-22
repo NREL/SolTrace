@@ -12,11 +12,12 @@
 
 namespace SolTrace::Data {
 
-enum DistributionType
+enum class DistributionType
 {
     GAUSSIAN,
     PILLBOX,
-    USER_DEFINED
+    DIFFUSE,
+    USER_DEFINED        // Not supported in legacy but should be added.
 };
 
 } // namespace SolTrace::Data

@@ -26,6 +26,7 @@ using SolTrace::Data::SimulationParameters;
 using SolTrace::Data::SingleElement;
 using SolTrace::Data::Sphere;
 using SolTrace::Data::StageElement;
+using SolTrace::Data::SunShape;
 using SolTrace::Data::Sun;
 using SolTrace::Data::Surface;
 using SolTrace::Data::SurfaceType;

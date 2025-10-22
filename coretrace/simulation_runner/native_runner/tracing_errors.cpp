@@ -5,9 +5,9 @@
 
 namespace SolTrace::NativeRunner {
 
+// TODO: These two functions have a lot of overlap
 void SurfaceNormalErrors(MTRand &myrng,
 						 double CosIn[3],
-						 //  TOpticalProperties *OptProperties,
 						 const OpticalProperties *OptProperties,
 						 double CosOut[3]) noexcept(false) // throw(nanexcept)
 {
@@ -27,7 +27,6 @@ void SurfaceNormalErrors(MTRand &myrng,
 		   Euler[3] = {0.0, 0.0, 0.0};
 	double PosIn[3] = {0.0, 0.0, 0.0},
 		   PosOut[3] = {0.0, 0.0, 0.0};
-	// char dist = ' ';
 	DistributionType dist;
 	double delop = 0.0, delop3 = 0.0, thetax = 0.0,
 		   thetay = 0.0, ttheta = 0.0, theta2 = 0.0,
@@ -45,19 +44,19 @@ void SurfaceNormalErrors(MTRand &myrng,
 		{
 			Euler[0] = 0.0;
 			Euler[1] = PI / 2.0;
-			goto Label_9;
 		}
 		else
 		{
 			Euler[0] = PI / 2.0;
-			goto Label_8;
+			Euler[1] = atan2(CosIn[1], sqrt(CosIn[0] * CosIn[0] + CosIn[2] * CosIn[2]));
 		}
 	}
+	else
+	{
+		Euler[0] = atan2(CosIn[0], CosIn[2]);
+		Euler[1] = atan2(CosIn[1], sqrt(CosIn[0] * CosIn[0] + CosIn[2] * CosIn[2]));
+	}
 
-	Euler[0] = atan2(CosIn[0], CosIn[2]);
-Label_8:
-	Euler[1] = atan2(CosIn[1], sqrt(CosIn[0] * CosIn[0] + CosIn[2] * CosIn[2]));
-Label_9:
 	Euler[2] = 0.0;
 
 	CalculateTransformMatrices(Euler, RRefToLoc, RLocToRef);
@@ -71,20 +70,14 @@ Label_9:
 	int nninner = 0;
 	switch (dist)
 	{
-	// case 'g':
-	// case 'G':
-	case DistributionType::GAUSSIAN:
+	case DistributionType::GAUSSIAN:		// case 'g':
 		// gaussian distribution
 		thetax = myrng.randNorm(0., delop);
 		thetay = myrng.randNorm(0., delop);
 
 		theta2 = thetax * thetax + thetay * thetay;
-
 		break;
-
-	// case 'p':
-	// case 'P':
-	case DistributionType::PILLBOX:
+	case DistributionType::PILLBOX:			// case 'p':
 		// pillbox distribution
 		do
 		{
@@ -92,7 +85,6 @@ Label_9:
 			thetay = 2.0 * delop * myrng() - delop;
 			theta2 = thetax * thetax + thetay * thetay;
 		} while (theta2 > (delop * delop));
-
 		break;
 	default:
 		// TODO: Need an error here.
@@ -160,13 +152,10 @@ void Errors(
 	double PosIn[3] = {0.0, 0.0, 0.0};
 	double PosOut[3] = {0.0, 0.0, 0.0};
 	// char dist = 'g';
-	DistributionType dist = DistributionType::GAUSSIAN;
 	double delop = 0, delop3 = 0, thetax = 0, thetay = 0, ttheta = 0, theta2 = 0, phi = 0, theta = 0, stest = 0;
 	uint_fast64_t i;
 	double RRefToLoc[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 	double RLocToRef[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
-
-	// TODO: Rework function without goto statements...
 
 	if (CosIn[2] == 0.0)
 	{
@@ -174,102 +163,110 @@ void Errors(
 		{
 			Euler[0] = 0.0;
 			Euler[1] = PI / 2.0;
-			goto Label_9;
 		}
 		else
 		{
 			Euler[0] = PI / 2.0;
-			goto Label_8;
+			Euler[1] = atan2(CosIn[1], sqrt(CosIn[0] * CosIn[0] + CosIn[2] * CosIn[2]));
 		}
 	}
+	else
+	{
+		Euler[0] = atan2(CosIn[0], CosIn[2]);
+		Euler[1] = atan2(CosIn[1], sqrt(CosIn[0] * CosIn[0] + CosIn[2] * CosIn[2]));
+	}
 
-	Euler[0] = atan2(CosIn[0], CosIn[2]);
-
-Label_8:
-	Euler[1] = atan2(CosIn[1], sqrt(CosIn[0] * CosIn[0] + CosIn[2] * CosIn[2]));
-
-Label_9:
 	Euler[2] = 0.0;
 
 	CalculateTransformMatrices(Euler, RRefToLoc, RLocToRef);
 
+	unsigned int maxcall = 0;
 	// g,p,d
-	if (Source == 1)
+	if (Source == 1)  // sun error
 	{
-		dist = Sun->ShapeIndex; // sun
 		delop = Sun->Sigma / 1000.0;
+
+		switch (Sun->ShapeIndex)
+		{
+		case SunShape::GAUSSIAN:			// case 'g':
+			thetax = myrng.randNorm(0., delop);
+			thetay = myrng.randNorm(0., delop);
+
+			theta2 = thetax * thetax + thetay * thetay;
+			break;
+
+		case SunShape::PILLBOX:				// case 'p':
+			do
+			{
+				thetax = 2.0 * delop * myrng() - delop;
+				thetay = 2.0 * delop * myrng() - delop;
+				theta2 = thetax * thetax + thetay * thetay;
+			} while (theta2 > (delop * delop));
+			break;
+
+		case SunShape::USER_DEFINED:		// sunshape data  (for sunshape only)
+			do
+			{
+				thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
+				thetay = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
+				theta2 = thetax * thetax + thetay * thetay;
+				theta = sqrt(theta2); // wendelin 1-9-12  do the test once on theta NOT individually on thetax and thetay as before
+
+				i = 0;
+				while (i < Sun->SunShapeAngle.size() - 1 && Sun->SunShapeAngle[i] < theta)
+					i++;
+
+				if (i == 0)
+					stest = Sun->SunShapeIntensity[0];
+				else // change from average interpolation between data points to linear interpolation  12-20-11 wendelin
+					stest = Sun->SunShapeIntensity[i - 1]
+					+ (Sun->SunShapeIntensity[i] - Sun->SunShapeIntensity[i - 1]) * (theta - Sun->SunShapeAngle[i - 1]) /
+					(Sun->SunShapeAngle[i] - Sun->SunShapeAngle[i - 1]);
+				// stest = (Sun->SunShapeIntensity[i] + Sun->SunShapeIntensity[i-1])/2.0;
+			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
+
+			theta2 = theta2 / 1000000.0;
+			break;
+
+		default:
+			// TODO: Add error message here.
+			break;
+		}
 	}
 
-	if (Source == 2)
+	if (Source == 2)	// surface error
 	{
 		// dist = OptProperties->DistributionType; // errors
-		dist = OptProperties->error_distribution_type;
 		// // delop = sqrt(4.0*sqr(OptProperties->RMSSlopeError)+sqr(OptProperties->RMSSpecError))/1000.0;
-		// delop = OptProperties->RMSSpecError / 1000.0;
 		delop = OptProperties->specularity_error / 1000.0;
-	}
 
-	unsigned int maxcall = 0;
+	Label_50:
+		switch (OptProperties->error_distribution_type)
+		{
+		case DistributionType::GAUSSIAN:			// case 'g':
+			thetax = myrng.randNorm(0., delop);
+			thetay = myrng.randNorm(0., delop);
 
-Label_50:
-	switch (dist)
-	{
-	// case 'g':
-	// case 'G': // gaussian distribution
-	case DistributionType::GAUSSIAN:
-		thetax = myrng.randNorm(0., delop);
-		thetay = myrng.randNorm(0., delop);
+			theta2 = thetax * thetax + thetay * thetay;
+			break;
 
-		theta2 = thetax * thetax + thetay * thetay;
+		case DistributionType::PILLBOX:				// case 'p':
+			do
+			{
+				thetax = 2.0 * delop * myrng() - delop;
+				thetay = 2.0 * delop * myrng() - delop;
+				theta2 = thetax * thetax + thetay * thetay;
+			} while (theta2 > (delop * delop));
+			break;
 
-		break;
+		case DistributionType::DIFFUSE:
+			theta2 = pow(asin(sqrt(myrng())), 2);
+			break;
 
-	// case 'p':
-	// case 'P': // pillbox distribution
-	case DistributionType::PILLBOX:
-	Label_200:
-		thetax = 2.0 * delop * myrng() - delop;
-		thetay = 2.0 * delop * myrng() - delop;
-		theta2 = thetax * thetax + thetay * thetay;
-		if (theta2 > (delop * delop))
-			goto Label_200;
-		break;
-
-		// TODO: Do we need to the below code?
-		// case 'd':
-		// case 'D': // sunshape data  (for sunshape only)
-		// Label_300:
-		// 	thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
-		// 	thetay = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
-		// 	theta2 = thetax * thetax + thetay * thetay;
-		// 	theta = sqrt(theta2); // wendelin 1-9-12  do the test once on theta NOT individually on thetax and thetay as before
-
-		// 	i = 0;
-		// 	while (i < Sun->SunShapeAngle.size() - 1 && Sun->SunShapeAngle[i] < theta)
-		// 		i++;
-
-		// 	if (i == 0)
-		// 		stest = Sun->SunShapeIntensity[0];
-		// 	else // change from average interpolation between data points to linear interpolation  12-20-11 wendelin
-		// 		stest = Sun->SunShapeIntensity[i - 1] + (Sun->SunShapeIntensity[i] - Sun->SunShapeIntensity[i - 1]) * (theta - Sun->SunShapeAngle[i - 1]) /
-		// 													(Sun->SunShapeAngle[i] - Sun->SunShapeAngle[i - 1]);
-		// 	// stest = (Sun->SunShapeIntensity[i] + Sun->SunShapeIntensity[i-1])/2.0;
-
-		// 	if (myrng() > (stest / Sun->MaxIntensity))
-		// 		goto Label_300;
-
-		// 	if (theta2 > (Sun->MaxAngle * Sun->MaxAngle))
-		// 		goto Label_300;
-		// 	theta2 = theta2 / 1000000.0;
-		// 	break;
-
-		// case 'f': // gray diffuse distribution
-		// case 'F':
-		// 	theta2 = pow(asin(sqrt(myrng())), 2);
-		// 	break;
-	default:
-		// TODO: Add error message here.
-		break;
+		default:
+			// TODO: Add error message here.
+			break;
+		}
 	}
 
 	/*{Transform to local coordinate system of ray to set up rotation matrices for coord and inverse
@@ -297,7 +294,7 @@ Label_50:
 	//{Transform perturbed ray back to element system}
 	TransformToReference(PosIn, CosIn, Origin, RLocToRef, PosOut, CosOut);
 
-	/*{If reflection error applicaton and new ray direction (after errors) physically goes through opaque surface,
+	/*{If reflection error application and new ray direction (after errors) physically goes through opaque surface,
 	then go back and get new perturbation 06-12-07}*/
 	if ((Source == 2) &&
 		(OptProperties->my_type == InteractionType::REFLECTION) &&

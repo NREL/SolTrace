@@ -32,7 +32,7 @@ struct OpticalProperties
     double refraction_index_back;
 
     OpticalProperties() : my_type(REFLECTION),
-                          error_distribution_type(GAUSSIAN),
+                          error_distribution_type(DistributionType::GAUSSIAN),
                           transmitivity(0.0),
                           reflectivity(0.0),
                           slope_error(0.0),

@@ -12,9 +12,7 @@
 #define SOLTRACE_SUN_H
 
 #include "ray_source.hpp"
-
 #include "datetime.hpp"
-#include "error_distributions.hpp"
 #include "vector3d.hpp"
 
 namespace SolTrace::Data {
@@ -44,11 +42,11 @@ public:
         return;
     }
     virtual void set_position(const DateTime &, double lat, double long) {}
-    virtual DistributionType get_shape() const
+    virtual SunShape get_shape() const
     {
         return this->my_shape;
     }
-    virtual void set_shape(DistributionType shape,
+    virtual void set_shape(SunShape shape,
                            double _sigma,
                            double _half_width,
                            std::vector<double> _user_angle = {},
@@ -60,7 +58,7 @@ private:
     void set_user_defined_distribution(std::vector<double> _user_angle,
                                        std::vector<double> _user_intensity);
 
-    DistributionType my_shape;
+    SunShape my_shape;
     Vector3d my_position;
 };
 

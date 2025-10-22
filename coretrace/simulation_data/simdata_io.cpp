@@ -62,6 +62,10 @@ DistributionType char_to_distribution(const char dist_char)
     {
         return DistributionType::PILLBOX;
     }
+    case ('f'):
+    {
+        return DistributionType::DIFFUSE;
+    }
     case ('d'):
     {
         return DistributionType::USER_DEFINED;
@@ -69,6 +73,29 @@ DistributionType char_to_distribution(const char dist_char)
     default:
     {
         return DistributionType::GAUSSIAN;
+    }
+    }
+}
+
+SunShape char_to_sunshape(const char dist_char)
+{
+    switch (dist_char)
+    {
+    case ('g'):
+    {
+        return SunShape::GAUSSIAN;
+    }
+    case ('p'):
+    {
+        return SunShape::PILLBOX;
+    }
+    case ('d'):
+    {
+        return SunShape::USER_DEFINED;
+    }
+    default:
+    {
+        return SunShape::GAUSSIAN;
     }
     }
 }
@@ -266,7 +293,7 @@ bool process_sun(FILE *fp, SimulationData &sd)
     // }
 
     // Define sun shape
-    DistributionType sun_shape = char_to_distribution(cshape);
+    SunShape sun_shape = char_to_sunshape(cshape);
     sun->set_shape(sun_shape, Sigma, HalfWidth, angle_vec, intensity_vec);
 
     // TODO set point source

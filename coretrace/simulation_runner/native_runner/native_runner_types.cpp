@@ -170,7 +170,7 @@ namespace SolTrace::NativeRunner
 
         PointSource = false;
         // ShapeIndex = ' ';
-        ShapeIndex = DistributionType::GAUSSIAN;
+        ShapeIndex = SunShape::GAUSSIAN;
         Sigma = 0;
 
         MaxAngle = 0;
