@@ -41,7 +41,7 @@ public:
     virtual void set_position(double, double, double) = 0;
     virtual void set_position(const DateTime &, double lat, double long) = 0;
     virtual SunShape get_shape() const = 0;
-    virtual void set_shape(SunShape shape, double _sigma, double _half_width,
+    virtual void set_shape(SunShape shape, double _sigma, double _half_width, double _csr,
         std::vector<double> _user_angle = {}, std::vector<double> _user_intensity = {}) = 0;
 
     double get_sigma()
@@ -51,6 +51,10 @@ public:
     double get_half_width()
     {
         return this->half_width;
+    }
+    double get_circumsolar_ratio()
+    {
+        return this->circumsolar_ratio;
     }
     void get_user_data(std::vector<double> &angle, std::vector<double> &intensity)
     {
@@ -62,6 +66,7 @@ public:
 protected:
     double sigma = std::numeric_limits<double>::quiet_NaN();
     double half_width = std::numeric_limits<double>::quiet_NaN();
+    double circumsolar_ratio = std::numeric_limits<double>::quiet_NaN();
     std::vector<double> user_angle;
     std::vector<double> user_intensity;
 };

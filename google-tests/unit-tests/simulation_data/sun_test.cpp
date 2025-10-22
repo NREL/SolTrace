@@ -13,25 +13,25 @@ TEST(Sun, GaussianDistributionErrors)
     
     // Test negative sigma
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, -1.0, 0.0, {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, -1.0, 0.0, 0.0, {}, {}),
         std::invalid_argument
     );
     
     // Test zero sigma
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, 0.0, 0.0, {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, 0.0, 0.0, 0.0, {}, {}),
         std::invalid_argument
     );
     
     // Test NaN sigma
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, std::numeric_limits<double>::quiet_NaN(), 0.0, {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, std::numeric_limits<double>::quiet_NaN(), 0.0, 0.0, {}, {}),
         std::invalid_argument
     );
     
     // Test infinite sigma
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, std::numeric_limits<double>::infinity(), 0.0, {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, std::numeric_limits<double>::infinity(), 0.0, 0.0, {}, {}),
         std::invalid_argument
     );
 }
@@ -43,25 +43,55 @@ TEST(Sun, PillboxDistributionErrors)
     
     // Test negative half_width
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, -1.0, {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, -1.0, 0.0, {}, {}),
         std::invalid_argument
     );
     
     // Test zero half_width
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 0.0, {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 0.0, 0.0, {}, {}),
         std::invalid_argument
     );
     
     // Test NaN half_width
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, std::numeric_limits<double>::quiet_NaN(), {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, std::numeric_limits<double>::quiet_NaN(), 0.0, {}, {}),
         std::invalid_argument
     );
     
     // Test infinite half_width
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, std::numeric_limits<double>::infinity(), {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, std::numeric_limits<double>::infinity(), 0.0, {}, {}),
+        std::invalid_argument
+    );
+}
+
+// Test Buie CSR distribution error handling
+TEST(Sun, BuieCsrDistributionErrors)
+{
+    Sun sun;
+
+    // Test negative CSR
+    EXPECT_THROW(
+        sun.set_shape(SolTrace::Data::SunShape::BUIE_CSR, 0.0, 0.0, -1.0, {}, {}),
+        std::invalid_argument
+    );
+
+    // Test high CSR
+    EXPECT_THROW(
+        sun.set_shape(SolTrace::Data::SunShape::BUIE_CSR, 0.0, 0.0, 0.81, {}, {}),
+        std::invalid_argument
+    );
+
+    // Test NaN CSR
+    EXPECT_THROW(
+        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 0.0, std::numeric_limits<double>::quiet_NaN(), {}, {}),
+        std::invalid_argument
+    );
+
+    // Test infinite CSR
+    EXPECT_THROW(
+        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 0.0, std::numeric_limits<double>::infinity(), {}, {}),
         std::invalid_argument
     );
 }
@@ -73,57 +103,57 @@ TEST(Sun, UserDefinedDistributionErrors)
     
     // Test empty angle vector
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, {}, {1.0}),
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, {}, {1.0}),
         std::invalid_argument
     );
     
     // Test empty intensity vector
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, {1.0}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, {1.0}, {}),
         std::invalid_argument
     );
     
     // Test both vectors empty
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, {}, {}),
         std::invalid_argument
     );
     
     // Test mismatched vector sizes
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, {1.0, 2.0}, {1.0}),
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, {1.0, 2.0}, {1.0}),
         std::invalid_argument
     );
     
     // Test negative angle
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, {-1.0, 2.0}, {1.0, 2.0}),
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, {-1.0, 2.0}, {1.0, 2.0}),
         std::invalid_argument
     );
     
     // Test negative intensity
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, {1.0, 2.0}, {-1.0, 2.0}),
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, {1.0, 2.0}, {-1.0, 2.0}),
         std::invalid_argument
     );
     
     // Test NaN in angles
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0,
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0,
                      {std::numeric_limits<double>::quiet_NaN(), 2.0}, {1.0, 2.0}),
         std::invalid_argument
     );
     
     // Test NaN in intensities
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0,
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0,
                      {1.0, 2.0}, {1.0, std::numeric_limits<double>::quiet_NaN()}),
         std::invalid_argument
     );
     
     // Test unsorted angles
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, {2.0, 1.0}, {1.0, 2.0}),
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, {2.0, 1.0}, {1.0, 2.0}),
         std::invalid_argument
     );
 }
@@ -135,25 +165,37 @@ TEST(Sun, ValidDistributions)
     
     // Valid Gaussian distribution
     EXPECT_NO_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, 1.0, 0.0, {}, {})
+        sun.set_shape(SolTrace::Data::SunShape::GAUSSIAN, 1.0, 0.0, 0.0, {}, {})
     );
     EXPECT_EQ(sun.get_shape(), SolTrace::Data::SunShape::GAUSSIAN);
     
     // Valid Pillbox distribution
     EXPECT_NO_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 2.0, {}, {})
+        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 2.0, 0.0, {}, {})
     );
     EXPECT_EQ(sun.get_shape(), SolTrace::Data::SunShape::PILLBOX);
+
+	// Valid Limb Darkened distribution
+    EXPECT_NO_THROW(
+        sun.set_shape(SolTrace::Data::SunShape::LIMBDARKENED, 0.0, 0.0, 0.0, {}, {})
+	);
+	EXPECT_EQ(sun.get_shape(), SolTrace::Data::SunShape::LIMBDARKENED);
+
+	// Valid Buie CSR distribution
+    EXPECT_NO_THROW(
+        sun.set_shape(SolTrace::Data::SunShape::BUIE_CSR, 0.0, 0.0, 0.1, {}, {})
+	);
+	EXPECT_EQ(sun.get_shape(), SolTrace::Data::SunShape::BUIE_CSR);
     
     // Valid User-defined distribution
     EXPECT_NO_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, {0.0, 1.0, 2.0}, {1.0, 0.8, 0.6})
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, {0.0, 1.0, 2.0}, {1.0, 0.8, 0.6})
     );
     EXPECT_EQ(sun.get_shape(), SolTrace::Data::SunShape::USER_DEFINED);
     
     // Valid User-defined distribution with equal angles (edge case)
     EXPECT_NO_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, {1.0, 1.0, 2.0}, {1.0, 0.8, 0.6})
+        sun.set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, {1.0, 1.0, 2.0}, {1.0, 0.8, 0.6})
     );
 }
 
@@ -164,7 +206,7 @@ TEST(Sun, UnknownDistributionType)
     
     // Cast an invalid enum value to test default case
     EXPECT_THROW(
-        sun.set_shape(static_cast<SolTrace::Data::SunShape>(999), 1.0, 1.0, {}, {}),
+        sun.set_shape(static_cast<SolTrace::Data::SunShape>(999), 1.0, 1.0, 0.0, {}, {}),
         std::invalid_argument
     );
 }

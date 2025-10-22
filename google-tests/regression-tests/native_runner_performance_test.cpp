@@ -140,7 +140,7 @@ TEST(NativeRunner, PerformanceTest)
 
     auto sun = make_ray_source<Sun>();
     sun->set_position(sun_pos);
-    sun->set_shape(SunShape::PILLBOX, 0.0, 0.5);
+    sun->set_shape(SunShape::PILLBOX, 0.0, 0.5, 0.0);
     sdata.add_ray_source(sun);
 
     RunnerStatus sts = my_runner.initialize();

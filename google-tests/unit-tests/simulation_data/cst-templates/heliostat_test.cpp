@@ -269,7 +269,7 @@ TEST(Heliostat, Trace)
 
     auto sun = SolTrace::Data::make_ray_source<Sun>();
     sun->set_position(sun_pos);
-    sun->set_shape(SolTrace::Data::SunShape::GAUSSIAN, 1.0, 0.0);
+    sun->set_shape(SolTrace::Data::SunShape::GAUSSIAN, 1.0, 0.0, 0.0);
     my_sim.add_ray_source(sun);
 
     // // We can go over all the elements added
@@ -461,7 +461,7 @@ TEST(Heliostat, UpdateGeometry)
 
     auto sun = SolTrace::Data::make_ray_source<Sun>();
     sun->set_position(sun_pos);
-    sun->set_shape(SolTrace::Data::SunShape::GAUSSIAN, 1.0, 0.0);
+    sun->set_shape(SolTrace::Data::SunShape::GAUSSIAN, 1.0, 0.0, 0.0);
     my_sim.add_ray_source(sun);
 
     // std::cout << "Sun Position: " << sun_pos

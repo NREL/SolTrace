@@ -204,6 +204,40 @@ void Errors(
 			} while (theta2 > (delop * delop));
 			break;
 
+		case SunShape::LIMBDARKENED:
+			do {
+				thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
+				thetay = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
+				theta2 = thetax * thetax + thetay * thetay;
+				theta = sqrt(theta2);
+
+				stest = 1.0 - 0.5138 * std::pow((theta / Sun->MaxAngle), 4);
+			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
+
+			theta2 = theta2 / 1.e6;
+
+			break;
+
+		case SunShape::BUIE_CSR:
+			// This sun model has long tales so this might take more iterations
+			do 
+			{
+				thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
+				thetay = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
+				theta2 = thetax * thetax + thetay * thetay;
+				theta = sqrt(theta2);
+
+				if (std::abs(theta) <= 4.65) // within solar disc
+					stest = cos(0.326 * theta) / cos(0.308 * theta);
+				else // within circumsolar region
+					stest = std::exp(Sun->buie_kappa) * std::pow(theta, Sun->buie_gamma);
+
+			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
+
+			theta2 = theta2 / 1.e6;
+
+			break;
+
 		case SunShape::USER_DEFINED:		// sunshape data  (for sunshape only)
 			do
 			{
@@ -218,11 +252,10 @@ void Errors(
 
 				if (i == 0)
 					stest = Sun->SunShapeIntensity[0];
-				else // change from average interpolation between data points to linear interpolation  12-20-11 wendelin
-					stest = Sun->SunShapeIntensity[i - 1]
-					+ (Sun->SunShapeIntensity[i] - Sun->SunShapeIntensity[i - 1]) * (theta - Sun->SunShapeAngle[i - 1]) /
+				else // linear interpolation (switched from average) 12-20-11 wendelin
+					stest = Sun->SunShapeIntensity[i - 1] + (Sun->SunShapeIntensity[i] - Sun->SunShapeIntensity[i - 1]) * (theta - Sun->SunShapeAngle[i - 1]) /
 					(Sun->SunShapeAngle[i] - Sun->SunShapeAngle[i - 1]);
-				// stest = (Sun->SunShapeIntensity[i] + Sun->SunShapeIntensity[i-1])/2.0;
+
 			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
 
 			theta2 = theta2 / 1000000.0;

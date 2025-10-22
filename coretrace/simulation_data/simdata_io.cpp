@@ -294,9 +294,10 @@ bool process_sun(FILE *fp, SimulationData &sd)
 
     // Define sun shape
     SunShape sun_shape = char_to_sunshape(cshape);
-    sun->set_shape(sun_shape, Sigma, HalfWidth, angle_vec, intensity_vec);
+    sun->set_shape(sun_shape, Sigma, HalfWidth, 0.0, angle_vec, intensity_vec);
 
     // TODO set point source
+	// TOOD: Buie sun shape not implemented here
 
     // Attach sun to simulation data
     sd.add_ray_source(sun);

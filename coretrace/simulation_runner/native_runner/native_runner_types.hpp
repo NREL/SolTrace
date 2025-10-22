@@ -198,8 +198,10 @@ namespace SolTrace::NativeRunner
 
 		std::vector<double> SunShapeAngle;
 		std::vector<double> SunShapeIntensity;
-		double MaxAngle;
+		double MaxAngle;	// maximum sun angle (mrad)
 		double MaxIntensity;
+		double buie_kappa;	// Buie CSR model kappa parameter
+		double buie_gamma;	// Buie CSR model gamma parameter
 
 		double Origin[3];
 

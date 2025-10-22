@@ -49,12 +49,14 @@ public:
     virtual void set_shape(SunShape shape,
                            double _sigma,
                            double _half_width,
+                           double _csr,        
                            std::vector<double> _user_angle = {},
                            std::vector<double> _user_intensity = {});
 
 private:
     void set_gaussian_distribution(double _sigma);
     void set_pillbox_distribution(double _half_width);
+    void set_buie_csr_distribution(double _csr);
     void set_user_defined_distribution(std::vector<double> _user_angle,
                                        std::vector<double> _user_intensity);
 

@@ -35,6 +35,19 @@ void Sun::set_pillbox_distribution(double _half_width)
     half_width = _half_width;
 }
 
+void Sun::set_buie_csr_distribution(double _csr)
+{
+    if (_csr < 0.0 || _csr > 0.8)
+    {
+        throw std::invalid_argument("Buie CSR must be in the range [0, 0.8]");
+    }
+    if (std::isnan(_csr) || std::isinf(_csr))
+    {
+        throw std::invalid_argument("Buie CSR must be finite");
+    }
+    circumsolar_ratio = _csr;
+}
+
 void Sun::set_user_defined_distribution(std::vector<double> _user_angle,
                                         std::vector<double> _user_intensity)
 {
@@ -90,6 +103,7 @@ void Sun::set_user_defined_distribution(std::vector<double> _user_angle,
 void Sun::set_shape(SunShape shape,
                     double _sigma,
                     double _half_width,
+                    double _csr,
                     std::vector<double> _user_angle,
                     std::vector<double> _user_intensity)
 {
@@ -98,6 +112,7 @@ void Sun::set_shape(SunShape shape,
     // Clear arguments
     sigma = std::numeric_limits<double>::quiet_NaN();
     half_width = std::numeric_limits<double>::quiet_NaN();
+    circumsolar_ratio = std::numeric_limits<double>::quiet_NaN();
     user_angle.clear();
     user_intensity.clear();
 
@@ -108,6 +123,11 @@ void Sun::set_shape(SunShape shape,
         break;
     case (SunShape::PILLBOX):
         set_pillbox_distribution(_half_width);
+        break;
+    case (SunShape::LIMBDARKENED):
+        break;
+    case (SunShape::BUIE_CSR):
+        set_buie_csr_distribution(_csr);
         break;
     case (SunShape::USER_DEFINED):
         set_user_defined_distribution(std::move(_user_angle), std::move(_user_intensity));
