@@ -5,7 +5,19 @@
 
 namespace SolTrace::NativeRunner {
 
-// TODO: These two functions have a lot of overlap
+    // TODO: These two functions are basically the same. Refactor to avoid code duplication.
+	// NOTES:
+	// SurfaceNormalErrors()						Errors()
+    //     - uses slope error							- uses specularity error
+    //     - applies to surface normal (input)		    - applies to ray direction (input)
+    //     - no diffuse option  						- has diffuse option
+	//													- has an dot product check (goto) for surface reflection (requires DFXYZ)
+    //													- handles sun shape errors
+	//      
+    // Plan: Break up surface and sun shape error handling into separate functions
+	//     - remove the special case of diffuse surfaces before Errors()
+    //     - Reduce the random number calls. I.e., sample theta directly rather than thetax and thetay -> this will break tests because the number of RNG calls will change.
+
 void SurfaceNormalErrors(MTRand &myrng,
 						 double CosIn[3],
 						 const OpticalProperties *OptProperties,
@@ -28,8 +40,8 @@ void SurfaceNormalErrors(MTRand &myrng,
 	double PosIn[3] = {0.0, 0.0, 0.0},
 		   PosOut[3] = {0.0, 0.0, 0.0};
 	DistributionType dist;
-	double delop = 0.0, delop3 = 0.0, thetax = 0.0,
-		   thetay = 0.0, ttheta = 0.0, theta2 = 0.0,
+	double delop = 0.0, thetax = 0.0,
+		   thetay = 0.0, theta2 = 0.0,
 		   phi = 0.0, theta = 0.0;
 	double RRefToLoc[3][3] = {{0.0, 0.0, 0.0},
 							  {0.0, 0.0, 0.0},
@@ -67,7 +79,6 @@ void SurfaceNormalErrors(MTRand &myrng,
 	// delop = OptProperties->RMSSlopeError / 1000.0;
 	delop = OptProperties->slope_error / 1000.0;
 
-	int nninner = 0;
 	switch (dist)
 	{
 	case DistributionType::GAUSSIAN:		// case 'g':
@@ -99,9 +110,8 @@ void SurfaceNormalErrors(MTRand &myrng,
 	/* {Generate errors in terms of direction cosines in local ray coordinate system} */
 	theta = sqrt(theta2);
 	// phi = atan2(thetay, thetax); //This function appears to  present irregularities that bias results incorrectly for small values of thetay or thetax
-	phi = myrng() * 2.0 * 3.1415926535897932385; // Therefore have chosen to randomize phi rather than calculate from randomized theta components
-												 //  obtained from the distribution. The two approaches are equivalent save for this issue with
-												 //  arctan2.      wendelin 01-12-11
+	phi = myrng() * 2.0 * PI; // Therefore have chosen to randomize phi rather than calculate from randomized theta components
+	                          //  obtained from the distribution. The two approaches are equivalent save for this issue with arctan2.      wendelin 01-12-11
 
 	CosOut[0] = sin(theta) * cos(phi);
 	CosOut[1] = sin(theta) * sin(phi);
@@ -152,7 +162,7 @@ void Errors(
 	double PosIn[3] = {0.0, 0.0, 0.0};
 	double PosOut[3] = {0.0, 0.0, 0.0};
 	// char dist = 'g';
-	double delop = 0, delop3 = 0, thetax = 0, thetay = 0, ttheta = 0, theta2 = 0, phi = 0, theta = 0, stest = 0;
+	double delop = 0, thetax = 0, thetay = 0, theta2 = 0, phi = 0, theta = 0, stest = 0;
 	uint_fast64_t i;
 	double RRefToLoc[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
 	double RLocToRef[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}};
@@ -309,9 +319,8 @@ void Errors(
 	theta = sqrt(theta2);
 
 	// phi = atan2(thetay, thetax); //This function appears to  present irregularities that bias results incorrectly for small values of thetay or thetax
-	phi = myrng() * 2.0 * 3.1415926535897932385; // Therefore have chosen to randomize phi rather than calculate from randomized theta components
-												 //  obtained from the distribution. The two approaches are equivalent save for this issue with
-												 //  arctan2.      wendelin 01-12-11
+	phi = myrng() * 2.0 * PI; // Therefore have chosen to randomize phi rather than calculate from randomized theta components
+							  //  obtained from the distribution. The two approaches are equivalent save for this issue with arctan2.      wendelin 01-12-11
 
 	CosOut[0] = sin(theta) * cos(phi);
 	CosOut[1] = sin(theta) * sin(phi);
