@@ -214,12 +214,12 @@ void Errors(
 				stest = 1.0 - 0.5138 * std::pow((theta / Sun->MaxAngle), 4);
 			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
 
-			theta2 = theta2 / 1.e6;
-
+			theta2 = theta2 / 1.e6; // convert from mrad^2 to rad^2
 			break;
 
 		case SunShape::BUIE_CSR:
 			// This sun model has long tales so this might take more iterations
+			// TODO: add an option to set the max angle (thereby reducing the tale)
 			do 
 			{
 				thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
@@ -230,15 +230,14 @@ void Errors(
 				if (std::abs(theta) <= 4.65) // within solar disc
 					stest = cos(0.326 * theta) / cos(0.308 * theta);
 				else // within circumsolar region
-					stest = std::exp(Sun->buie_kappa) * std::pow(theta, Sun->buie_gamma);
+					stest = std::exp(Sun->buie_kappa) * std::pow(std::abs(theta), Sun->buie_gamma);
 
 			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
 
-			theta2 = theta2 / 1.e6;
-
+			theta2 = theta2 / 1.e6; // convert from mrad^2 to rad^2
 			break;
 
-		case SunShape::USER_DEFINED:		// sunshape data  (for sunshape only)
+		case SunShape::USER_DEFINED:
 			do
 			{
 				thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
@@ -258,11 +257,12 @@ void Errors(
 
 			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
 
-			theta2 = theta2 / 1000000.0;
+            theta2 = theta2 / 1.e6;	// convert from mrad^2 to rad^2
 			break;
 
 		default:
 			// TODO: Add error message here.
+            throw std::exception("Unsupported sun shape in Errors function.");
 			break;
 		}
 	}
@@ -302,8 +302,7 @@ void Errors(
 		}
 	}
 
-	/*{Transform to local coordinate system of ray to set up rotation matrices for coord and inverse
-	  transforms}*/
+	// {Transform to local coordinate system of ray to set up rotation matrices for coordinate and inverse transforms}
 	TransformToLocal(PosIn, CosIn, Origin, RRefToLoc, PosOut, CosOut);
 
 	// {Generate errors in terms of direction cosines in local ray coordinate system}
@@ -327,8 +326,10 @@ void Errors(
 	//{Transform perturbed ray back to element system}
 	TransformToReference(PosIn, CosIn, Origin, RLocToRef, PosOut, CosOut);
 
+	// TODO: Remove goto, should we always do dot product check? // We could move this out of the function and into the caller.
+
 	/*{If reflection error application and new ray direction (after errors) physically goes through opaque surface,
-	then go back and get new perturbation 06-12-07}*/
+    then go back and get new perturbation 06-12-07}*/		
 	if ((Source == 2) &&
 		(OptProperties->my_type == InteractionType::REFLECTION) &&
 		(DOT(CosOut, DFXYZ) < 0) &&
