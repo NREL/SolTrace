@@ -105,7 +105,7 @@ namespace SolTrace::NativeRunner
             this->tsys.Sun.buie_gamma = 2.2 * log(0.52 * chi) * pow(chi, 0.43) - 0.1;
             break;
         }
-        case SunShape::USER_DEFINED:
+        case SunShape::USER_DEFINED: {
             std::vector<double> angle, intensity;
             sun->get_user_data(angle, intensity);
             int npoints = angle.size();
@@ -127,13 +127,17 @@ namespace SolTrace::NativeRunner
                 if (intensity[i] > this->tsys.Sun.MaxIntensity)
                     this->tsys.Sun.MaxIntensity = intensity[i];
             }
-
-            // fill negative angle side of array
-            for (int i = 0; i < npoints - 1; i++)
-            {
-                this->tsys.Sun.SunShapeAngle[i] = -angle[npoints - i - 1];
-                this->tsys.Sun.SunShapeIntensity[i] = intensity[npoints - i - 1];
-            }
+            // fill negative angle side of array -> I don't think we need this.
+            //for (int i = 0; i < npoints - 1; i++)
+            //{
+            //    this->tsys.Sun.SunShapeAngle[i] = -angle[npoints - i - 1];
+            //    this->tsys.Sun.SunShapeIntensity[i] = intensity[npoints - i - 1];
+            //}
+            break;
+        }
+        default:
+            // TODO: add error
+            break;
         }
 
         return RunnerStatus::SUCCESS;

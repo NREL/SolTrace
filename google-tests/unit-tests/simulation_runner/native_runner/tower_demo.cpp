@@ -29,6 +29,7 @@ SimulationData create_tower_demo_simulation_data(bool create_stages)
     // Sun
     auto sun = make_ray_source<Sun>();
     sun->set_position(0.0, 0.0, 100.0);
+    sun->set_shape(SunShape::GAUSSIAN, 1.0, 0.0, 0.0);
     sd.add_ray_source(sun);
 
     // Absorber -- Flat
@@ -245,9 +246,43 @@ TEST(TowerDemo, NativeRunnerWithErrors)
     // sys->AllRayData.Print();
 }
 
+TEST(TowerDemo, NativeRunnerWithPillboxSunErrors)
+{
+    SimulationData sd = create_tower_demo_simulation_data(true);
+
+    SimulationParameters& params = sd.get_simulation_parameters();
+    params.include_optical_errors = true;
+    params.include_sun_shape_errors = true;
+
+    // modify the sun to have user defined shape
+    auto sun = sd.get_ray_source();
+    // Limb darkened sun shape
+    sun->set_shape(SunShape::PILLBOX, 0.0, 4.65, 0.0);
+
+    NativeRunner runner;
+    RunnerStatus sts = runner.initialize();
+    EXPECT_EQ(sts, RunnerStatus::SUCCESS);
+    // Setup runs but is not complete
+    sts = runner.setup_simulation(&sd);
+    EXPECT_EQ(sts, RunnerStatus::SUCCESS);
+    // Run simulation runs but returns RunnerStatus::ERROR
+    sts = runner.run_simulation();
+    EXPECT_EQ(sts, RunnerStatus::SUCCESS);
+
+    // TODO: Do some post processing tests here
+
+    // const TSystem *sys = runner.get_system();
+    // // auto ray_data = sys->AllRayData;
+    // sys->AllRayData.Print();
+}
+
 TEST(TowerDemo, NativeRunnerWithUserDefinedSunErrors)
 {
     SimulationData sd = create_tower_demo_simulation_data(true);
+
+    SimulationParameters& params = sd.get_simulation_parameters();
+    params.include_optical_errors = true;
+    params.include_sun_shape_errors = true;
 
     // modify the sun to have user defined shape
     auto sun = sd.get_ray_source();
@@ -277,6 +312,10 @@ TEST(TowerDemo, NativeRunnerWithLimbDarkenedSunErrors)
 {
     SimulationData sd = create_tower_demo_simulation_data(true);
 
+    SimulationParameters& params = sd.get_simulation_parameters();
+    params.include_optical_errors = true;
+    params.include_sun_shape_errors = true;
+
     // modify the sun to have user defined shape
     auto sun = sd.get_ray_source();
     // Limb darkened sun shape
@@ -302,6 +341,10 @@ TEST(TowerDemo, NativeRunnerWithLimbDarkenedSunErrors)
 TEST(TowerDemo, NativeRunnerWithBuieCsrSunErrors)
 {
     SimulationData sd = create_tower_demo_simulation_data(true);
+
+    SimulationParameters& params = sd.get_simulation_parameters();
+    params.include_optical_errors = true;
+    params.include_sun_shape_errors = true;
 
     // modify the sun to have user defined shape
     auto sun = sd.get_ray_source();
