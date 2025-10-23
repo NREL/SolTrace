@@ -85,13 +85,13 @@ TEST(Sun, BuieCsrDistributionErrors)
 
     // Test NaN CSR
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 0.0, std::numeric_limits<double>::quiet_NaN(), {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::BUIE_CSR, 0.0, 0.0, std::numeric_limits<double>::quiet_NaN(), {}, {}),
         std::invalid_argument
     );
 
     // Test infinite CSR
     EXPECT_THROW(
-        sun.set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 0.0, std::numeric_limits<double>::infinity(), {}, {}),
+        sun.set_shape(SolTrace::Data::SunShape::BUIE_CSR, 0.0, 0.0, std::numeric_limits<double>::infinity(), {}, {}),
         std::invalid_argument
     );
 }

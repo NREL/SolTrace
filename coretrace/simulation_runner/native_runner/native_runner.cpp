@@ -91,8 +91,8 @@ namespace SolTrace::NativeRunner
             this->tsys.Sun.MaxIntensity = 1.0;
             // Calculate kappa and gamma parameters
             // Creates the Buie (2003) sun shape based on CSR
-            // [1] Buie, D., Dey, C., & Bosi, S. (2003). The effective size of the solar cone for solar concentrating systems. Solar energy, 74(2003), 417–427.
-            // [2] Buie, D., Monger, A., & Dey, C. (2003). Sun shape distributions for terrestrial solar simulations. Solar Energy, 74(March 2003), 113–122.
+            // [1] Buie, D., Dey, C., & Bosi, S. (2003). The effective size of the solar cone for solar concentrating systems. Solar energy, 74(2003), 417-427.
+            // [2] Buie, D., Monger, A., & Dey, C. (2003). Sun shape distributions for terrestrial solar simulations. Solar Energy, 74(March 2003), 113-122.
             double csr = sun->get_circumsolar_ratio();
             double chi;
             if (csr > 0.145)

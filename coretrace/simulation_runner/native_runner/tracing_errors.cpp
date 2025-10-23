@@ -218,8 +218,8 @@ void Errors(
 			break;
 
 		case SunShape::BUIE_CSR:
-			// This sun model has long tales so this might take more iterations
-			// TODO: add an option to set the max angle (thereby reducing the tale)
+			// This sun model has long tails so this might take more iterations
+			// TODO: add an option to set the max angle (thereby reducing the tail)
 			do 
 			{
 				thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
@@ -262,7 +262,7 @@ void Errors(
 
 		default:
 			// TODO: Add error message here.
-            throw std::exception("Unsupported sun shape in Errors function.");
+            //throw std::exception("Unsupported sun shape in Errors function.");
 			break;
 		}
 	}
