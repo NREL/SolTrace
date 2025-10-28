@@ -1,5 +1,5 @@
 # SolTrace
-![Build](https://github.com/NREL/SolTrace/actions/workflows/CI.yml/badge.svg)[![Coverage Status](https://coveralls.io/repos/github/NREL/SolTrace/badge.svg?branch=develop)](https://coveralls.io/github/NREL/SolTrace?branch=develop)
+![Build](https://github.com/NREL/SolTrace/actions/workflows/CI.yml/badge.svg)[![Coverage Status](https://coveralls.io/repos/github/NREL/SolTrace/badge.svg)](https://coveralls.io/github/NREL/SolTrace?branch=develop)
 
 The SolTrace Open Source Project repository contains the source code, tools, and instructions to build a desktop version of the National Renewable Energy Laboratory's SolTrace. SolTrace is a software tool developed at NREL to model concentrating solar power (CSP) systems and analyze their optical performance. Although ideally suited for solar applications, the code can also be used to model and characterize many general optical systems. The creation of the code evolved out of a need to model more complex solar optical systems than could be modeled with existing tools. For more details about SolTrace's capabilities, see the [SolTrace website](https://www.nrel.gov/csp/soltrace.html). For details on integration with SAM, see the [SAM website](https://sam.nrel.gov).
 
