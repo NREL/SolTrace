@@ -41,6 +41,7 @@ namespace SolTrace::NativeRunner
         {
             throw std::invalid_argument("ParabolaCalculator: Focal lengths cannot be NaN");
         }
+
         if (std::isinf(fx) && std::isinf(fy))
         {
             throw std::invalid_argument("ParabolaCalculator: Both focal lengths cannot be infinite");
