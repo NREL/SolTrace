@@ -5,8 +5,6 @@
 #include <common.hpp>
 #include <sphere_calculator.hpp>
 #include <simulation_data_export.hpp>
-#include <surface.hpp>
-#include <vector3d.hpp>
 
 using SolTrace::NativeRunner::SphereCalculator;
 
@@ -28,66 +26,73 @@ using SolTrace::NativeRunner::SphereCalculator;
 //    z2 = z(t2)
 // From these last two, we always have t1 < t2.
 
-// Helper function to create sphere surface
-std::shared_ptr<Sphere> create_sphere_surface(double vertex_curvature = 0.1)
-{
-    auto sphere = std::make_shared<Sphere>(vertex_curvature);
-    return sphere;
-}
-
 // Constructor validation tests
 TEST(SphereCalculator, ConstructorNullSurfaceThrows)
 {
     EXPECT_THROW({
-        SphereCalculator calc(nullptr);
+        SphereCalculator calc(nullptr, nullptr);
     }, std::invalid_argument);
 }
 
 TEST(SphereCalculator, ConstructorWrongSurfaceTypeThrows)
 {
     auto flat = std::make_shared<Flat>();
+    auto circ = create_circle_aperture();
     EXPECT_THROW({
-        SphereCalculator calc(flat);
+        SphereCalculator calc(flat, circ);
     }, std::invalid_argument);
 }
 
 TEST(SphereCalculator, ConstructorZeroVertexCurvatureThrows)
 {
     auto zero_curvature_surface = create_sphere_surface(0.0);
+    auto circ = create_circle_aperture();
     EXPECT_THROW({
-        SphereCalculator calc(zero_curvature_surface);
+        SphereCalculator calc(zero_curvature_surface, circ);
     }, std::invalid_argument);
 }
 
 TEST(SphereCalculator, ConstructorNegativeVertexCurvatureThrows)
 {
     auto negative_curvature_surface = create_sphere_surface(-0.1);
+    auto circ = create_circle_aperture();
     EXPECT_THROW({
-        SphereCalculator calc(negative_curvature_surface);
+        SphereCalculator calc(negative_curvature_surface, circ);
     }, std::invalid_argument);
 }
 
 TEST(SphereCalculator, ConstructorNaNVertexCurvatureThrows)
 {
     auto nan_curvature_surface = create_sphere_surface(std::nan(""));
+    auto circ = create_circle_aperture();
     EXPECT_THROW({
-        SphereCalculator calc(nan_curvature_surface);
+        SphereCalculator calc(nan_curvature_surface, circ);
     }, std::invalid_argument);
 }
 
 TEST(SphereCalculator, ConstructorInfiniteVertexCurvatureThrows)
 {
     auto inf_curvature_surface = create_sphere_surface(std::numeric_limits<double>::infinity());
+    auto circ = create_circle_aperture();
     EXPECT_THROW({
-        SphereCalculator calc(inf_curvature_surface);
+        SphereCalculator calc(inf_curvature_surface, circ);
     }, std::invalid_argument);
 }
 
-TEST(SphereCalculator, ConstructorValidVertexCurvature)
+TEST(SphereCalculator, ConstructorNullApertureThrows)
 {
     auto valid_surface = create_sphere_surface(0.1);
+    EXPECT_THROW({
+        SphereCalculator calc(valid_surface, nullptr);
+    }, std::invalid_argument);
+}
+
+TEST(SphereCalculator, ConstructorValid)
+{
+    auto valid_surface = create_sphere_surface(0.1);
+    auto circ = create_circle_aperture();
     EXPECT_NO_THROW({
-        SphereCalculator calc(valid_surface);
+        SphereCalculator calc(valid_surface, circ);
     });
 }
 
@@ -109,7 +114,8 @@ TEST(SphereCalculator, Case1)
     Vector3d gradf;
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
-    SphereCalculator scalc(sph);
+    auto circ = create_circle_aperture(radius);
+    SphereCalculator scalc(sph, circ);
     sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
@@ -138,7 +144,8 @@ TEST(SphereCalculator, Case2)
     Vector3d r;
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
-    SphereCalculator scalc(sph);
+    auto circ = create_circle_aperture(radius);
+    SphereCalculator scalc(sph, circ);
     sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
 
     EXPECT_EQ(sts, 0);
@@ -175,7 +182,8 @@ TEST(SphereCalculator, Case3)
     Vector3d r;
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
-    SphereCalculator scalc(sph);
+    auto circ = create_circle_aperture(radius);
+    SphereCalculator scalc(sph, circ);
     sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
 
     EXPECT_EQ(sts, 0);
@@ -210,7 +218,8 @@ TEST(SphereCalculator, Case4)
     Vector3d gradf;
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
-    SphereCalculator scalc(sph);
+    auto circ = create_circle_aperture(radius);
+    SphereCalculator scalc(sph, circ);
     sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
@@ -237,7 +246,8 @@ TEST(SphereCalculator, Case5)
     Vector3d gradf;
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
-    SphereCalculator scalc(sph);
+    auto circ = create_circle_aperture(radius);
+    SphereCalculator scalc(sph, circ);
     sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
 
     EXPECT_EQ(sts, 0);
@@ -269,7 +279,8 @@ TEST(SphereCalculator, Case6)
     Vector3d gradf;
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
-    SphereCalculator scalc(sph);
+    auto circ = create_circle_aperture(radius);
+    SphereCalculator scalc(sph, circ);
     sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
@@ -296,7 +307,8 @@ TEST(SphereCalculator, Case7)
     Vector3d gradf;
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
-    SphereCalculator scalc(sph);
+    auto circ = create_circle_aperture(radius);
+    SphereCalculator scalc(sph, circ);
     sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
     EXPECT_EQ(sts, 1);
     EXPECT_EQ(t, 0.0);
@@ -323,7 +335,8 @@ TEST(SphereCalculator, Case8)
     Vector3d gradf;
     
     surface_ptr sph = make_surface<Sphere>(1.0 / radius);
-    SphereCalculator scalc(sph);
+    auto circ = create_circle_aperture(radius);
+    SphereCalculator scalc(sph, circ);
     sts = scalc.intersect(r0.data, rd.data, xt.data, mt.data, gradf.data, &t);
 
     EXPECT_EQ(sts, 0);
@@ -343,7 +356,8 @@ TEST(SphereCalculator, ZAperture)
 
     double r = 1.0;
     surface_ptr sph = make_surface<Sphere>(1.0 / r);
-    SphereCalculator scalc(sph);
+    auto circ = create_circle_aperture(r);
+    SphereCalculator scalc(sph, circ);
 
     double XLEN = 1.0;
     double YLEN = 1.0;

@@ -71,6 +71,8 @@ public:
   /// @brief Check whether the element is a VirtualElement
   /// @return true if VirtualElement, false otherwise
   virtual bool is_virtual() const = 0;
+  virtual void mark_virtual() const = 0;
+  virtual void unmark_virtual() const = 0;
 
   /// @brief Get the element id assigned when registered with SimulationData
   /// @return id if registered with SimulationData, ELEMENT_ID_UNASSIGNED if not
@@ -306,8 +308,10 @@ public:
   virtual bool is_composite() const override { return false; }
   virtual bool is_single() const override { return false; }
   virtual bool is_stage() const override { return false; }
-  // TODO: Do we need this?
-  virtual bool is_virtual() const override { return false; }
+
+  virtual bool is_virtual() const override { return this->virtual_flag; }
+  virtual void mark_virtual() const override {this->virtual_flag = true;}
+  virtual void unmark_virtual() const override {this->virtual_flag = false;}
 
   // virtual ElementContainer::iterator get_iterator();
   // virtual ElementContainer::const_iterator get_const_iterator();
@@ -485,6 +489,7 @@ public:
 protected:
   // TODO: Do these need to be mutable?
   mutable bool active;
+  mutable bool virtual_flag;
   mutable element_id my_id;
 
   bool coordinates_initialized;

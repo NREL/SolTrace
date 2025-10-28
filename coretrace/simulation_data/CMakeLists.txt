@@ -8,6 +8,7 @@ set(SIMDATA_SRC
     composite_element.cpp
     element.cpp
     matvec.cpp
+    optical_properties.cpp
     simdata_io.cpp
     simulation_data.cpp
     single_element.cpp
@@ -45,7 +46,7 @@ set(SIMDATA_HDRS
     sun.hpp
     surface.hpp
     vector3d.hpp
-    virtual_element.hpp
+    # virtual_element.hpp
     cst_templates/arclength.hpp
     cst_templates/heliostat.hpp
     cst_templates/linear_fresnel.hpp

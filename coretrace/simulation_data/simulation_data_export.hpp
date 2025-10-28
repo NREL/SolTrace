@@ -30,6 +30,8 @@ using SolTrace::Data::Sun;
 using SolTrace::Data::Surface;
 using SolTrace::Data::SurfaceType;
 using SolTrace::Data::Vector3d;
+using SolTrace::Data::VirtualElement;
+using SolTrace::Data::VirtualPlane;
 
 // Template Types
 using SolTrace::Data::Heliostat;
@@ -62,6 +64,7 @@ using SolTrace::Data::matrix_vector_product;
 using SolTrace::Data::vector_add;
 using SolTrace::Data::vector_copy;
 using SolTrace::Data::vector_norm;
+using SolTrace::Data::AddVec3;
 using SolTrace::Data::CopyVec3;
 using SolTrace::Data::DOT;
 using SolTrace::Data::IdentityMat3;

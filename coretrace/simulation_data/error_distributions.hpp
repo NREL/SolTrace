@@ -12,7 +12,7 @@
 
 namespace SolTrace::Data {
 
-enum DistributionType
+enum class DistributionType
 {
     GAUSSIAN,
     PILLBOX,

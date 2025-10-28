@@ -212,6 +212,9 @@ double dot_product(const Vector3d &x, const Vector3d &y);
  */
 void cross_product(const Vector3d &u, const Vector3d &v, Vector3d &w);
 
+double error(const Vector3d &u, const Vector3d &v);
+double error_inf(const Vector3d &u, const Vector3d &v);
+
 /**
  * @brief Compute Euclidean norm (length) of vector
  * @param x Input vector

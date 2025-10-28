@@ -373,7 +373,27 @@ namespace SolTrace::NativeRunner
 
 						// Apply MonteCarlo probability of absorption. Limited
 						// for now, but can make more complex later on if desired
-						if (TestValue <= myrng())
+						// if (TestValue <= myrng())
+						double flip = myrng();
+						// if (RayNumber == 36)
+						// {
+						// 	std::cout << "RAY NUMBER 36!" << std::endl;
+						// }
+						// if (i > 0)
+						// {
+						// 	std::cout << "Ray Number: " << RayNumber
+						// 			  << "\nStage: " << i + 1
+						// 			  << "\nMultiHit: " << Stage->MultiHitsPerRay
+						// 			  << "\nmyrng_counter: " << myrng_counter
+						// 			  << "\nTestValue: " << TestValue
+						// 			  << "\nflip: " << flip
+						// 			  << "\nRayIsAbsorbed: " << (TestValue < flip)
+						// 			  << "\nPosRayGlob: " << Vector3d(PosRayGlob)
+						// 			  << "\nCosRayGlob: " << Vector3d(CosRayGlob)
+						// 			  << "\nDFXYZ: " << Vector3d(LastDFXYZ)
+						// 			  << std::endl;
+						// }
+						if (TestValue <= flip)
 						{
 							myrng_counter++;
 							// ray was fully absorbed

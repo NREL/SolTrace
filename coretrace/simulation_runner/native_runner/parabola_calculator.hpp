@@ -6,28 +6,32 @@
 #include "aperture.hpp"
 #include "surface.hpp"
 
-namespace SolTrace::NativeRunner {
-
-class ParabolaCalculator : public SurfaceIntersectionCalculator
+namespace SolTrace::NativeRunner
 {
-public:
-    ParabolaCalculator(SolTrace::Data::surface_ptr surf);
-    virtual ~ParabolaCalculator();
-    virtual int intersect(const double PosLoc[3],
-                          const double CosLoc[3],
-                          double PosXYZ[3],
-                          double CosKLM[3],
-                          double DFXYZ[3],
-                          double *PathLength);
 
-    void surface_normal(const double PosXYZ[3], double DFXYZ[3]);
+    class ParabolaCalculator : public SurfaceIntersectionCalculator
+    {
+    public:
+        ParabolaCalculator(SolTrace::Data::surface_ptr surf,
+                           SolTrace::Data::aperture_ptr ap);
+        virtual ~ParabolaCalculator();
+        virtual int intersect(const double PosLoc[3],
+                              const double CosLoc[3],
+                              double PosXYZ[3],
+                              double CosKLM[3],
+                              double DFXYZ[3],
+                              double *PathLength);
 
-    virtual double compute_z_aperture(SolTrace::Data::aperture_ptr ap);
+        void surface_normal(const double PosXYZ[3], double DFXYZ[3]);
 
-private:
-    double cx;
-    double cy;
-};
+        virtual double compute_z_aperture(SolTrace::Data::aperture_ptr ap);
+
+    private:
+        double cx;
+        double cy;
+
+        SolTrace::Data::aperture_ptr aper;
+    };
 
 } // namespace SolTrace::NativeRunner
 

@@ -12,16 +12,16 @@ surface_ptr make_surface_from_type(SurfaceType type, const std::vector<double> &
 
     switch (type)
     {
-    case CONE:
+    case SurfaceType::CONE:
         retval = nargs < 1 ? nullptr : make_surface<Cone>(args[0]);
         break;
-    case CYLINDER:
+    case SurfaceType::CYLINDER:
         retval = nargs < 1 ? nullptr : make_surface<Cylinder>(1.0 / args[0]);
         break;
-    case FLAT:
+    case SurfaceType::FLAT:
         retval = make_surface<Flat>();
         break;
-    case PARABOLA:
+    case SurfaceType::PARABOLA:
     {
         if (nargs < 2)
             retval = nullptr;
@@ -35,12 +35,12 @@ surface_ptr make_surface_from_type(SurfaceType type, const std::vector<double> &
         }
         break;
     } 
-    case SPHERE:
+    case SurfaceType::SPHERE:
         retval = nargs < 1 ? nullptr : make_surface<Sphere>(args[0]);
         break;
-    case HYPER:
-    case GENERAL_SPENCER_MURTY:
-    case TORUS:
+    case SurfaceType::HYPER:
+    case SurfaceType::GENERAL_SPENCER_MURTY:
+    case SurfaceType::TORUS:
     default:
         retval = nullptr; // Not implemented yet
         break;

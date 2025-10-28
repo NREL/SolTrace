@@ -1,11 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <constants.hpp>
-#include <element.hpp>
-#include <single_element.hpp>
-#include <stage_element.hpp>
-#include <virtual_element.hpp>
-#include <vector3d.hpp>
+#include <simulation_data_export.hpp>
 
 #include "common.hpp"
 
@@ -39,6 +34,12 @@ TEST(Element, SingleElementAccessors)
     EXPECT_FALSE(ref.is_composite());
     EXPECT_FALSE(ref.is_virtual());
     EXPECT_TRUE(ref.is_single());
+
+    EXPECT_FALSE(ref.is_virtual());
+    ref.mark_virtual();
+    EXPECT_TRUE(ref.is_virtual());
+    ref.unmark_virtual();
+    EXPECT_FALSE(ref.is_virtual());
 
     auto pos = Vector3d(2.0, 1.0, -3.0);
     ref.set_origin(pos);
@@ -80,7 +81,8 @@ TEST(Element, SingleElementAccessors)
     EXPECT_EQ(opf->slope_error, opb->slope_error);
     EXPECT_EQ(opf->specularity_error, opb->specularity_error);
 
-    OpticalProperties op(SolTrace::Data::REFLECTION, SolTrace::Data::GAUSSIAN,
+    OpticalProperties op(InteractionType::REFLECTION,
+                         DistributionType::GAUSSIAN,
                          0.75, 0.25, 0.1, 0.001, 1.0, 1.0);
     ref.set_front_optical_properties(op);
     // EXPECT_EQ(*opf, op);
@@ -96,79 +98,81 @@ TEST(Element, SingleElementAccessors)
     EXPECT_EQ(opb->specularity_error, op.specularity_error);
 }
 
-// TEST(Element, VirtualElement)
-// {
-//     VirtualElement ve;
+TEST(Element, VirtualElement)
+{
+    VirtualElement ve;
 
-//     EXPECT_TRUE(ve.is_virtual());
+    EXPECT_TRUE(ve.is_virtual());
 
-//     const double LX = 1.0;
-//     const double LY = 2.0;
-//     ve.set_aperture(make_aperture<Rectangle>(LX, LY));
-//     auto aptr = ve.get_aperture();
-//     EXPECT_EQ(aptr->get_type(), RECTANGLE);
-//     auto rptr = std::dynamic_pointer_cast<Rectangle>(aptr);
-//     EXPECT_NE(rptr, nullptr);
-//     if (rptr != nullptr)
-//     {
-//         EXPECT_EQ(rptr->x_length, LX);
-//         EXPECT_EQ(rptr->y_length, LY);
-//     }
+    const double LX = 1.0;
+    const double LY = 2.0;
+    ve.set_aperture(make_aperture<Rectangle>(LX, LY));
+    auto aptr = ve.get_aperture();
+    EXPECT_EQ(aptr->get_type(), ApertureType::RECTANGLE);
+    auto rptr = std::dynamic_pointer_cast<Rectangle>(aptr);
+    EXPECT_NE(rptr, nullptr);
+    if (rptr != nullptr)
+    {
+        EXPECT_EQ(rptr->x_length, LX);
+        EXPECT_EQ(rptr->y_length, LY);
+    }
 
-//     ve.set_surface(make_surface<Flat>());
-//     auto sptr = ve.get_surface();
-//     EXPECT_EQ(sptr->get_type(), FLAT);
-//     auto fptr = std::dynamic_pointer_cast<Flat>(sptr);
-//     EXPECT_NE(fptr, nullptr);
+    ve.set_surface(make_surface<Flat>());
+    auto sptr = ve.get_surface();
+    EXPECT_EQ(sptr->get_type(), SurfaceType::FLAT);
+    auto fptr = std::dynamic_pointer_cast<Flat>(sptr);
+    EXPECT_NE(fptr, nullptr);
 
-//     EXPECT_TRUE(ve.is_virtual());
-//     EXPECT_TRUE(ve.is_single());
-//     EXPECT_FALSE(ve.is_composite());
+    EXPECT_TRUE(ve.is_virtual());
+    EXPECT_TRUE(ve.is_single());
+    EXPECT_FALSE(ve.is_composite());
 
-//     // These functions should have no effects
-//     OpticalProperties op(REFLECTION, GAUSSIAN, 0.75, 0.25, 0.1, 0.001, 1.0, 1.0);
-//     ve.set_front_optical_properties(op);
-//     auto opf = ve.get_front_optical_properties();
-//     EXPECT_EQ(opf->reflectivity, 0.0);
-//     EXPECT_EQ(opf->slope_error, 0.0);
-//     EXPECT_EQ(opf->specularity_error, 0.0);
-//     EXPECT_EQ(opf->transmitivity, 1.0);
-//     ve.set_back_optical_properties(op);
-//     auto opb = ve.get_back_optical_properties();
-//     EXPECT_EQ(opb->reflectivity, 0.0);
-//     EXPECT_EQ(opb->slope_error, 0.0);
-//     EXPECT_EQ(opb->specularity_error, 0.0);
-//     EXPECT_EQ(opb->transmitivity, 1.0);
+    // These functions should have no effects
+    OpticalProperties op(InteractionType::REFLECTION,
+                         DistributionType::GAUSSIAN,
+                         0.75, 0.25, 0.1, 0.001, 1.0, 1.0);
+    ve.set_front_optical_properties(op);
+    auto opf = ve.get_front_optical_properties();
+    EXPECT_EQ(opf->reflectivity, 0.0);
+    EXPECT_EQ(opf->slope_error, 0.0);
+    EXPECT_EQ(opf->specularity_error, 0.0);
+    EXPECT_EQ(opf->transmitivity, 1.0);
+    ve.set_back_optical_properties(op);
+    auto opb = ve.get_back_optical_properties();
+    EXPECT_EQ(opb->reflectivity, 0.0);
+    EXPECT_EQ(opb->slope_error, 0.0);
+    EXPECT_EQ(opb->specularity_error, 0.0);
+    EXPECT_EQ(opb->transmitivity, 1.0);
 
-//     return;
-// }
+    return;
+}
 
-// TEST(Element, VirtualPlane)
-// {
-//     const double LX = 5.0;
-//     const double LY = 2.5;
-//     VirtualPlane vp(LX, LY);
+TEST(Element, VirtualPlane)
+{
+    const double LX = 5.0;
+    const double LY = 2.5;
+    VirtualPlane vp(LX, LY);
 
-//     EXPECT_TRUE(vp.is_virtual());
-//     EXPECT_EQ(vp.get_aperture()->get_type(), RECTANGLE);
-//     EXPECT_EQ(vp.get_surface()->get_type(), FLAT);
+    EXPECT_TRUE(vp.is_virtual());
+    EXPECT_EQ(vp.get_aperture()->get_type(), ApertureType::RECTANGLE);
+    EXPECT_EQ(vp.get_surface()->get_type(), SurfaceType::FLAT);
 
-//     auto rptr = std::dynamic_pointer_cast<Rectangle>(vp.get_aperture());
-//     EXPECT_NE(rptr, nullptr);
-//     if (rptr != nullptr)
-//     {
-//         EXPECT_EQ(rptr->x_length, LX);
-//         EXPECT_EQ(rptr->y_length, LY);
-//     }
+    auto rptr = std::dynamic_pointer_cast<Rectangle>(vp.get_aperture());
+    EXPECT_NE(rptr, nullptr);
+    if (rptr != nullptr)
+    {
+        EXPECT_EQ(rptr->x_length, LX);
+        EXPECT_EQ(rptr->y_length, LY);
+    }
 
-//     // These functions should have no effects
-//     vp.set_aperture(make_aperture<Circle>(2.0));
-//     EXPECT_EQ(vp.get_aperture()->get_type(), RECTANGLE);
-//     vp.set_surface(make_surface<Parabola>(1.0, 1.0));
-//     EXPECT_EQ(vp.get_surface()->get_type(), FLAT);
+    // These functions should have no effects
+    vp.set_aperture(make_aperture<Circle>(2.0));
+    EXPECT_EQ(vp.get_aperture()->get_type(), ApertureType::RECTANGLE);
+    vp.set_surface(make_surface<Parabola>(1.0, 1.0));
+    EXPECT_EQ(vp.get_surface()->get_type(), SurfaceType::FLAT);
 
-//     return;
-// }
+    return;
+}
 
 TEST(Element, CompositeElementAccessors)
 {
@@ -202,7 +206,6 @@ TEST(Element, CompositeElementAccessors)
         // EXPECT_EQ(elem->get_stage(), STAGE);
     }
     EXPECT_EQ(cmp->get_number_of_elements(), NUM_ELEMENTS);
-    // EXPECT_EQ(cmp->get_stage(), cmp->get_element(0)->get_stage());
 
     cmp->remove_element(0);
     EXPECT_EQ(cmp->get_number_of_elements(), NUM_ELEMENTS - 1);
@@ -231,6 +234,15 @@ TEST(Element, CompositeElementAccessors)
     EXPECT_TRUE(cmp->is_enabled());
     EXPECT_TRUE(elem2->is_enabled());
 
+    EXPECT_FALSE(elem2->is_virtual());
+    EXPECT_FALSE(cmp->is_virtual());
+    cmp->mark_virtual();
+    EXPECT_TRUE(cmp->is_virtual());
+    EXPECT_TRUE(elem2->is_virtual());
+    cmp->unmark_virtual();
+    EXPECT_FALSE(cmp->is_virtual());
+    EXPECT_FALSE(elem2->is_virtual());
+
     // Check that pass through functions are hooked up correctly
     auto iter = cmp->get_iterator();
     while (!cmp->is_at_end(iter))
@@ -256,7 +268,7 @@ TEST(Element, StageElementAccessors)
     auto el1 = make_configured_element();
     auto cmp1 = SolTrace::Data::make_element<CompositeElement>();
     auto sub1 = make_configured_element();
-    auto sub2 = SolTrace::Data::make_element<SolTrace::Data::VirtualPlane>(10.0, 10.0);
+    auto sub2 = make_configured_element();
     auto sub3 = make_configured_element();
     EXPECT_TRUE(SolTrace::Data::Element::is_success(cmp1->add_element(sub1)));
     EXPECT_TRUE(SolTrace::Data::Element::is_success(cmp1->add_element(sub2)));
@@ -852,7 +864,8 @@ TEST(Element, SingleElementEnforceUserFieldsSet)
     EXPECT_NO_THROW(elem->enforce_user_fields_set());
 
     // Test with optical properties set as well
-    OpticalProperties op(SolTrace::Data::REFLECTION, SolTrace::Data::GAUSSIAN,
+    OpticalProperties op(InteractionType::REFLECTION,
+                         DistributionType::GAUSSIAN,
                          0.75, 0.25, 0.1, 0.001, 1.0, 1.0);
     elem->set_front_optical_properties(op);
     elem->set_back_optical_properties(op);

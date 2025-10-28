@@ -64,79 +64,86 @@
 #include <iostream>
 #include <fstream>
 
-namespace SolTrace::Data {
+namespace SolTrace::Data
+{
 
-void MatrixVectorMult(const double M[3][3],
-                      const double V[3],
-                      double MxV[3]);
-void MatrixTranspose(const double InputMatrix[3][3],
-                     int NumRowsCols,
-                     double OutputMatrix[3][3]);
-void MatrixMatrixMult(const double M1[3][3],
-                      const double M2[3][3],
-                      double OutputMatrix[3][3]);
+    void MatrixVectorMult(const double M[3][3],
+                          const double V[3],
+                          double MxV[3]);
+    void MatrixTranspose(const double InputMatrix[3][3],
+                         int NumRowsCols,
+                         double OutputMatrix[3][3]);
+    void MatrixMatrixMult(const double M1[3][3],
+                          const double M2[3][3],
+                          double OutputMatrix[3][3]);
 
-double DOT(const double A[3], const double B[3]);
+    double DOT(const double A[3], const double B[3]);
 
-void TransformToLocal(const double PosRef[3],
-                      const double CosRef[3],
-                      const double Origin[3],
-                      const double RRefToLoc[3][3],
-                      double PosLoc[3],
-                      double CosLoc[3]);
-
-void TransformToReference(const double PosLoc[3],
-                          const double CosLoc[3],
+    void TransformToLocal(const double PosRef[3],
+                          const double CosRef[3],
                           const double Origin[3],
-                          const double RLocToRef[3][3],
-                          double PosRef[3],
-                          double CosRef[3]);
+                          const double RRefToLoc[3][3],
+                          double PosLoc[3],
+                          double CosLoc[3]);
 
-void CalculateTransformMatrices(const double Euler[3],
-                                double RRefToLoc[3][3],
-                                double RLocToRef[3][3]);
+    void TransformToReference(const double PosLoc[3],
+                              const double CosLoc[3],
+                              const double Origin[3],
+                              const double RLocToRef[3][3],
+                              double PosRef[3],
+                              double CosRef[3]);
 
-// inline void CopyVec3(double dest[3], const std::vector<double> &src);
-// inline void CopyVec3(std::vector<double> &dest, const double src[3]);
-// inline void CopyVec3(double dest[3], const double src[3]);
+    void CalculateTransformMatrices(const double Euler[3],
+                                    double RRefToLoc[3][3],
+                                    double RLocToRef[3][3]);
 
-inline void ZeroVec3(double vec[3])
-{
-    vec[0] = vec[1] = vec[2] = 0.0;
-    return;
-}
+    // inline void CopyVec3(double dest[3], const std::vector<double> &src);
+    // inline void CopyVec3(std::vector<double> &dest, const double src[3]);
+    // inline void CopyVec3(double dest[3], const double src[3]);
 
-inline void SetVec3(double vec[3], double v1, double v2, double v3)
-{
-    vec[0] = v1;
-    vec[1] = v2;
-    vec[2] = v3;
-}
+    // void AddVec3(double a, const double x[3],
+    //              double b, const double y[3]);
+    void AddVec3(double a, const double x[3],
+                 double b, const double y[3],
+                 double z[3]);
 
-inline void CopyVec3(double dest[3], const std::vector<double> &src)
-{
-    dest[0] = src[0];
-    dest[1] = src[1];
-    dest[2] = src[2];
-}
+    inline void ZeroVec3(double vec[3])
+    {
+        vec[0] = vec[1] = vec[2] = 0.0;
+        return;
+    }
 
-inline void CopyVec3(std::vector<double> &dest, const double src[3])
-{
-    dest[0] = src[0];
-    dest[1] = src[1];
-    dest[2] = src[2];
-}
+    inline void SetVec3(double vec[3], double v1, double v2, double v3)
+    {
+        vec[0] = v1;
+        vec[1] = v2;
+        vec[2] = v3;
+    }
 
-inline void CopyVec3(double dest[3], const double src[3])
-{
-    dest[0] = src[0];
-    dest[1] = src[1];
-    dest[2] = src[2];
-}
+    inline void CopyVec3(double dest[3], const std::vector<double> &src)
+    {
+        dest[0] = src[0];
+        dest[1] = src[1];
+        dest[2] = src[2];
+    }
 
-void CopyMat3(double dest[3][3], const double src[3][3]);
+    inline void CopyVec3(std::vector<double> &dest, const double src[3])
+    {
+        dest[0] = src[0];
+        dest[1] = src[1];
+        dest[2] = src[2];
+    }
 
-void IdentityMat3(double mat[3][3]);
+    inline void CopyVec3(double dest[3], const double src[3])
+    {
+        dest[0] = src[0];
+        dest[1] = src[1];
+        dest[2] = src[2];
+    }
+
+    void CopyMat3(double dest[3][3], const double src[3][3]);
+
+    void IdentityMat3(double mat[3][3]);
 
 } // namespace SolTrace::Data
 
