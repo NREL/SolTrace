@@ -172,7 +172,8 @@ RunnerStatus OptixRunner::run_simulation_core(bool write_output)
 
     if (write_output)
         m_sys.write_hp_output("output.txt");
-    
+
+    m_sys.write_hp_output("output.txt");
     return RunnerStatus::SUCCESS;
 }
 
@@ -183,7 +184,6 @@ RunnerStatus OptixRunner::report_simulation(SimulationResult *result,
     // 
     return RunnerStatus::SUCCESS;
 }
-
 // Temporary function to get hit points
 RunnerStatus OptixRunner::get_hp_output(std::vector<float4>& hp_vec, std::vector<int>& raynumber_vec)
 {

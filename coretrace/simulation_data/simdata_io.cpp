@@ -528,6 +528,7 @@ bool read_element(
             throw std::invalid_argument("This should not happen!");
         }
         rect->x_length = 2.0 * cyl->radius;
+        rect->x_coord = -1.0 * cyl->radius;
     }
 
     // Set element position and orientation

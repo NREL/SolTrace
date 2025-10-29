@@ -24,8 +24,6 @@ using SolTrace::NativeRunner::TSystem;
 
 TEST(NativeRunner, PerformanceTest)
 {
-    // TODO: Add timing component to test
-
     const uint_fast64_t NRAYS = 100000;
     const Vector3d zero(0.0, 0.0, 0.0);
     const Vector3d khat(0.0, 0.0, 1.0);

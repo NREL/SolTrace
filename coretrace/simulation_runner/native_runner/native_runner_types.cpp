@@ -521,6 +521,11 @@ namespace SolTrace::NativeRunner
                                int_fast64_t el_num,
                                const ElementParameters &eparams)
     {
+        // std::cout << "Name: " << el->get_name()
+        //           << "\nSDID: " << el->get_id()
+        //           << "\nNum: " << el_num
+        //           << std::endl;
+
         telement_ptr telem = std::make_shared<TElement>();
         vector_copy(telem->Origin, el->get_origin_stage());
         vector_copy(telem->AimPoint, el->get_aim_vector_stage());
@@ -572,8 +577,8 @@ namespace SolTrace::NativeRunner
 
         // TODO: What to do with these fields?
         my_stage->MultiHitsPerRay = true;
-        my_stage->Virtual = false;
-        my_stage->TraceThrough = false;
+        my_stage->Virtual = stage_el->is_virtual();
+        my_stage->TraceThrough = true;
         my_stage->stage_id = stage_el->get_stage();
 
         // Add coordinate stuff

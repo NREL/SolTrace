@@ -16,7 +16,8 @@
 namespace SolTrace::NativeRunner
 {
 
-    SphereCalculator::SphereCalculator(surface_ptr surf)
+    SphereCalculator::SphereCalculator(surface_ptr surf, aperture_ptr ap)
+        : aper(ap)
     {
         if (surf == nullptr)
         {
@@ -42,6 +43,11 @@ namespace SolTrace::NativeRunner
             throw std::invalid_argument("SphereCalculator: Vertex curvature cannot be NaN or infinite");
         }
 
+        if (ap == nullptr)
+        {
+            throw std::invalid_argument("SphereCalculator: Aperture pointer cannot be null");
+        }
+
         this->curvature = sph->vertex_curv;
         this->radius = 1.0 / this->curvature;
 
@@ -59,14 +65,19 @@ namespace SolTrace::NativeRunner
                                     double DFXYZ[3],
                                     double *PathLength)
     {
+        // std::cout << "SphereCalculator" << std::endl;
+
         int sts = 0;
 
         double x0 = PosLoc[0], y0 = PosLoc[1], z0 = PosLoc[2];
         double alpha = CosLoc[0], beta = CosLoc[1], gamma = CosLoc[2];
         double r = this->radius;
         double t1, t2;
+        // double x1, y1, z1, x2, y2, z2;
         double a, b, c;
         double scratch;
+
+        Vector3d p1, p2;
 
         c = x0 * x0 + y0 * y0 + z0 * z0 - 2.0 * r * z0;
         b = 2.0 * (alpha * x0 + beta * y0 + gamma * (z0 - r));
@@ -77,6 +88,8 @@ namespace SolTrace::NativeRunner
         ZeroVec3(DFXYZ);
 
         scratch = b * b - 4.0 * a * c;
+
+        // std::cout << "Scratch: " << scratch << std::endl;
 
         if (scratch < 0.0)
         {
@@ -90,17 +103,27 @@ namespace SolTrace::NativeRunner
             t1 = -0.5 * (b + scratch) / a;
             t2 = 0.5 * (scratch - b) / a;
 
-            double z1 = z0 + gamma * t1;
-            double z2 = z0 + gamma * t2;
+            // z1 = z0 + gamma * t1;
+            // z2 = z0 + gamma * t2;
+            AddVec3(1.0, PosLoc, t1, CosLoc, p1.data);
+            AddVec3(1.0, PosLoc, t2, CosLoc, p2.data);
 
-            if (t1 > 0.0 && z1 <= r)
+            // std::cout << "P1: " << p1
+            //           << "\nP2: " << p2
+            //           << std::endl;
+
+            if (t1 > 0.0 && p1[2] <= r && this->aper->is_in(p1[0], p1[1]))
             {
-                SetVec3(PosXYZ, x0 + t1 * alpha, y0 + t1 * beta, z1);
+                // SetVec3(PosXYZ, x0 + t1 * alpha, y0 + t1 * beta, z1);
+                // AddVec3(1.0, PosLoc, t1, CosLoc, PosXYZ);
+                CopyVec3(PosXYZ, p1.data);
                 *PathLength = t1;
             }
-            else if (t2 > 0.0 && z2 <= r)
+            else if (t2 > 0.0 && p2[2] <= r && this->aper->is_in(p2[0], p2[1]))
             {
-                SetVec3(PosXYZ, x0 + t2 * alpha, y0 + t2 * beta, z2);
+                // SetVec3(PosXYZ, x0 + t2 * alpha, y0 + t2 * beta, z2);
+                // AddVec3(1.0, PosLoc, t2, CosLoc, PosXYZ);
+                CopyVec3(PosXYZ, p2.data);
                 *PathLength = t2;
             }
             else

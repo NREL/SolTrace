@@ -12,7 +12,6 @@
 
 namespace SolTrace::Result
 {
-
     using ray_id = int_fast64_t;
 
     enum class RayEvent
@@ -135,8 +134,8 @@ namespace SolTrace::Result
             return citer == this->ray_history.cend();
         }
 
-        void write_csv_file(std::string csv_name);
-        void write_csv_file(const char *csv_name);
+        void write_csv_file(std::string csv_name, int precision=12);
+        void write_csv_file(const char *csv_name, int precision=12);
 
         // Legacy stuff -- TODO:
         // void results_to_legacy_csv(std::string csv_name,

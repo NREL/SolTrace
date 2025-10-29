@@ -17,8 +17,8 @@ SingleElement::SingleElement() : ElementBase(),
                                  optics_front(),
                                  optics_back()
 {
-    // TODO: Do we want a default aperture and surface? What about default
-    // optical properties?
+    this->optics_front.set_ideal_absorption();
+    this->optics_back.set_ideal_absorption();
     return;
 }
 
@@ -50,8 +50,6 @@ void SingleElement::enforce_user_fields_set() const
            << ") has no surface.";
         throw std::invalid_argument(ss.str());
     }
-
-    // TODO: Add optics checks here
 
     return;
 }

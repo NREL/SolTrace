@@ -1,5 +1,7 @@
 #include "simulation_result.hpp"
 
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -156,24 +158,45 @@ namespace SolTrace::Result
         return;
     }
 
-    void SimulationResult::write_csv_file(std::string csv_name)
+    void SimulationResult::write_csv_file(std::string csv_name,
+                                          int precision)
     {
-        return this->write_csv_file(csv_name.c_str());
+        return this->write_csv_file(csv_name.c_str(), precision);
     }
 
-    void SimulationResult::write_csv_file(const char *csv_name)
+    void SimulationResult::write_csv_file(const char *csv_name,
+                                          int precision)
     {
-        // TODO: Implement this
+        std::ofstream csv(csv_name);
+        csv.precision(precision);
+        csv << "Ray Number,Pos X,Pos Y,Pos Z,"
+            << "Cos X,Cos Y,Cos Z,Element,Event\n";
+        for (auto srit : this->ray_history)
+        {
+            for (auto cit : srit->interactions)
+            {
+                csv << srit->id << ","
+                    << cit->location[0] << ","
+                    << cit->location[1] << ","
+                    << cit->location[2] << ","
+                    << cit->direction[0] << ","
+                    << cit->direction[1] << ","
+                    << cit->direction[2] << ","
+                    << cit->element << ","
+                    << ray_event_string(cit->event) << "\n";
+            }
+        }
+        csv.close();
         return;
     }
 
     const ray_record_ptr &SimulationResult::operator[](int_fast64_t idx) const
     {
-       if (idx < 0 || idx >= this->ray_history.size())
+        if (idx < 0 || idx >= this->ray_history.size())
         {
             std::stringstream ss;
             ss << "SimulationResult: Index " << idx
-               << " is out of bounds [0, " << this->ray_history.size()
+               << " is out of bounds [0, " << this->ray_history.size() - 1
                << "].";
             throw std::invalid_argument(ss.str());
         }

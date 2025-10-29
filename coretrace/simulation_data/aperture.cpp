@@ -43,7 +43,9 @@ aperture_ptr Aperture::make_aperture_from_type(ApertureType type,
         if (args.size() < 3)
             break;
         return make_aperture<Rectangle>(
-            args[1] - args[0], args[2], args[0], 0.5 * args[2]);
+            args[1] - args[0], args[2], 
+            -0.5 * (args[1] - args[0]), -0.5 * args[2]);
+        // return make_aperture<Rectangle>(args[1] - args[0], args[2]);
     case ApertureType::IRREGULAR_TRIANGLE:
         if (args.size() < 6)
             break;
@@ -243,7 +245,7 @@ aperture_ptr Hexagon::make_copy() const
 IrregularTriangle::IrregularTriangle(double x1, double y1,
                                      double x2, double y2,
                                      double x3, double y3)
-    : Aperture(IRREGULAR_TRIANGLE),
+    : Aperture(ApertureType::IRREGULAR_TRIANGLE),
       x1(x1), y1(y1),
       x2(x2), y2(y2),
       x3(x3), y3(y3)
@@ -293,7 +295,7 @@ IrregularQuadrilateral::IrregularQuadrilateral(double x1, double y1,
                                                double x2, double y2,
                                                double x3, double y3,
                                                double x4, double y4)
-    : Aperture(IRREGULAR_QUADRILATERAL),
+    : Aperture(ApertureType::IRREGULAR_QUADRILATERAL),
       x1(x1), y1(y1),
       x2(x2), y2(y2),
       x3(x3), y3(y3),
@@ -348,7 +350,7 @@ aperture_ptr IrregularQuadrilateral::make_copy() const
 }
 
 Rectangle::Rectangle(double xlen, double ylen)
-    : Aperture(RECTANGLE),
+    : Aperture(ApertureType::RECTANGLE),
       x_length(xlen),
       y_length(ylen)
 {
@@ -384,7 +386,7 @@ bool Rectangle::is_in(double x, double y) const
 }
 
 Rectangle::Rectangle(double xlen, double ylen, double xl, double yl)
-    : Aperture(RECTANGLE),
+    : Aperture(ApertureType::RECTANGLE),
       x_length(xlen),
       y_length(ylen),
       x_coord(xl),

@@ -5,7 +5,7 @@ namespace SolTrace::Data {
 
 void VirtualElement::set_virtual_optics(OpticalProperties &op)
 {
-    op.my_type = REFRACTION;
+    op.my_type = InteractionType::REFRACTION;
     op.reflectivity = 0.0;
     op.slope_error = 0.0;
     op.specularity_error = 0.0;

@@ -140,8 +140,10 @@ namespace SolTrace::Data
          * @param arc Arc angle in radians (2*pi for full annulus)
          */
         Annulus(double ri, double ro, double arc)
-            : Aperture(ANNULUS),
-              inner_radius(ri), outer_radius(ro), arc_angle(arc)
+            : Aperture(ApertureType::ANNULUS),
+              inner_radius(ri),
+              outer_radius(ro),
+              arc_angle(arc)
         {
         }
         virtual ~Annulus() {}
@@ -183,7 +185,7 @@ namespace SolTrace::Data
          * @brief Constructor for circular aperture
          * @param d Diameter of the circle
          */
-        Circle(double d) : Aperture(CIRCLE), diameter(d) {}
+        Circle(double d) : Aperture(ApertureType::CIRCLE), diameter(d) {}
         virtual ~Circle() {}
 
         /**
@@ -225,8 +227,9 @@ namespace SolTrace::Data
          * @brief Constructor for equilateral triangle aperture
          * @param cd Diameter of circumscribed circle
          */
-        EqualateralTriangle(double cd) : Aperture(EQUILATERAL_TRIANGLE),
-                                         circumscribe_diameter(cd)
+        EqualateralTriangle(double cd)
+            : Aperture(ApertureType::EQUILATERAL_TRIANGLE),
+              circumscribe_diameter(cd)
         {
         }
         virtual ~EqualateralTriangle() {}
@@ -268,7 +271,9 @@ namespace SolTrace::Data
          * @brief Constructor for hexagonal aperture
          * @param d Diameter of circumscribed circle
          */
-        Hexagon(double d) : Aperture(HEXAGON), circumscribe_diameter(d) {}
+        Hexagon(double d)
+            : Aperture(ApertureType::HEXAGON),
+              circumscribe_diameter(d) {}
         virtual ~Hexagon() {}
 
         /**

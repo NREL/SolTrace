@@ -5,15 +5,8 @@
 #include <mtrand.hpp>
 #include <native_runner.hpp>
 #include <native_runner_types.hpp>
-#include <ray_source.hpp>
-#include <sun.hpp>
-#include <simulation_data.hpp>
 #include <simulation_data_export.hpp>
 #include <simulation_result.hpp>
-#include <single_element.hpp>
-#include <stage_element.hpp>
-#include <vector3d.hpp>
-#include <virtual_element.hpp>
 
 #include "common.hpp"
 #include "count_absorbed_native.h"
@@ -44,14 +37,14 @@ TEST(NativeRunnerTypes, TSun)
     auto sun = SolTrace::Data::make_ray_source<Sun>();
     Vector3d spos(1.0, 2.0, 3.0);
     sun->set_position(spos);
-    sun->set_shape(SolTrace::Data::PILLBOX, -1.0, 1.0);
+    sun->set_shape(DistributionType::PILLBOX, -1.0, 1.0);
     my_sim.add_ray_source(sun);
 
     NativeRunner runner;
     runner.setup_sun(&my_sim);
     auto sys = runner.get_system();
     EXPECT_TRUE(is_identical(sys->Sun.Origin, sun->get_position()));
-    EXPECT_EQ(sys->Sun.ShapeIndex, SolTrace::Data::PILLBOX);
+    EXPECT_EQ(sys->Sun.ShapeIndex, DistributionType::PILLBOX);
 }
 
 TEST(NativeRunnerTypes, TElement)
@@ -210,7 +203,7 @@ TEST(NativeRunner, PowerTowerSmokeTest)
     absorber->set_surface(SolTrace::Data::make_surface<Flat>()); // surface(nullptr)
     absorber->set_aperture(SolTrace::Data::make_aperture<Rectangle>(2.0, 2.0));
     OpticalProperties *foptics = absorber->get_front_optical_properties();
-    foptics->my_type = SolTrace::Data::REFLECTION;
+    foptics->my_type = InteractionType::REFLECTION;
     foptics->reflectivity = 0.0;
 
     // Make stage 1 -- second stage -- these can be added to SimulationData
@@ -370,15 +363,17 @@ TEST(NativeRunner, SingleRayValidationTest)
     sph->set_surface(SolTrace::Data::make_surface<Sphere>(c));
     sph->get_front_optical_properties()->set_ideal_reflection();
     sph->get_back_optical_properties()->set_ideal_reflection();
+    sph->set_name("Sphere");
     sd.add_element(sph);
 
-    auto para = SolTrace::Data::make_element<SolTrace::Data::VirtualElement>();
+    auto para = SolTrace::Data::make_element<SingleElement>();
     origin.set_values(0.0, 0.0, -1.0);
     aim.set_values(0.0, 0.0, 0.0);
     zrot = 0.0;
     para->set_reference_frame_geometry(origin, aim, zrot);
     para->set_aperture(SolTrace::Data::make_aperture<Rectangle>(31.0, 31.0));
     para->set_surface(SolTrace::Data::make_surface<Parabola>(0.5 / 0.03, 0.5 / 0.03));
+    para->set_name("Parabola");
     sd.add_element(para);
 
     NativeRunner runner;
@@ -390,11 +385,11 @@ TEST(NativeRunner, SingleRayValidationTest)
     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
     const TSystem *sys = runner.get_system();
-    // sys->AllRayData.Print();
+    sys->RayData.Print();
     const TRayData *ray_data = &(sys->RayData);
     size_t n = ray_data->Count();
 
-    sys->RayData.Print();
+    // sys->RayData.Print();
 
     EXPECT_EQ(n, 3);
 

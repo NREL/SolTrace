@@ -12,6 +12,7 @@ namespace SolTrace::Data {
 ElementBase::ElementBase() : Element(),
                              coordinates_initialized(true),
                              active(true),
+                             virtual_flag(false),
                              my_id(ELEMENT_ID_UNASSIGNED),
                              stage(-1),
                              zrot(0.0),

@@ -103,6 +103,11 @@ TEST(LinearAlgebra, VectorBasics)
     EXPECT_NEAR(result[1], 0.0, TOL);
     EXPECT_NEAR(result[2], 0.0, TOL);
     result.zero();
+
+    double l2 = error(ihat, jhat);
+    EXPECT_NEAR(l2, sqrt(2.0), TOL);
+    double linf = error_inf(ihat, jhat);
+    EXPECT_NEAR(linf, 1.0, TOL);
 }
 
 TEST(LinearAlgebra, MatrixVectorProduct)
@@ -209,21 +214,21 @@ TEST(LinearAlgebra, Matrix3dOutputOperator)
 
     std::ostringstream oss;
     oss << A;
-    EXPECT_EQ(oss.str(), "[1, 2, 3; 4, 5, 6; 7, 8, 9; ]");
+    EXPECT_EQ(oss.str(), "[1, 2, 3; 4, 5, 6; 7, 8, 9]");
 
     // Test identity matrix
     Matrix3d I;
     I.identity();
     std::ostringstream oss_identity;
     oss_identity << I;
-    EXPECT_EQ(oss_identity.str(), "[1, 0, 0; 0, 1, 0; 0, 0, 1; ]");
+    EXPECT_EQ(oss_identity.str(), "[1, 0, 0; 0, 1, 0; 0, 0, 1]");
 
     // Test zero matrix
     Matrix3d Z;
     Z.zero();
     std::ostringstream oss_zero;
     oss_zero << Z;
-    EXPECT_EQ(oss_zero.str(), "[0, 0, 0; 0, 0, 0; 0, 0, 0; ]");
+    EXPECT_EQ(oss_zero.str(), "[0, 0, 0; 0, 0, 0; 0, 0, 0]");
 
     // Test with negative values and different precision
     Matrix3d B;
@@ -239,7 +244,7 @@ TEST(LinearAlgebra, Matrix3dOutputOperator)
 
     std::ostringstream oss_negative;
     oss_negative << std::fixed << std::setprecision(2) << B;
-    EXPECT_EQ(oss_negative.str(), "[-1.50, 2.25, -3.75; 0.00, -0.50, 1.00; 10.00, -20.00, 30.00; ]");
+    EXPECT_EQ(oss_negative.str(), "[-1.50, 2.25, -3.75; 0.00, -0.50, 1.00; 10.00, -20.00, 30.00]");
 }
 
 TEST(LinearAlgebra, Matrix3dGetValue)

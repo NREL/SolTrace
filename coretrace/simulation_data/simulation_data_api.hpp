@@ -12,6 +12,7 @@
 #include "sun.hpp"
 #include "surface.hpp"
 #include "vector3d.hpp"
+#include "virtual_element.hpp"
 
 #include "cst_templates/heliostat.hpp"
 #include "cst_templates/linear_fresnel.hpp"

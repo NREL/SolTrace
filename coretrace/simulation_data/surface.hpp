@@ -50,7 +50,7 @@ struct Cone : public Surface
     // z(x,y) = sqrt(x^2 + y^2) / tan(theta)
     // where theta = half_angle
     double half_angle;
-    Cone(double ha) : Surface(CONE), half_angle(ha) {}
+    Cone(double ha) : Surface(SurfaceType::CONE), half_angle(ha) {}
     virtual ~Cone() {}
 };
 
@@ -59,7 +59,7 @@ struct Cylinder : public Surface
     // x^2 + (z - r)^2 = r^2
     // where r = radius
     double radius;
-    Cylinder(double r) : Surface(CYLINDER), radius(r)
+    Cylinder(double r) : Surface(SurfaceType::CYLINDER), radius(r)
     {
     }
     virtual ~Cylinder() {}
@@ -67,7 +67,7 @@ struct Cylinder : public Surface
 
 struct Flat : public Surface
 {
-    Flat() : Surface(FLAT) {}
+    Flat() : Surface(SurfaceType::FLAT) {}
     virtual ~Flat() {}
 };
 
@@ -79,7 +79,7 @@ struct Parabola : public Surface
     double focal_length_x;
     double focal_length_y;
 
-    Parabola(double focal_x, double focal_y) : Surface(PARABOLA),
+    Parabola(double focal_x, double focal_y) : Surface(SurfaceType::PARABOLA),
                                                focal_length_x(focal_x),
                                                focal_length_y(focal_y)
     {
@@ -98,7 +98,7 @@ struct Sphere : public Surface
     // Need to check on this.
     double vertex_curv;
 
-    Sphere(double curv) : Surface(SPHERE),
+    Sphere(double curv) : Surface(SurfaceType::SPHERE),
                           vertex_curv(curv)
     {
     }

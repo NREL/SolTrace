@@ -229,7 +229,8 @@ namespace SolTrace::NativeRunner
 			double cos[3];
 			int element;
 			int stage;
-			unsigned int raynum;
+			// unsigned int raynum;
+			SolTrace::Result::ray_id raynum;
 			SolTrace::Result::RayEvent event;
 		};
 

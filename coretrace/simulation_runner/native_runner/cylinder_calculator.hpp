@@ -27,7 +27,9 @@ public:
 private:
     double radius;
     // double length_x;
-    double length_y;
+    // double length_y;
+
+    SolTrace::Data::aperture_ptr aper;
 };
 
 } // namespace SolTrace::NativeRunner

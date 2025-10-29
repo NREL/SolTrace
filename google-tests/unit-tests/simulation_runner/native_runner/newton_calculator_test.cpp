@@ -2,17 +2,22 @@
 
 #include <cmath>
 
-#include <common.hpp>
 #include <newton_calculator.hpp>
 #include <vector3d.hpp>
+
+#include <common.hpp>
 
 using SolTrace::NativeRunner::NewtonCalculator;
 
 class ParabolaNewton : public NewtonCalculator
 {
 public:
-    ParabolaNewton(double cx, double cy, double tol, uint_fast64_t max_iters)
-        : NewtonCalculator(tol, max_iters),
+    ParabolaNewton(double cx,
+                   double cy,
+                   aperture_ptr ap,
+                   double tol,
+                   uint_fast64_t max_iters)
+        : NewtonCalculator(ap, tol, max_iters),
           cx(cx),
           cy(cy)
     {
@@ -68,9 +73,11 @@ TEST(NewtonCalculator, Case1)
     Vector3d mt;
     Vector3d gradf;
 
-    ParabolaNewton pnewt(cx, cy, TOL, MAX_ITERS);
+    auto rect = create_rectangle_aperture(20.0, 20.0);
+    ParabolaNewton pnewt(cx, cy, rect, TOL, MAX_ITERS);
     int sts = pnewt.intersect(x0.data, m.data,
-                              xt.data, mt.data, gradf.data, &t);
+                              xt.data, mt.data, 
+                              gradf.data, &t);
     EXPECT_EQ(sts, 0);
     EXPECT_NEAR(t, T, TOL);
     EXPECT_NEAR(xt[0], m[0] * T + x0[0], TOL);
@@ -105,7 +112,8 @@ TEST(NewtonCalculator, Case2)
     Vector3d mt;
     Vector3d gradf;
 
-    ParabolaNewton pnewt(cx, cy, TOL, MAX_ITERS);
+    auto rect = create_rectangle_aperture(20.0, 20.0);
+    ParabolaNewton pnewt(cx, cy, rect, TOL, MAX_ITERS);
     int sts = pnewt.intersect(x0.data, m.data,
                               xt.data, mt.data, gradf.data, &t);
     EXPECT_EQ(sts, 1);

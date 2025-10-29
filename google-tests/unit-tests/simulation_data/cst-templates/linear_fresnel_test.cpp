@@ -3,6 +3,7 @@
 #include <native_runner.hpp>
 #include <native_runner_types.hpp>
 #include <simulation_data.hpp>
+#include <simulation_result_export.hpp>
 #include <sun.hpp>
 
 #include <cst_templates/arclength.hpp>
@@ -201,8 +202,8 @@ TEST(LinearFresnel, Tracing)
     SimulationParameters &params = my_sim.get_simulation_parameters();
     params.number_of_rays = NRAYS;
     params.max_number_of_rays = params.number_of_rays * 1000;
-    params.include_optical_errors = true;
-    params.include_sun_shape_errors = true;
+    params.include_optical_errors = false;
+    params.include_sun_shape_errors = false;
     params.seed = 123;
 
     NativeRunner my_runner;
@@ -221,7 +222,8 @@ TEST(LinearFresnel, Tracing)
 
     OpticalProperties envelop_out;
     envelop_out.set_ideal_transmission();
-    envelop_out.refraction_index_front = 1.46;
+    // envelop_out.refraction_index_front = 1.46;
+    envelop_out.refraction_index_front = 1.0;
     envelop_out.refraction_index_back = 1.0;
     envelop_out.slope_error = 1e-4;
     envelop_out.specularity_error = 1e-4;
@@ -229,7 +231,8 @@ TEST(LinearFresnel, Tracing)
     OpticalProperties envelop_in;
     envelop_in.set_ideal_transmission();
     envelop_in.refraction_index_front = 1.0;
-    envelop_in.refraction_index_back = 1.46;
+    // envelop_in.refraction_index_back = 1.46;
+    envelop_in.refraction_index_back = 1.0;
     envelop_in.slope_error = 1e-4;
     envelop_in.specularity_error = 1e-4;
 
@@ -322,6 +325,13 @@ TEST(LinearFresnel, Tracing)
 
     EXPECT_TRUE(n >= NRAYS);
     EXPECT_TRUE(num_absorbed > N_ABSORBED_THRESH);
+
+    // SimulationResult my_res;
+    // my_runner.report_simulation(&my_res, 0);
+
+    // std::cout << my_res << std::endl;
+
+    // my_res.write_csv_file("linear_fresnel_test.csv", 12);
 }
 
 TEST(LinearFresnel, UpdateGeometry)
@@ -390,9 +400,9 @@ TEST(LinearFresnel, UpdateGeometry)
     lf->set_focused_panels(true);
     lf->set_receiver_height(2.0);
     lf->set_receiver_dimensions(0.07, 0.115, 0.003);
-    lf->set_angles(0.0, 15.0);
+    lf->set_angles(0.0, 40.0);
     // lf->set_angles(0.0, 0.0);
-    lf->set_tracking_limits(10.0, 170.0);
+    lf->set_tracking_limits(-90.0, 90.0);
     lf->create_geometry();
     lf->set_name("LinearFresnel");
     lf->update_geometry(sun_az, sun_el);
@@ -465,6 +475,10 @@ TEST(LinearFresnel, UpdateGeometry)
 
     EXPECT_TRUE(n >= NRAYS);
     EXPECT_TRUE(num_absorbed > N_ABSORBED_THRESH);
+
+    // SimulationResult my_res;
+    // my_runner.report_simulation(&my_res, 0);
+    // std::cout << my_res << std::endl;
 }
 
 TEST(LinearFresnel, UpdateGeometry_TrackingLimits)

@@ -40,11 +40,11 @@ calculator_ptr CalculatorFactory::make_calculator(
 
     if (st == SurfaceType::PARABOLA)
     {
-        calc = std::make_shared<ParabolaCalculator>(surf);
+        calc = std::make_shared<ParabolaCalculator>(surf, ap);
     }
     else if (st == SurfaceType::FLAT)
     {
-        calc = std::make_shared<FlatCalculator>(surf);
+        calc = std::make_shared<FlatCalculator>(surf, ap);
     }
     else if (st == SurfaceType::CYLINDER)
     {
@@ -52,7 +52,7 @@ calculator_ptr CalculatorFactory::make_calculator(
     }
     else if (st == SurfaceType::SPHERE)
     {
-        calc = std::make_shared<SphereCalculator>(surf);
+        calc = std::make_shared<SphereCalculator>(surf, ap);
     }
     else
     {

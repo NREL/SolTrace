@@ -15,7 +15,8 @@
 namespace SolTrace::NativeRunner
 {
 
-    ParabolaCalculator::ParabolaCalculator(surface_ptr surf)
+    ParabolaCalculator::ParabolaCalculator(surface_ptr surf, aperture_ptr ap)
+        : aper(ap)
     {
         if (surf == nullptr)
         {
@@ -40,9 +41,15 @@ namespace SolTrace::NativeRunner
         {
             throw std::invalid_argument("ParabolaCalculator: Focal lengths cannot be NaN");
         }
+
         if (std::isinf(fx) && std::isinf(fy))
         {
             throw std::invalid_argument("ParabolaCalculator: Both focal lengths cannot be infinite");
+        }
+
+        if (ap == nullptr)
+        {
+            throw std::invalid_argument("ParabolaCalculator: Aperture pointer cannot be null");
         }
 
         this->cx = fabs(fx) < 1e-12 ? 0.0 : 0.5 / fx;
@@ -75,6 +82,7 @@ namespace SolTrace::NativeRunner
         double cx = this->cx, cy = this->cy;
         double t1, t2;
         double a, b, c;
+        Vector3d p1, p2;
 
         c = 0.5 * (cx * x0 * x0 + cy * y0 * y0) - z0;
         b = (x0 * cx * mx + y0 * cy * my - mz);
@@ -84,21 +92,30 @@ namespace SolTrace::NativeRunner
         ZeroVec3(CosKLM);
         ZeroVec3(DFXYZ);
 
+        // std::cout << "a: " << a
+        //           << " b: " << b
+        //           << " c: " << c
+        //           << std::endl;
+
         if (fabs(a) < 1e-12)
         {
             // This should only happen if mx == my == 0.0
             t1 = -c / b;
-            if (t1 <= 0.0)
+            AddVec3(1.0, PosLoc, t1, CosLoc, p1.data);
+
+            if (t1 > 0.0 && this->aper->is_in(p1[0], p1[1]))
+            {
+                *PathLength = t1;
+                // SetVec3(PosXYZ, x0 + t1 * mx, y0 + t1 * my, z0 + t1 * mz);
+                // AddVec3(1.0, PosLoc, t1, CosLoc, PosXYZ);
+                CopyVec3(PosXYZ, p1.data);
+            }
+            else
             {
                 // Intersection is behind the ray -- same as
                 // no solution.
                 sts = 1;
                 *PathLength = 0.0;
-            }
-            else
-            {
-                *PathLength = t1;
-                SetVec3(PosXYZ, x0 + t1 * mx, y0 + t1 * my, z0 + t1 * mz);
             }
         }
         else
@@ -123,15 +140,26 @@ namespace SolTrace::NativeRunner
                 // Positive root
                 t2 = -0.5 * (b - scratch) / a;
 
-                if (t1 > 0.0)
+                AddVec3(1.0, PosLoc, t1, CosLoc, p1.data);
+                AddVec3(1.0, PosLoc, t2, CosLoc, p2.data);
+
+                // std::cout << "P1: " << p1
+                //           << "\nP2: " << p2
+                //           << std::endl;
+
+                if (t1 > 0.0 && this->aper->is_in(p1[0], p1[1]))
                 {
                     *PathLength = t1;
-                    SetVec3(PosXYZ, x0 + t1 * mx, y0 + t1 * my, z0 + t1 * mz);
+                    // SetVec3(PosXYZ, x0 + t1 * mx, y0 + t1 * my, z0 + t1 * mz);
+                    // AddVec3(1.0, PosLoc, t1, CosLoc, PosXYZ);
+                    CopyVec3(PosXYZ, p1.data);
                 }
-                else if (t2 > 0.0)
+                else if (t2 > 0.0 && this->aper->is_in(p2[0], p2[1]))
                 {
                     *PathLength = t2;
-                    SetVec3(PosXYZ, x0 + t2 * mx, y0 + t2 * my, z0 + t2 * mz);
+                    // SetVec3(PosXYZ, x0 + t2 * mx, y0 + t2 * my, z0 + t2 * mz);
+                    // AddVec3(1.0, PosLoc, t2, CosLoc, PosXYZ);
+                    CopyVec3(PosXYZ, p2.data);
                 }
                 else
                 {
