@@ -52,6 +52,7 @@ public:
                            double _csr,        
                            std::vector<double> _user_angle = {},
                            std::vector<double> _user_intensity = {});
+    virtual void calculate_buie_parameters(double& kappa, double& gamma);
 
 private:
     void set_gaussian_distribution(double _sigma);

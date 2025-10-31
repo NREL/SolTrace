@@ -89,20 +89,10 @@ namespace SolTrace::NativeRunner
         case SunShape::BUIE_CSR: {
             this->tsys.Sun.MaxAngle = 43.6; // [mrad]
             this->tsys.Sun.MaxIntensity = 1.0;
-            // Calculate kappa and gamma parameters
-            // Creates the Buie (2003) sun shape based on CSR
-            // [1] Buie, D., Dey, C., & Bosi, S. (2003). The effective size of the solar cone for solar concentrating systems. Solar energy, 74(2003), 417-427.
-            // [2] Buie, D., Monger, A., & Dey, C. (2003). Sun shape distributions for terrestrial solar simulations. Solar Energy, 74(March 2003), 113-122.
-            double csr = sun->get_circumsolar_ratio();
-            double chi;
-            if (csr > 0.145)
-                chi = -0.04419909985804843 + csr * (1.401323894233574 + csr * (-0.3639746714505299 + csr * (-0.9579768560161194 + 1.1550475450828657 * csr)));
-            else if (csr > 0.035)
-                chi = 0.022652077593662934 + csr * (0.5252380349996234 + (2.5484334534423887 - 0.8763755326550412 * csr) * csr);
-            else
-                chi = 0.004733749294807862 + csr * (4.716738065192151 + csr * (-463.506669149804 + csr * (24745.88727411664 + csr * (-606122.7511711778 + 5521693.445014727 * csr))));
-            this->tsys.Sun.buie_kappa = 0.9 * log(13.5 * chi) * pow(chi, -0.3);
-            this->tsys.Sun.buie_gamma = 2.2 * log(0.52 * chi) * pow(chi, 0.43) - 0.1;
+            double kappa, gamma;
+            sun->calculate_buie_parameters(kappa, gamma);
+            this->tsys.Sun.buie_kappa = kappa;
+            this->tsys.Sun.buie_gamma = gamma;
             break;
         }
         case SunShape::USER_DEFINED: {

@@ -62,6 +62,7 @@ public:
         intensity = this->user_intensity;
         return;
     }
+    virtual void calculate_buie_parameters(double& kappa, double& gamma) = 0;
 
 protected:
     double sigma = std::numeric_limits<double>::quiet_NaN();
