@@ -16,12 +16,14 @@ public:
     NativeRunner();
     ~NativeRunner();
 
-    virtual RunnerStatus initialize();
-    virtual RunnerStatus setup_simulation(const SolTrace::Data::SimulationData *data);
-    virtual RunnerStatus update_simulation(const SolTrace::Data::SimulationData *data);
-    virtual RunnerStatus run_simulation();
+    virtual RunnerStatus initialize() override;
+    virtual RunnerStatus setup_simulation(const SolTrace::Data::SimulationData *data) override;
+    virtual RunnerStatus update_simulation(const SolTrace::Data::SimulationData *data) override;
+    virtual RunnerStatus run_simulation() override;
+    virtual RunnerStatus status_simulation() override;
+    virtual RunnerStatus cancel_simulation() override;
     virtual RunnerStatus report_simulation(SolTrace::Result::SimulationResult *result,
-                                           int level_spec);
+                                           int level_spec) override;
 
     // Runner options
     void disable_power_tower() { this->as_power_tower = false; }

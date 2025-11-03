@@ -14,15 +14,17 @@ public:
     OptixRunner();
     ~OptixRunner();
 
-    virtual SolTrace::Runner::RunnerStatus initialize();
+    virtual SolTrace::Runner::RunnerStatus initialize() override;
     virtual SolTrace::Runner::RunnerStatus setup_simulation(
-        const SolTrace::Data::SimulationData *data);
+        const SolTrace::Data::SimulationData *data) override;
     virtual SolTrace::Runner::RunnerStatus update_simulation(
-        const SolTrace::Data::SimulationData *data);
-    virtual SolTrace::Runner::RunnerStatus run_simulation();
+        const SolTrace::Data::SimulationData *data) override;
+    virtual SolTrace::Runner::RunnerStatus run_simulation() override;
+    virtual SolTrace::Runner::RunnerStatus status_simulation() override;
+    virtual SolTrace::Runner::RunnerStatus cancel_simulation() override;
     virtual SolTrace::Runner::RunnerStatus report_simulation(
         SolTrace::Result::SimulationResult *result,
-        int level_spec);
+        int level_spec) override;
 
     // Runner options
     // void disable_sun_shape_errors() { this->include_sun_shape_errors = false; }

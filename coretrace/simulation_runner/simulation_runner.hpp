@@ -31,6 +31,8 @@ public:
     // TODO: Determine what can be "updated", that is changed
     virtual RunnerStatus update_simulation(const SolTrace::Data::SimulationData *data) = 0;
     virtual RunnerStatus run_simulation() = 0;
+    virtual RunnerStatus status_simulation() = 0;
+    virtual RunnerStatus cancel_simulation() = 0;
     virtual RunnerStatus report_simulation(SolTrace::Result::SimulationResult *result,
                                            int level_spec) = 0;
 

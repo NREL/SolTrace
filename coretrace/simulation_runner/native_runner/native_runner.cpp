@@ -275,6 +275,18 @@ namespace SolTrace::NativeRunner
         return trace_return ? RunnerStatus::SUCCESS : RunnerStatus::ERROR;
     }
 
+    RunnerStatus NativeRunner::status_simulation()
+    {
+        // TODO: Implement this
+        return RunnerStatus::SUCCESS;
+    }
+
+    RunnerStatus NativeRunner::cancel_simulation()
+    {
+        // TODO: Implement this
+        return RunnerStatus::SUCCESS;
+    }
+
     RunnerStatus NativeRunner::report_simulation(SolTrace::Result::SimulationResult *result,
                                                  int level)
     {
