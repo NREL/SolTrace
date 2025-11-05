@@ -23,6 +23,12 @@ set(SIMDATA_SRC
     cst_templates/parabolic_dish.cpp
     cst_templates/parabolic_trough.cpp
     cst_templates/utilities.cpp
+    solar_position_calculators/lib_irradproc.cpp
+    solar_position_calculators/lib_pv_incidence_modifier.cpp
+    solar_position_calculators/lib_util.cpp
+    solar_position_calculators/lib_weatherfile.cpp
+    solar_position_calculators/solpos.cpp
+    solar_position_calculators/basic_sun_position.cpp
 )
 
 # Only headers in simulation_data (including cst_templates subfolder)
@@ -53,6 +59,12 @@ set(SIMDATA_HDRS
     cst_templates/parabolic_dish.hpp
     cst_templates/parabolic_trough.hpp
     cst_templates/utilities.hpp
+    solar_position_calculators/lib_irradproc.h
+    solar_position_calculators/lib_pv_incidence_modifier.h
+    solar_position_calculators/lib_util.h
+    solar_position_calculators/lib_weatherfile.h
+    solar_position_calculators/solpos00.h
+    solar_position_calculators/basic_sun_position.hpp
 )
 
 source_group("Header Files" FILES ${SIMDATA_HDRS})
