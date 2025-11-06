@@ -231,19 +231,3 @@ TEST(Sun, atmos_refractionTest_spa_lib_irradproc) {
     solarpos_spa(2017, month, day, 5, 39, 0, latitude, longitude, time_zone, 0, 234, 1013.25, 15, latitude, 180, sun_results);
     EXPECT_NEAR((double)sun_results[2], elevation_angle, e) << "elevation angle for lat " << latitude << " long " << longitude << " failed\n";
 }
-
-TEST(Sun, ineichenTest) {
-    double year = 2017;
-    double month = 7;
-    double day = 19;
-    double pres = 1013.25;
-
-    double e = 0.001;
-    double clearskyIrradiance[3];
-    double apparent_zenith = 60;
-    double elevation = 0;
-    ineichen(clearskyIrradiance, apparent_zenith, month, day, pres, 1.0, elevation, 1364.0, false);
-    EXPECT_NEAR(clearskyIrradiance[0], 591.519294, e) << "clearsky GHI";
-    EXPECT_NEAR(clearskyIrradiance[1], 1128.028, e) << "clearsky DNI";
-    EXPECT_NEAR(clearskyIrradiance[2], 27.505294, e) << "clearsky GHI";
-}

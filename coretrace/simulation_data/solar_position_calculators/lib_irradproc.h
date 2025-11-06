@@ -35,9 +35,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __irradproc_h
 
 #include <memory>
+#include <unordered_map>
 
-#include "lib_weatherfile.h"
-#include "lib_util.h"
+//#include "lib_weatherfile.h"
+//#include "lib_util.h"
 
 struct poaDecompReq;
 
@@ -753,6 +754,7 @@ void solarpos_spa(int year, int month, int day, int hour, double minute, double 
     std::shared_ptr<solarpos_lookup> spa_table=nullptr);
 /** @} */ // end of solarpos_spa group
 
+#if 0
 /**
 * incidence function calculates the incident angle of direct beam radiation to a surface.
 * The calculation is done for a given sun position, latitude, and surface orientation.
@@ -1006,6 +1008,7 @@ double backtrack(double truetracking_rotation, double gcr, double axis_slope);
 */
 
 double calc_cross_axis_slope(double slope_tilt, double axis_azimuth, double slope_azimuth);
+
 
 /**
 * \class irrad
@@ -1306,5 +1309,7 @@ struct poaDecompReq {
     int doy;
     double elev;
 };
+
+#endif
 
 #endif

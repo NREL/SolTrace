@@ -42,10 +42,17 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <numeric>
 #include <assert.h>
 
-#include "lib_util.h"
+#include "constants.hpp"
+
+//#include "lib_util.h"
 #include "lib_irradproc.h"
-#include "lib_pv_incidence_modifier.h"
-#include "lib_weatherfile.h"
+//#include "lib_pv_incidence_modifier.h"
+//#include "lib_weatherfile.h"
+
+const double M_PI = SolTrace::Data::PI;
+const double DTOR = SolTrace::Data::D2R;
+const double RTOD = SolTrace::Data::R2D;
+
 
 static const int __nday[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
 /// Compute the Julian day of year
@@ -1231,6 +1238,8 @@ solarpos_spa(int year, int month, int day, int hour, double minute, double secon
     sunn[7] = tst; //true solar time (hrs)
     sunn[8] = hextra; //extraterrestrial solar irradaince on horizontal at particular time (W/m2)
 }
+
+#if 0
 
 void incidence(int mode, double tilt, double sazm, double rlim, double zen,
                double azm, bool en_backtrack, double gcr, double slope_tilt, double slope_azm,
@@ -4133,3 +4142,5 @@ ModifiedDISC(const double kt[3], const double kt1[3], const double g[3], const d
         dn = 0;
     return;
 }   // End of ModifiedDISC
+
+#endif
