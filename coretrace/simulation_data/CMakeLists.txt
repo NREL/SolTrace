@@ -2,6 +2,7 @@ Project(simdata)
 
 include_directories(.)
 include_directories(cst_templates)
+include_directories(solar_position_calculators)
 
 set(SIMDATA_SRC
     aperture.cpp

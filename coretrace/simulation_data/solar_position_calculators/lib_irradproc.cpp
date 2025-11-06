@@ -45,7 +45,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "lib_util.h"
 #include "lib_irradproc.h"
 #include "lib_pv_incidence_modifier.h"
-#include "lib_util.h"
 #include "lib_weatherfile.h"
 
 static const int __nday[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};

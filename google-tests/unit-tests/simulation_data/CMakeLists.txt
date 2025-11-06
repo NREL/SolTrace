@@ -5,6 +5,7 @@ include_directories(
     ../common
     ../../app/deploy/samples
     ../../../coretrace/simulation_data
+    ../../../coretrace/simulation_data/solar_position_calculators
 )
 
 # Add CST template tests subdirectory
@@ -19,6 +20,7 @@ set(SIMULATION_DATA_TEST_SRC
     container_test.cpp
     element_test.cpp
     simulation_data_test.cpp
+    sun_position_test.cpp
     sun_test.cpp
 )
 

@@ -8,6 +8,7 @@
 #include <string>
 
 #include "constants.hpp"
+#include "basic_sun_position.hpp"
 #include "ray_source.hpp"
 #include "simulation_data.hpp"
 #include "single_element.hpp"
@@ -16,39 +17,6 @@
 #include "surface.hpp"
 
 namespace SolTrace::Data {
-
-int st_sun_position(double lat, double day, double hour,
-                    double *x, double *y, double *z)
-{
-    /*
-    computes the sun vector xyz given arguments
-    lat : [deg] latitude
-    day : [] day of the year
-    hour : [hour] solar time. 12.00 corresponds to sun at maximum elevation and does not necessarily match local time
-
-    xyz coordinate system:
-        x: +west
-        y: +zenith
-        z: +north
-    */
-
-    double Declination, HourAngle, Elevation, Azimuth;
-    // Use D2R and R2D from constants.hpp
-    constexpr double deg_to_rad = D2R;
-    constexpr double rad_to_deg = R2D;
-
-    Declination = rad_to_deg * asin(0.39795 * cos(0.98563 * deg_to_rad * (day - 173)));
-    HourAngle = 15 * (hour - 12);
-    Elevation = rad_to_deg * asin(sin(Declination * deg_to_rad) * sin(lat * deg_to_rad) + cos(Declination * deg_to_rad) * cos(HourAngle * deg_to_rad) * cos(lat * deg_to_rad));
-    Azimuth = rad_to_deg * acos((sin(deg_to_rad * Declination) * cos(deg_to_rad * lat) - cos(deg_to_rad * Declination) * sin(deg_to_rad * lat) * cos(deg_to_rad * HourAngle)) / cos(deg_to_rad * Elevation) + 0.0000000001);
-    if (sin(HourAngle * deg_to_rad) > 0.0)
-        Azimuth = 360 - Azimuth;
-    *x = -sin(Azimuth * deg_to_rad) * cos(Elevation * deg_to_rad);
-    *y = sin(Elevation * deg_to_rad);
-    *z = cos(Azimuth * deg_to_rad) * cos(Elevation * deg_to_rad);
-
-    return 1;
-}
 
 DistributionType char_to_distribution(const char dist_char)
 {
