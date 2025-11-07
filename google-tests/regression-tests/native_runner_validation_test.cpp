@@ -9,7 +9,6 @@
 
 #include "split_csv.h"
 
-using namespace std;
 
 using SolTrace::Runner::RunnerStatus;
 
@@ -84,13 +83,13 @@ int_fast64_t count_element_event(const SimulationResult &res, element_id el, Ray
 TEST(NativeRunner, ValidationTest1)
 {
     // Pulling in path variable from CMake and creating path to .stinput sample file
-    string sample_path = string(PROJECT_DIR) + string("/High Flux Solar Furnace.stinput");
+    std::string sample_path = std::string(PROJECT_DIR) + std::string("/High Flux Solar Furnace.stinput");
 
     // Path to .csv exported from Soltrace as ground truth
-    string ground_csv_path = PROJECT_DIR + string("/hfsf_example_raydata.csv");
+    std::string ground_csv_path = PROJECT_DIR + std::string("/hfsf_example_raydata.csv");
 
     std::ifstream csv_file(ground_csv_path);
-    vector<vector<string>> ground_raydata = split_csv(ground_csv_path);
+    std::vector<std::vector<std::string>> ground_raydata = split_csv(ground_csv_path);
 
     // Create Simuluation Data
     SimulationData sd;
@@ -341,13 +340,13 @@ TEST(NativeRunner, ValidationTest1)
 TEST(NativeRunner, ValidationTest2)
 {
     // Pulling in path variable from CMake and creating path to .stinput sample file
-    string sample_path = string(PROJECT_DIR) + string("/Power-tower-surround_singlefacet.stinput");
+    std::string sample_path = std::string(PROJECT_DIR) + std::string("/Power-tower-surround_singlefacet.stinput");
 
     // Path to .csv exported from Soltrace as ground truth
-    string ground_csv_path = PROJECT_DIR + string("/powertower_example_raydata.csv");
+    std::string ground_csv_path = PROJECT_DIR + std::string("/powertower_example_raydata.csv");
 
     std::ifstream csv_file(ground_csv_path);
-    vector<vector<string>> ground_raydata = split_csv(ground_csv_path);
+    std::vector<std::vector<std::string>> ground_raydata = split_csv(ground_csv_path);
 
     // Create Simuluation Data
     SimulationData sd;

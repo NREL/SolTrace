@@ -20,7 +20,7 @@ public:
     virtual RunnerStatus setup_simulation(const SolTrace::Data::SimulationData *data) override;
     virtual RunnerStatus update_simulation(const SolTrace::Data::SimulationData *data) override;
     virtual RunnerStatus run_simulation() override;
-    virtual RunnerStatus status_simulation() override;
+    virtual RunnerStatus status_simulation(double *progress = nullptr) override;
     virtual RunnerStatus cancel_simulation() override;
     virtual RunnerStatus report_simulation(SolTrace::Result::SimulationResult *result,
                                            int level_spec) override;

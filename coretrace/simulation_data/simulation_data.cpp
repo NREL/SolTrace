@@ -257,12 +257,12 @@ int SimulationData::update_simulation_positions(const DateTime &dt)
     return this->update_simulation_positions();
 }
 
-int SimulationData::import_from_file(const char *file_name)
+bool SimulationData::import_from_file(const char *file_name)
 {
     return load_stinput_file(*this, file_name);
 }
 
-int SimulationData::import_from_file(const std::string file_name)
+bool SimulationData::import_from_file(const std::string file_name)
 {
     return this->import_from_file(file_name.c_str());
 }

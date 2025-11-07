@@ -171,7 +171,7 @@ RunnerStatus OptixRunner::run_simulation()
     return RunnerStatus::SUCCESS;
 }
 
-RunnerStatus OptixRunner::status_simulation()
+RunnerStatus OptixRunner::status_simulation(double *progress)
 {
     // TODO: Implement this
     return RunnerStatus::SUCCESS;

@@ -20,7 +20,7 @@ public:
     virtual SolTrace::Runner::RunnerStatus update_simulation(
         const SolTrace::Data::SimulationData *data) override;
     virtual SolTrace::Runner::RunnerStatus run_simulation() override;
-    virtual SolTrace::Runner::RunnerStatus status_simulation() override;
+    virtual SolTrace::Runner::RunnerStatus status_simulation(double *progress = nullptr) override;
     virtual SolTrace::Runner::RunnerStatus cancel_simulation() override;
     virtual SolTrace::Runner::RunnerStatus report_simulation(
         SolTrace::Result::SimulationResult *result,

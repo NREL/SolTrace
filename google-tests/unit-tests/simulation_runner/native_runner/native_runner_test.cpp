@@ -1,12 +1,19 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
+#include <future>
+#include <memory>
+#include <string>
+#include <thread>
+
 #include <constants.hpp>
 #include <error_distributions.hpp>
 #include <mtrand.hpp>
 #include <native_runner.hpp>
 #include <native_runner_types.hpp>
 #include <simulation_data_export.hpp>
-#include <simulation_result.hpp>
+#include <simulation_result_export.hpp>
+#include <simulation_runner.hpp>
 
 #include "common.hpp"
 #include "count_absorbed_native.h"
@@ -17,10 +24,6 @@ using SolTrace::NativeRunner::MTRand;
 using SolTrace::NativeRunner::NativeRunner;
 using SolTrace::NativeRunner::TRayData;
 using SolTrace::NativeRunner::TSystem;
-
-using SolTrace::Result::ray_record_ptr;
-using SolTrace::Result::RayEvent;
-using SolTrace::Result::SimulationResult;
 
 TEST(RandomNumberGenerator, SingleNumberMersenneTwister)
 {
@@ -47,52 +50,60 @@ TEST(NativeRunnerTypes, TSun)
     EXPECT_EQ(sys->Sun.ShapeIndex, SunShape::PILLBOX);
 }
 
-TEST(NativeRunnerTypes, TElement)
+TEST(NativeRunnerTypes, MakeElement)
 {
-    // TODO: Implement a test here...
-
-    // SimulationData my_sim;
-    // // **** Setup Answers **** //
-    // // Origin
-    // Vector3d Origin1(1.0, 2.0, 3.0);
-    // // Corresponding Euler angles in radians
-    // const double a1 = 0.0;
-    // const double b1 = asin(-1.0 / sqrt(3.0));
-    // const double g1 = acos(1.0 / cos(b1) * 1.0 / sqrt(6.0)); // approximately 0.615
-    // // Corresponding aim vector (local z-axis in reference coordinates)
-    // Vector3d aim1(0.0, -1.0 / sqrt(3.0), sqrt(2.0 / 3.0));
-    // vector_add(1.0, Origin1, 1.0, aim1);
-
-    // // Z-Rotation is the last of the Euler angles but in degrees
-    // const double zrot1 = g1 * 180.0 / PI;
-
-    // // Origin
-    // Vector3d Origin2(-3.0, 1.0, -5.0);
-    // const double a2 = PI / 4.0;
-    // const double b2 = PI / 6.0;
-    // const double g2 = PI / 3.0;
-    // // Corresponding aim vector (local z-axis in reference coordinates)
-    // Vector3d aim2(sqrt(3.0 / 8.0), 0.5, sqrt(3.0 / 8.0));
-    // vector_add(1.0, Origin2, 1.0, aim2);
-
-    // // Z-Rotation is the last of the Euler angles but in degrees
-    // const double zrot2 = 60.0;
-
-    // // **** Setup Elements **** //
-    // auto el = make_element<SingleElement>();
-    // el->set_aperture(make_aperture<Circle>(2.0));
-    // el->set_surface(make_surface<Flat>());
-    // el->set_reference_frame_geometry(Origin1, aim1, zrot1);
-
-    // auto st = make_stage(0);
-    // st->set_reference_frame_geometry(Origin2, aim2, zrot2);
-    // st->add_element(el);
 }
 
-TEST(NativeRunnerTypes, TStage)
+TEST(NativeRunnerTypes, MakeStage)
 {
-    // TODO: Implement test
 }
+
+// TEST(NativeRunnerTypes, TElement)
+// {
+//     // TODO: Implement a test here...
+
+//     // SimulationData my_sim;
+//     // // **** Setup Answers **** //
+//     // // Origin
+//     // Vector3d Origin1(1.0, 2.0, 3.0);
+//     // // Corresponding Euler angles in radians
+//     // const double a1 = 0.0;
+//     // const double b1 = asin(-1.0 / sqrt(3.0));
+//     // const double g1 = acos(1.0 / cos(b1) * 1.0 / sqrt(6.0)); // approximately 0.615
+//     // // Corresponding aim vector (local z-axis in reference coordinates)
+//     // Vector3d aim1(0.0, -1.0 / sqrt(3.0), sqrt(2.0 / 3.0));
+//     // vector_add(1.0, Origin1, 1.0, aim1);
+
+//     // // Z-Rotation is the last of the Euler angles but in degrees
+//     // const double zrot1 = g1 * 180.0 / PI;
+
+//     // // Origin
+//     // Vector3d Origin2(-3.0, 1.0, -5.0);
+//     // const double a2 = PI / 4.0;
+//     // const double b2 = PI / 6.0;
+//     // const double g2 = PI / 3.0;
+//     // // Corresponding aim vector (local z-axis in reference coordinates)
+//     // Vector3d aim2(sqrt(3.0 / 8.0), 0.5, sqrt(3.0 / 8.0));
+//     // vector_add(1.0, Origin2, 1.0, aim2);
+
+//     // // Z-Rotation is the last of the Euler angles but in degrees
+//     // const double zrot2 = 60.0;
+
+//     // // **** Setup Elements **** //
+//     // auto el = make_element<SingleElement>();
+//     // el->set_aperture(make_aperture<Circle>(2.0));
+//     // el->set_surface(make_surface<Flat>());
+//     // el->set_reference_frame_geometry(Origin1, aim1, zrot1);
+
+//     // auto st = make_stage(0);
+//     // st->set_reference_frame_geometry(Origin2, aim2, zrot2);
+//     // st->add_element(el);
+// }
+
+// TEST(NativeRunnerTypes, TStage)
+// {
+//     // TODO: Implement test
+// }
 
 TEST(NativeRunner, SmokeTest)
 {
@@ -450,37 +461,46 @@ TEST(NativeRunner, LegacyFileLoadTest)
     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 }
 
-// TEST(NativeRunner, SimulationResultSmokeTest)
-// {
-//     std::string project_path = std::string(PROJECT_DIR);
-//     std::string sample_path = project_path +
-//                               std::string("/simple_test_case.stinput");
+TEST(NativeRunner, StatusAndCancel)
+{
+    std::string sample_path = std::string(PROJECT_DIR) +
+                              std::string("/Power-tower-surround_singlefacet.stinput");
 
-//     // Load simulation data from file
-//     SimulationData sd;
-//     bool success = sd.import_from_file(sample_path);
-//     EXPECT_TRUE(success);
+    SimulationData sd;
+    EXPECT_TRUE(sd.import_from_file(sample_path));
+    sd.set_number_of_rays(50000);
 
-//     EXPECT_EQ(sd.get_number_of_ray_sources(), 1);
-//     EXPECT_EQ(sd.get_number_of_elements(), 2);
+    NativeRunner runner;
+    runner.disable_point_focus();
+    runner.disable_power_tower();
+    RunnerStatus sts;
+    sts = runner.setup_simulation(&sd);
+    EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
-//     // Create and run the native runner
-//     NativeRunner runner;
-//     RunnerStatus sts = runner.initialize();
-//     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
-//     sts = runner.setup_simulation(&sd);
-//     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
-//     sts = runner.run_simulation();
-//     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
+    auto t0 = std::chrono::high_resolution_clock::now();
 
-//     SimulationResult result;
-//     sts = runner.report_simulation(&result, 0);
-//     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
+    auto fsts = std::async(&NativeRunner::run_simulation, &runner);
 
-//     EXPECT_TRUE(result.get_number_of_records() > 0);
-//     for (int_fast64_t idx=0; idx < result.get_number_of_records(); ++idx)
-//     {
-//         const ray_record_ptr rr = result[idx];
-//         EXPECT_TRUE(rr->get_number_of_interactions() > 0);
-//     }
-// }
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    sts = runner.status_simulation();
+    EXPECT_EQ(sts, RunnerStatus::RUNNING);
+    
+    double prog;
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    sts = runner.status_simulation(&prog);
+    EXPECT_EQ(sts, RunnerStatus::RUNNING);
+    EXPECT_LE(prog, 1.0);
+    EXPECT_GE(prog, 0.0);
+
+    runner.cancel_simulation();
+    fsts.wait();
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> dur = t1 - t0;
+
+    EXPECT_EQ(fsts.get(), RunnerStatus::CANCEL);
+    EXPECT_LT(dur.count(), 2000.0);
+
+    std::cout << "Time for run: " << dur.count() << std::endl;
+    std::cout << "Progress before cancel: " << prog << std::endl;
+}

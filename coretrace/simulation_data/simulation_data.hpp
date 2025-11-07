@@ -258,8 +258,8 @@ public:
     int update_simulation_positions(const Date &);
     int update_simulation_positions(const DateTime &);
 
-    int import_from_file(const char *file_name);
-    int import_from_file(const std::string file_name);
+    bool import_from_file(const char *file_name);
+    bool import_from_file(const std::string file_name);
 
 private:
     // mutable element_id next_element_id;

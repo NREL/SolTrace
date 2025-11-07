@@ -50,14 +50,19 @@
 #include "trace.hpp"
 
 // Standard library headers
+#include <algorithm>
 #include <cmath>
 #include <limits>
+#include <mutex>
 #include <vector>
 
 // SimulationData headers
-#include "constants.hpp"
-#include "matvec.hpp"
-#include "simulation_data_export.hpp"
+#include <constants.hpp>
+#include <matvec.hpp>
+#include <simulation_data_export.hpp>
+
+// SimulationRunner header
+#include <simulation_runner.hpp>
 
 // NativeRunner headers
 #include "find_element_hit.hpp"
@@ -71,14 +76,11 @@
 namespace SolTrace::NativeRunner
 {
 
-	// #define   Order 3
-	// #define   NumIterations 20
-	// #define   Epsilon 0.000001
-
 	using SolTrace::Result::RayEvent;
+	using SolTrace::Runner::RunnerStatus;
 
 	// Trace method
-	bool trace_native(
+	RunnerStatus trace_native(
 		TSystem *System,
 		unsigned int seed,
 		uint_fast64_t NumberOfRays,
@@ -87,6 +89,14 @@ namespace SolTrace::NativeRunner
 		bool IncludeErrors,
 		bool AsPowerTower)
 	{
+		// Create isolated scope for lock guard
+		{
+			std::lock_guard<std::mutex> lk(System->state_mutex);
+			System->progress = 0.0;
+			System->cancel = false;
+			System->current_state = RunnerStatus::RUNNING;
+		}
+
 		// Determine if PT optimizations should be applied
 		bool PT_override = false;
 		if (System->StageList.size() > 0 &&
@@ -99,6 +109,14 @@ namespace SolTrace::NativeRunner
 		// std::cout << "Seed: " << seed << std::endl;
 		MTRand myrng(seed);
 		int myrng_counter = 0;
+
+		uint_fast64_t update_rate = std::min(
+			std::max(static_cast<uint_fast64_t>(1), NumberOfRays / 10),
+			static_cast<uint_fast64_t>(1000));
+		uint_fast64_t update_count = 0;
+		double total_work = System->StageList.size() * NumberOfRays;
+
+		// std::cout << "Update rate: " << update_rate << std::endl;
 
 		// Initialize Internal State Variables
 		uint_fast64_t RayNumber = 1; // Ray Number of current ray
@@ -115,7 +133,8 @@ namespace SolTrace::NativeRunner
 							   System->StageList[0].get(),
 							   &System->Sun,
 							   PosSunStage))
-			return false;
+			// return false;
+			return RunnerStatus::ERROR;
 
 		// Calculate hash tree for reflection to receiver plane(polar coordinates).
 		st_hash_tree sun_hash;
@@ -368,31 +387,14 @@ namespace SolTrace::NativeRunner
 							System->errlog(
 								"Bad optical interaction type = %d (stage %d)",
 								i, optics->my_type);
-							return false;
+							// return false;
+							return RunnerStatus::ERROR;
 						}
 
 						// Apply MonteCarlo probability of absorption. Limited
 						// for now, but can make more complex later on if desired
 						// if (TestValue <= myrng())
 						double flip = myrng();
-						// if (RayNumber == 36)
-						// {
-						// 	std::cout << "RAY NUMBER 36!" << std::endl;
-						// }
-						// if (i > 0)
-						// {
-						// 	std::cout << "Ray Number: " << RayNumber
-						// 			  << "\nStage: " << i + 1
-						// 			  << "\nMultiHit: " << Stage->MultiHitsPerRay
-						// 			  << "\nmyrng_counter: " << myrng_counter
-						// 			  << "\nTestValue: " << TestValue
-						// 			  << "\nflip: " << flip
-						// 			  << "\nRayIsAbsorbed: " << (TestValue < flip)
-						// 			  << "\nPosRayGlob: " << Vector3d(PosRayGlob)
-						// 			  << "\nCosRayGlob: " << Vector3d(CosRayGlob)
-						// 			  << "\nDFXYZ: " << Vector3d(LastDFXYZ)
-						// 			  << std::endl;
-						// }
 						if (TestValue <= flip)
 						{
 							myrng_counter++;
@@ -438,6 +440,22 @@ namespace SolTrace::NativeRunner
 					else
 					{
 						in_multi_hit_loop = true;
+					}
+				}
+
+				++update_count;
+				if (update_count % update_rate == 0)
+				{
+					// TODO: What frequency to update at?
+					double progress = update_count / total_work;
+					std::lock_guard<std::mutex> lk(System->state_mutex);
+					if (System->cancel)
+					{
+						return RunnerStatus::CANCEL;
+					}
+					else
+					{
+						System->progress = progress;
 					}
 				}
 
@@ -614,12 +632,14 @@ namespace SolTrace::NativeRunner
 				LastRayNumberInPreviousStage = IncomingRays[PreviousStageDataArrayIndex].Num;
 				if (LastRayNumberInPreviousStage == 0)
 				{
-					return false;
+					// return false;
+					return RunnerStatus::ERROR;
 				}
 			}
 			else
 			{
-				return false;
+				// return false;
+				return RunnerStatus::ERROR;
 			}
 		}
 
@@ -637,7 +657,8 @@ namespace SolTrace::NativeRunner
 								   RayEvent::EXIT);
 		}
 
-		return true;
+		// return true;
+		return RunnerStatus::SUCCESS;
 	}
 
 } // namespace SolTrace::NativeRunner

@@ -1,9 +1,11 @@
 
 #include "native_runner.hpp"
 
+#include <chrono>
 #include <exception>
 #include <map>
-// #include <algorithm>
+#include <mutex>
+#include <thread>
 
 // SimulationData headers
 #include "composite_element.hpp"
@@ -86,7 +88,8 @@ namespace SolTrace::NativeRunner
             this->tsys.Sun.MaxAngle = 4.65; // [mrad]
             this->tsys.Sun.MaxIntensity = 1.0;
             break;
-        case SunShape::BUIE_CSR: {
+        case SunShape::BUIE_CSR:
+        {
             this->tsys.Sun.MaxAngle = 43.6; // [mrad]
             this->tsys.Sun.MaxIntensity = 1.0;
             double kappa, gamma;
@@ -95,7 +98,8 @@ namespace SolTrace::NativeRunner
             this->tsys.Sun.buie_gamma = gamma;
             break;
         }
-        case SunShape::USER_DEFINED: {
+        case SunShape::USER_DEFINED:
+        {
             std::vector<double> angle, intensity;
             sun->get_user_data(angle, intensity);
             int npoints = angle.size();
@@ -118,7 +122,7 @@ namespace SolTrace::NativeRunner
                     this->tsys.Sun.MaxIntensity = intensity[i];
             }
             // fill negative angle side of array -> I don't think we need this.
-            //for (int i = 0; i < npoints - 1; i++)
+            // for (int i = 0; i < npoints - 1; i++)
             //{
             //    this->tsys.Sun.SunShapeAngle[i] = -angle[npoints - i - 1];
             //    this->tsys.Sun.SunShapeIntensity[i] = intensity[npoints - i - 1];
@@ -261,7 +265,7 @@ namespace SolTrace::NativeRunner
 
     RunnerStatus NativeRunner::run_simulation()
     {
-        bool trace_return = trace_native(
+        RunnerStatus sts = trace_native(
             &this->tsys,
             this->tsys.seed,
             this->tsys.sim_raycount,
@@ -270,21 +274,64 @@ namespace SolTrace::NativeRunner
             this->tsys.sim_errors_optical,
             this->as_power_tower);
 
-        // this->tsys.CollectResults();
+        {
+            // Hack to match up current state with return type
+            std::lock_guard<std::mutex> lk(this->tsys.state_mutex);
+            this->tsys.current_state = sts;
+        }
 
-        return trace_return ? RunnerStatus::SUCCESS : RunnerStatus::ERROR;
+        return sts;
     }
 
-    RunnerStatus NativeRunner::status_simulation()
+    RunnerStatus NativeRunner::status_simulation(double *progress)
     {
-        // TODO: Implement this
-        return RunnerStatus::SUCCESS;
+        RunnerStatus sts = RunnerStatus::ERROR;
+        // Create isolated scope for lock guard
+        {
+            std::lock_guard<std::mutex> lk(this->tsys.state_mutex);
+            sts = this->tsys.current_state;
+            if (progress != nullptr)
+            {
+                *progress = this->tsys.progress;
+            }
+        }
+        return sts;
     }
 
     RunnerStatus NativeRunner::cancel_simulation()
     {
-        // TODO: Implement this
-        return RunnerStatus::SUCCESS;
+        RunnerStatus sts = RunnerStatus::ERROR;
+
+        // Create isolated scope for the lock
+        {
+            std::lock_guard<std::mutex> my_lock(this->tsys.state_mutex);
+            this->tsys.cancel = true;
+        }
+
+        // TODO: Wait for cancel here?
+        int count = 0;
+        while (true)
+        {
+            ++count;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+            // Create isolated scope for the lock
+            {
+                std::lock_guard<std::mutex> my_lock(this->tsys.state_mutex);
+                if (this->tsys.current_state != RunnerStatus::RUNNING)
+                {
+                    sts = this->tsys.current_state;
+                    break;
+                }
+            }
+
+            if (count > 30)
+            {
+                break;
+            }
+        }
+
+        return sts;
     }
 
     RunnerStatus NativeRunner::report_simulation(SolTrace::Result::SimulationResult *result,
