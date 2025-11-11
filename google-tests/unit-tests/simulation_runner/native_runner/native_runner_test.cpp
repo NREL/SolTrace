@@ -484,7 +484,7 @@ TEST(NativeRunner, StatusAndCancel)
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     sts = runner.status_simulation();
     EXPECT_EQ(sts, RunnerStatus::RUNNING);
-    
+
     double prog;
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     sts = runner.status_simulation(&prog);

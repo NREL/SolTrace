@@ -308,7 +308,6 @@ namespace SolTrace::NativeRunner
             this->tsys.cancel = true;
         }
 
-        // TODO: Wait for cancel here?
         int count = 0;
         while (true)
         {
@@ -327,6 +326,7 @@ namespace SolTrace::NativeRunner
 
             if (count > 30)
             {
+                sts = RunnerStatus::TIMEOUT;
                 break;
             }
         }

@@ -116,8 +116,6 @@ namespace SolTrace::NativeRunner
 		uint_fast64_t update_count = 0;
 		double total_work = System->StageList.size() * NumberOfRays;
 
-		// std::cout << "Update rate: " << update_rate << std::endl;
-
 		// Initialize Internal State Variables
 		uint_fast64_t RayNumber = 1; // Ray Number of current ray
 		bool PreviousStageHasRays = false;
@@ -133,7 +131,6 @@ namespace SolTrace::NativeRunner
 							   System->StageList[0].get(),
 							   &System->Sun,
 							   PosSunStage))
-			// return false;
 			return RunnerStatus::ERROR;
 
 		// Calculate hash tree for reflection to receiver plane(polar coordinates).
@@ -387,7 +384,6 @@ namespace SolTrace::NativeRunner
 							System->errlog(
 								"Bad optical interaction type = %d (stage %d)",
 								i, optics->my_type);
-							// return false;
 							return RunnerStatus::ERROR;
 						}
 
@@ -446,7 +442,6 @@ namespace SolTrace::NativeRunner
 				++update_count;
 				if (update_count % update_rate == 0)
 				{
-					// TODO: What frequency to update at?
 					double progress = update_count / total_work;
 					std::lock_guard<std::mutex> lk(System->state_mutex);
 					if (System->cancel)
@@ -632,13 +627,11 @@ namespace SolTrace::NativeRunner
 				LastRayNumberInPreviousStage = IncomingRays[PreviousStageDataArrayIndex].Num;
 				if (LastRayNumberInPreviousStage == 0)
 				{
-					// return false;
 					return RunnerStatus::ERROR;
 				}
 			}
 			else
 			{
-				// return false;
 				return RunnerStatus::ERROR;
 			}
 		}
@@ -657,7 +650,6 @@ namespace SolTrace::NativeRunner
 								   RayEvent::EXIT);
 		}
 
-		// return true;
 		return RunnerStatus::SUCCESS;
 	}
 

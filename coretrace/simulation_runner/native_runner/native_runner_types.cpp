@@ -55,9 +55,8 @@
 #include "matvec.hpp"
 #include "native_runner_types.hpp"
 #include "simulation_data_export.hpp"
-#include "simulation_result.hpp"
-#include "stage_element.hpp"
-#include "vector3d.hpp"
+#include "simulation_result_export.hpp"
+#include "simulation_runner.hpp"
 
 // TOpticalProperties::TOpticalProperties()
 // {
@@ -467,6 +466,11 @@ namespace SolTrace::NativeRunner
 
     TSystem::TSystem()
     {
+
+        this->current_state = SolTrace::Runner::RunnerStatus::SUCCESS;
+        this->cancel = false;
+        this->progress = 1.0;
+
         SunRayCount = 0;
 
         sim_raycount = 1000;

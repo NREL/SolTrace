@@ -13,6 +13,7 @@ namespace SolTrace::Runner
         ERROR,
         RUNNING,
         SUCCESS,
+        TIMEOUT,
     };
 
     class SimulationRunner
@@ -34,7 +35,6 @@ namespace SolTrace::Runner
         // TODO: Determine what can be "updated", that is changed
         virtual RunnerStatus update_simulation(const SolTrace::Data::SimulationData *data) = 0;
         virtual RunnerStatus run_simulation() = 0;
-        // virtual RunnerStatus run_simulation_async() = 0;
         virtual RunnerStatus status_simulation(double *progress = nullptr) = 0;
         virtual RunnerStatus cancel_simulation() = 0;
         virtual RunnerStatus report_simulation(SolTrace::Result::SimulationResult *result,
