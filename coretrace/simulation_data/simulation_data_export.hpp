@@ -28,6 +28,7 @@ using SolTrace::Data::Sphere;
 using SolTrace::Data::StageElement;
 using SolTrace::Data::SunShape;
 using SolTrace::Data::Sun;
+using SolTrace::Data::SolarPositionCalculator;
 using SolTrace::Data::Surface;
 using SolTrace::Data::SurfaceType;
 using SolTrace::Data::Vector3d;

@@ -24,6 +24,7 @@ set(SIMDATA_SRC
     cst_templates/parabolic_dish.cpp
     cst_templates/parabolic_trough.cpp
     cst_templates/utilities.cpp
+    solar_position_calculators/solar_position_calculator.cpp
     solar_position_calculators/lib_irradproc.cpp
     solar_position_calculators/solpos.cpp
     solar_position_calculators/basic_sun_position.cpp
@@ -57,6 +58,7 @@ set(SIMDATA_HDRS
     cst_templates/parabolic_dish.hpp
     cst_templates/parabolic_trough.hpp
     cst_templates/utilities.hpp
+    solar_position_calculators/solar_position_calculator.hpp
     solar_position_calculators/lib_irradproc.h
     solar_position_calculators/solpos00.h
     solar_position_calculators/basic_sun_position.hpp

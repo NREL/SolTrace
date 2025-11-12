@@ -76,7 +76,7 @@ static int julian(int yr, int month, int day) {
 }
 
 /// Compute the day of year
-static int day_of_year(int month, int day_of_month) /* returns 1-365 */
+int day_of_year(int month, int day_of_month) /* returns 1-365 */
 {
     int i = 1, iday = 0;
 
@@ -907,7 +907,7 @@ calculate_spa(double jd, double lat, double lng, double alt, double pressure, do
     double j_star_ut = jd - 2444239.5;
     double l = earth_heliocentric_longitude(j_star_tt, jme); //L0-L5 values listed beginning line ?, L limited to 0-360°
     double b = earth_heliocentric_latitude(jme); // B0-B1 values listed beginning line ?, B limited to 0-360°
-    double r = earth_radius_vector(j_star_tt, jme); // R0-R4 valeus listed beginning line ?,  R in Astronomical Units (AU)
+    double r = earth_radius_vector(j_star_tt, jme); // R0-R4 values listed beginning line ?,  R in Astronomical Units (AU)
     needed_values[1] = 1 / (r * r); //
 
     //Calculate the geocentric longitude and latitude (theta and beta) (3.3)
@@ -1239,6 +1239,7 @@ solarpos_spa(int year, int month, int day, int hour, double minute, double secon
     sunn[8] = hextra; //extraterrestrial solar irradaince on horizontal at particular time (W/m2)
 }
 
+// Removing unused methods this way to keep file consistent with SAM's original source for easier future updates
 #if 0
 
 void incidence(int mode, double tilt, double sazm, double rlim, double zen,

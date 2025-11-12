@@ -19,4 +19,6 @@
 #include "cst_templates/parabolic_dish.hpp"
 #include "cst_templates/parabolic_trough.hpp"
 
+#include "solar_position_calculators/solar_position_calculator.hpp"
+
 #endif

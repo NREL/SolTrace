@@ -42,6 +42,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 struct poaDecompReq;
 
+int day_of_year(int month, int day_of_month); // Adding for Legacy and Duffie methods
+
 /**
 * \file
 * \brief File containing calculations for front-side and rear-side irradiance of tracked-tilted surfaces.
