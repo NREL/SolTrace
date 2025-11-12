@@ -49,9 +49,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include "lib_pv_incidence_modifier.h"
 //#include "lib_weatherfile.h"
 
-const double M_PI = SolTrace::Data::PI;
-const double DTOR = SolTrace::Data::D2R;
-const double RTOD = SolTrace::Data::R2D;
+constexpr double M_PI = SolTrace::Data::PI;
+constexpr double DTOR = SolTrace::Data::D2R;
+constexpr double RTOD = SolTrace::Data::R2D;
 
 
 static const int __nday[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
