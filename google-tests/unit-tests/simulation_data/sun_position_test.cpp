@@ -108,7 +108,7 @@ TEST(SolarPositionCalculator, sunriseAndSunsetAtDifferentLocationsTest_lib_irrad
         //run the solarpos function and check sunrise and sunset for each location
         solarpos(2010, month[i], day[i], 14, 30, latitudes[i], longitudes[i], time_zones[i], sun_results);
         EXPECT_NEAR((double)sun_results[4], sunrise_times[i], e) << "sunrise time for lat " << latitudes[i] << " long " << longitudes[i] << " failed\n";
-        EXPECT_NEAR((double)sun_results[5], sunset_times[i], e) << "sunset time for lat" << latitudes[i] << " long " << longitudes[i] << "failed\n";
+        EXPECT_NEAR((double)sun_results[5], sunset_times[i], e) << "sunset time for lat " << latitudes[i] << " long " << longitudes[i] << "failed\n";
     }
 }
 
