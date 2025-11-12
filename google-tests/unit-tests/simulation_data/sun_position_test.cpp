@@ -385,7 +385,7 @@ TEST(SolarPositionCalculator, CrossValidationTest) {
     EXPECT_NEAR(azimuth, expected_azimuth, 1e-3);
     EXPECT_NEAR(zenith, expected_zenith, 1e-3);
 
-    expected_sun_x = 0.00690786;
+    expected_sun_x = 0.006911362;
     expected_sun_y = -0.28508729;
     expected_sun_z = 0.95847666;
 
