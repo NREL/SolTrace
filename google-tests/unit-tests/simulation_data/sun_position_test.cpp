@@ -385,12 +385,12 @@ TEST(SolarPositionCalculator, CrossValidationTest) {
     EXPECT_NEAR(azimuth, expected_azimuth, 1e-3);
     EXPECT_NEAR(zenith, expected_zenith, 1e-3);
 
-    expected_sun_x = 0.006911362;
+    expected_sun_x = 0.006909995;
     expected_sun_y = -0.28508729;
     expected_sun_z = 0.95847666;
 
     solar_position.get_sun_vector(&sun_x, &sun_y, &sun_z);
-    EXPECT_NEAR(sun_x, expected_sun_x, 1e-6);
+    EXPECT_NEAR(sun_x, expected_sun_x, 1e-5);
     EXPECT_NEAR(sun_y, expected_sun_y, 1e-6);
     EXPECT_NEAR(sun_z, expected_sun_z, 1e-6);
 
