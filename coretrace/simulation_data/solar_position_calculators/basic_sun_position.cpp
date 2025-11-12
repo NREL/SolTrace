@@ -1,5 +1,6 @@
 
 #include "basic_sun_position.hpp"
+#include "constants.hpp"
 
 namespace SolTrace::Data {
 
@@ -94,7 +95,7 @@ void duffie_sun_position(double lat, double lng, double tz, double day, double h
     else if (ratio < -1.0 && (-1.0 - ratio) < 1.e-6)
         Azimuth = 180.0;
     else 
-        Azimuth = R2D * abs(acos(ratio));
+        Azimuth = R2D * fabs(acos(ratio));
 
     if (HourAngle < 0)
         Azimuth *= -1.0;

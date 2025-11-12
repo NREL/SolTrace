@@ -4,6 +4,7 @@
 #include <basic_sun_position.hpp>
 #include <solpos00.h>
 #include <lib_irradproc.h>
+#include <constants.hpp>
 
 #include <exception>
 
@@ -16,7 +17,7 @@ SolarPositionCalculator::SolarPositionCalculator()
         hour(0), minute(0), second(0),
         latitude(0.0), longitude(0.0), timeZone(0.0),
         dut1(0.0), altitude(0.0), pressure(1013.25), temperature(20.0),
-        location_set(false), time_set(false), calculated(false),
+        location_set(false), date_set(false), time_set(false), calculated(false),
         Azimuth(0.0), Zenith(0.0),
         X(0.0), Y(0.0), Z(0.0)
 {
@@ -211,14 +212,6 @@ void SolarPositionCalculator::calculate_sun_position() {
             break;
     }
 
-    // output checking and assignment
-    //if (azimuth < 0) {
-    //    azimuth += 360.0;
-    //}
-    //else if (azimuth >= 360.0) {
-    //    azimuth -= 360.0;
-    //}
-
     this->Azimuth = azimuth;
     this->Zenith = zenith;
     this->Elevation = 90.0 - zenith;
@@ -228,17 +221,6 @@ void SolarPositionCalculator::calculate_sun_position() {
     this->Z = cos(zenith * D2R);
     this->calculated = true;
 }
-
-// TODO: create a function that returns an array
-void SolarPositionCalculator::get_sun_vector(double* sun_x, double* sun_y, double* sun_z) {
-    if (!this->calculated) {
-        this->calculate_sun_position();
-    }
-    *sun_x = this->X;
-    *sun_y = this->Y;
-    *sun_z = this->Z;
-}
-
 
 void SolarPositionCalculator::get_azimuth_zenith(double* azimuth, double* zenith) {
     if (!this->calculated) {
@@ -254,6 +236,15 @@ void SolarPositionCalculator::get_azimuth_elevation(double* azimuth, double* ele
     }
     *azimuth = this->Azimuth;
     *elevation = this->Elevation;
+}
+
+void SolarPositionCalculator::get_sun_vector(double* sun_x, double* sun_y, double* sun_z) {
+    if (!this->calculated) {
+        this->calculate_sun_position();
+    }
+    *sun_x = this->X;
+    *sun_y = this->Y;
+    *sun_z = this->Z;
 }
 
 }

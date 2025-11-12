@@ -1312,6 +1312,6 @@ struct poaDecompReq {
     double elev;
 };
 
-#endif
+#endif  // removing unecessary code
 
-#endif
+#endif // LIB_IRRADPROC_H

@@ -30,7 +30,7 @@ class SolarPositionCalculator {
     double timeZone;    // Hours from UTC, west longitudes negative
 
     // Optional inputs
-    double dut1;        // Seconds, fractional second difference between UTC and UT which is used to adjust UTC for earth's irregular rotation rate (http://maia.usno.navy.mil/ser7/ser7.dat) (-1 to 1 second)
+    double dut1;        // Seconds, fractional second difference between UTC and UT which is used to adjust UTC for earth's irregular rotation rate (http://maia.usno.navy.mil/ser7/ser7.dat) (-1 to 1 second), NOT ccessable
     double altitude;    // Meters, above sea level
     double pressure;    // Millibars
     double temperature; // Degrees Celsius, dry-bulb
@@ -69,9 +69,10 @@ public:
     void set_environment(double pressure, double temperature);
 
     // Getters
-    void get_sun_vector(double* sun_x, double* sun_y, double* sun_z);
     void get_azimuth_zenith(double* azimuth, double* zenith);
     void get_azimuth_elevation(double* azimuth, double* elevation);
+    void get_sun_vector(double* sun_x, double* sun_y, double* sun_z);
+    // TODO: overload sun_vector function to return an array type
 };
 
 } // namespace SolTrace::Data
