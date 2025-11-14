@@ -18,8 +18,8 @@ SolarPositionCalculator::SolarPositionCalculator()
         latitude(0.0), longitude(0.0), timeZone(0.0),
         dut1(0.0), altitude(0.0), pressure(1013.25), temperature(20.0),
         location_set(false), date_set(false), time_set(false), calculated(false),
-        Azimuth(0.0), Zenith(0.0),
-        X(0.0), Y(0.0), Z(0.0), Elevation(0.0)
+        Azimuth(0.0), Zenith(0.0), Elevation(0.0),
+        X(0.0), Y(0.0), Z(0.0)
 {
 }
 
