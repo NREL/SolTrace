@@ -58,6 +58,11 @@ public:
         return this->elevation_axis;
     }
 
+    double get_area() const
+    {
+        return this->heliostat_area;
+    }
+
     virtual void enforce_user_fields_set() const override;
 
 private:
