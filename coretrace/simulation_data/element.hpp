@@ -86,6 +86,12 @@ public:
   virtual int_fast64_t get_stage() = 0;
 
   /**
+   * @brief Get the parent this element belongs to
+   * @return parent element ptr
+   */
+  virtual Element* get_reference_element() const = 0;
+
+  /**
    * @brief Get the element name
    * @return Reference to element name string
    */
@@ -331,6 +337,10 @@ public:
   {
     this->reference_element = reference;
   }
+  virtual Element* get_reference_element() const override
+  {
+      return reference_element;
+  }
 
   virtual uint_fast64_t get_number_of_elements() const override { return 1; }
 
@@ -527,7 +537,7 @@ protected:
   Matrix3d local_to_reference;
 
   // element_ptr reference_element;
-  Element *reference_element;
+  Element *reference_element; // todo: this is a raw pointer, probably shouldn't be
 
 private:
   // static ElementContainer empty_container;

@@ -59,6 +59,23 @@ public:
     SurfaceType get_type() { return my_type; }
 
     virtual void write_json(nlohmann::ordered_json& jnode) const = 0;
+
+    virtual double z(double x, double y) const { return 0; }
+
+    inline std::string get_type_string() const {
+        switch (my_type) {
+        case CONE: return "Cone";
+        case CYLINDER: return "Cylinder";
+        case FLAT: return "Flat";
+        case PARABOLA: return "Parabola";
+        case SPHERE: return "Sphere";
+        case HYPER: return "Hyper";
+        case GENERAL_SPENCER_MURTY: return "General Spencer Murty";
+        case TORUS: return "Torus";
+        case SURFACE_UNKNOWN: return "Unknown";
+        }
+        return "Unknown";
+    }
 };
 
 struct Cone : public Surface
@@ -70,6 +87,8 @@ struct Cone : public Surface
     Cone(const nlohmann::ordered_json& jnode);
     virtual ~Cone() {}
     virtual void write_json(nlohmann::ordered_json& jnode) const override;
+
+    virtual double z(double x, double y) const override;
 };
 
 struct Cylinder : public Surface
@@ -83,6 +102,8 @@ struct Cylinder : public Surface
     Cylinder(const nlohmann::ordered_json& jnode);
     virtual ~Cylinder() {}
     virtual void write_json(nlohmann::ordered_json& jnode) const override;
+
+    virtual double z(double x, double y) const override;
 };
 
 struct Flat : public Surface
@@ -109,6 +130,8 @@ struct Parabola : public Surface
     Parabola(const nlohmann::ordered_json& jnode);
     virtual ~Parabola() {}
     virtual void write_json(nlohmann::ordered_json& jnode) const override;
+
+    virtual double z(double x, double y) const override;
 };
 
 struct Sphere : public Surface
@@ -129,6 +152,8 @@ struct Sphere : public Surface
     Sphere(const nlohmann::ordered_json& jnode);
     virtual ~Sphere() {}
     virtual void write_json(nlohmann::ordered_json& jnode) const override;
+
+    virtual double z(double x, double y) const override;
 };
 
 // TODO: Add other surface types. Documentation has the following:
