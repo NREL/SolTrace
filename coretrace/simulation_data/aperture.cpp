@@ -195,7 +195,7 @@ Annulus::triangulation() const {
     std::vector<double> verts;
     std::vector<int>    indices;
     for (int i = 0; i <= resolution; i++) {
-        const double u = i / resolution * M_PI * 2;
+        const double u = i / resolution * PI * 2;
         verts.push_back(inner_radius * std::cos(u));
         verts.push_back(inner_radius * std::sin(u));
         verts.push_back(outer_radius * std::cos(u));
@@ -354,8 +354,8 @@ std::tuple<std::vector<double>, std::vector<int>>
 EqualateralTriangle::triangulation() const {
     double   r = circumscribe_diameter / 2.0;
     Triangle tri(Point(0, r),
-                 Point(r * cos(-M_PI / 6.0), r * sin(-M_PI / 6.0)),
-                 Point(r * cos(7 * M_PI / 6.0), r * sin(7 * M_PI / 6.0)));
+                 Point(r * cos(-PI / 6.0), r * sin(-PI / 6.0)),
+                 Point(r * cos(7 * PI / 6.0), r * sin(7 * PI / 6.0)));
     return indexed_triangles(subdivide(tri, 3));
 }
 
@@ -441,33 +441,33 @@ Hexagon::triangulation() const {
     double                r = circumscribe_diameter / 2.0;
     std::vector<Triangle> t0 =
         subdivide(Triangle(Point(0, 0),
-                           Point(r * cos(M_PI / 3.0), r * sin(M_PI / 3.0)),
+                           Point(r * cos(PI / 3.0), r * sin(PI / 3.0)),
                            Point(r, 0)),
                   2);
     std::vector<Triangle> t1 = subdivide(
         Triangle(Point(0, 0),
-                 Point(r * cos(2 * M_PI / 3.0), r * sin(2 * M_PI / 3.0)),
-                 Point(r * cos(M_PI / 3.0), r * sin(M_PI / 3.0))),
+                 Point(r * cos(2 * PI / 3.0), r * sin(2 * PI / 3.0)),
+                 Point(r * cos(PI / 3.0), r * sin(PI / 3.0))),
         2);
     std::vector<Triangle> t2 = subdivide(
         Triangle(Point(0, 0),
                  Point(-r, 0),
-                 Point(r * cos(2 * M_PI / 3.0), r * sin(2 * M_PI / 3.0))),
+                 Point(r * cos(2 * PI / 3.0), r * sin(2 * PI / 3.0))),
         2);
     std::vector<Triangle> t3 = subdivide(
         Triangle(Point(0, 0),
                  Point(-r, 0),
-                 Point(r * cos(4 * M_PI / 3.0), r * sin(4 * M_PI / 3.0))),
+                 Point(r * cos(4 * PI / 3.0), r * sin(4 * PI / 3.0))),
         2);
     std::vector<Triangle> t4 = subdivide(
         Triangle(Point(0, 0),
-                 Point(r * cos(5 * M_PI / 3.0), r * sin(5 * M_PI / 3.0)),
-                 Point(r * cos(4 * M_PI / 3.0), r * sin(4 * M_PI / 3.0))),
+                 Point(r * cos(5 * PI / 3.0), r * sin(5 * PI / 3.0)),
+                 Point(r * cos(4 * PI / 3.0), r * sin(4 * PI / 3.0))),
         2);
     std::vector<Triangle> t5 = subdivide(
         Triangle(Point(0, 0),
                  Point(r, 0),
-                 Point(r * cos(5 * M_PI / 3.0), r * sin(5 * M_PI / 3.0))),
+                 Point(r * cos(5 * PI / 3.0), r * sin(5 * PI / 3.0))),
         2);
     std::vector<Triangle> triangles;
     triangles.insert(triangles.end(), t0.begin(), t0.end());

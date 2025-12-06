@@ -26,6 +26,7 @@ TEST(Aperture, ApertureBase)
         {
             jnode["my_value"] = my_value;
         }
+        virtual std::tuple<std::vector<double>, std::vector<int>> triangulation() const { return std::make_tuple(std::vector<double>{}, std::vector<int>{});}
     };
 
     TestAperture ta1(1.2, ApertureType::CIRCLE);
