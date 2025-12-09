@@ -30,6 +30,8 @@ using SolTrace::NativeRunner::TRayData;
 using SolTrace::NativeRunner::TSystem;
 using SolTrace::NativeRunner::TSun;
 
+// TODO: refactor to reduce duplication between tests
+
 class HeliostatFieldSimulation : public ::testing::Test {
 public:
     const Vector3d zero = { 0.0, 0.0, 0.0 }; // Global origin
@@ -1274,7 +1276,9 @@ TEST_F(HeliostatFieldSimulation, multiFacet_BandCanted_ScatterAim_hour12)
     check_outputs(high_accuracy, print_info);
 }
 
-TEST_F(HeliostatFieldSimulation, multiFacet_BandCanted_CenterAim_hour8)
+
+
+TEST_F(HeliostatFieldSimulation, multiFacet_BandCanted_ScatterAim_hour8)
 {
     bool high_accuracy = false;
     bool print_info = false;
@@ -1321,7 +1325,382 @@ TEST_F(HeliostatFieldSimulation, multiFacet_BandCanted_CenterAim_hour8)
     check_outputs(high_accuracy, print_info);
 }
 
-*/
-
-
 // TODO: Task 3
+
+TEST_F(HeliostatFieldSimulation, multiFacet_SlantFocused_SlantCanted_CenterAim_hour12)
+{
+    bool high_accuracy = false;
+    bool print_info = false;
+
+    if (high_accuracy) set_high_accuracy_params();
+
+    create_heliostat_field(false);  // Center aimpoints
+
+    // Modify heliostat canting to slant - to center of receiver
+    // Default facets are focused to slant range
+    for (const auto& heliostat : heliostat_field) {
+        Vector3d heliostat_origin = heliostat->get_origin_global();
+        Vector3d slant;
+        vector_add(-1.0, rec_origin, 1.0, heliostat_origin, slant);
+        double slant_distance = vector_norm(slant);
+        heliostat->set_number_panels(6, 5);
+        heliostat->set_canting(Heliostat::CantingType::ON_AXIS, slant_distance, 0.0);
+        heliostat->create_geometry();
+        heliostat->update_geometry(solar_azimuth, solar_elevation);     // Default position is solar noon
+    }
+
+    setup_simData();
+    simulate();
+
+    calculate_sun_size(dni, print_info);
+    EXPECT_NEAR(sun_width, 2788.59, 1.e-2);
+    EXPECT_NEAR(sun_height, 2457.81, 1.e-2);
+    calculate_ray_counts(print_info);
+    read_expected_all_results("3a", "1", "12");
+    check_outputs(high_accuracy, print_info);
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_SlantFocused_SlantCanted_CenterAim_hour8)
+{
+    bool high_accuracy = false;
+    bool print_info = false;
+
+    if (high_accuracy) set_high_accuracy_params();
+
+    // Solar position at 8 AM
+    solar_azimuth = 74.95;
+    solar_elevation = 26.26;
+
+    create_heliostat_field(false);  // Center aimpoints
+
+    // Modify heliostat canting to slant - to center of receiver
+    // Default facets are focused to slant range
+    for (const auto& heliostat : heliostat_field) {
+        Vector3d heliostat_origin = heliostat->get_origin_global();
+        Vector3d slant;
+        vector_add(-1.0, rec_origin, 1.0, heliostat_origin, slant);
+        double slant_distance = vector_norm(slant);
+        heliostat->set_number_panels(6, 5);
+        heliostat->set_canting(Heliostat::CantingType::ON_AXIS, slant_distance, 0.0);
+        heliostat->create_geometry();
+        heliostat->update_geometry(solar_azimuth, solar_elevation);     // Default position is solar noon
+    }
+
+    setup_simData();
+    simulate();
+
+    calculate_sun_size(dni, print_info);
+    EXPECT_NEAR(sun_width, 1276.43, 1.e-2);
+    EXPECT_NEAR(sun_height, 2766.69, 1.e-2);
+    calculate_ray_counts(print_info);
+    read_expected_all_results("3a", "1", "8");
+    check_outputs(high_accuracy, print_info);
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_SlantFocused_SlantCanted_ScatterAim_hour12)
+{
+    bool high_accuracy = false;
+    bool print_info = false;
+
+    if (high_accuracy) set_high_accuracy_params();
+
+    create_heliostat_field(true);  // Scatter aimpoints
+
+    // Modify heliostat canting to slant - to center of receiver
+    // Default facets are focused to slant range
+    for (const auto& heliostat : heliostat_field) {
+        Vector3d heliostat_origin = heliostat->get_origin_global();
+        Vector3d slant;
+        vector_add(-1.0, rec_origin, 1.0, heliostat_origin, slant);
+        double slant_distance = vector_norm(slant);
+        heliostat->set_number_panels(6, 5);
+        heliostat->set_canting(Heliostat::CantingType::ON_AXIS, slant_distance, 0.0);
+        heliostat->create_geometry();
+        heliostat->update_geometry(solar_azimuth, solar_elevation);     // Default position is solar noon
+    }
+
+    setup_simData();
+    simulate();
+
+    calculate_sun_size(dni, print_info);
+    EXPECT_NEAR(sun_width, 2788.59, 1.e-2);
+    EXPECT_NEAR(sun_height, 2457.81, 1.e-2);
+    calculate_ray_counts(print_info);
+    read_expected_all_results("3a", "2", "12");
+    check_outputs(high_accuracy, print_info);
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_SlantFocused_SlantCanted_ScatterAim_hour8)
+{
+    bool high_accuracy = false;
+    bool print_info = false;
+
+    if (high_accuracy) set_high_accuracy_params();
+
+    // Solar position at 8 AM
+    solar_azimuth = 74.95;
+    solar_elevation = 26.26;
+
+    create_heliostat_field(true);  // Scatter aimpoints
+
+    // Modify heliostat canting to slant - to center of receiver
+    // Default facets are focused to slant range
+    for (const auto& heliostat : heliostat_field) {
+        Vector3d heliostat_origin = heliostat->get_origin_global();
+        Vector3d slant;
+        vector_add(-1.0, rec_origin, 1.0, heliostat_origin, slant);
+        double slant_distance = vector_norm(slant);
+        heliostat->set_number_panels(6, 5);
+        heliostat->set_canting(Heliostat::CantingType::ON_AXIS, slant_distance, 0.0);
+        heliostat->create_geometry();
+        heliostat->update_geometry(solar_azimuth, solar_elevation);     // Default position is solar noon
+    }
+
+    setup_simData();
+    simulate();
+
+    calculate_sun_size(dni, print_info);
+    EXPECT_NEAR(sun_width, 1276.43, 1.e-2);
+    EXPECT_NEAR(sun_height, 2766.69, 1.e-2);
+    calculate_ray_counts(print_info);
+    read_expected_all_results("3a", "2", "8");
+    check_outputs(high_accuracy, print_info);
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_BandFocused_BandCanted_CenterAim_hour12)
+{
+    bool high_accuracy = false;
+    bool print_info = false;
+
+    if (high_accuracy) set_high_accuracy_params();
+
+    create_heliostat_field(false);  // Center aimpoints
+
+    // Modify heliostat canting to bands - to center of receiver
+    for (const auto& heliostat : heliostat_field) {
+        Vector3d heliostat_origin = heliostat->get_origin_global();
+        double distance = sqrt(pow(heliostat_origin[0], 2) + pow(heliostat_origin[1], 2));
+        double cant_distance = 0.0;
+        if (distance <= 502.0)
+            cant_distance = 516;
+        else if (distance > 502.0 && distance <= 885.0)
+            cant_distance = 668.0;
+        else if (distance > 885.0 && distance <= 1267.0)
+            cant_distance = 959.0;
+        else if (distance > 1267.0 && distance <= 1650.0)
+            cant_distance = 1500.0;
+        else
+            throw std::runtime_error("Heliostat distance out of range for banded canting lengths.");
+
+        heliostat->set_number_panels(6, 5);
+        heliostat->set_canting(Heliostat::CantingType::ON_AXIS, cant_distance, 0.0);
+
+        double focal_length = 0.0;
+        if (distance <= 502.5)
+            focal_length = 353.8;
+        else if (distance > 502.5 && distance <= 878.0)
+            focal_length = 704.8;
+        else if (distance > 878.0 && distance <= 1253.5)
+            focal_length = 1072.5;
+        else if (distance > 1253.5 && distance <= 1650.0)
+            focal_length = 1444.3;
+        else
+            throw std::runtime_error("Heliostat distance out of range for banded focal lengths.");
+
+        heliostat->set_focal_length(focal_length);
+
+        heliostat->create_geometry();
+        heliostat->update_geometry(solar_azimuth, solar_elevation);     // Default position is solar noon
+    }
+
+    setup_simData();
+    simulate();
+
+    calculate_sun_size(dni, print_info);
+    EXPECT_NEAR(sun_width, 2788.59, 1.e-2);
+    EXPECT_NEAR(sun_height, 2457.81, 1.e-2);
+    calculate_ray_counts(print_info);
+    read_expected_all_results("3b", "1", "12");
+    check_outputs(high_accuracy, print_info);
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_BandFocused_BandCanted_CenterAim_hour8)
+{
+    bool high_accuracy = false;
+    bool print_info = false;
+
+    if (high_accuracy) set_high_accuracy_params();
+
+    // Solar position at 8 AM
+    solar_azimuth = 74.95;
+    solar_elevation = 26.26;
+
+    create_heliostat_field(false);  // Center aimpoints
+
+    // Modify heliostat canting to bands - to center of receiver
+    for (const auto& heliostat : heliostat_field) {
+        Vector3d heliostat_origin = heliostat->get_origin_global();
+        double distance = sqrt(pow(heliostat_origin[0], 2) + pow(heliostat_origin[1], 2));
+        double cant_distance = 0.0;
+        if (distance <= 502.0)
+            cant_distance = 516;
+        else if (distance > 502.0 && distance <= 885.0)
+            cant_distance = 668.0;
+        else if (distance > 885.0 && distance <= 1267.0)
+            cant_distance = 959.0;
+        else if (distance > 1267.0 && distance <= 1650.0)
+            cant_distance = 1500.0;
+        else
+            throw std::runtime_error("Heliostat distance out of range for banded canting lengths.");
+
+        heliostat->set_number_panels(6, 5);
+        heliostat->set_canting(Heliostat::CantingType::ON_AXIS, cant_distance, 0.0);
+
+        double focal_length = 0.0;
+        if (distance <= 502.5)
+            focal_length = 353.8;
+        else if (distance > 502.5 && distance <= 878.0)
+            focal_length = 704.8;
+        else if (distance > 878.0 && distance <= 1253.5)
+            focal_length = 1072.5;
+        else if (distance > 1253.5 && distance <= 1650.0)
+            focal_length = 1444.3;
+        else
+            throw std::runtime_error("Heliostat distance out of range for banded focal lengths.");
+
+        heliostat->set_focal_length(focal_length);
+
+        heliostat->create_geometry();
+        heliostat->update_geometry(solar_azimuth, solar_elevation);     // Default position is solar noon
+    }
+
+    setup_simData();
+    simulate();
+
+    calculate_sun_size(dni, print_info);
+    EXPECT_NEAR(sun_width, 1276.43, 1.e-2);
+    EXPECT_NEAR(sun_height, 2766.69, 1.e-2);
+    calculate_ray_counts(print_info);
+    read_expected_all_results("3b", "1", "8");
+    check_outputs(high_accuracy, print_info);
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_BandFocused_BandCanted_ScatterAim_hour12)
+{
+    bool high_accuracy = false;
+    bool print_info = false;
+
+    if (high_accuracy) set_high_accuracy_params();
+
+    create_heliostat_field(true);  // Scatter aimpoints
+
+    // Modify heliostat canting to bands - to center of receiver
+    for (const auto& heliostat : heliostat_field) {
+        Vector3d heliostat_origin = heliostat->get_origin_global();
+        double distance = sqrt(pow(heliostat_origin[0], 2) + pow(heliostat_origin[1], 2));
+        double cant_distance = 0.0;
+        if (distance <= 502.0)
+            cant_distance = 516;
+        else if (distance > 502.0 && distance <= 885.0)
+            cant_distance = 668.0;
+        else if (distance > 885.0 && distance <= 1267.0)
+            cant_distance = 959.0;
+        else if (distance > 1267.0 && distance <= 1650.0)
+            cant_distance = 1500.0;
+        else
+            throw std::runtime_error("Heliostat distance out of range for banded canting lengths.");
+
+        heliostat->set_number_panels(6, 5);
+        heliostat->set_canting(Heliostat::CantingType::ON_AXIS, cant_distance, 0.0);
+
+        double focal_length = 0.0;
+        if (distance <= 502.5)
+            focal_length = 353.8;
+        else if (distance > 502.5 && distance <= 878.0)
+            focal_length = 704.8;
+        else if (distance > 878.0 && distance <= 1253.5)
+            focal_length = 1072.5;
+        else if (distance > 1253.5 && distance <= 1650.0)
+            focal_length = 1444.3;
+        else
+            throw std::runtime_error("Heliostat distance out of range for banded focal lengths.");
+
+        heliostat->set_focal_length(focal_length);
+
+        heliostat->create_geometry();
+        heliostat->update_geometry(solar_azimuth, solar_elevation);     // Default position is solar noon
+    }
+
+    setup_simData();
+    simulate();
+
+    calculate_sun_size(dni, print_info);
+    EXPECT_NEAR(sun_width, 2788.59, 1.e-2);
+    EXPECT_NEAR(sun_height, 2457.81, 1.e-2);
+    calculate_ray_counts(print_info);
+    read_expected_all_results("3b", "2", "12");
+    check_outputs(high_accuracy, print_info);
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_BandFocused_BandCanted_ScatterAim_hour8)
+{
+    bool high_accuracy = false;
+    bool print_info = false;
+
+    if (high_accuracy) set_high_accuracy_params();
+
+    // Solar position at 8 AM
+    solar_azimuth = 74.95;
+    solar_elevation = 26.26;
+
+    create_heliostat_field(true);  // Scatter aimpoints
+
+    // Modify heliostat canting to bands - to center of receiver
+    for (const auto& heliostat : heliostat_field) {
+        Vector3d heliostat_origin = heliostat->get_origin_global();
+        double distance = sqrt(pow(heliostat_origin[0], 2) + pow(heliostat_origin[1], 2));
+        double cant_distance = 0.0;
+        if (distance <= 502.0)
+            cant_distance = 516;
+        else if (distance > 502.0 && distance <= 885.0)
+            cant_distance = 668.0;
+        else if (distance > 885.0 && distance <= 1267.0)
+            cant_distance = 959.0;
+        else if (distance > 1267.0 && distance <= 1650.0)
+            cant_distance = 1500.0;
+        else
+            throw std::runtime_error("Heliostat distance out of range for banded canting lengths.");
+
+        heliostat->set_number_panels(6, 5);
+        heliostat->set_canting(Heliostat::CantingType::ON_AXIS, cant_distance, 0.0);
+
+        double focal_length = 0.0;
+        if (distance <= 502.5)
+            focal_length = 353.8;
+        else if (distance > 502.5 && distance <= 878.0)
+            focal_length = 704.8;
+        else if (distance > 878.0 && distance <= 1253.5)
+            focal_length = 1072.5;
+        else if (distance > 1253.5 && distance <= 1650.0)
+            focal_length = 1444.3;
+        else
+            throw std::runtime_error("Heliostat distance out of range for banded focal lengths.");
+
+        heliostat->set_focal_length(focal_length);
+
+        heliostat->create_geometry();
+        heliostat->update_geometry(solar_azimuth, solar_elevation);     // Default position is solar noon
+    }
+
+    setup_simData();
+    simulate();
+
+    calculate_sun_size(dni, print_info);
+    EXPECT_NEAR(sun_width, 1276.43, 1.e-2);
+    EXPECT_NEAR(sun_height, 2766.69, 1.e-2);
+    calculate_ray_counts(print_info);
+    read_expected_all_results("3b", "2", "8");
+    check_outputs(high_accuracy, print_info);
+}
+
+*/
