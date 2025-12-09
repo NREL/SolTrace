@@ -29,6 +29,7 @@ namespace SolTrace::Data
          * @brief Default constructor for composite element
          */
         CompositeElement();
+        CompositeElement(const nlohmann::ordered_json& jnode);
         virtual ~CompositeElement();
 
         /**
@@ -216,6 +217,8 @@ namespace SolTrace::Data
         }
 
         virtual void enforce_user_fields_set() const override;
+
+        virtual void write_json(nlohmann::ordered_json& jnode) const override;
 
     private:
         uint_fast64_t number_of_elements;

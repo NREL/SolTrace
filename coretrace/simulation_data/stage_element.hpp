@@ -21,9 +21,11 @@ class StageElement: public CompositeElement
 {
 public:
     StageElement(int_fast64_t stage);
+    StageElement(const nlohmann::ordered_json& jnode);
     ~StageElement();
     virtual bool is_stage() const override { return true; }
     virtual element_id add_element(element_ptr el);
+    virtual void write_json(nlohmann::ordered_json& jnode) const override;
 private:
 };
 

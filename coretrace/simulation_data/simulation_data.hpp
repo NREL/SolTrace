@@ -74,6 +74,22 @@ public:
         return this->my_sources.get_number_of_items();
     }
 
+    /// @brief Get an iterator that can be used to access all ray sources owned
+    ///        by this SimulationData object.
+    /// @return iterator
+    RaySourceContainer::iterator get_ray_source_iterator()
+    {
+        return this->my_sources.get_iterator();
+    }
+
+    /// @brief Tests whether the given iterator is at the end
+    /// @param iter iterator to test
+    /// @return true if at end, false otherwise
+    bool is_ray_source_at_end(RaySourceContainer::iterator it)
+    {
+        return this->my_sources.is_at_end(it);
+    }
+
     /// @brief Add the given Element to the SimulationData. When adding a
     ///        CompositeElement, all subelements must already be present.
     ///        Any subelements added to the CompositeElement after calling
@@ -260,6 +276,22 @@ public:
 
     bool import_from_file(const char *file_name);
     bool import_from_file(const std::string file_name);
+
+    /// @brief Import simulation data from a JSON file.
+    /// @param file_name Path to the JSON file to import.
+    /// @throws std::runtime_error if the file cannot be read or parsed.
+    /// Loads simulation data from the specified JSON file and updates the current simulation state.
+    void import_json_file(const std::string file_name);
+
+    /// @brief Export simulation data to a JSON file.
+    /// @param file_name Path to the JSON file to write.
+    /// @throws std::runtime_error if the file cannot be written.
+    /// Serializes the current simulation data and writes it to the specified JSON file.
+    void export_json_file(const std::string file_name);
+
+    /// @brief Clear elements and ray sources
+    /// @param reset_parameters Optional bool to reset simulation parameters
+    void clear(bool reset_parameters = false);
 
 private:
     // mutable element_id next_element_id;

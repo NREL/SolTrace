@@ -59,7 +59,11 @@ jobs:
     - name: Coverage
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       shell: bash
-      run: make coverage 
+      run: |
+        make coverage 
+        # Strip third-party and system files (nlohmann::json lives under _deps/)
+        lcov --remove coverage.info '*/_deps/*' '*/nlohmann_json-src/*' --output-file coverage.info --ignore-errors unused
+
 
     - name: Coveralls
       uses: coverallsapp/github-action@v2

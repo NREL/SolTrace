@@ -27,6 +27,7 @@ class SingleElement : public ElementBase
 {
 public:
     SingleElement();
+    SingleElement(const nlohmann::ordered_json& jnode);
     virtual ~SingleElement();
 
     virtual bool is_single() const override { return true; }
@@ -87,6 +88,8 @@ public:
     }
 
     virtual void enforce_user_fields_set() const override;
+
+    virtual void write_json(nlohmann::ordered_json& jnode) const override;
 
 protected:
     aperture_ptr aperture;

@@ -22,6 +22,10 @@ TEST(Aperture, ApertureBase)
         {
             return make_aperture<TestAperture>(*this);
         }
+        virtual void write_json(nlohmann::ordered_json& jnode) const
+        {
+            jnode["my_value"] = my_value;
+        }
     };
 
     TestAperture ta1(1.2, ApertureType::CIRCLE);

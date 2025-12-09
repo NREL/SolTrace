@@ -29,6 +29,37 @@ ElementBase::ElementBase() : Element(),
     return;
 }
 
+ElementBase::ElementBase(const nlohmann::ordered_json& jnode) : ElementBase()
+{
+    if (jnode.at("active").get<bool>())
+        this->enable();
+    else
+        this->disable();
+
+    if (jnode.at("virtual_flag").get<bool>())
+        this->mark_virtual();
+    else
+        this->unmark_virtual();
+
+    //this->set_id(jnode["my_id"]);
+    this->set_id(ELEMENT_ID_UNASSIGNED);
+    this->set_stage(jnode.at("stage"));
+    this->set_name(jnode.at("my_name"));
+
+    std::array<double, 3> orig_arr = jnode.at("origin").get<std::array<double, 3>>();
+    Vector3d orig_vec(orig_arr.data());
+    this->set_origin(orig_vec);
+
+    std::array<double, 3> aim_arr = jnode.at("aim").get<std::array<double, 3>>();
+    Vector3d aim_vec(aim_arr.data());
+    this->set_aim_vector(aim_vec);
+
+    this->set_zrot(jnode.at("zrot"));
+
+    this->coordinates_initialized = false;
+    //this->compute_coordinate_rotations();
+}
+
 ElementBase::~ElementBase()
 {
     this->reference_element = nullptr;
@@ -501,6 +532,22 @@ int ElementBase::convert_vector_reference_to_global(Vector3d &global,
 void ElementBase::enforce_user_fields_set() const
 {
     return;
+}
+
+void ElementBase::write_common_json(nlohmann::ordered_json& jnode) const
+{
+    jnode["active"] = this->active;
+    jnode["virtual_flag"] = this->virtual_flag;
+    jnode["my_id"] = this->my_id;
+    jnode["stage"] = this->stage;
+    jnode["my_name"] = this->my_name;
+
+    jnode["origin"] = this->origin.data;
+    jnode["aim"] = this->aim.data;
+    jnode["zrot"] = this->zrot;
+    
+    // Not including calculated values
+    //jnode["euler_angles"] = this->euler_angles.data;
 }
 
 } // namespace SolTrace::Data

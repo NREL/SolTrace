@@ -3,6 +3,7 @@
 // #include <sstream>
 
 #include "optical_properties.hpp"
+#include "simdata_io.hpp"
 
 namespace SolTrace::Data
 {
@@ -21,6 +22,34 @@ const std::string interaction_string(InteractionType it)
     {
         return "Unknown";
     }
+}
+
+OpticalProperties::OpticalProperties(const nlohmann::ordered_json& jnode)
+{
+    std::string interaction_string = jnode.at("my_type");
+    this->my_type = get_enum_from_string(interaction_string, InteractionTypeMap, InteractionType::UNKNOWN);
+
+    std::string distribution_string = jnode.at("error_distribution_type");
+    this->error_distribution_type = get_enum_from_string(distribution_string, DistributionTypeMap, DistributionType::UNKNOWN);
+
+    this->transmitivity = jnode.at("transmissivity");
+    this->reflectivity = jnode.at("reflectivity");
+    this->slope_error = jnode.at("slope_error");
+    this->specularity_error = jnode.at("specularity_error");
+    this->refraction_index_front = jnode.at("refraction_index_front");
+    this->refraction_index_back = jnode.at("refraction_index_back");
+}
+
+void OpticalProperties::write_json(nlohmann::ordered_json& jnode) const
+{
+    jnode["my_type"] = InteractionTypeMap.at(this->my_type);
+    jnode["error_distribution_type"] = DistributionTypeMap.at(this->error_distribution_type);
+    jnode["transmissivity"] = this->transmitivity;
+    jnode["reflectivity"] = this->reflectivity;
+    jnode["slope_error"] = this->slope_error;
+    jnode["specularity_error"] = this->specularity_error;
+    jnode["refraction_index_front"] = this->refraction_index_front;
+    jnode["refraction_index_back"] = this->refraction_index_back;
 }
 
 std::ostream &operator<<(std::ostream &os,

@@ -5,6 +5,9 @@ include_directories(
     ../common
     ../../app/deploy/samples
     ../../../coretrace/simulation_data
+    ../../../coretrace/simulation_results
+    ../../../coretrace/simulation_runner
+    ../../../coretrace/simulation_runner/native_runner
     ../../../coretrace/simulation_data/solar_position_calculators
 )
 
@@ -22,6 +25,7 @@ set(SIMULATION_DATA_TEST_SRC
     simulation_data_test.cpp
     sun_position_test.cpp
     sun_test.cpp
+    file_io_test.cpp
 )
 
 add_executable(SimulationDataUnitTests
@@ -31,6 +35,8 @@ add_executable(SimulationDataUnitTests
 target_link_libraries(
     SimulationDataUnitTests
     simdata
+    simresult
+    native_runner
     testtools
     GTest::gtest_main
 )

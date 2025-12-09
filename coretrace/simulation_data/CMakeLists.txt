@@ -4,6 +4,15 @@ include_directories(.)
 include_directories(cst_templates)
 include_directories(solar_position_calculators)
 
+include(FetchContent)
+    FetchContent_Declare(
+        nlohmann_json
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(nlohmann_json)
+
 set(SIMDATA_SRC
     aperture.cpp
     composite_element.cpp
@@ -39,6 +48,7 @@ set(SIMDATA_HDRS
     datetime.hpp
     element.hpp
     error_distributions.hpp
+    json_helpers.hpp
     simulation_data_export.hpp
     matvec.hpp
     optical_properties.hpp
@@ -79,6 +89,9 @@ set_target_properties(simdata
     DEBUG_POSTFIX "d"
     PREFIX ""
 )
+
+# Link JSON (propagates its include directory)
+target_link_libraries(simdata PUBLIC nlohmann_json::nlohmann_json)
 
 if (NOT APPLE AND ENABLE_COVERAGE)
     # SET(CMAKE_CXX_FLAGS "-O0 -coverage -fkeep-inline-functions")

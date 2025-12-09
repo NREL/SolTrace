@@ -41,6 +41,8 @@ namespace SolTrace::NativeRunner
 
         RunnerStatus sts;
 
+        this->tsys.ClearAll();
+
         sts = this->setup_parameters(data);
 
         if (sts == RunnerStatus::SUCCESS)

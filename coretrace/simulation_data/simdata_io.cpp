@@ -6,6 +6,7 @@
 #include <exception>
 #include <sstream>
 #include <string>
+#include <nlohmann/json.hpp>
 
 #include "constants.hpp"
 #include "basic_sun_position.hpp"
@@ -15,6 +16,8 @@
 #include "stage_element.hpp"
 #include "sun.hpp"
 #include "surface.hpp"
+#include "utilities.hpp"
+#include "json_helpers.hpp"
 
 namespace SolTrace::Data {
 
@@ -683,6 +686,205 @@ bool load_stinput_file(SimulationData &sd, std::string filename)
     process_sim_par(fp, sd);
 
     return true;
+}
+
+void write_json_file(SimulationData& sd, std::string filename)
+{
+    using json = nlohmann::ordered_json;
+
+    // Create empty object
+    json root;
+
+    // Write general meta data
+    {
+        root["schema_version"] = kSchemaVersion;
+        root["number_of_elements"] = sd.get_number_of_elements();
+    }
+
+    // Write parameters
+    {
+        json jpar;
+        SolTrace::Data::SimulationParameters sim_par = sd.get_simulation_parameters();
+        jpar["include_sun_shape_errors"] = sim_par.include_sun_shape_errors;   // bool
+        jpar["include_optical_errors"] = sim_par.include_optical_errors;       // bool
+        jpar["number_of_rays"] = sim_par.number_of_rays;                       // int
+        jpar["max_number_of_rays"] = sim_par.max_number_of_rays;               // int
+        jpar["tolerance"] = sim_par.tolerance;                                 // double
+        jpar["latitude"] = sim_par.latitude;                                   // double
+        jpar["longitude"] = sim_par.longitude;                                 // double
+        jpar["seed"] = sim_par.seed;                                           // int
+
+        root["simulation_parameters"] = jpar;
+    }
+
+    // Write ray sources
+    {
+        json jsources;
+        for (auto it = sd.get_ray_source_iterator(); !sd.is_ray_source_at_end(it); ++it)
+        {
+            json jsrc;
+
+            SolTrace::Data::ray_source_id i = it->first;
+            auto ray_source = it->second;
+
+            // Check source type
+            if (auto sun_ptr = std::dynamic_pointer_cast<SolTrace::Data::Sun>(ray_source))
+            {
+                jsrc["source_type"] = "Sun";
+
+                SolTrace::Data::SunShape shape = sun_ptr->get_shape();
+                std::string shape_string = SolTrace::Data::SunShapeMap.at(shape);
+                jsrc["my_shape"] = shape_string;                // string
+                jsrc["sigma"] = sun_ptr->get_sigma();           // double
+                jsrc["half_width"] = sun_ptr->get_half_width(); // double
+                jsrc["csr"] = sun_ptr->get_circumsolar_ratio(); // double
+                std::vector<double> user_angle, user_intensity;
+                sun_ptr->get_user_data(user_angle, user_intensity);
+                jsrc["user_angle"] = user_angle;                // vector<double>
+                jsrc["user_intensity"] = user_intensity;        // vector<double>
+
+                Vector3d pos = sun_ptr->get_position();
+                jsrc["pos"] = pos.data;
+            }
+            else
+            {
+                // UNSUPPORTED type
+                throw std::runtime_error("Unsupported ray source type");
+            }
+
+            jsources[std::to_string(i)] = jsrc;
+        }
+
+        root["ray_sources"] = jsources;
+    }
+
+    // Write Elements
+    {
+        json jelements_top;
+        int i_top = 0;
+        for (auto it = sd.get_iterator(); !sd.is_at_end(it); ++it)
+        {
+            json jelement;
+            auto element = it->second;
+
+            if (element->is_single() && (element->is_top_level() == false))
+            {
+                // Skip single elements that are within other stages/composites
+                continue;
+            }
+
+            element->write_json(jelement);
+
+            jelements_top[std::to_string(i_top)] = jelement;
+            i_top++;
+        }
+
+        root["elements"] = jelements_top;
+    }
+
+    // Write to disk
+    std::ofstream ofs(filename, std::ios::out | std::ios::trunc);
+    if (!ofs.is_open())
+        throw std::runtime_error("Failure writing json");
+    ofs << root.dump(kJsonIndentSpaces) << '\n';
+
+    return;
+}
+
+void load_json_file(SimulationData& sd, std::string filename)
+{
+    using json = nlohmann::ordered_json;
+
+    // Clear simulation data
+    sd.clear();
+
+    // Load json file
+    std::ifstream ifs(filename);
+    if (!ifs.is_open())
+        throw std::runtime_error("Failure opening json");
+
+    // Load json from file stream
+    json root;
+    ifs >> root;
+
+    // File meta data
+    std::string schema_version = root.at("schema_version");
+    int number_of_elements = root.at("number_of_elements");
+
+    // Simulation parameters
+    SolTrace::Data::SimulationParameters& sim_par = sd.get_simulation_parameters();
+    json jpar = root["simulation_parameters"];
+    sim_par.include_sun_shape_errors = jpar.at("include_sun_shape_errors");
+    sim_par.include_optical_errors = jpar.at("include_optical_errors");
+    sim_par.number_of_rays = jpar.at("number_of_rays");
+    sim_par.max_number_of_rays = jpar.at("max_number_of_rays");
+    sim_par.tolerance = jpar.at("tolerance");
+    sim_par.latitude = jpar.at("latitude");
+    sim_par.longitude = jpar.at("longitude");
+    sim_par.seed = jpar.at("seed");
+
+    // Ray sources
+    json jsources = root["ray_sources"];
+    for (auto& [key, jsrc] : jsources.items())
+    {
+        std::string source_type = jsrc.at("source_type");
+        if (source_type != "Sun")
+        {
+            // UNSUPPORTED source type
+            throw std::runtime_error("Unsupported ray source type");
+        }
+
+        std::string shape_string = jsrc.at("my_shape");
+        SunShape shape = get_enum_from_string(shape_string, SunShapeMap, SunShape::UNKNOWN);
+        if (shape == SunShape::UNKNOWN)
+        {
+            // Error reading sunshape
+            throw std::runtime_error("Error reading sun shape");
+        }
+        double sigma = json_get_double(jsrc, "sigma");
+        double half_width = json_get_double(jsrc, "half_width");
+        double csr = json_get_double(jsrc, "csr");
+
+        std::vector<double> user_angle = jsrc.at("user_angle");
+        std::vector<double> user_intensity = jsrc.at("user_intensity");
+
+        std::array<double, 3> pos_arr = jsrc.at("pos").get<std::array<double, 3>>();
+        Vector3d pos_vec(pos_arr.data());
+
+        // Make sun for simulation data
+        auto sun = make_ray_source<Sun>();
+        sun->set_position(pos_vec);
+        sun->set_shape(shape, sigma, half_width, csr, user_angle, user_intensity);
+        sd.add_ray_source(sun);
+    }
+
+    // Elements
+    json jelements = root["elements"];
+    for (auto& [key, jelement] : jelements.items())
+    {
+        // Check if stage
+        // Note a stage is also a composite, so check stage first
+        if (jelement.contains("is_stage") && jelement.at("is_stage") == true)
+        {
+            // Make stage
+            stage_ptr stage = make_stage(jelement);
+            sd.add_stage(stage);
+        }
+        // Composite
+        else if (jelement.contains("is_composite") && jelement.at("is_composite") == true)
+        {
+            composite_element_ptr comp = make_element<CompositeElement>(jelement);
+            sd.add_element(comp);
+        }
+        // Single Element
+        else
+        {
+            single_element_ptr single = make_element<SingleElement>(jelement);
+            sd.add_element(single);
+        }
+    }
+
+    return;
 }
 
 } // namespace SolTrace::Data

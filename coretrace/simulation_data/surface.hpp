@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <vector>
+#include <nlohmann/json.hpp>
 
 namespace SolTrace::Data {
 
@@ -34,6 +35,19 @@ enum SurfaceType
     SURFACE_UNKNOWN
 };
 
+inline const std::map<SurfaceType, std::string> SurfaceTypeMap =
+{
+    {SurfaceType::CONE, "CONE"},
+    {SurfaceType::CYLINDER, "CYLINDER"},
+    {SurfaceType::FLAT, "FLAT"},
+    {SurfaceType::PARABOLA, "PARABOLA"},
+    {SurfaceType::SPHERE, "SPHERE"},
+    {SurfaceType::HYPER, "HYPER"},
+    {SurfaceType::GENERAL_SPENCER_MURTY, "GENERAL_SPENCER_MURTY"},
+    {SurfaceType::TORUS, "TORUS"},
+    {SurfaceType::SURFACE_UNKNOWN, "SURFACE_UNKNOWN"}
+};
+
 struct Surface
 {
 public:
@@ -43,6 +57,8 @@ public:
     virtual ~Surface() {}
 
     SurfaceType get_type() { return my_type; }
+
+    virtual void write_json(nlohmann::ordered_json& jnode) const = 0;
 };
 
 struct Cone : public Surface
@@ -51,7 +67,9 @@ struct Cone : public Surface
     // where theta = half_angle
     double half_angle;
     Cone(double ha) : Surface(SurfaceType::CONE), half_angle(ha) {}
+    Cone(const nlohmann::ordered_json& jnode);
     virtual ~Cone() {}
+    virtual void write_json(nlohmann::ordered_json& jnode) const override;
 };
 
 struct Cylinder : public Surface
@@ -62,13 +80,17 @@ struct Cylinder : public Surface
     Cylinder(double r) : Surface(SurfaceType::CYLINDER), radius(r)
     {
     }
+    Cylinder(const nlohmann::ordered_json& jnode);
     virtual ~Cylinder() {}
+    virtual void write_json(nlohmann::ordered_json& jnode) const override;
 };
 
 struct Flat : public Surface
 {
     Flat() : Surface(SurfaceType::FLAT) {}
+    Flat(const nlohmann::ordered_json& jnode) : Surface(SurfaceType::FLAT) {};
     virtual ~Flat() {}
+    virtual void write_json(nlohmann::ordered_json& jnode) const override;
 };
 
 struct Parabola : public Surface
@@ -84,7 +106,9 @@ struct Parabola : public Surface
                                                focal_length_y(focal_y)
     {
     }
+    Parabola(const nlohmann::ordered_json& jnode);
     virtual ~Parabola() {}
+    virtual void write_json(nlohmann::ordered_json& jnode) const override;
 };
 
 struct Sphere : public Surface
@@ -102,7 +126,9 @@ struct Sphere : public Surface
                           vertex_curv(curv)
     {
     }
+    Sphere(const nlohmann::ordered_json& jnode);
     virtual ~Sphere() {}
+    virtual void write_json(nlohmann::ordered_json& jnode) const override;
 };
 
 // TODO: Add other surface types. Documentation has the following:
@@ -124,6 +150,8 @@ inline auto make_surface(Args &&...args)
 
 surface_ptr make_surface_from_type(SurfaceType type,
                                    const std::vector<double> &args);
+
+surface_ptr make_surface_from_json(const nlohmann::ordered_json& jnode);
 
 } // namespace SolTrace::Data
 

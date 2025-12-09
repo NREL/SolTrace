@@ -11,6 +11,8 @@
 #define SOLTRACE_OPTICAL_PROPERTIES_H
 
 #include <iostream>
+#include <map>
+#include <nlohmann/json.hpp>
 
 #include "error_distributions.hpp"
 
@@ -20,7 +22,15 @@ namespace SolTrace::Data
     enum class InteractionType
     {
         REFLECTION,
-        REFRACTION
+        REFRACTION,
+        UNKNOWN
+    };
+
+    inline const std::map<InteractionType, std::string> InteractionTypeMap =
+    {
+        {InteractionType::REFLECTION, "REFLECTION"},
+        {InteractionType::REFRACTION, "REFRACTION"},
+        {InteractionType::UNKNOWN, "UNKNOWN"}
     };
 
     struct OpticalProperties
@@ -61,6 +71,8 @@ namespace SolTrace::Data
         {
         }
 
+        OpticalProperties(const nlohmann::ordered_json& jnode);
+
         // TODO: What should the error settings be with the below?
 
         void set_ideal_absorption()
@@ -92,6 +104,8 @@ namespace SolTrace::Data
             this->refraction_index_back = refraction_index_back;
             return;
         }
+
+        void write_json(nlohmann::ordered_json& jnode) const;
 
         // OpticalProperties &operator=(const OpticalProperties &rhs)
         // {

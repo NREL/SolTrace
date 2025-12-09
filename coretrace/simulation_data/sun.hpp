@@ -20,7 +20,11 @@ namespace SolTrace::Data {
 class Sun : public RaySource
 {
 public:
-    Sun() { this->my_position.zero(); }
+    Sun() : my_shape(SunShape::UNKNOWN),
+            my_position(Vector3d(std::numeric_limits<double>::quiet_NaN(), 
+                std::numeric_limits<double>::quiet_NaN(), 
+                std::numeric_limits<double>::quiet_NaN()))
+    { this->my_position.zero(); }
     virtual ~Sun() {}
 
     virtual const Vector3d &get_position() const

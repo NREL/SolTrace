@@ -22,6 +22,18 @@ SingleElement::SingleElement() : ElementBase(),
     return;
 }
 
+SingleElement::SingleElement(const nlohmann::ordered_json& jnode) : ElementBase(jnode),
+                                                                    aperture(nullptr),
+                                                                    surface(nullptr),
+                                                                    optics_front(),
+                                                                    optics_back()
+{
+    this->set_aperture(Aperture::make_aperture_from_json(jnode.at("aperture")));
+    this->set_surface(make_surface_from_json(jnode.at("surface")));
+    this->set_front_optical_properties(OpticalProperties(jnode.at("optics_front")));
+    this->set_back_optical_properties(OpticalProperties(jnode.at("optics_back")));
+}
+
 SingleElement::~SingleElement()
 {
     this->aperture = nullptr;
@@ -52,6 +64,34 @@ void SingleElement::enforce_user_fields_set() const
     }
 
     return;
+}
+
+void SingleElement::write_json(nlohmann::ordered_json& jnode) const
+{
+    using json = nlohmann::ordered_json;
+    
+    // Write shared properties
+    this->write_common_json(jnode);
+    
+    // Optical Properties
+    json joptics_front, joptics_back;
+    this->optics_front.write_json(joptics_front);
+    this->optics_back.write_json(joptics_back);
+    jnode["optics_front"] = joptics_front;
+    jnode["optics_back"] = joptics_back;
+
+    // Aperture
+    json japerture;
+    this->aperture->write_json(japerture);
+    jnode["aperture"] = japerture;
+
+    // Surface
+    json jsurface;
+    this->surface->write_json(jsurface);
+    jnode["surface"] = jsurface;
+
+    // Write element type
+    jnode["is_single"] = true;
 }
 
 } // namespace SolTrace::Data

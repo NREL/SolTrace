@@ -38,7 +38,9 @@ public:
                              tolerance(0.0),
                              latitude(0.0),
                              longitude(0.0),
-                             seed(0)
+                             seed(0),
+                             include_sun_shape_errors(false),
+                             include_optical_errors(false)
     {
     }
     ~SimulationParameters() {}

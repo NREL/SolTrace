@@ -3,6 +3,10 @@
 
 #include <sstream>
 
+#include "single_element.hpp"
+
+
+
 namespace SolTrace::Data
 {
 
@@ -10,6 +14,32 @@ namespace SolTrace::Data
                                            number_of_elements(0),
                                            my_elements()
     {
+        return;
+    }
+
+    CompositeElement::CompositeElement(const nlohmann::ordered_json& jnode) : ElementBase(jnode),
+        number_of_elements(0),
+        my_elements()
+    {
+        using json = nlohmann::ordered_json;
+
+        // Common parameters are set in ElementBase constructor before here
+
+        json jelements = jnode.at("elements");
+        for (auto& [key, jelement] : jelements.items())
+        {
+            bool is_single = jelement.at("is_single");
+            if (is_single)
+            {
+                element_ptr el = make_element<SingleElement>(jelement);
+                this->add_element(el);
+            }
+            else
+            {
+                composite_element_ptr comp = make_element<CompositeElement>(jelement);
+                this->add_element(comp);
+            }
+        }
         return;
     }
 
@@ -154,6 +184,35 @@ namespace SolTrace::Data
             throw std::invalid_argument(ss.str());
         }
         return;
+    }
+
+    // Stage and Composite should have the same function
+    void CompositeElement::write_json(nlohmann::ordered_json& jnode) const
+    {
+        using json = nlohmann::ordered_json;
+
+        // Composite/stage specific info
+        jnode["is_composite"] = true;
+        jnode["is_single"] = false;
+        jnode["number_of_elements"] = this->get_number_of_elements();
+
+        // Common properties of all elements
+        this->write_common_json(jnode);
+
+        // Loop through each element, writing json node
+        json jelements;
+        for (auto it = this->get_const_iterator(); !this->is_at_end(it); ++it)
+        {
+            json jelement;
+
+            SolTrace::Data::element_id i = it->first;
+            auto element = it->second;
+
+            element->write_json(jelement);
+
+            jelements[std::to_string(i)] = jelement;
+        }
+        jnode["elements"] = jelements;
     }
 
 } // namespace SolTrace::Data
