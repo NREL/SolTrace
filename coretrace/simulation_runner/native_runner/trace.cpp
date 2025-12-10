@@ -143,6 +143,7 @@ namespace SolTrace::NativeRunner
 								 rec_hash, reccm_helio);
 		}
 
+		System->SunRayCount = 0;
 		// Start the clock
 		clock_t startTime = clock();
 		// int rays_per_callback_estimate = 50;
