@@ -25,6 +25,8 @@ using SolTrace::NativeRunner::TRayData;
 using SolTrace::NativeRunner::TSystem;
 using SolTrace::NativeRunner::TSun;
 
+// TODO: Refactor to remove duplicate code, read in files, create flux maps and compare.
+
 class SingleHeliostatSimulation : public ::testing::Test {
 public:
     const Vector3d zero = { 0.0, 0.0, 0.0 }; // Global origin
