@@ -20,6 +20,7 @@ include_directories(
 set(REGRESSION_TEST_SRC
 	native_runner_validation_test.cpp
 	native_runner_performance_test.cpp
+	native_runner_multithreading_test.cpp
 )
 
 add_executable(RegressionTests

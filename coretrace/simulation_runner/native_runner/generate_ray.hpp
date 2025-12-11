@@ -7,7 +7,7 @@
 namespace SolTrace::NativeRunner {
 
 void GenerateRay(MTRand &myrng,
-                 double PosSunStage[3],
+                 const double PosSunStage[3],
                  double Origin[3],
                  double RLocToRef[3][3],
                  TSun *Sun,

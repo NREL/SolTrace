@@ -62,7 +62,7 @@ namespace SolTrace::NativeRunner
                 CopyVec3(CosIn, CosRayOutElement);
                 // surface normal errors
                 SurfaceNormalErrors(myrng, LastDFXYZ, optics, CosOut);
-                myrng_counter++;
+                // myrng_counter++;
                 CopyVec3(LastDFXYZ, CosOut);
             }
 
@@ -70,7 +70,7 @@ namespace SolTrace::NativeRunner
                         LastDFXYZ, // Stage->ElementList[k]->InteractionType,
                         optics, 630.0, PosRayOutElement, CosRayOutElement,
                         &ErrorFlag);
-            myrng_counter++;
+            // myrng_counter++;
 
             // {Apply specularity optical error to PERTURBED (i.e. after
             // interaction) ray at intersection point}
@@ -98,7 +98,7 @@ namespace SolTrace::NativeRunner
                 Errors(myrng, CosIn, 2, &System->Sun,
                        //    Stage->ElementList[k].get(),
                        optics, CosOut, LastDFXYZ);
-                myrng_counter++;
+                // myrng_counter++;
                 CopyVec3(CosRayOutElement, CosOut);
             }
         }

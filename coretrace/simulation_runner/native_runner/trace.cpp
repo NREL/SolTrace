@@ -53,7 +53,6 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
-#include <mutex>
 #include <vector>
 
 // SimulationData headers
@@ -71,6 +70,7 @@
 #include "process_interaction.hpp"
 #include "pt_optimizations.hpp"
 #include "sun_to_primary_stage.hpp"
+#include "thread_manager.hpp"
 #include "treemesh.hpp"
 
 namespace SolTrace::NativeRunner
@@ -81,21 +81,36 @@ namespace SolTrace::NativeRunner
 
 	// Trace method
 	RunnerStatus trace_native(
+		thread_manager_ptr manager,
 		TSystem *System,
-		unsigned int seed,
+		const std::vector<unsigned int> &seeds,
+		uint_fast64_t nthreads,
 		uint_fast64_t NumberOfRays,
 		uint_fast64_t MaxNumberOfRays,
 		bool IncludeSunShape,
 		bool IncludeErrors,
 		bool AsPowerTower)
 	{
-		// Create isolated scope for lock guard
-		{
-			std::lock_guard<std::mutex> lk(System->state_mutex);
-			System->progress = 0.0;
-			System->cancel = false;
-			System->current_state = RunnerStatus::RUNNING;
-		}
+		// // Create isolated scope for lock guard
+		// {
+		// 	std::lock_guard<std::mutex> lk(System->state_mutex);
+		// 	System->progress = 0.0;
+		// 	System->cancel = false;
+		// 	System->current_state = RunnerStatus::RUNNING;
+		// }
+
+		// Initialize variables
+		// std::cout << "Seed: " << seed << std::endl;
+		int myrng_counter = 0;
+
+		// Initialize Sun
+		// double PosSunStage[3] = {0.0, 0.0, 0.0};
+		Vector3d PosSunStage;
+		if (!SunToPrimaryStage(System,
+							   System->StageList[0].get(),
+							   &System->Sun,
+							   PosSunStage.data))
+			return RunnerStatus::ERROR;
 
 		// Determine if PT optimizations should be applied
 		bool PT_override = false;
@@ -105,10 +120,83 @@ namespace SolTrace::NativeRunner
 			PT_override = true;
 		}
 
+		// Calculate hash tree for reflection to receiver plane(polar coordinates).
+		st_hash_tree sun_hash;
+		st_hash_tree rec_hash;
+		// double reccm_helio[3]; // receiver centroid in heliostat field coordinates
+		Vector3d reccm_helio;
+		if (!PT_override)
+		{
+			SetupPTOptimizations(System, AsPowerTower, sun_hash,
+								 rec_hash, reccm_helio.data);
+		}
+
+		// Bundle many args into a struct because the compiler was
+		// having trouble with all the arguments...
+		ThreadInfo my_info;
+		my_info.manager = manager;
+		my_info.System = System;
+		my_info.NumberOfRays = NumberOfRays / nthreads;
+
+		if (my_info.NumberOfRays * nthreads < NumberOfRays)
+			my_info.NumberOfRays += 1;
+
+		my_info.MaxNumberOfRays = MaxNumberOfRays;
+		my_info.IncludeSunShape = IncludeSunShape;
+		my_info.IncludeErrors = IncludeErrors;
+		my_info.AsPowerTower = AsPowerTower;
+		my_info.PosSunStage = PosSunStage;
+		my_info.sun_hash = &sun_hash;
+		my_info.rec_hash = &rec_hash;
+		my_info.reccm_helio = reccm_helio;
+
+		System->RayData.SetUp(nthreads, my_info.NumberOfRays);
+		System->RayData.Clear();
+		System->SunRayCount = 0;
+
+		for (unsigned int k = 0; k < nthreads; ++k)
+		{
+			ThreadManager::future my_future = std::async(
+				std::launch::async,
+				trace_single_compact,
+				k,
+				seeds[k],
+				my_info);
+
+			manager->manage(k, std::move(my_future));
+		}
+
+		return manager->monitor_until_completion();
+	}
+
+	RunnerStatus trace_single_thread(
+		unsigned thread_id,
+		thread_manager_ptr manager,
+		TSystem *System,
+		unsigned int seed,
+		uint_fast64_t NumberOfRays,
+		uint_fast64_t MaxNumberOfRays, // TODO: How to handle MaxRays?
+		bool IncludeSunShape,
+		bool IncludeErrors,
+		bool AsPowerTower,
+		const Vector3d &PosSunStage,
+		st_hash_tree *sun_hash,
+		st_hash_tree *rec_hash,
+		const Vector3d &reccm_helio)
+	{
 		// Initialize variables
 		// std::cout << "Seed: " << seed << std::endl;
 		MTRand myrng(seed);
 		int myrng_counter = 0;
+
+		// Determine if PT optimizations should be applied
+		bool PT_override = false;
+		if (System->StageList.size() > 0 &&
+			(System->StageList[0]->ElementList.size() < 10 ||
+			 System->StageList.size() == 1))
+		{
+			PT_override = true;
+		}
 
 		uint_fast64_t update_rate = std::min(
 			std::max(static_cast<uint_fast64_t>(1), NumberOfRays / 10),
@@ -125,28 +213,10 @@ namespace SolTrace::NativeRunner
 		std::vector<GlobalRay_refactored> IncomingRays; // Vector of rays from previous stage, going into next stage
 		IncomingRays.resize(NumberOfRays);
 
-		// Initialize Sun
-		double PosSunStage[3] = {0.0, 0.0, 0.0};
-		if (!SunToPrimaryStage(System,
-							   System->StageList[0].get(),
-							   &System->Sun,
-							   PosSunStage))
-			return RunnerStatus::ERROR;
-
-		// Calculate hash tree for reflection to receiver plane(polar coordinates).
-		st_hash_tree sun_hash;
-		st_hash_tree rec_hash;
-		double reccm_helio[3]; // receiver centroid in heliostat field coordinates
-		if (!PT_override)
-		{
-			SetupPTOptimizations(System, AsPowerTower, sun_hash,
-								 rec_hash, reccm_helio);
-		}
-
 		// Start the clock
-		clock_t startTime = clock();
+		// clock_t startTime = clock();
 		// int rays_per_callback_estimate = 50;
-		uint_fast64_t RaysTracedTotal = 0;
+		// uint_fast64_t RaysTracedTotal = 0;
 
 		// Initialize stage variables
 		uint_fast64_t StageDataArrayIndex = 0;
@@ -194,10 +264,10 @@ namespace SolTrace::NativeRunner
 
 					// Make ray (if first stage)
 					double PosRaySun[3];
-					GenerateRay(myrng, PosSunStage, Stage->Origin,
+					GenerateRay(myrng, PosSunStage.data, Stage->Origin,
 								Stage->RLocToRef, &System->Sun,
 								PosRayGlob, CosRayGlob, PosRaySun);
-					myrng_counter++;
+					// myrng_counter++;
 					System->SunRayCount++;
 
 					// If using PT optimizations, check if stage has elements
@@ -205,9 +275,9 @@ namespace SolTrace::NativeRunner
 					if (!PT_override)
 					{
 						has_elements =
-							sun_hash.get_all_data_at_loc(sunint_elements,
-														 PosRaySun[0],
-														 PosRaySun[1]);
+							sun_hash->get_all_data_at_loc(sunint_elements,
+														  PosRaySun[0],
+														  PosRaySun[1]);
 					}
 				}
 				else
@@ -252,7 +322,7 @@ namespace SolTrace::NativeRunner
 					{
 						nintelements = GetPTElements(AsPowerTower, Stage, i,
 													 in_multi_hit_loop, PosRayStage,
-													 reccm_helio, rec_hash,
+													 reccm_helio.data, rec_hash,
 													 sunint_elements,
 													 reflint_elements, has_elements);
 					}
@@ -286,7 +356,8 @@ namespace SolTrace::NativeRunner
 
 					if (i == 0 && MultipleHitCount == 1)
 					{
-						System->RayData.Append(PosRayGlob,
+						System->RayData.Append(thread_id,
+											   PosRayGlob,
 											   CosRayGlob,
 											   ELEMENT_NULL,
 											   i + 1,
@@ -393,7 +464,7 @@ namespace SolTrace::NativeRunner
 						double flip = myrng();
 						if (TestValue <= flip)
 						{
-							myrng_counter++;
+							// myrng_counter++;
 							// ray was fully absorbed
 							RayIsAbsorbed = true;
 							break;
@@ -420,7 +491,8 @@ namespace SolTrace::NativeRunner
 										 Stage->Origin, Stage->RLocToRef,
 										 PosRayGlob, CosRayGlob);
 
-					System->RayData.Append(PosRayGlob,
+					System->RayData.Append(thread_id,
+										   PosRayGlob,
 										   CosRayGlob,
 										   LastElementNumber,
 										   i + 1,
@@ -443,15 +515,9 @@ namespace SolTrace::NativeRunner
 				if (update_count % update_rate == 0)
 				{
 					double progress = update_count / total_work;
-					std::lock_guard<std::mutex> lk(System->state_mutex);
-					if (System->cancel)
-					{
+					manager->progress_update(thread_id, progress);
+					if (manager->terminate(thread_id))
 						return RunnerStatus::CANCEL;
-					}
-					else
-					{
-						System->progress = progress;
-					}
 				}
 
 				// Handle if Ray was absorbed
@@ -464,7 +530,8 @@ namespace SolTrace::NativeRunner
 										 PosRayGlob,
 										 CosRayGlob);
 
-					System->RayData.Append(PosRayGlob,
+					System->RayData.Append(thread_id,
+										   PosRayGlob,
 										   CosRayGlob,
 										   LastElementNumber,
 										   i + 1,
@@ -575,7 +642,8 @@ namespace SolTrace::NativeRunner
 					{
 						LastRayNumber = RayNumber;
 
-						System->RayData.Append(PosRayGlob,
+						System->RayData.Append(thread_id,
+											   PosRayGlob,
 											   CosRayGlob,
 											   ELEMENT_NULL,
 											   i + 1,
@@ -642,7 +710,8 @@ namespace SolTrace::NativeRunner
 		for (uint_fast64_t k = 0; k < n_rays_active; ++k)
 		{
 			GlobalRay_refactored ray = IncomingRays[k];
-			System->RayData.Append(ray.Pos,
+			System->RayData.Append(thread_id,
+								   ray.Pos,
 								   ray.Cos,
 								   ELEMENT_NULL,
 								   idx + 1,

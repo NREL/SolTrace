@@ -238,31 +238,23 @@ namespace SolTrace::NativeRunner
 			SolTrace::Result::ray_id raynum;
 			SolTrace::Result::RayEvent event;
 		};
+		using ray_t_ptr = std::shared_ptr<ray_t>;
 
-		ray_t *Append(double pos[3],
-					  double cos[3],
-					  int element,
-					  int stage,
-					  unsigned int raynum,
-					  SolTrace::Result::RayEvent it);
+		ray_t_ptr Append(unsigned thread_id,
+						 double pos[3],
+						 double cos[3],
+						 int element,
+						 int stage,
+						 uint_fast64_t raynum,
+						 SolTrace::Result::RayEvent rev);
 
-		bool Overwrite(unsigned int idx,
-					   double pos[3],
-					   double cos[3],
-					   int element,
-					   int stage,
-					   unsigned int raynum,
-					   SolTrace::Result::RayEvent it);
-
-		bool Query(unsigned int idx,
+		bool Query(uint_fast64_t idx,
 				   double pos[3],
 				   double cos[3],
 				   int *element,
 				   int *stage,
-				   unsigned int *raynum,
+				   uint_fast64_t *raynum,
 				   SolTrace::Result::RayEvent *it) const;
-
-		void Merge(TRayData &dest);
 
 		void Clear();
 
@@ -270,22 +262,45 @@ namespace SolTrace::NativeRunner
 
 		uint_fast64_t Count() const;
 
-		ray_t *Index(uint_fast64_t i, bool write_access) const;
+		ray_t_ptr Index(uint_fast64_t idx) const;
+
+		void SetUp(unsigned nthreads, uint_fast64_t nray_per_thread);
 
 	private:
-		static const unsigned int block_size = 8192;
+		// struct thread_data_t
+		// {
+		// 	std::vector<ray_t_ptr> ray_data;
+		// 	uint_fast64_t capacity;
+		// 	uint_fast64_t nelements;
+		// };
+		// static const unsigned int block_size = 8192;
 
-		struct block_t
-		{
-			ray_t data[block_size];
-			uint_fast64_t count;
-		};
+		// struct block_t
+		// {
+		// 	ray_t data[block_size];
+		// 	uint_fast64_t count;
+		// };
 
-		using block_t_ptr = std::shared_ptr<block_t>;
+		// using block_t_ptr = std::shared_ptr<block_t>;
 
-		std::vector<block_t_ptr> m_blockList;
-		uint_fast64_t m_dataCount;
-		uint_fast64_t m_dataCapacity;
+		// std::vector<block_t_ptr> m_blockList;
+		// uint_fast64_t m_dataCount;
+		// uint_fast64_t m_dataCapacity;
+
+		ray_t_ptr GetNext(unsigned thread_id);
+		uint_fast64_t GetRayId(unsigned thread_id,
+						  uint_fast64_t raynum);
+		void GetThreadAndRay(uint_fast64_t rayid,
+							 unsigned &thread,
+							 uint_fast64_t &ray);
+
+		unsigned nthreads;
+		uint_fast64_t nray_per_thread;
+		// std::vector<ray_t_ptr> records;
+		using record_list = std::vector<ray_t_ptr>;
+		using thread_records = std::map<unsigned, record_list>;
+		// using thread_records = std::map<unsigned, thread_data_t>;
+		thread_records records;
 	};
 
 	struct TStage
@@ -326,12 +341,11 @@ namespace SolTrace::NativeRunner
 		~TSystem();
 
 		void ClearAll();
-		// void CollectResults();
 
-		mutable std::mutex state_mutex;
-		mutable SolTrace::Runner::RunnerStatus current_state;
-		mutable bool cancel;
-		mutable double progress;
+		// mutable std::mutex state_mutex;
+		// mutable SolTrace::Runner::RunnerStatus current_state;
+		// mutable bool cancel;
+		// mutable double progress;
 
 		TSun Sun;
 		std::vector<tstage_ptr> StageList;

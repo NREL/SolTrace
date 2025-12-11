@@ -1,6 +1,8 @@
 #ifndef SOLTRACE_SIMULATION_RUNNER_H
 #define SOLTRACE_SIMULATION_RUNNER_H
 
+#include <map>
+
 #include "simulation_data.hpp"
 #include "simulation_result.hpp"
 
@@ -14,7 +16,29 @@ namespace SolTrace::Runner
         RUNNING,
         SUCCESS,
         TIMEOUT,
+        UNKNOWN,
     };
+
+    const std::map<RunnerStatus, std::string> STATUS_TO_STR{
+        {RunnerStatus::CANCEL, "CANCEL"},
+        {RunnerStatus::ERROR, "ERROR"},
+        {RunnerStatus::RUNNING, "RUNNING"},
+        {RunnerStatus::SUCCESS, "SUCCESS"},
+        {RunnerStatus::TIMEOUT, "TIMEOUT"},
+        {RunnerStatus::UNKNOWN, "UNKNOWN"}};
+
+    inline const std::string &status_string(const RunnerStatus sts)
+    {
+        auto item = STATUS_TO_STR.find(sts);
+        if (item != STATUS_TO_STR.cend())
+        {
+            return item->second;
+        }
+        else
+        {
+            return STATUS_TO_STR.find(RunnerStatus::UNKNOWN)->second;
+        }
+    }
 
     class SimulationRunner
     {

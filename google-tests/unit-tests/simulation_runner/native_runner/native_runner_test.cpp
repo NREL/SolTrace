@@ -145,17 +145,17 @@ TEST(NativeRunner, SmokeTest)
         my_st->add_element(el);
     }
 
-    EXPECT_EQ(my_st->get_number_of_elements(), NUM_ELEMENTS);
+    ASSERT_EQ(my_st->get_number_of_elements(), NUM_ELEMENTS);
     my_sim.add_stage(my_st);
-    EXPECT_EQ(my_sim.get_number_of_elements(), NUM_ELEMENTS);
+    ASSERT_EQ(my_sim.get_number_of_elements(), NUM_ELEMENTS);
 
     RunnerStatus sts;
     sts = runner.initialize();
-    EXPECT_EQ(sts, RunnerStatus::SUCCESS);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
     sts = runner.setup_simulation(&my_sim);
-    EXPECT_EQ(sts, RunnerStatus::SUCCESS);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
     sts = runner.run_simulation();
-    EXPECT_EQ(sts, RunnerStatus::SUCCESS);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
     const TSystem *sys = runner.get_system();
     // sys->AllRayData.Print();
@@ -406,7 +406,7 @@ TEST(NativeRunner, SingleRayValidationTest)
 
     Vector3d ipoint, idir;
     int element, stage;
-    unsigned int raynum;
+    uint_fast64_t raynum;
     SolTrace::Result::RayEvent rev;
     sys->RayData.Query(0, ipoint.data, idir.data,
                        &element, &stage, &raynum, &rev);
@@ -468,11 +468,12 @@ TEST(NativeRunner, StatusAndCancel)
 
     SimulationData sd;
     EXPECT_TRUE(sd.import_from_file(sample_path));
-    sd.set_number_of_rays(50000);
+    sd.set_number_of_rays(100000);
 
     NativeRunner runner;
     runner.disable_point_focus();
     runner.disable_power_tower();
+    runner.set_number_of_threads(2);
     RunnerStatus sts;
     sts = runner.setup_simulation(&sd);
     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
@@ -486,7 +487,7 @@ TEST(NativeRunner, StatusAndCancel)
     EXPECT_EQ(sts, RunnerStatus::RUNNING);
 
     double prog;
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sts = runner.status_simulation(&prog);
     EXPECT_EQ(sts, RunnerStatus::RUNNING);
     EXPECT_LE(prog, 1.0);
@@ -503,4 +504,81 @@ TEST(NativeRunner, StatusAndCancel)
 
     std::cout << "Time for run: " << dur.count() << std::endl;
     std::cout << "Progress before cancel: " << prog << std::endl;
+}
+
+TEST(NativeRunner, CancelMultithread)
+{
+    std::string sample_path = std::string(PROJECT_DIR) +
+                              std::string("/Power-tower-surround_singlefacet.stinput");
+
+    SimulationData sd;
+    EXPECT_TRUE(sd.import_from_file(sample_path));
+    sd.set_number_of_rays(1000000);
+
+    NativeRunner runner;
+    runner.disable_point_focus();
+    runner.disable_power_tower();
+    runner.set_number_of_threads(20);
+    RunnerStatus sts;
+    sts = runner.setup_simulation(&sd);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+
+    auto fsts = std::async(&NativeRunner::run_simulation, &runner);
+
+    // Give time to start processing
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    sts = runner.status_simulation();
+    EXPECT_EQ(sts, RunnerStatus::RUNNING);
+
+    // Shut everything down to make sure it doesn't hang
+    auto t0 = std::chrono::high_resolution_clock::now();
+    runner.cancel_simulation();
+    ASSERT_EQ(fsts.wait_for(std::chrono::seconds(2)), std::future_status::ready);
+    auto t1 = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::milli> dur = t1 - t0;
+
+    EXPECT_EQ(fsts.get(), RunnerStatus::CANCEL);
+
+    std::cout << "Time to cancel: " << dur.count() << std::endl;
+}
+
+TEST(NativeRunner, RayIdAssignment)
+{
+    const uint_fast64_t NRAYS = 50000;
+
+    std::string project_path = std::string(PROJECT_DIR);
+    std::string sample_path = project_path +
+                              std::string("/simple_test_case.stinput");
+
+    // Load simulation data from file
+    SimulationData sd;
+    ASSERT_TRUE(sd.import_from_file(sample_path));
+
+    sd.set_number_of_rays(NRAYS);
+
+    // Create and run the native runner
+    NativeRunner runner;
+    runner.set_number_of_threads(4);
+    RunnerStatus sts = runner.initialize();
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    sts = runner.setup_simulation(&sd);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    sts = runner.run_simulation();
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+
+    SimulationResult result;
+    sts = runner.report_simulation(&result, 0);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+
+    // std::cout << result << std::endl;
+
+    uint_fast64_t nrec = result.get_number_of_records();
+
+    ASSERT_EQ(nrec, NRAYS);
+
+    for (uint_fast64_t k = 0; k < nrec; ++k)
+    {
+        auto ray_rec = result[k];
+        ASSERT_EQ(ray_rec->id, k + 1);
+    }
 }

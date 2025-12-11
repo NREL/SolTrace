@@ -1,51 +1,50 @@
 /*******************************************************************************************************
-*  Copyright 2018 Alliance for Sustainable Energy, LLC
-*
-*  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
-*  ("Alliance") under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
-*  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
-*  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
-*  copies to the public, perform publicly and display publicly, and to permit others to do so.
-*
-*  Redistribution and use in source and binary forms, with or without modification, are permitted
-*  provided that the following conditions are met:
-*
-*  1. Redistributions of source code must retain the above copyright notice, the above government
-*  rights notice, this list of conditions and the following disclaimer.
-*
-*  2. Redistributions in binary form must reproduce the above copyright notice, the above government
-*  rights notice, this list of conditions and the following disclaimer in the documentation and/or
-*  other materials provided with the distribution.
-*
-*  3. The entire corresponding source code of any redistribution, with or without modification, by a
-*  research entity, including but not limited to any contracting manager/operator of a United States
-*  National Laboratory, any institution of higher learning, and any non-profit organization, must be
-*  made publicly available under this license for as long as the redistribution is made available by
-*  the research entity.
-*
-*  4. Redistribution of this software, without modification, must refer to the software by the same
-*  designation. Redistribution of a modified version of this software (i) may not refer to the modified
-*  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
-*  the underlying software originally provided by Alliance as "SolTrace". Except to comply with the
-*  foregoing, the term "SolTrace", or any confusingly similar designation may not be used to refer to
-*  any modified version of this software or any modified version of the underlying software originally
-*  provided by Alliance without the prior written consent of Alliance.
-*
-*  5. The name of the copyright holder, contributors, the United States Government, the United States
-*  Department of Energy, or any of their employees may not be used to endorse or promote products
-*  derived from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
-*  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
-*  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
-*  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
-*  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-*  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
-*  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
-*  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************************************/
-
+ *  Copyright 2018 Alliance for Sustainable Energy, LLC
+ *
+ *  NOTICE: This software was developed at least in part by Alliance for Sustainable Energy, LLC
+ *  ("Alliance") under Contract No. DE-AC36-08GO28308 with the U.S. Department of Energy and the U.S.
+ *  The Government retains for itself and others acting on its behalf a nonexclusive, paid-up,
+ *  irrevocable worldwide license in the software to reproduce, prepare derivative works, distribute
+ *  copies to the public, perform publicly and display publicly, and to permit others to do so.
+ *
+ *  Redistribution and use in source and binary forms, with or without modification, are permitted
+ *  provided that the following conditions are met:
+ *
+ *  1. Redistributions of source code must retain the above copyright notice, the above government
+ *  rights notice, this list of conditions and the following disclaimer.
+ *
+ *  2. Redistributions in binary form must reproduce the above copyright notice, the above government
+ *  rights notice, this list of conditions and the following disclaimer in the documentation and/or
+ *  other materials provided with the distribution.
+ *
+ *  3. The entire corresponding source code of any redistribution, with or without modification, by a
+ *  research entity, including but not limited to any contracting manager/operator of a United States
+ *  National Laboratory, any institution of higher learning, and any non-profit organization, must be
+ *  made publicly available under this license for as long as the redistribution is made available by
+ *  the research entity.
+ *
+ *  4. Redistribution of this software, without modification, must refer to the software by the same
+ *  designation. Redistribution of a modified version of this software (i) may not refer to the modified
+ *  version by the same designation, or by any confusingly similar designation, and (ii) must refer to
+ *  the underlying software originally provided by Alliance as "SolTrace". Except to comply with the
+ *  foregoing, the term "SolTrace", or any confusingly similar designation may not be used to refer to
+ *  any modified version of this software or any modified version of the underlying software originally
+ *  provided by Alliance without the prior written consent of Alliance.
+ *
+ *  5. The name of the copyright holder, contributors, the United States Government, the United States
+ *  Department of Energy, or any of their employees may not be used to endorse or promote products
+ *  derived from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR
+ *  IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND
+ *  FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER,
+ *  CONTRIBUTORS, UNITED STATES GOVERNMENT OR UNITED STATES DEPARTMENT OF ENERGY, NOR ANY OF THEIR
+ *  EMPLOYEES, BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ *  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
+ *  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
+ *  THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *******************************************************************************************************/
 
 // MersenneTwister.h
 // Mersenne Twister random number generator -- a C++ class MTRand
@@ -117,289 +116,329 @@
 #include <iostream>
 #include <random>
 
-namespace SolTrace::NativeRunner {
-
-class MTRand {
-// Data
-public:
-  typedef unsigned long uint32;  // unsigned integer type, at least 32 bits
-
-  enum { N = 624 };       // length of state vector
-  enum { SAVE = N + 1 };  // length of array for save()
-
-protected:
-  enum { M = 397 };  // period parameter
-
-  uint32 state[N];   // internal state
-  uint32 *pNext;     // next value to get from state
-  int left;          // number of values left before reload needed
-
-  std::mt19937_64 random_generator;
-    std::normal_distribution<double> normal_distribution; // (5.0, 2.0);
-    std::uniform_real_distribution<double> uniform_distribution;
-    std::uniform_int_distribution<int> uniform_int_distribution;
-
-// Methods
-public:
-  MTRand( const uint32 oneSeed );  // initialize with a simple uint32
-  MTRand( const MTRand& o );  // copy
-
-  // Do NOT use for CRYPTOGRAPHY without securely hashing several returned
-  // values together, otherwise the generator state can be learned after
-  // reading 624 consecutive values.
-
-  // Access to 32-bit random numbers
-  uint32 randInt();                     // integer in [0,2^32-1]
-  uint32 randInt( const uint32 n );     // integer in [0,n] for n < 2^32
-  double rand();                        // real number in [0,1]
-  double rand( const double n );        // real number in [0,n]
-  double operator()();                  // same as rand()
-
-  // Access to nonuniform random number distributions
-  double randNorm( const double mean = 0.0, const double stddev = 1.0 );
-
-  // Re-seeding functions with same behavior as initializers
-  void seed( const uint32 oneSeed );
-  void seed( uint32 *const bigSeed, const uint32 seedLength = N );
-  void seed();
-
-  // Saving and loading generator state
-  void save( uint32* saveArray ) const;  // to array of size SAVE
-  void load( uint32 *const loadArray );  // from such array
-  friend std::ostream& operator<<( std::ostream& os, const MTRand& mtrand );
-  friend std::istream& operator>>( std::istream& is, MTRand& mtrand );
-  MTRand& operator=( const MTRand& o );
-
-protected:
-  void initialize( const uint32 oneSeed );
-  void reload();
-  uint32 hiBit( const uint32 u ) const { return u & 0x80000000UL; }
-  uint32 loBit( const uint32 u ) const { return u & 0x00000001UL; }
-  uint32 loBits( const uint32 u ) const { return u & 0x7fffffffUL; }
-  uint32 mixBits( const uint32 u, const uint32 v ) const
-    { return hiBit(u) | loBits(v); }
-  uint32 magic( const uint32 u ) const
-    { return loBit(u) ? 0x9908b0dfUL : 0x0UL; }
-  uint32 twist( const uint32 m, const uint32 s0, const uint32 s1 ) const
-    { return m ^ (mixBits(s0,s1)>>1) ^ magic(s1); }
-  static uint32 hash( time_t t, clock_t c );
-};
-
-// Functions are defined in order of usage to assist inlining
-
-inline MTRand::uint32 MTRand::hash( time_t t, clock_t c )
+namespace SolTrace::NativeRunner
 {
-  // Get a uint32 from t and c
-  // Better than uint32(x) in case x is floating point in [0,1]
-  // Based on code by Lawrence Kirby (fred@genesis.demon.co.uk)
 
-  static uint32 differ = 0;  // guarantee time-based seeds will change
-
-  uint32 h1 = 0;
-  unsigned char *p = (unsigned char *) &t;
-  for( unsigned long i = 0; i < sizeof(t); ++i )
-  {
-    h1 *= UCHAR_MAX + 2U;
-    h1 += p[i];
-  }
-  uint32 h2 = 0;
-  p = (unsigned char *) &c;
-  for( unsigned long j = 0; j < sizeof(c); ++j )
-  {
-    h2 *= UCHAR_MAX + 2U;
-    h2 += p[j];
-  }
-  return ( h1 + differ++ ) ^ h2;
-}
-
-inline void MTRand::initialize( const uint32 seed )
-{
-	// Initialize generator state with seed
-	// See Knuth TAOCP Vol 2, 3rd Ed, p.106 for multiplier.
-	// In previous versions, most significant bits (MSBs) of the seed affect
-	// only MSBs of the state array.  Modified 9 Jan 2002 by Makoto Matsumoto.
-	uint32 *s = state;
-	uint32 *r = state;
-	int i = 1;
-	*s++ = seed & 0xffffffffUL;
-	for( ; i < N; ++i )
+	class MTRand
 	{
-		*s++ = ( 1812433253UL * ( *r ^ (*r >> 30) ) + i ) & 0xffffffffUL;
-		r++;
-	}
-}
+		// Data
+	public:
+		typedef unsigned long uint32; // unsigned integer type, at least 32 bits
 
-inline void MTRand::reload()
-{
-	// Generate N new values in state
-	// Made clearer and faster by Matthew Bellew (matthew.bellew@home.com)
-	static const int MmN = int(M) - int(N);  // in case enums are unsigned
-	uint32 *p = state;
-	int i;
-	for( i = N - M; i--; ++p )
-		*p = twist( p[M], p[0], p[1] );
-	for( i = M; --i; ++p )
-		*p = twist( p[MmN], p[0], p[1] );
-	*p = twist( p[MmN], p[0], state[0] );
-	
-	left = N, pNext = state;
-}
+		enum
+		{
+			N = 624
+		}; // length of state vector
+		enum
+		{
+			SAVE = N + 1
+		}; // length of array for save()
 
-inline void MTRand::seed( const uint32 oneSeed )
-{
-  // Seed the generator with a simple uint32
-  initialize(oneSeed);
-  reload();
-}
+	protected:
+		enum
+		{
+			M = 397
+		}; // period parameter
 
-inline void MTRand::seed( uint32 *const bigSeed, const uint32 seedLength )
-{
-	// Seed the generator with an array of uint32's
-	// There are 2^19937-1 possible initial states.  This function allows
-	// all of those to be accessed by providing at least 19937 bits (with a
-	// default seed length of N = 624 uint32's).  Any bits above the lower 32
-	// in each element are discarded.
-	// Just call seed() if you want to get array from /dev/urandom
-	initialize(19650218UL);
-	int i = 1;
-	uint32 j = 0;
-	int k = ( N > seedLength ? N : seedLength );
-	for( ; k; --k )
+		uint32 state[N]; // internal state
+		uint32 *pNext;	 // next value to get from state
+		int left;		 // number of values left before reload needed
+
+		std::mt19937_64 random_generator;
+		std::normal_distribution<double> normal_distribution; // (5.0, 2.0);
+		std::uniform_real_distribution<double> uniform_distribution;
+		std::uniform_int_distribution<int> uniform_int_distribution;
+
+		// Methods
+	public:
+		MTRand(const uint32 oneSeed); // initialize with a simple uint32
+		MTRand(const MTRand &o);	  // copy
+
+		// Do NOT use for CRYPTOGRAPHY without securely hashing several returned
+		// values together, otherwise the generator state can be learned after
+		// reading 624 consecutive values.
+
+		// Access to 32-bit random numbers
+		uint32 randInt();				// integer in [0,2^32-1]
+		uint32 randInt(const uint32 n); // integer in [0,n] for n < 2^32
+		double rand();					// real number in [0,1]
+		double rand(const double n);	// real number in [0,n]
+		double operator()();			// same as rand()
+
+		// Access to nonuniform random number distributions
+		double randNorm(const double mean = 0.0, const double stddev = 1.0);
+
+		// Re-seeding functions with same behavior as initializers
+		void seed(const uint32 oneSeed);
+		void seed(uint32 *const bigSeed, const uint32 seedLength = N);
+		void seed();
+
+		// Saving and loading generator state
+		void save(uint32 *saveArray) const; // to array of size SAVE
+		void load(uint32 *const loadArray); // from such array
+		friend std::ostream &operator<<(std::ostream &os, const MTRand &mtrand);
+		friend std::istream &operator>>(std::istream &is, MTRand &mtrand);
+		MTRand &operator=(const MTRand &o);
+
+	protected:
+		void initialize(const uint32 oneSeed);
+		void reload();
+		uint32 hiBit(const uint32 u) const { return u & 0x80000000UL; }
+		uint32 loBit(const uint32 u) const { return u & 0x00000001UL; }
+		uint32 loBits(const uint32 u) const { return u & 0x7fffffffUL; }
+		uint32 mixBits(const uint32 u, const uint32 v) const
+		{
+			return hiBit(u) | loBits(v);
+		}
+		uint32 magic(const uint32 u) const
+		{
+			return loBit(u) ? 0x9908b0dfUL : 0x0UL;
+		}
+		uint32 twist(const uint32 m, const uint32 s0, const uint32 s1) const
+		{
+			return m ^ (mixBits(s0, s1) >> 1) ^ magic(s1);
+		}
+		static uint32 hash(time_t t, clock_t c);
+	};
+
+	// Functions are defined in order of usage to assist inlining
+
+	inline MTRand::uint32 MTRand::hash(time_t t, clock_t c)
 	{
-		state[i] =
-		state[i] ^ ( (state[i-1] ^ (state[i-1] >> 30)) * 1664525UL );
-		state[i] += ( bigSeed[j] & 0xffffffffUL ) + j;
-		state[i] &= 0xffffffffUL;
-		++i;  ++j;
-		if( i >= N ) { state[0] = state[N-1];  i = 1; }
-		if( j >= seedLength ) j = 0;
+		// Get a uint32 from t and c
+		// Better than uint32(x) in case x is floating point in [0,1]
+		// Based on code by Lawrence Kirby (fred@genesis.demon.co.uk)
+
+		static uint32 differ = 0; // guarantee time-based seeds will change
+
+		uint32 h1 = 0;
+		unsigned char *p = (unsigned char *)&t;
+		for (unsigned long i = 0; i < sizeof(t); ++i)
+		{
+			h1 *= UCHAR_MAX + 2U;
+			h1 += p[i];
+		}
+		uint32 h2 = 0;
+		p = (unsigned char *)&c;
+		for (unsigned long j = 0; j < sizeof(c); ++j)
+		{
+			h2 *= UCHAR_MAX + 2U;
+			h2 += p[j];
+		}
+		return (h1 + differ++) ^ h2;
 	}
-	for( k = N - 1; k; --k )
+
+	inline void MTRand::initialize(const uint32 seed)
 	{
-		state[i] =
-		state[i] ^ ( (state[i-1] ^ (state[i-1] >> 30)) * 1566083941UL );
-		state[i] -= i;
-		state[i] &= 0xffffffffUL;
-		++i;
-		if( i >= N ) { state[0] = state[N-1];  i = 1; }
+		// Initialize generator state with seed
+		// See Knuth TAOCP Vol 2, 3rd Ed, p.106 for multiplier.
+		// In previous versions, most significant bits (MSBs) of the seed affect
+		// only MSBs of the state array.  Modified 9 Jan 2002 by Makoto Matsumoto.
+		uint32 *s = state;
+		uint32 *r = state;
+		int i = 1;
+		*s++ = seed & 0xffffffffUL;
+		for (; i < N; ++i)
+		{
+			*s++ = (1812433253UL * (*r ^ (*r >> 30)) + i) & 0xffffffffUL;
+			r++;
+		}
 	}
-	state[0] = 0x80000000UL;  // MSB is 1, assuring non-zero initial array
-	reload();
-}
 
-inline void MTRand::seed()
-{
-  // Seed the generator with an array from /dev/urandom if available
-  // Otherwise use a hash of time() and clock() values
+	inline void MTRand::reload()
+	{
+		// Generate N new values in state
+		// Made clearer and faster by Matthew Bellew (matthew.bellew@home.com)
+		static const int MmN = int(M) - int(N); // in case enums are unsigned
+		uint32 *p = state;
+		int i;
+		for (i = N - M; i--; ++p)
+			*p = twist(p[M], p[0], p[1]);
+		for (i = M; --i; ++p)
+			*p = twist(p[MmN], p[0], p[1]);
+		*p = twist(p[MmN], p[0], state[0]);
 
-  // Was not successful, so use time() and clock() instead
-  seed( hash( time(NULL), clock() ) );
-}
+		left = N, pNext = state;
+	}
 
-inline MTRand::MTRand( const uint32 oneSeed )
-{
-    //seed(oneSeed);
-    random_generator.seed(oneSeed);
-    normal_distribution = std::normal_distribution<double>(0, 1.);
-    uniform_distribution = std::uniform_real_distribution<double>(0., 1.);
-    uniform_int_distribution = std::uniform_int_distribution<int>(0, RAND_MAX);
-}
+	inline void MTRand::seed(const uint32 oneSeed)
+	{
+		// Seed the generator with a simple uint32
+		initialize(oneSeed);
+		reload();
+	}
 
-inline MTRand::MTRand( const MTRand& o )
-{
-	const uint32 *t = o.state;
-	uint32 *s = state;
-	int i = N;
-	for( ; i--; *s++ = *t++ ) {}
-	left = o.left;
-	pNext = &state[N-left];
-}
+	inline void MTRand::seed(uint32 *const bigSeed, const uint32 seedLength)
+	{
+		// Seed the generator with an array of uint32's
+		// There are 2^19937-1 possible initial states.  This function allows
+		// all of those to be accessed by providing at least 19937 bits (with a
+		// default seed length of N = 624 uint32's).  Any bits above the lower 32
+		// in each element are discarded.
+		// Just call seed() if you want to get array from /dev/urandom
+		initialize(19650218UL);
+		int i = 1;
+		uint32 j = 0;
+		int k = (N > seedLength ? N : seedLength);
+		for (; k; --k)
+		{
+			state[i] =
+				state[i] ^ ((state[i - 1] ^ (state[i - 1] >> 30)) * 1664525UL);
+			state[i] += (bigSeed[j] & 0xffffffffUL) + j;
+			state[i] &= 0xffffffffUL;
+			++i;
+			++j;
+			if (i >= N)
+			{
+				state[0] = state[N - 1];
+				i = 1;
+			}
+			if (j >= seedLength)
+				j = 0;
+		}
+		for (k = N - 1; k; --k)
+		{
+			state[i] =
+				state[i] ^ ((state[i - 1] ^ (state[i - 1] >> 30)) * 1566083941UL);
+			state[i] -= i;
+			state[i] &= 0xffffffffUL;
+			++i;
+			if (i >= N)
+			{
+				state[0] = state[N - 1];
+				i = 1;
+			}
+		}
+		state[0] = 0x80000000UL; // MSB is 1, assuring non-zero initial array
+		reload();
+	}
 
-inline MTRand::uint32 MTRand::randInt()
-{
-    return uniform_int_distribution(random_generator);
-}
+	inline void MTRand::seed()
+	{
+		// Seed the generator with an array from /dev/urandom if available
+		// Otherwise use a hash of time() and clock() values
 
-inline MTRand::uint32 MTRand::randInt( const uint32 n )
-{
-    return uniform_int_distribution(random_generator) % n;
-}
+		// Was not successful, so use time() and clock() instead
+		seed(hash(time(NULL), clock()));
+	}
 
-inline double MTRand::rand()
-{
-    return uniform_distribution(random_generator);
-}
+	inline MTRand::MTRand(const uint32 oneSeed)
+	{
+		// seed(oneSeed);
+		random_generator.seed(oneSeed);
+		normal_distribution = std::normal_distribution<double>(0, 1.);
+		uniform_distribution = std::uniform_real_distribution<double>(0., 1.);
+		uniform_int_distribution = std::uniform_int_distribution<int>(0, RAND_MAX);
+	}
 
-inline double MTRand::rand( const double n )
-{
-    return rand() * n;
-}
+	inline MTRand::MTRand(const MTRand &o)
+	{
+		const uint32 *t = o.state;
+		uint32 *s = state;
+		int i = N;
+		for (; i--; *s++ = *t++)
+		{
+		}
+		left = o.left;
+		pNext = &state[N - left];
+	}
 
-inline double MTRand::randNorm( const double mean, const double stddev )
-{
-  // Return a real number from a normal (Gaussian) distribution with given
-  // mean and standard deviation by polar form of Box-Muller transformation
+	inline MTRand::uint32 MTRand::randInt()
+	{
+		return uniform_int_distribution(random_generator);
+	}
 
-    return mean + normal_distribution(random_generator) * stddev;
-}
+	inline MTRand::uint32 MTRand::randInt(const uint32 n)
+	{
+		return uniform_int_distribution(random_generator) % n;
+	}
 
-inline double MTRand::operator()()
-{
-  return rand();
-}
+	inline double MTRand::rand()
+	{
+		return uniform_distribution(random_generator);
+	}
 
-inline void MTRand::save( uint32* saveArray ) const
-{
-	const uint32 *s = state;
-	uint32 *sa = saveArray;
-	int i = N;
-	for( ; i--; *sa++ = *s++ ) {}
-	*sa = left;
-}
+	inline double MTRand::rand(const double n)
+	{
+		return rand() * n;
+	}
 
-inline void MTRand::load( uint32 *const loadArray )
-{
-	uint32 *s = state;
-	uint32 *la = loadArray;
-	int i = N;
-	for( ; i--; *s++ = *la++ ) {}
-	left = *la;
-	pNext = &state[N-left];
-}
+	inline double MTRand::randNorm(const double mean, const double stddev)
+	{
+		// Return a real number from a normal (Gaussian) distribution with given
+		// mean and standard deviation by polar form of Box-Muller transformation
 
-inline std::ostream& operator<<( std::ostream& os, const MTRand& mtrand )
-{
-	const MTRand::uint32 *s = mtrand.state;
-	int i = mtrand.N;
-	for( ; i--; os << *s++ << "\t" ) {}
-	return os << mtrand.left;
-}
+		return mean + normal_distribution(random_generator) * stddev;
+	}
 
-inline std::istream& operator>>( std::istream& is, MTRand& mtrand )
-{
-	MTRand::uint32 *s = mtrand.state;
-	int i = mtrand.N;
-	for( ; i--; is >> *s++ ) {}
-	is >> mtrand.left;
-	mtrand.pNext = &mtrand.state[mtrand.N-mtrand.left];
-	return is;
-}
+	inline double MTRand::operator()()
+	{
+		return rand();
+	}
 
-inline MTRand& MTRand::operator=( const MTRand& o )
-{
-	if( this == &o ) return (*this);
-	const uint32 *t = o.state;
-	uint32 *s = state;
-	int i = N;
-	for( ; i--; *s++ = *t++ ) {}
-	left = o.left;
-	pNext = &state[N-left];
-	return (*this);
-}
+	inline void MTRand::save(uint32 *saveArray) const
+	{
+		const uint32 *s = state;
+		uint32 *sa = saveArray;
+		int i = N;
+		for (; i--; *sa++ = *s++)
+		{
+		}
+		*sa = left;
+	}
+
+	inline void MTRand::load(uint32 *const loadArray)
+	{
+		uint32 *s = state;
+		uint32 *la = loadArray;
+		int i = N;
+		for (; i--; *s++ = *la++)
+		{
+		}
+		left = *la;
+		pNext = &state[N - left];
+	}
+
+	inline std::ostream &operator<<(std::ostream &os, const MTRand &mtrand)
+	{
+		const MTRand::uint32 *s = mtrand.state;
+		int i = mtrand.N;
+		for (; i--; os << *s++ << "\t")
+		{
+		}
+		return os << mtrand.left;
+	}
+
+	inline std::istream &operator>>(std::istream &is, MTRand &mtrand)
+	{
+		MTRand::uint32 *s = mtrand.state;
+		int i = mtrand.N;
+		for (; i--; is >> *s++)
+		{
+		}
+		is >> mtrand.left;
+		mtrand.pNext = &mtrand.state[mtrand.N - mtrand.left];
+		return is;
+	}
+
+	inline MTRand &MTRand::operator=(const MTRand &o)
+	{
+		if (this == &o)
+			return (*this);
+		const uint32 *t = o.state;
+		uint32 *s = state;
+		int i = N;
+		for (; i--; *s++ = *t++)
+		{
+		}
+		left = o.left;
+		pNext = &state[N - left];
+		return (*this);
+	}
 
 } // namespace SolTrace::NativeRunner
 
-#endif  // MERSENNETWISTER_H
+#endif // MERSENNETWISTER_H
 
 // Change log:
 //

@@ -22,6 +22,7 @@ set(NATIVE_RUNNER_SRC
     pt_optimizations.cpp
     sphere_calculator.cpp
     sun_to_primary_stage.cpp
+    thread_manager.cpp
     trace.cpp
     tracing_errors.cpp
     treemesh.cpp
