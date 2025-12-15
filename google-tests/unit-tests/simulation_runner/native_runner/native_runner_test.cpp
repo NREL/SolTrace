@@ -574,6 +574,15 @@ TEST(NativeRunner, RayIdAssignment)
 
     uint_fast64_t nrec = result.get_number_of_records();
 
+    std::cout << "Number of rays: " << NRAYS
+              << "\nNumber of records: " << nrec
+              << std::endl;
+
+    if (nrec != NRAYS)
+    {
+        runner.print_log(std::cout);
+    }
+
     ASSERT_EQ(nrec, NRAYS);
 
     for (uint_fast64_t k = 0; k < nrec; ++k)

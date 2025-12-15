@@ -140,7 +140,6 @@ namespace SolTrace::NativeRunner
 		my_info.reccm_helio = reccm_helio;
 
 		System->RayData.SetUp(nthreads, my_info.NumberOfRays);
-		System->RayData.Clear();
 		System->SunRayCount = 0;
 
 		for (unsigned int k = 0; k < nthreads; ++k)
@@ -344,13 +343,20 @@ namespace SolTrace::NativeRunner
 
 					if (i == 0 && MultipleHitCount == 1)
 					{
-						System->RayData.Append(thread_id,
-											   PosRayGlob,
-											   CosRayGlob,
-											   ELEMENT_NULL,
-											   i + 1,
-											   LastRayNumber,
-											   RayEvent::CREATE);
+						auto r = System->RayData.Append(thread_id,
+														PosRayGlob,
+														CosRayGlob,
+														ELEMENT_NULL,
+														i + 1,
+														LastRayNumber,
+														RayEvent::CREATE);
+						if (r == nullptr)
+						{
+							std::stringstream ss;
+							ss << "Thread " << thread_id
+							   << " failed to record ray data.\n";
+							manager->error_log(ss.str());
+						}
 					}
 
 					// Get optics and check for absorption

@@ -250,12 +250,12 @@ namespace SolTrace::NativeRunner
 
     void TRayData::SetUp(unsigned nthreads, uint_fast64_t nray_per_thread)
     {
+        this->Clear();
         this->nthreads = nthreads;
         this->nray_per_thread = nray_per_thread;
-        this->Clear();
         for (unsigned k = 0; k < nthreads; ++k)
         {
-            this->records[k];
+            this->records[k].clear();
         }
         // std::cout << "nthreads: " << nthreads
         //           << "  nray_per_thread: " << nray_per_thread
@@ -278,12 +278,17 @@ namespace SolTrace::NativeRunner
         // std::cout << ss.str();
 
         ray_t_ptr r = this->GetNext(thread_id);
-        std::memcpy(&r->pos, pos, sizeof(double) * 3);
-        std::memcpy(&r->cos, cos, sizeof(double) * 3);
-        r->element = element;
-        r->stage = stage;
-        r->raynum = this->GetRayId(thread_id, raynum);
-        r->event = rev;
+
+        if (r != nullptr)
+        {
+            std::memcpy(&r->pos, pos, sizeof(double) * 3);
+            std::memcpy(&r->cos, cos, sizeof(double) * 3);
+            r->element = element;
+            r->stage = stage;
+            r->raynum = this->GetRayId(thread_id, raynum);
+            r->event = rev;
+        }
+
         return r;
     }
 
@@ -366,9 +371,15 @@ namespace SolTrace::NativeRunner
 
     TRayData::ray_t_ptr TRayData::GetNext(unsigned thread_id)
     {
-        ray_t_ptr r = std::make_shared<ray_t>();
-        auto n = this->records[thread_id].size();
-        this->records[thread_id].push_back(r);
+        ray_t_ptr r = nullptr;
+        // auto n = this->records[thread_id].size();
+        // this->records[thread_id].push_back(r);
+        auto it = this->records.find(thread_id);
+        if (it != this->records.end())
+        {
+            r = std::make_shared<ray_t>();
+            it->second.push_back(r);
+        }
         return r;
     }
 

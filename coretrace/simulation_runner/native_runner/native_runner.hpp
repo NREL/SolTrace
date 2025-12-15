@@ -78,6 +78,12 @@ namespace SolTrace::NativeRunner
             return;
         }
 
+        void print_log(std::ostream &os)
+        {
+            this->my_manager->print_log(os);
+            return;
+        }
+
         // Accessors
         int_fast64_t get_number_stages() const
         {
