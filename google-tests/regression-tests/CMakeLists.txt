@@ -19,9 +19,17 @@ include_directories(
 # common.hpp and common.cpp contain helper methods used in multiple files.
 set(REGRESSION_TEST_SRC
 	native_runner_validation_test.cpp
-	native_runner_performance_test.cpp
-	native_runner_multithreading_test.cpp
+	# native_runner_performance_test.cpp
+	# native_runner_multithreading_test.cpp
 )
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+	list(APPEND 
+	REGRESSION_TEST_SRC 
+	native_runner_multithreading_test.cpp
+	native_runner_performance_test.cpp
+	)
+endif()
 
 add_executable(RegressionTests
 	${CSV_TOOL}

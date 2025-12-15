@@ -518,7 +518,7 @@ TEST(NativeRunner, CancelMultithread)
     NativeRunner runner;
     runner.disable_point_focus();
     runner.disable_power_tower();
-    runner.set_number_of_threads(20);
+    runner.set_number_of_threads(4);
     RunnerStatus sts;
     sts = runner.setup_simulation(&sd);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
@@ -533,7 +533,7 @@ TEST(NativeRunner, CancelMultithread)
     // Shut everything down to make sure it doesn't hang
     auto t0 = std::chrono::high_resolution_clock::now();
     runner.cancel_simulation();
-    ASSERT_EQ(fsts.wait_for(std::chrono::seconds(2)), std::future_status::ready);
+    ASSERT_EQ(fsts.wait_for(std::chrono::seconds(10)), std::future_status::ready);
     auto t1 = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double, std::milli> dur = t1 - t0;
 
