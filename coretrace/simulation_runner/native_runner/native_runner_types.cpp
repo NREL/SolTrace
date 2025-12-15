@@ -414,7 +414,9 @@ namespace SolTrace::NativeRunner
                        i,
                        pos[0], pos[1], pos[2],
                        cos[0], cos[1], cos[2],
-                       elm, stage, ray,
+                       elm,
+                       stage,
+                       static_cast<long long unsigned>(ray),
                        ray_event_string(rev).c_str(),
                        static_cast<int>(rev));
             }
