@@ -59,11 +59,10 @@ namespace SolTrace::NativeRunner
         void set_number_of_threads(uint_fast64_t nthr)
         {
             this->number_of_threads = nthr;
+            this->seeds.clear();
             return;
         }
 
-        // If number of threads is one, the seeds argument is ignored
-        // when launching the ray tracing.
         void set_number_of_threads(uint_fast64_t nthr,
                                    const std::vector<unsigned int> &seeds)
         {
@@ -94,8 +93,10 @@ namespace SolTrace::NativeRunner
             return nelems;
         }
 
-        const TSystem *get_system() const {
-            return &this->tsys; }
+        const TSystem *get_system() const
+        {
+            return &this->tsys;
+        }
 
         // Helper functions
         RunnerStatus setup_parameters(const SolTrace::Data::SimulationData *data);

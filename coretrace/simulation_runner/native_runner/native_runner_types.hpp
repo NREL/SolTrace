@@ -49,11 +49,11 @@
 #ifndef SOLTRACE_NATIVE_RUNNER_TYPES_H
 #define SOLTRACE_NATIVE_RUNNER_TYPES_H
 
+#include <atomic>
 #include <cstdint>
 #include <exception>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <vector>
 
@@ -362,11 +362,7 @@ namespace SolTrace::NativeRunner
 		// simulation outputs
 		// TRayData AllRayData;
 		TRayData RayData;
-		uint_fast64_t SunRayCount;
-
-		std::vector<std::string> messages;
-
-		void errlog(const char *fmt, ...);
+		std::atomic<uint_fast64_t> SunRayCount;
 	};
 
 } // namespace SolTrace::NativeRunner

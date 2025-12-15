@@ -95,7 +95,8 @@ namespace SolTrace::NativeRunner
 
     void ThreadManager::error_log(const std::string &msg)
     {
-        // TODO: Implement...
+        std::lock_guard<std::mutex> lk(this->message_mutex);
+        this->messages.push_back(msg);
         return;
     }
 
@@ -114,7 +115,7 @@ namespace SolTrace::NativeRunner
         return this->state != ThreadStatus::RUNNING;
     }
 
-    ThreadManager::ThreadStatus ThreadManager::status(double *progress)
+    ThreadManager::ThreadStatus ThreadManager::status(double *progress) const
     {
         ThreadStatus sts = ThreadStatus::ERROR;
         // Create isolated scope for lock guard
@@ -144,16 +145,22 @@ namespace SolTrace::NativeRunner
         return sts;
     }
 
-    void ThreadManager::cancel()
+    void ThreadManager::cancel() const
     {
         std::lock_guard<std::mutex> lk(this->state_mutex);
         this->state = ThreadStatus::CANCEL;
         return;
     }
 
-    void ThreadManager::print_log(std::ostream &os)
+    void ThreadManager::print_log(std::ostream &os) const
     {
-        // TODO: Implement...
+        std::lock_guard<std::mutex> lk(this->message_mutex);
+        for (auto iter = this->messages.cbegin();
+             iter != this->messages.cend();
+             ++iter)
+        {
+            os << *iter;
+        }
         return;
     }
 
@@ -161,11 +168,19 @@ namespace SolTrace::NativeRunner
     {
         // Must call prior to manage and not while running!!
         // this->next_id = 0;
-        std::lock_guard<std::mutex> lk(this->state_mutex);
-        this->state = ThreadStatus::RUNNING;
-        std::lock_guard<std::mutex> kl(this->progress_mutex);
-        this->progress.clear();
-        this->threads.clear();
+        {
+            std::lock_guard<std::mutex> lk(this->state_mutex);
+            this->state = ThreadStatus::RUNNING;
+        }
+        {
+            std::lock_guard<std::mutex> kl(this->progress_mutex);
+            this->progress.clear();
+            this->threads.clear();
+        }
+        {
+            std::lock_guard<std::mutex> lk(this->message_mutex);
+            this->messages.clear();
+        }
         return;
     }
 

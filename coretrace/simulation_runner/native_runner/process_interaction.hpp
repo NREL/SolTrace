@@ -31,8 +31,7 @@ void ProcessInteraction(
     int &ErrorFlag,
     double (&CosRayOutElement)[3],
     double (&LastPosRaySurfElement)[3],
-    double (&PosRayOutElement)[3],
-    int &myrng_counter);
+    double (&PosRayOutElement)[3]);
 
 void Interaction(MTRand &myrng,
                  const double PosXYZ[3],

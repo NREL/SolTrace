@@ -40,9 +40,9 @@ namespace SolTrace::NativeRunner
         bool terminate(unsigned int id);
 
         // For general public use -- thread safe and can be called whenever
-        ThreadStatus status(double *progress = nullptr);
-        void cancel();
-        void print_log(std::ostream &os);
+        ThreadStatus status(double *progress = nullptr) const;
+        void cancel() const;
+        void print_log(std::ostream &os) const;
 
     private:
         // unsigned int next_id;
@@ -54,6 +54,9 @@ namespace SolTrace::NativeRunner
         std::map<unsigned int, double> progress;
 
         std::map<unsigned int, future> threads;
+
+        mutable std::mutex message_mutex;
+        std::vector<std::string> messages;
     };
 
     using thread_manager_ptr = std::shared_ptr<ThreadManager>;

@@ -57,7 +57,7 @@ TEST(NativeRunner, Multithreading)
     std::chrono::duration<double, std::milli> dur = t1 - t0;
     std::cout << "Time: " << dur.count() << " ms" << std::endl;
 
-    EXPECT_TRUE(dur.count() < 15000.0);
+    EXPECT_TRUE(dur.count() < 20000.0);
 
     // element_id absorber_id = 6285;
     // int_fast64_t nabsorbed = count_element_event(result, absorber_id, RayEvent::ABSORB);

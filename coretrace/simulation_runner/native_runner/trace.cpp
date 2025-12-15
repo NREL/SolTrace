@@ -91,22 +91,10 @@ namespace SolTrace::NativeRunner
 		bool IncludeErrors,
 		bool AsPowerTower)
 	{
-		// // Create isolated scope for lock guard
-		// {
-		// 	std::lock_guard<std::mutex> lk(System->state_mutex);
-		// 	System->progress = 0.0;
-		// 	System->cancel = false;
-		// 	System->current_state = RunnerStatus::RUNNING;
-		// }
-
-		// Initialize variables
-		// std::cout << "Seed: " << seed << std::endl;
-		int myrng_counter = 0;
-
 		// Initialize Sun
-		// double PosSunStage[3] = {0.0, 0.0, 0.0};
 		Vector3d PosSunStage;
-		if (!SunToPrimaryStage(System,
+		if (!SunToPrimaryStage(manager,
+							   System,
 							   System->StageList[0].get(),
 							   &System->Sun,
 							   PosSunStage.data))
@@ -187,7 +175,6 @@ namespace SolTrace::NativeRunner
 		// Initialize variables
 		// std::cout << "Seed: " << seed << std::endl;
 		MTRand myrng(seed);
-		int myrng_counter = 0;
 
 		// Determine if PT optimizations should be applied
 		bool PT_override = false;
@@ -222,6 +209,7 @@ namespace SolTrace::NativeRunner
 		uint_fast64_t StageDataArrayIndex = 0;
 		uint_fast64_t PreviousStageDataArrayIndex = 0;
 		uint_fast64_t n_rays_active = NumberOfRays;
+		uint_fast64_t sun_ray_count_local = 0;
 
 		// Loop through stages
 		for (uint_fast64_t i = 0; i < System->StageList.size(); i++)
@@ -267,8 +255,7 @@ namespace SolTrace::NativeRunner
 					GenerateRay(myrng, PosSunStage.data, Stage->Origin,
 								Stage->RLocToRef, &System->Sun,
 								PosRayGlob, CosRayGlob, PosRaySun);
-					// myrng_counter++;
-					System->SunRayCount++;
+					sun_ray_count_local++;
 
 					// If using PT optimizations, check if stage has elements
 					// that could interact with ray
@@ -452,9 +439,13 @@ namespace SolTrace::NativeRunner
 							rev = RayEvent::REFLECT;
 							break;
 						default:
-							System->errlog(
-								"Bad optical interaction type = %d (stage %d)",
-								i, optics->my_type);
+							std::stringstream ss;
+							ss << "Bad optical interation."
+							   << " Type: " << static_cast<int>(optics->my_type)
+							   << " Stage: " << i
+							   << " Thread: " << thread_id
+							   << "\n";
+							manager->error_log(ss.str());
 							return RunnerStatus::ERROR;
 						}
 
@@ -464,7 +455,6 @@ namespace SolTrace::NativeRunner
 						double flip = myrng();
 						if (TestValue <= flip)
 						{
-							// myrng_counter++;
 							// ray was fully absorbed
 							RayIsAbsorbed = true;
 							break;
@@ -473,23 +463,33 @@ namespace SolTrace::NativeRunner
 
 					// Process Interaction
 					int_fast64_t k = LastElementNumber - 1;
-					ProcessInteraction(System, myrng, IncludeSunShape,
+					ProcessInteraction(System,
+									   myrng,
+									   IncludeSunShape,
 									   optics,
 									   IncludeErrors,
 									   i, Stage, // k,
-									   MultipleHitCount, LastDFXYZ,
-									   LastCosRaySurfElement, ErrorFlag,
-									   CosRayOutElement, LastPosRaySurfElement,
-									   PosRayOutElement, myrng_counter);
+									   MultipleHitCount,
+									   LastDFXYZ,
+									   LastCosRaySurfElement,
+									   ErrorFlag,
+									   CosRayOutElement,
+									   LastPosRaySurfElement,
+									   PosRayOutElement);
 
 					// Transform ray back to stage coordinate system
-					TransformToReference(PosRayOutElement, CosRayOutElement,
+					TransformToReference(PosRayOutElement,
+										 CosRayOutElement,
 										 Stage->ElementList[k]->Origin,
 										 Stage->ElementList[k]->RLocToRef,
-										 PosRayStage, CosRayStage);
-					TransformToReference(PosRayStage, CosRayStage,
-										 Stage->Origin, Stage->RLocToRef,
-										 PosRayGlob, CosRayGlob);
+										 PosRayStage,
+										 CosRayStage);
+					TransformToReference(PosRayStage,
+										 CosRayStage,
+										 Stage->Origin,
+										 Stage->RLocToRef,
+										 PosRayGlob,
+										 CosRayGlob);
 
 					System->RayData.Append(thread_id,
 										   PosRayGlob,
@@ -718,6 +718,9 @@ namespace SolTrace::NativeRunner
 								   ray.Num,
 								   RayEvent::EXIT);
 		}
+
+		// System->SunRayCount is atomic so this is thread safe
+		System->SunRayCount += sun_ray_count_local;
 
 		return RunnerStatus::SUCCESS;
 	}

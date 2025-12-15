@@ -375,7 +375,6 @@ namespace SolTrace::NativeRunner
     uint_fast64_t TRayData::GetRayId(unsigned thread_id,
                                      uint_fast64_t raynum)
     {
-        // TODO: Need to check if raynum is 0-based or 1-based.
         return thread_id * this->nray_per_thread + raynum;
     }
 
@@ -437,11 +436,6 @@ namespace SolTrace::NativeRunner
 
     TSystem::TSystem()
     {
-
-        // this->current_state = SolTrace::Runner::RunnerStatus::SUCCESS;
-        // this->cancel = false;
-        // this->progress = 1.0;
-
         SunRayCount = 0;
 
         sim_raycount = 1000;
@@ -462,34 +456,7 @@ namespace SolTrace::NativeRunner
     {
         StageList.clear();
         Sun.Reset();
-        // this->AllRayData.Clear();
         this->RayData.Clear();
-    }
-
-    // void TSystem::CollectResults()
-    // {
-    //     // Collect the ray data from the stages
-    //     // tstage_ptr st;
-    //     for (auto iter = this->StageList.cbegin();
-    //          iter != this->StageList.cend();
-    //          ++iter)
-    //     {
-    //         this->AllRayData.Merge((*iter)->RayData);
-    //     }
-    // }
-
-    void TSystem::errlog(const char *fmt, ...)
-    {
-        static char buf[513];
-        va_list arglist;
-        va_start(arglist, fmt);
-#ifdef WIN32
-        _vsnprintf(buf, 512, fmt, arglist);
-#else
-        vsnprintf(buf, 512, fmt, arglist);
-#endif
-        va_end(arglist);
-        messages.push_back(buf);
     }
 
     telement_ptr make_telement(element_ptr el,

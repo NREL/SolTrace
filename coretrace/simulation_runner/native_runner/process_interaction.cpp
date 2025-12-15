@@ -31,8 +31,7 @@ namespace SolTrace::NativeRunner
         int &ErrorFlag,
         double (&CosRayOutElement)[3],
         double (&LastPosRaySurfElement)[3],
-        double (&PosRayOutElement)[3],
-        int &myrng_counter)
+        double (&PosRayOutElement)[3])
     {
         // Initialize
         double CosIn[3] = {0.0, 0.0, 0.0};

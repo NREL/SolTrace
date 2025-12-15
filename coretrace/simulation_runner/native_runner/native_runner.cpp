@@ -283,13 +283,14 @@ namespace SolTrace::NativeRunner
 
     RunnerStatus NativeRunner::run_simulation()
     {
-        if (this->seeds.empty())
+        if (this->seeds.empty() ||
+            this->seeds.size() != this->number_of_threads)
         {
-            this->seeds.push_back(this->tsys.seed);
-        }
-        else if (this->seeds.size() == 1)
-        {
-            this->seeds[0] = tsys.seed;
+            this->seeds.clear();
+            for (unsigned k = 0; k < this->number_of_threads; ++k)
+            {
+                this->seeds.push_back(this->tsys.seed + 123 * k);
+            }
         }
         else
         {
