@@ -359,7 +359,7 @@ protected:
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
     }
 
-    void calculate_sun_size(bool print_sun_info) {
+    void calculate_sun_size() {
         double dni = 1000.0; // W/m2 (constant for all tests)
         const TSystem* sys = runner.get_system();
         const TSun* sun = &(sys->Sun);
@@ -369,14 +369,14 @@ protected:
         nsun_rays = sys->SunRayCount;
         power_per_ray = A_sun_box / nsun_rays * dni;
 
-        if (print_sun_info) {
+        if (print_info) {
             std::cout << "Power per ray: " << power_per_ray << std::endl;
             std::cout << "Sun box: " << sun_width << " x " << sun_height << std::endl;
             std::cout << "Sun ray count: " << nsun_rays << std::endl;
         }
     }
 
-    void calculate_ray_counts(SimulationResult result, bool print_info) {
+    void calculate_ray_counts(SimulationResult result) {
         // Clear and Reset counts
         helio_hit_counts.clear();
         helio_hit_counts.resize(heliostat_field.size(), 0);
@@ -569,7 +569,7 @@ protected:
         NumberOfRays = 0;
     }
 
-    bool calculate_receiver_flux_map(SimulationResult result, int nbinsx, int nbinsy, bool is_cylinder, bool print_info) {
+    bool calculate_receiver_flux_map(SimulationResult result, int nbinsx, int nbinsy, bool is_cylinder) {
         reset_flux_map();
 
         double minx, maxx, miny, maxy;
@@ -788,7 +788,7 @@ protected:
 
         // Peak flux value
         double peak_tol = high_accuracy ? 5.e-3 : 0.25;
-        calculate_receiver_flux_map(result, 60, 23, true, print_info);
+        calculate_receiver_flux_map(result, 60, 23, true);
         EXPECT_NEAR(PeakFlux / 1.e3, expected_peak_flux, peak_tol * expected_peak_flux);
 
         // RMS of flux values
@@ -859,7 +859,7 @@ protected:
         
         SimulationResult result;
         simulate(&result);
-        calculate_sun_size(print_info);
+        calculate_sun_size();
 
         if (hour == "8") {
             EXPECT_NEAR(sun_width, 1276.43, 1.e-2);
@@ -870,7 +870,7 @@ protected:
             EXPECT_NEAR(sun_height, 2457.81, 1.e-2);
         }
 
-        calculate_ray_counts(result, print_info);
+        calculate_ray_counts(result);
         read_expected_all_results(task_number, aim_strategy, hour);
         check_outputs(result);
 
