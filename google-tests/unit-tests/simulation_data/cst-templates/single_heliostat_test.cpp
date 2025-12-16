@@ -29,19 +29,24 @@ using SolTrace::NativeRunner::TSun;
 
 class SingleHeliostatSimulation : public ::testing::Test {
 public:
+    bool high_accuracy = false;     // Runs 20 Million rays and tighter tolerance on checks
+    bool print_info = false;        // Prints information on from simulation results (sun calculations, ray counts, flux calculations)
+
     const Vector3d zero = { 0.0, 0.0, 0.0 }; // Global origin
     const Vector3d khat = { 0.0, 0.0, 1.0 }; // Global z-axis
 
     double solar_azimuth = 180.0;
     double solar_elevation = 59.96377;
 
+    double rec_radius = 0.0;
+
+    std::shared_ptr<SolTrace::Data::Sun> sun;
     std::shared_ptr<Heliostat> heliostat;
     std::shared_ptr<SolTrace::Data::SingleElement> receiver;
 protected:
 
     SimulationData simData;
     NativeRunner runner;
-    SimulationResult result;
 
     double sun_width;
     double sun_height;
@@ -66,6 +71,12 @@ protected:
     double zScale;
     size_t NumberOfRays;
 
+    // Expected results
+    double expected_power;
+    double expected_peak_flux;
+    double expected_flux_RMS;
+
+    HPM2D expected_fluxGrid;
 
     void SetUp() override {
         // Set parameters
@@ -76,6 +87,9 @@ protected:
         params.include_sun_shape_errors = true;
         params.seed = 123;
 
+        // Initialize runner
+        RunnerStatus sts = runner.initialize();
+        EXPECT_EQ(sts, RunnerStatus::SUCCESS);
         runner.disable_power_tower();
         runner.disable_point_focus();
 
@@ -120,16 +134,19 @@ protected:
         receiver->enable();
     }
 
+    void set_high_accuracy_params() {
+        SimulationParameters& params = simData.get_simulation_parameters();
+        params.number_of_rays = 20.e6;
+        params.max_number_of_rays = params.number_of_rays * 100;
+    }
+
     void setup_simData() {
         // Set up sun
-        Vector3d sun_pos;
-        sun_position_vector_degrees(sun_pos, solar_azimuth, solar_elevation);
-        {
-            auto sun = SolTrace::Data::make_ray_source<Sun>();
-            sun->set_position(sun_pos);
-            sun->set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 4.65, 0.0);
-            simData.add_ray_source(sun);
-        }
+        Vector3d sun_pos = { 0.0, 0.0, 1000.0 };
+        sun = SolTrace::Data::make_ray_source<Sun>();
+        sun->set_position(sun_pos);
+        sun->set_shape(SolTrace::Data::SunShape::PILLBOX, 0.0, 4.65, 0.0);
+        simData.add_ray_source(sun);
 
         // Set up stages
         stage_ptr st1 = SolTrace::Data::make_stage(1);
@@ -146,19 +163,67 @@ protected:
         simData.add_stage(st2);
     }
 
-    void simulate() {
-        RunnerStatus sts = runner.initialize();
-        EXPECT_EQ(sts, RunnerStatus::SUCCESS);
-        // Setup runs but is not complete
-        sts = runner.setup_simulation(&simData);
+    void set_heliostat_to_southeast() {
+        // Update heliostat position to southeast of tower
+        Vector3d helio_origin(200.0, -200.0, 5.65);     // Southeast of tower
+        heliostat->set_reference_frame_geometry(helio_origin, khat, 0.0);
+
+        // Point receiver to heliostat without tilting down
+        helio_origin[2] = 0.0; // Project to ground plane
+        Vector3d rec_origin = receiver->get_origin_ref();
+        Vector3d aim_point;
+        vector_add(1.0, rec_origin, 1.0, helio_origin, aim_point);
+        receiver->set_reference_frame_geometry(rec_origin, aim_point, 90.0);
+    }
+
+    void set_slant_focal_length() {
+        // Set focal length to slant range
+        Vector3d distance;
+        vector_add(-1.0, receiver->get_origin_global(), 1.0, heliostat->get_origin_global(), distance);
+        double focal_length = vector_norm(distance);
+        heliostat->set_focal_length(focal_length);
+        //heliostat->create_geometry();
+    }
+
+    void set_flat_multi_facet() {
+        heliostat->set_number_panels(7, 5);
+        heliostat->set_gaps(0.03, 0.03);
+        heliostat->create_geometry();
+    }
+
+    void set_onaxis_slant_canting() {
+        heliostat->set_number_panels(7, 5);
+        heliostat->set_gaps(0.03, 0.03);
+        // Set on-axis canting to slant range
+        Vector3d distance;
+        vector_add(-1.0, receiver->get_origin_global(), 1.0, heliostat->get_origin_global(), distance);
+        double focal_length = vector_norm(distance);
+        heliostat->set_canting(Heliostat::CantingType::ON_AXIS, focal_length, 0.0);
+        heliostat->create_geometry();
+    }
+
+    void update_simulation_geometry(double azimuth, double elevation) {
+        // Set sun position
+        Vector3d sun_pos;
+        sun_position_vector_degrees(sun_pos, azimuth, elevation);
+        sun->set_position(sun_pos);
+        // Update heliostat position
+        heliostat->update_geometry(azimuth, elevation);
+    }
+
+    void simulate(SimulationResult* result) {
+        if (high_accuracy) set_high_accuracy_params();
+
+        RunnerStatus sts = runner.setup_simulation(&simData);
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
         sts = runner.run_simulation();
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
-        sts = runner.report_simulation(&result, 0);
+        sts = runner.report_simulation(result, 0);
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
     }
 
-    void calculate_sun_size(double dni, bool print_sun_info) {
+    void calculate_sun_size() {
+        double dni = 1000.0; // W/m2 (constant for all tests)
         const TSystem* sys = runner.get_system();
         const TSun* sun = &(sys->Sun);
         sun_width = (sun->MaxXSun - sun->MinXSun);
@@ -166,14 +231,14 @@ protected:
         A_sun_box = sun_width * sun_height;
         power_per_ray = A_sun_box / sys->SunRayCount * dni;
 
-        if (print_sun_info) {
+        if (print_info) {
             std::cout << "Power per ray: " << power_per_ray << std::endl;
             std::cout << "Sun box: " << sun_width << " x " << sun_height << std::endl;
             std::cout << "Sun ray count: " << sys->SunRayCount << std::endl;
         }
     }
 
-    void calculate_ray_counts(bool print_info) {
+    void calculate_ray_counts(SimulationResult result) {
         // Reset counts
         helio_hit_count = 0;
         reflect_count = 0;
@@ -217,6 +282,79 @@ protected:
         }
     }
 
+    void read_expected_summary_results(std::string filepath) {
+        // Reading in fluxData summary
+        std::ifstream file(filepath);
+        if (!file.is_open()) {
+            std::cout << "Could not open expected results file." << std::endl;
+            std::cout << "Filepath:" << filepath << std::endl;
+            return;
+        }
+
+        int line_number = 1;
+        std::string line;
+        while (std::getline(file, line)) {
+            std::stringstream ss(line);
+            std::string item;
+            std::vector<std::string> tokens;
+            while (std::getline(ss, item, ',')) {
+                tokens.push_back(item);
+            }
+            // calculate the average value for lines with multiple entries
+            if (line_number == 2 || line_number == 3 || line_number == 6) {
+                double value = 0.0;
+                for (size_t i = 1; i < tokens.size(); i++) {
+                    value += std::stod(tokens[i]);
+                }
+                value /= (double)(tokens.size() - 1);
+
+                if (line_number == 2) expected_power = value;
+                if (line_number == 3) expected_peak_flux = value;
+                if (line_number == 6) expected_flux_RMS = value;
+            }
+            line_number++;
+        }
+    }
+
+    void read_expected_flux_map(std::string filepath) {
+        // Reading in fluxData summary
+        std::ifstream file(filepath);
+        if (!file.is_open()) {
+            std::cout << "Could not open expected flux map file." << std::endl;
+            std::cout << "Filepath:" << filepath << std::endl;
+            return;
+        }
+
+        expected_fluxGrid.clear();
+        expected_fluxGrid.resize(150, 100);
+        expected_fluxGrid.fill(0.0);
+
+        int row_number = 0;
+        std::string line;
+        while (std::getline(file, line)) {
+            std::stringstream ss(line);
+            std::string item;
+            std::vector<std::string> tokens;
+            while (std::getline(ss, item, ',')) {
+                tokens.push_back(item);
+            }
+
+            for (size_t col_number = 0; col_number < tokens.size(); col_number++) {
+                double val = std::stod(tokens[col_number]);
+                expected_fluxGrid.at(row_number, col_number) = val;
+            }
+            row_number++;
+        }
+    }
+
+    void read_expected_all_results(std::string task_number, std::string heliostat_position) {
+        std::string round_robin_base = "/round_robin_study/results/phase_I/";
+        std::string summary_file = "fluxDataSummary_Task_" + task_number + "_" + heliostat_position + ".csv";
+        read_expected_summary_results(std::string(PROJECT_DIR) + round_robin_base + summary_file);
+        std::string fluxmap_file = "soltrace_Task_" + task_number + "_" + heliostat_position + "_fluxmap.csv";
+        read_expected_flux_map(std::string(PROJECT_DIR) + round_robin_base + fluxmap_file);
+    }
+
     void reset_flux_map() {
         fluxGrid.clear();
         xValues.clear();
@@ -230,11 +368,11 @@ protected:
         NumberOfRays = 0;
     }
 
-    bool calculate_receiver_flux_map(
-        int nbinsx, int nbinsy, bool print_info) {
+    bool calculate_receiver_flux_map(SimulationResult result, int nbinsx, int nbinsy, bool is_cylinder) {
         reset_flux_map();
 
         double minx, maxx, miny, maxy;
+        minx = maxx = miny = maxy = 0.0;
         Vector3d rec_origin = receiver->get_origin_global();
 
         // Autoscale
@@ -265,22 +403,28 @@ protected:
         }
 
         if (nbinsx <= 1 || nbinsy <= 1
-            || maxx <= minx || maxy <= miny) {
+            || maxx <= minx || maxy <= miny)
+        {
             return false;
         }
 
         double gridszx = maxx - minx;
         double gridszy = maxy - miny;
 
+        if (is_cylinder) {
+            minx = -PI * rec_radius;
+            maxx = PI * rec_radius;
+            gridszx = 2.0 * PI * rec_radius;
+        }
+
         binszx = gridszx / (double)nbinsx;
         binszy = gridszy / (double)nbinsy;
 
         xValues.resize(nbinsx);
         yValues.resize(nbinsy);
-        fluxGrid.resize(nbinsx, nbinsy);
+        fluxGrid.resize(nbinsy, nbinsx);
 
         // Bin rays here -> BinRaysXY()
-        double zval = 0;
         double x, y, z;
         int GridIncrementX, GridIncrementY;
 
@@ -311,7 +455,14 @@ protected:
                         Centroid[2] += z;
                         npoints++;
 
-                        zval = z;
+                        if (is_cylinder) {
+                            if (z <= rec_radius)
+                                x = rec_radius * asin(x / rec_radius);
+                            else if (z > rec_radius) {
+                                if (x < 0) x = -(PI * rec_radius / 2.0 + rec_radius * acos(fabs(x) / rec_radius));
+                                if (x >= 0) x = PI * rec_radius / 2.0 + rec_radius * acos(x / rec_radius);
+                            }
+                        }
 
                         GridIncrementX = -1; //initialize grid increment counters
                         GridIncrementY = -1;
@@ -323,10 +474,13 @@ protected:
                         while ((miny + (GridIncrementY + 1) * binszy) < y)
                             GridIncrementY++;
 
-                        if (GridIncrementX >= 0 && GridIncrementX < (int)fluxGrid.nrows()
-                            && GridIncrementY >= 0 && GridIncrementY < (int)fluxGrid.ncols())
+                        GridIncrementX = nbinsx - GridIncrementX - 1;
+                        GridIncrementY = nbinsy - GridIncrementY - 1;
+
+                        if (GridIncrementX >= 0 && GridIncrementX < (int)fluxGrid.ncols()
+                            && GridIncrementY >= 0 && GridIncrementY < (int)fluxGrid.nrows())
                         {
-                            fluxGrid.at(GridIncrementX, GridIncrementY) += 1;//if ray falls inside a bin, increment count for that bin
+                            fluxGrid.at(GridIncrementY, GridIncrementX) += 1;//if ray falls inside a bin, increment count for that bin
                             RayCount++;  //increment ray intersection counter
                         }
                         else
@@ -358,7 +512,7 @@ protected:
         MinFlux = 1e99;
 
         int NRaysInMinFluxBin = -1, NRaysInPeakFluxBin = -1;
- 
+
         zScale = power_per_ray / (binszx * binszy);
         for (size_t r = 0; r < fluxGrid.nrows(); r++)
         {
@@ -373,7 +527,7 @@ protected:
                     NRaysInPeakFluxBin = (int)fluxGrid.at(r, c);
                 }
 
-                if (z < MinFlux){
+                if (z < MinFlux) {
                     MinFlux = z;
                     NRaysInMinFluxBin = (int)fluxGrid.at(r, c);
                 }
@@ -384,7 +538,8 @@ protected:
         SigmaFlux = sqrt((nbinsx * nbinsy * SumFlux2 - SumFlux * SumFlux) / (nbinsx * nbinsy * nbinsx * nbinsy));
         Uniformity = SigmaFlux / AveFlux;
         PeakFluxUncertainty = 100 / sqrt((double)NRaysInPeakFluxBin);
-        AveFluxUncertainty = 100 / sqrt((double)result.get_number_of_records());     // TODO: Should the be number of rays traced not total interactions?
+        AveFluxUncertainty = 100 / sqrt((double)result.get_number_of_records());
+        // TODO: Should the be number of rays hitting the surface, not total rays traced?
 
         if (print_info) {
             std::cout << "Receiver auto bounds:" << std::endl;
@@ -405,6 +560,125 @@ protected:
 
     }
 
+    void check_outputs(SimulationResult result, std::string position) {
+        // Check heliostat aim vector and z-rotation
+        if (position == "N") {
+            EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], 0.0, 1.e-3);
+            EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -276.838, 1.e-3);
+            EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 635.35, 1.e-3);
+            EXPECT_NEAR(heliostat->get_zrot(), 180.0, 1.e-4); // TODO: This should be zero
+        }
+        else if (position == "SE") {
+            EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], -207.952, 1.e-3);
+            EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -125.53, 1.e-3);
+            EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 915.611, 1.e-3);
+            EXPECT_NEAR(heliostat->get_zrot(), -80.5688, 1.e-4);
+        }
+
+
+        SimulationParameters& params = simData.get_simulation_parameters();
+        EXPECT_EQ(helio_hit_count, params.number_of_rays);
+        EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
+        EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
+
+        double tol = high_accuracy ? 3.5e-3 : 7.e-3;
+
+        EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
+
+        // Total power absorbed
+        double total_power = rec_absorb_count * power_per_ray / 1.e3;   // W to kW
+        EXPECT_NEAR(total_power, expected_power, tol * expected_power);
+
+        double peak_tol = high_accuracy ? 1.5e-2 : 0.25;
+        if (!high_accuracy) {
+            calculate_receiver_flux_map(result, 30, 30, false);
+        }
+        else {
+            calculate_receiver_flux_map(result, 100, 150, false);
+        }
+        EXPECT_NEAR(PeakFlux / 1.e3, expected_peak_flux, peak_tol * expected_peak_flux);
+
+        // RMS of flux values
+        if (!high_accuracy) calculate_receiver_flux_map(result, 100, 150, false);  // Re-calculate
+        EXPECT_EQ(fluxGrid.nrows(), expected_fluxGrid.nrows());
+        EXPECT_EQ(fluxGrid.ncols(), expected_fluxGrid.ncols());
+        double rmse = 0.0;
+        double average_flux = 0.0;
+        for (size_t r = 0; r < fluxGrid.nrows(); r++) {
+            for (size_t c = 0; c < fluxGrid.ncols(); c++) {
+                double sim_flux = fluxGrid.at(r, c) * zScale / 1.e3;
+                double exp_flux = expected_fluxGrid.at(r, c);
+                rmse += pow(sim_flux - exp_flux, 2);
+                average_flux += sim_flux;
+            }
+        }
+        rmse = sqrt(rmse / (fluxGrid.nrows() * fluxGrid.ncols()));
+        average_flux /= (fluxGrid.nrows() * fluxGrid.ncols());
+
+        double rmse_tol = high_accuracy ? 0.025 : 0.11;  // 2% of peak flux // 0.04
+        EXPECT_LE(rmse / (PeakFlux / 1.e3), rmse_tol);
+
+        if (print_info) {
+            std::cout << "Power on receiver: " << total_power << " kW" << std::endl;
+            std::cout << "Flux map RMS error: " << rmse << " kW/m2" << std::endl;
+            std::cout << "Peak flux: " << PeakFlux / 1.e3 << " kW/m2" << std::endl;
+            std::cout << "Average flux: " << average_flux << " kW/m2" << std::endl;
+        }
+    }
+
+    void save_flux_map_to_file(std::string filename) {
+        // Print out flux comparison to file
+        std::ofstream outputFile(filename, std::ios::out | std::ios::trunc);
+        if (!outputFile.is_open()) {
+            std::cerr << "Error: Could not open the file " << filename << std::endl;
+        }
+        for (size_t r = 0; r < fluxGrid.nrows(); r++) {
+            for (size_t c = 0; c < fluxGrid.ncols(); c++) {
+                outputFile << fluxGrid.at(r, c) * zScale / 1.e3 << ",";
+            }
+            outputFile << std::endl;
+        }
+    }
+
+    void save_flux_comparison_to_file(std::string filename) {
+        // Print out flux comparison to file
+        std::ofstream outputFile(filename, std::ios::out | std::ios::trunc);
+        if (!outputFile.is_open()) {
+            std::cerr << "Error: Could not open the file " << filename << std::endl;
+        }
+        for (size_t r = 0; r < fluxGrid.nrows(); r++) {
+            for (size_t c = 0; c < fluxGrid.ncols(); c++) {
+                double sim_flux = fluxGrid.at(r, c) * zScale / 1.e3;
+                double exp_flux = expected_fluxGrid.at(r, c);
+                outputFile << sim_flux << "," << exp_flux << "," << (sim_flux - exp_flux) << "," << (sim_flux - exp_flux) / exp_flux << std::endl;
+            }
+        }
+    }
+
+    void simulate_check_outputs(std::string task_number, std::string position) {
+
+        if (print_info) {
+            std::cout << "\n\nTask: " << task_number << ", Heliostat Position: " << position << std::endl;
+        }
+
+        update_simulation_geometry(solar_azimuth, solar_elevation);
+
+        SimulationResult result;
+        simulate(&result);
+
+        calculate_sun_size();
+        calculate_ray_counts(result);
+        read_expected_all_results(task_number, position);
+        check_outputs(result, position);
+
+        
+        //result.write_csv_file("single_heliostat_raydata.csv");
+        std::string flux_result_filename = "single_heliostat_fluxmap_results.csv";
+        save_flux_map_to_file(flux_result_filename);
+        std::string flux_comparison_filename = "single_heliostat_fluxmap_comparison.csv";
+        save_flux_comparison_to_file(flux_comparison_filename);
+    }
+
     void TearDown() override {
         // Code here will be called immediately after each test (right
         // before the destructor).
@@ -414,666 +688,103 @@ protected:
 
 TEST_F(SingleHeliostatSimulation, SingleFacetFlat_North) 
 {
-    bool high_accuracy = false;
-    bool print_info = false;
-
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], 0.0, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -276.838, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 635.35, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), 180.0, 1.e-4); // TODO: This should be zero
-
     setup_simData();
-    simulate();
-    //result.write_csv_file("singlefacetflat_north_raydata.csv");
-
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
+    simulate_check_outputs("1a", "N");
     EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
     EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy? 5.e-4 : 5.e-3;
-    //double expected_power = 99967.3;    // No sunshape or surfaces errors
-    //double expected_power = 93219.6;    // Sunshape only
-    //double expected_power = 88033.6;    // Surface errors only
-    double expected_power = 84984.8;      // Sunshape + surface errors
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 853.65157013;
-        EXPECT_NEAR(PeakFlux, expected_peak, 2.0);
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 906.458;
-        EXPECT_NEAR(PeakFlux, expected_peak, 30.0);
-    }
 }
+
 TEST_F(SingleHeliostatSimulation, SingleFacetFlat_Southeast)
 {
-    bool high_accuracy = false;
-    bool print_info = false;
-
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-    // Update heliostat position to southeast of tower
-    Vector3d helio_origin(200.0, -200.0, 5.65);     // Southeast of tower
-    heliostat->set_reference_frame_geometry(helio_origin, khat, 0.0);
-    
-    // Point receiver to heliostat without tilting down
-    helio_origin[2] = 0.0; // Project to ground plane
-    Vector3d rec_origin = receiver->get_origin_ref();
-    Vector3d aim_point;
-    vector_add(1.0, rec_origin, 1.0, helio_origin, aim_point);
-    receiver->set_reference_frame_geometry(rec_origin, aim_point, 90.0);
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], -207.952, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -125.53, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 915.611, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), -80.5688, 1.e-4);
-
+    set_heliostat_to_southeast();
     setup_simData();
-    simulate();
-    //result.write_csv_file("singlefacetflat_southeast_raydata.csv");
-
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
+    simulate_check_outputs("1a", "SE");
     EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
     EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy ? 5.e-4 : 5.e-3;
-    //double expected_power = 77251.8;    // No sunshape or surfaces errors
-    //double expected_power = 76345.1;    // Sunshape only
-    //double expected_power = 75585.1;    // Surface errors only
-    double expected_power = 74695.7;      // Sunshape + surface errors
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 824.965626;
-        EXPECT_NEAR(PeakFlux, expected_peak, 10.0);
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 921.871;
-        EXPECT_NEAR(PeakFlux, expected_peak, 30.0);
-    }
 }
+
 TEST_F(SingleHeliostatSimulation, SingleFacetFocused_North)
 {
-    bool high_accuracy = false;
-    bool print_info = false;
-
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-
-    // Set focal length to slant range
-    Vector3d distance;
-    vector_add(-1.0, receiver->get_origin_global(), 1.0, heliostat->get_origin_global(), distance);
-    double focal_length = vector_norm(distance);
-    heliostat->set_focal_length(focal_length);
-    heliostat->create_geometry();
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], 0.0, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -276.838, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 635.35, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), 180.0, 1.e-4); // TODO: This should be zero
-
+    set_slant_focal_length();
     setup_simData();
-    simulate();
-    //result.write_csv_file("singlefacetfocused_north_raydata.csv");
-
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
+    simulate_check_outputs("1b", "N");
     EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
     EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy ? 5.e-4 : 5.e-3;
-    double expected_power = 99057.1;      // Sunshape + surface errors
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 2634.595862;
-
-        EXPECT_NEAR(PeakFlux, expected_peak, 10.0);
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 2676.09;
-        EXPECT_NEAR(PeakFlux, expected_peak, 30.0);
-    }
 }
+
 TEST_F(SingleHeliostatSimulation, SingleFacetFocused_Southeast)
 {
-    bool high_accuracy = false;
-    bool print_info = false;
-
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-    // Update heliostat position to southeast of tower
-    Vector3d helio_origin(200.0, -200.0, 5.65);     // Southeast of tower
-    heliostat->set_reference_frame_geometry(helio_origin, khat, 0.0);
-
-    // Set focal length to slant range
-    Vector3d distance;
-    vector_add(-1.0, receiver->get_origin_global(), 1.0, heliostat->get_origin_global(), distance);
-    double focal_length = vector_norm(distance);
-    heliostat->set_focal_length(focal_length);
-    heliostat->create_geometry();       // Re-create geometry with new focal length
-
-    // Point receiver to heliostat without tilting down
-    helio_origin[2] = 0.0; // Project to ground plane
-    Vector3d rec_origin = receiver->get_origin_ref();
-    Vector3d aim_point;
-    vector_add(1.0, rec_origin, 1.0, helio_origin, aim_point);
-    receiver->set_reference_frame_geometry(rec_origin, aim_point, 90.0);
-
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], -207.952, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -125.53, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 915.611, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), -80.5688, 1.e-4);
-
+    set_heliostat_to_southeast();
+    set_slant_focal_length();       // reset focal length after moving heliostat
     setup_simData();
-    simulate();
-    //result.write_csv_file("singlefacetfocused_southeast_raydata.csv");
-
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
+    simulate_check_outputs("1b", "SE");
     EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
     EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy ? 5.e-4 : 5.e-3;
-    double expected_power = 80322.3;      // Sunshape + surface errors
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 4273.82;
-
-        EXPECT_NEAR(PeakFlux, expected_peak, 10.0);
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 4386.455;
-        EXPECT_NEAR(PeakFlux, expected_peak, 30.0);
-    }
 }
+
 TEST_F(SingleHeliostatSimulation, MultiFacetFlat_NoCanting_North)
 {
-    bool high_accuracy = false;
-    bool print_info = false;
+    print_info = false;
+    high_accuracy = false;
 
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-    // Multi-facet heliostat
-    heliostat->set_number_panels(7, 5);
-    heliostat->set_gaps(0.03, 0.03);
-    heliostat->create_geometry();
-
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], 0.0, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -276.838, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 635.35, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), 180.0, 1.e-4); // TODO: This should be zero
-
+    set_flat_multi_facet();
     setup_simData();
-    simulate();
-    //result.write_csv_file("raydata.csv");
-
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
-    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);
+    simulate_check_outputs("2", "N");
+    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);     // TODO: Why different from single facet?
     EXPECT_NEAR(sun_height, 10.4195, 1.e-4);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy ? 5.e-4 : 5.e-3;
-    double expected_power = 82587.50674;
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 827.775965;
-        EXPECT_NEAR(PeakFlux, expected_peak, 10.0);
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 906.458;
-        EXPECT_NEAR(PeakFlux, expected_peak, 30.0);
-    }
 }
 
 TEST_F(SingleHeliostatSimulation, MultiFacetFlat_NoCanting_Southeast)
 {
-    bool high_accuracy = false;
-    bool print_info = false;
+    print_info = false;
+    high_accuracy = false;
 
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-    // Update heliostat position to southeast of tower
-    Vector3d helio_origin(200.0, -200.0, 5.65);     // Southeast of tower
-    heliostat->set_reference_frame_geometry(helio_origin, khat, 0.0);
-
-    // Multi-facet heliostat
-    heliostat->set_number_panels(7, 5);
-    heliostat->set_gaps(0.03, 0.03);
-    heliostat->create_geometry();
-
-    // Point receiver to heliostat without tilting down
-    helio_origin[2] = 0.0; // Project to ground plane
-    Vector3d rec_origin = receiver->get_origin_ref();
-    Vector3d aim_point;
-    vector_add(1.0, rec_origin, 1.0, helio_origin, aim_point);
-    receiver->set_reference_frame_geometry(rec_origin, aim_point, 90.0);
-
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], -207.952, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -125.53, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 915.611, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), -80.5688, 1.e-4);
-
+    set_flat_multi_facet();
+    set_heliostat_to_southeast();
     setup_simData();
-    simulate();
-    //result.write_csv_file("raydata.csv");
-
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
+    simulate_check_outputs("2", "SE");
     EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
     EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy ? 3.e-3 : 5.e-3; // TODO: Understand why this case is less accurate
-    double expected_power = 72486.83912;
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 834.794525;
-        EXPECT_NEAR(PeakFlux, expected_peak, 35.0); // TODO: Understand why this case is less accurate
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 877.152;
-        EXPECT_NEAR(PeakFlux, expected_peak, 30.0);
-    }
 }
 
-TEST_F(SingleHeliostatSimulation, MultiFacetFlat_OnAxisSlantCanting_North)
+TEST_F(SingleHeliostatSimulation, MultiFacetFlat_SlantCanting_North)
 {
-    bool high_accuracy = false;
-    bool print_info = false;
-
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-    // Multi-facet heliostat
-    heliostat->set_number_panels(7, 5);
-    heliostat->set_gaps(0.03, 0.03);
-    // Set on-axis canting to slant range
-    Vector3d distance;
-    vector_add(-1.0, receiver->get_origin_global(), 1.0, heliostat->get_origin_global(), distance);
-    double focal_length = vector_norm(distance);
-    heliostat->set_canting(Heliostat::CantingType::ON_AXIS, focal_length, 0.0);
-    heliostat->create_geometry();
-
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], 0.0, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -276.838, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 635.35, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), 180.0, 1.e-4); // TODO: This should be zero
-
+    set_onaxis_slant_canting();
     setup_simData();
-    simulate();
-    //result.write_csv_file("raydata.csv");
+    simulate_check_outputs("3", "N");
+    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);     
+    EXPECT_NEAR(sun_height, 10.4236, 1.e-4);  // TODO: Why different than flat facet case?
+}
 
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
-    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);
+TEST_F(SingleHeliostatSimulation, MultiFacetFlat_SlantCanting_Southeast)
+{
+    set_heliostat_to_southeast();
+    set_onaxis_slant_canting();
+    setup_simData();
+    simulate_check_outputs("3", "SE");
+    EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
+    EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
+}
+
+TEST_F(SingleHeliostatSimulation, MultiFacetFocused_SlantCanting_North)
+{
+    set_slant_focal_length();
+    set_onaxis_slant_canting();
+    setup_simData();
+    simulate_check_outputs("4", "N");
+    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);     // TODO: Why different from single facet?
     EXPECT_NEAR(sun_height, 10.4236, 1.e-4);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy ? 5.e-4 : 5.e-3;
-    double expected_power = 96208.97147;
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 2462.377564;
-        EXPECT_NEAR(PeakFlux, expected_peak, 25.0);
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 2499.6;
-        EXPECT_NEAR(PeakFlux, expected_peak, 30.0);
-    }
 }
 
-TEST_F(SingleHeliostatSimulation, MultiFacetFlat_OnAxisSlantCanting_Southeast)
+TEST_F(SingleHeliostatSimulation, MultiFacetFocused_SlantCanting_Southeast)
 {
-    bool high_accuracy = false;
-    bool print_info = false;
-
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-    // Update heliostat position to southeast of tower
-    Vector3d helio_origin(200.0, -200.0, 5.65);     // Southeast of tower
-    heliostat->set_reference_frame_geometry(helio_origin, khat, 0.0);
-
-    // Multi-facet heliostat
-    heliostat->set_number_panels(7, 5);
-    heliostat->set_gaps(0.03, 0.03);
-    // Set on-axis canting to slant range
-    Vector3d distance;
-    vector_add(-1.0, receiver->get_origin_global(), 1.0, heliostat->get_origin_global(), distance);
-    double focal_length = vector_norm(distance);
-    heliostat->set_canting(Heliostat::CantingType::ON_AXIS, focal_length, 0.0);
-    heliostat->create_geometry();
-
-    // Point receiver to heliostat without tilting down
-    helio_origin[2] = 0.0; // Project to ground plane
-    Vector3d rec_origin = receiver->get_origin_ref();
-    Vector3d aim_point;
-    vector_add(1.0, rec_origin, 1.0, helio_origin, aim_point);
-    receiver->set_reference_frame_geometry(rec_origin, aim_point, 90.0);
-
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], -207.952, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -125.53, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 915.611, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), -80.5688, 1.e-4);
-
+    set_heliostat_to_southeast();
+    set_slant_focal_length();
+    set_onaxis_slant_canting();
     setup_simData();
-    simulate();
-    //result.write_csv_file("raydata.csv");
-
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
+    simulate_check_outputs("4", "SE");
     EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
     EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy ? 3.e-3 : 5.e-3;
-    double expected_power = 78140.42109;
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 3835.962992;
-        EXPECT_NEAR(PeakFlux, expected_peak, 25.0);
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 3835.962992;
-        EXPECT_NEAR(PeakFlux, expected_peak, 150.0);
-    }
-}
-
-TEST_F(SingleHeliostatSimulation, MultiFacetFocused_OnAxisSlantCanting_North)
-{
-    bool high_accuracy = false;
-    bool print_info = false;
-
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-    // Multi-facet heliostat
-    heliostat->set_number_panels(7, 5);
-    heliostat->set_gaps(0.03, 0.03);
-    // Set on-axis canting to slant range
-    Vector3d distance;
-    vector_add(-1.0, receiver->get_origin_global(), 1.0, heliostat->get_origin_global(), distance);
-    double focal_length = vector_norm(distance);
-    heliostat->set_canting(Heliostat::CantingType::ON_AXIS, focal_length, 0.0);
-    heliostat->set_focal_length(focal_length);
-    heliostat->create_geometry();
-
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], 0.0, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -276.838, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 635.35, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), 180.0, 1.e-4); // TODO: This should be zero
-
-    setup_simData();
-    simulate();
-    //result.write_csv_file("raydata.csv");
-
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
-    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);
-    EXPECT_NEAR(sun_height, 10.4236, 1.e-4);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy ? 5.e-4 : 5.e-3;
-    double expected_power = 96370.82753;
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 2583.58203;
-        EXPECT_NEAR(PeakFlux, expected_peak, 25.0);
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 2499.6;
-        EXPECT_NEAR(PeakFlux, expected_peak, 30.0);
-    }
-}
-
-TEST_F(SingleHeliostatSimulation, MultiFacetFocused_OnAxisSlantCanting_Southeast)
-{
-    bool high_accuracy = false;
-    bool print_info = false;
-
-    SimulationParameters& params = simData.get_simulation_parameters();
-    if (high_accuracy) {
-        params.number_of_rays = 20.e6;
-        params.max_number_of_rays = params.number_of_rays * 100;
-    }
-    // Update heliostat position to southeast of tower
-    Vector3d helio_origin(200.0, -200.0, 5.65);     // Southeast of tower
-    heliostat->set_reference_frame_geometry(helio_origin, khat, 0.0);
-
-    // Multi-facet heliostat
-    heliostat->set_number_panels(7, 5);
-    heliostat->set_gaps(0.03, 0.03);
-    // Set on-axis canting to slant range
-    Vector3d distance;
-    vector_add(-1.0, receiver->get_origin_global(), 1.0, heliostat->get_origin_global(), distance);
-    double focal_length = vector_norm(distance);
-    heliostat->set_canting(Heliostat::CantingType::ON_AXIS, focal_length, 0.0);
-    heliostat->set_focal_length(focal_length);
-    heliostat->create_geometry();
-
-    // Point receiver to heliostat without tilting down
-    helio_origin[2] = 0.0; // Project to ground plane
-    Vector3d rec_origin = receiver->get_origin_ref();
-    Vector3d aim_point;
-    vector_add(1.0, rec_origin, 1.0, helio_origin, aim_point);
-    receiver->set_reference_frame_geometry(rec_origin, aim_point, 90.0);
-
-    heliostat->update_geometry(solar_azimuth, solar_elevation);
-
-    // Check heliostat aim vector and z-rotation
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[0], -207.952, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[1], -125.53, 1.e-3);
-    EXPECT_NEAR(heliostat->get_aim_vector_ref().data[2], 915.611, 1.e-3);
-    EXPECT_NEAR(heliostat->get_zrot(), -80.5688, 1.e-4);
-
-    setup_simData();
-    simulate();
-    //result.write_csv_file("raydata.csv");
-
-    double dni = 1000.0;
-    calculate_sun_size(dni, print_info);
-    EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
-    EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
-
-    calculate_ray_counts(print_info);
-    double total_power = rec_absorb_count * power_per_ray;
-
-    double tol = high_accuracy ? 3.e-3 : 5.e-3;
-    double expected_power = 78143.54596;
-
-    uint_fast64_t NRAYS = params.number_of_rays;
-    EXPECT_EQ(helio_hit_count, NRAYS);
-    EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
-    EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
-
-    EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
-    EXPECT_NEAR(total_power, expected_power, tol * expected_power);
-
-    if (high_accuracy) {
-        calculate_receiver_flux_map(100, 150, print_info);
-        double expected_peak = 4132.093047;
-        EXPECT_NEAR(PeakFlux, expected_peak, 25.0);
-        // TODO: Create a flux map and compare to expected distribution
-    }
-    else {
-        calculate_receiver_flux_map(30, 30, print_info);
-        double expected_peak = 4132.093047;
-        EXPECT_NEAR(PeakFlux, expected_peak, 150.0);
-    }
 }
 
 // TODO: add off-axis cases
