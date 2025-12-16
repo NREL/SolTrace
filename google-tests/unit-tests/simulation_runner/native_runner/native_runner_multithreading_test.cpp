@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <future>
+#include <thread>
 
 #include <native_runner.hpp>
 #include <simulation_data_export.hpp>
