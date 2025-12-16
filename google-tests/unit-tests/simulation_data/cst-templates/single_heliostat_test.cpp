@@ -182,7 +182,7 @@ protected:
         vector_add(-1.0, receiver->get_origin_global(), 1.0, heliostat->get_origin_global(), distance);
         double focal_length = vector_norm(distance);
         heliostat->set_focal_length(focal_length);
-        //heliostat->create_geometry();
+        heliostat->create_geometry();
     }
 
     void set_flat_multi_facet() {
