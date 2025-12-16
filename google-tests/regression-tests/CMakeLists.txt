@@ -26,7 +26,7 @@ set(REGRESSION_TEST_SRC
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
 	list(APPEND 
 	REGRESSION_TEST_SRC 
-	native_runner_multithreading_test.cpp
+	native_runner_multithreading_performance_test.cpp
 	native_runner_performance_test.cpp
 	)
 endif()
