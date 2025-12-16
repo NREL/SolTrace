@@ -173,7 +173,7 @@ namespace SolTrace::NativeRunner
             this->state = ThreadStatus::RUNNING;
         }
         {
-            std::lock_guard<std::mutex> kl(this->progress_mutex);
+            std::lock_guard<std::mutex> lk(this->progress_mutex);
             this->progress.clear();
             this->threads.clear();
         }

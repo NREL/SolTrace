@@ -447,7 +447,7 @@ namespace SolTrace::NativeRunner
 							break;
 						default:
 							std::stringstream ss;
-							ss << "Bad optical interation."
+							ss << "Bad optical interaction."
 							   << " Type: " << static_cast<int>(optics->my_type)
 							   << " Stage: " << i
 							   << " Thread: " << thread_id
