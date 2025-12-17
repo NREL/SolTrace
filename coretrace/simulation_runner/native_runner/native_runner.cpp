@@ -58,7 +58,6 @@ namespace SolTrace::NativeRunner
     RunnerStatus NativeRunner::setup_parameters(const SimulationData *data)
     {
         // Get Parameter data
-        // TODO: Check that these parameters are used as expected
         const SimulationParameters &sim_params = data->get_simulation_parameters();
         this->tsys.sim_errors_sunshape = sim_params.include_sun_shape_errors;
         this->tsys.sim_errors_optical = sim_params.include_optical_errors;
@@ -70,10 +69,6 @@ namespace SolTrace::NativeRunner
 
     RunnerStatus NativeRunner::setup_sun(const SimulationData *data)
     {
-        // // TODO: This should throw an error...
-        // // Get RaySource data (this runner assumes there is only the Sun)
-        // assert(data->get_number_of_ray_sources() == 1);
-
         if (data->get_number_of_ray_sources() > 1)
         {
             throw std::invalid_argument("NativeRunner: Only 1 ray source is supported.");
@@ -142,7 +137,10 @@ namespace SolTrace::NativeRunner
             break;
         }
         default:
-            // TODO: add error
+            if (data->get_simulation_parameters().include_sun_shape_errors)
+            {
+                throw std::invalid_argument("Unrecognized sun shape.");
+            }
             break;
         }
 
@@ -163,7 +161,6 @@ namespace SolTrace::NativeRunner
         if (data->get_number_of_elements() <= 0)
         {
             throw std::invalid_argument("SimulationData has no elements.");
-            // return RunnerStatus::ERROR;
         }
 
         for (auto iter = data->get_const_iterator();

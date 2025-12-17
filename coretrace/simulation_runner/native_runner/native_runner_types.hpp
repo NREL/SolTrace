@@ -264,7 +264,7 @@ namespace SolTrace::NativeRunner
 
 		ray_t_ptr Index(uint_fast64_t idx) const;
 
-		void SetUp(unsigned nthreads, uint_fast64_t nray_per_thread);
+		void SetUp(unsigned nthreads, uint_fast64_t nrays);
 
 	private:
 		// struct thread_data_t
@@ -289,13 +289,11 @@ namespace SolTrace::NativeRunner
 
 		ray_t_ptr GetNext(unsigned thread_id);
 		uint_fast64_t GetRayId(unsigned thread_id,
-						  uint_fast64_t raynum);
-		void GetThreadAndRay(uint_fast64_t rayid,
-							 unsigned &thread,
-							 uint_fast64_t &ray);
+							   uint_fast64_t raynum);
 
 		unsigned nthreads;
 		uint_fast64_t nray_per_thread;
+		uint_fast64_t nray_remainder;
 		// std::vector<ray_t_ptr> records;
 		using record_list = std::vector<ray_t_ptr>;
 		using thread_records = std::map<unsigned, record_list>;

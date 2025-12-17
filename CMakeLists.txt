@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 option(SOLTRACE_BUILD_GUI "Build the GUI parts of Soltrace" OFF)
 option(SOLTRACE_BUILD_CORETRACE "Build the coretrace library (ray tracing core)" ON)
 option(SOLTRACE_BUILD_OPTIX_SUPPORT "Build the OptiX support for ray tracing" OFF)
+option(SOLTRACE_BUILD_PERF_TEST "Build performance tests (not built for debug)" OFF)
 
 enable_testing()
 

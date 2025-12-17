@@ -174,6 +174,7 @@ namespace SolTrace::NativeRunner
         SolTrace::Data::Vector3d reccm_helio;
     };
 
+    // Hack to get around stupid compiler issue
     inline SolTrace::Runner::RunnerStatus trace_single_compact(
         unsigned thread_id,
         unsigned seed,

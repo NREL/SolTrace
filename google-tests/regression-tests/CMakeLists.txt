@@ -19,11 +19,9 @@ include_directories(
 # common.hpp and common.cpp contain helper methods used in multiple files.
 set(REGRESSION_TEST_SRC
 	native_runner_validation_test.cpp
-	# native_runner_performance_test.cpp
-	# native_runner_multithreading_test.cpp
 )
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+if(CMAKE_BUILD_TYPE STREQUAL "Release" OR SOLTRACE_BUILD_PERF_TEST)
 	list(APPEND 
 	REGRESSION_TEST_SRC 
 	native_runner_multithreading_performance_test.cpp

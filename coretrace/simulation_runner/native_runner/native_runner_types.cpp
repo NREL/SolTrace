@@ -238,7 +238,8 @@ namespace SolTrace::NativeRunner
 
     TRayData::TRayData()
         : nthreads(1),
-          nray_per_thread(0)
+          nray_per_thread(0),
+          nray_remainder(0)
     {
         this->Clear();
     }
@@ -248,11 +249,12 @@ namespace SolTrace::NativeRunner
         this->Clear();
     }
 
-    void TRayData::SetUp(unsigned nthreads, uint_fast64_t nray_per_thread)
+    void TRayData::SetUp(unsigned nthreads, uint_fast64_t nrays)
     {
         this->Clear();
         this->nthreads = nthreads;
-        this->nray_per_thread = nray_per_thread;
+        this->nray_per_thread = nrays / nthreads;
+        this->nray_remainder = nrays % nthreads;
         for (unsigned k = 0; k < nthreads; ++k)
         {
             this->records[k].clear();
@@ -386,16 +388,10 @@ namespace SolTrace::NativeRunner
     uint_fast64_t TRayData::GetRayId(unsigned thread_id,
                                      uint_fast64_t raynum)
     {
-        return thread_id * this->nray_per_thread + raynum;
-    }
-
-    void TRayData::GetThreadAndRay(uint_fast64_t rayid,
-                                   unsigned &thread,
-                                   uint_fast64_t &ray)
-    {
-        thread = rayid / this->nray_per_thread;
-        ray = rayid % this->nray_per_thread;
-        return;
+        uint_fast64_t rayid = thread_id * this->nray_per_thread + raynum;
+        rayid += std::min(static_cast<uint_fast64_t>(thread_id),
+                          this->nray_remainder);
+        return rayid;
     }
 
     void TRayData::Print() const

@@ -125,12 +125,11 @@ namespace SolTrace::NativeRunner
 		ThreadInfo my_info;
 		my_info.manager = manager;
 		my_info.System = System;
-		my_info.NumberOfRays = NumberOfRays / nthreads;
+		// my_info.NumberOfRays = NumberOfRays / nthreads;
+		uint_fast64_t rem = NumberOfRays % nthreads;
+		uint_fast64_t nrays_per_thread = NumberOfRays / nthreads;
 
-		if (my_info.NumberOfRays * nthreads < NumberOfRays)
-			my_info.NumberOfRays += 1;
-
-		my_info.MaxNumberOfRays = MaxNumberOfRays;
+		my_info.MaxNumberOfRays = MaxNumberOfRays / nthreads + 1;
 		my_info.IncludeSunShape = IncludeSunShape;
 		my_info.IncludeErrors = IncludeErrors;
 		my_info.AsPowerTower = AsPowerTower;
@@ -139,11 +138,15 @@ namespace SolTrace::NativeRunner
 		my_info.rec_hash = &rec_hash;
 		my_info.reccm_helio = reccm_helio;
 
-		System->RayData.SetUp(nthreads, my_info.NumberOfRays);
+		System->RayData.SetUp(nthreads, NumberOfRays);
 		System->SunRayCount = 0;
 
 		for (unsigned int k = 0; k < nthreads; ++k)
 		{
+			my_info.NumberOfRays = (k < rem
+										? nrays_per_thread + 1
+										: nrays_per_thread);
+
 			ThreadManager::future my_future = std::async(
 				std::launch::async,
 				trace_single_compact,
@@ -163,7 +166,7 @@ namespace SolTrace::NativeRunner
 		TSystem *System,
 		unsigned int seed,
 		uint_fast64_t NumberOfRays,
-		uint_fast64_t MaxNumberOfRays, // TODO: How to handle MaxRays?
+		uint_fast64_t MaxNumberOfRays,
 		bool IncludeSunShape,
 		bool IncludeErrors,
 		bool AsPowerTower,
@@ -173,8 +176,13 @@ namespace SolTrace::NativeRunner
 		const Vector3d &reccm_helio)
 	{
 		// Initialize variables
-		// std::cout << "Seed: " << seed << std::endl;
 		MTRand myrng(seed);
+
+		// std::stringstream ss;
+		// ss << "Thread " << thread_id
+		//    << " tracing " << NumberOfRays << " rays"
+		//    << std::endl;
+		// std::cout << ss.str();
 
 		// Determine if PT optimizations should be applied
 		bool PT_override = false;

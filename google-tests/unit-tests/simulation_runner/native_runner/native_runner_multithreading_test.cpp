@@ -96,6 +96,7 @@ TEST(NativeRunner, CancelMultithread)
 TEST(NativeRunner, RayIdAssignmentMultiThread)
 {
     const uint_fast64_t NRAYS = 50000;
+    const unsigned NTHREADS = 12;
 
     std::string project_path = std::string(PROJECT_DIR);
     std::string sample_path = project_path +
@@ -109,7 +110,7 @@ TEST(NativeRunner, RayIdAssignmentMultiThread)
 
     // Create and run the native runner
     NativeRunner runner;
-    runner.set_number_of_threads(4);
+    runner.set_number_of_threads(NTHREADS);
     RunnerStatus sts = runner.initialize();
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
     sts = runner.setup_simulation(&sd);
