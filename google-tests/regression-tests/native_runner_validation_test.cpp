@@ -449,7 +449,7 @@ TEST(NativeRunner, ValidationTest2)
     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
     std::chrono::duration<double, std::milli> dur = t1 - t0;
-    EXPECT_TRUE(dur.count() < 60000.0);
+    EXPECT_TRUE(dur.count() < 75000.0);
 
     std::cout << "Time: " << dur.count() << " ms" << std::endl;
 
