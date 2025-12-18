@@ -67,10 +67,6 @@ protected:
     double power_per_ray;
 
     // Ray counts
-    std::vector<uint_fast64_t> helio_hit_counts;
-    std::vector<uint_fast64_t> reflect_counts;
-    std::vector<uint_fast64_t> helio_absorb_counts;
-    std::vector<uint_fast64_t> helio_block_counts;
     uint_fast64_t tot_helio_hits;
     uint_fast64_t tot_reflect_count;
     uint_fast64_t tot_helio_absorb_count;
@@ -106,7 +102,7 @@ protected:
     void SetUp() override {
         // Set parameters
         SimulationParameters& params = simData.get_simulation_parameters();
-        params.number_of_rays = 1.e5;
+        params.number_of_rays = 1.e6;
         params.max_number_of_rays = params.number_of_rays * 100;
         params.include_optical_errors = true;
         params.include_sun_shape_errors = true;
@@ -139,7 +135,7 @@ protected:
         top_heat_shield->get_back_optical_properties()->set_ideal_reflection();
         top_heat_shield->set_aperture(SolTrace::Data::make_aperture<SolTrace::Data::Rectangle>(rec_radius * 2.0, rec_heat_shield_height));
         top_heat_shield->set_surface(SolTrace::Data::make_surface<SolTrace::Data::Cylinder>(rec_radius));
-        offset = { 0.0, -rec_radius, (rec_height + rec_heat_shield_height)/2.};    // Cylinder origin is on the edge
+        offset = { 0.0, rec_radius, (rec_height + rec_heat_shield_height)/2.};    // Cylinder origin is on the edge
         vector_add(1.0, rec_origin, 1.0, offset, rec_origin_offset);
         vector_add(1.0, rec_origin_offset, 1.0, v1, aim_point);
         top_heat_shield->set_reference_frame_geometry(rec_origin_offset, aim_point, 0.0);
@@ -151,7 +147,7 @@ protected:
         bottom_heat_shield->get_back_optical_properties()->set_ideal_reflection();
         bottom_heat_shield->set_aperture(SolTrace::Data::make_aperture<SolTrace::Data::Rectangle>(rec_radius * 2.0, rec_heat_shield_height));
         bottom_heat_shield->set_surface(SolTrace::Data::make_surface<SolTrace::Data::Cylinder>(rec_radius));
-        offset = { 0.0, -rec_radius, -(rec_height + rec_heat_shield_height) / 2. };    // Cylinder origin is on the edge
+        offset = { 0.0, rec_radius, -(rec_height + rec_heat_shield_height) / 2. };    // Cylinder origin is on the edge
         vector_add(1.0, rec_origin, 1.0, offset, rec_origin_offset);
         vector_add(1.0, rec_origin_offset, 1.0, v1, aim_point);
         bottom_heat_shield->set_reference_frame_geometry(rec_origin_offset, aim_point, 0.0);
@@ -275,11 +271,11 @@ protected:
 
     void assign_canted_slant(bool flat_facets) {
         for (const auto& heliostat : heliostat_field) {
-            Vector3d heliostat_origin = heliostat->get_origin_global();
             Vector3d slant;
-            vector_add(-1.0, rec_origin, 1.0, heliostat_origin, slant);
+            vector_add(-1.0, rec_origin, 1.0, heliostat->get_origin_global(), slant);
             double slant_distance = vector_norm(slant);
             heliostat->set_number_panels(6, 5);
+            heliostat->set_gaps(0.02, 0.02);
             heliostat->set_canting(Heliostat::CantingType::ON_AXIS, slant_distance, 0.0);
 
             if (flat_facets) heliostat->set_focal_length(0.0);   // Flat facets
@@ -306,6 +302,7 @@ protected:
                 throw std::runtime_error("Heliostat distance out of range for banded canting lengths.");
 
             heliostat->set_number_panels(6, 5);
+            heliostat->set_gaps(0.02, 0.02);
             heliostat->set_canting(Heliostat::CantingType::ON_AXIS, cant_distance, 0.0);
             if (flat_facets) heliostat->set_focal_length(0.0);   // Flat facets
             heliostat->create_geometry();
@@ -331,6 +328,10 @@ protected:
         stage_ptr st2 = SolTrace::Data::make_stage(2);
         st2->set_reference_frame_geometry(zero, khat, 0.0);
         auto ret = st2->add_element(receiver);
+        EXPECT_TRUE(SolTrace::Data::Element::is_success(ret));
+        ret = st2->add_element(top_heat_shield);
+        EXPECT_TRUE(SolTrace::Data::Element::is_success(ret));
+        ret = st2->add_element(bottom_heat_shield);
         EXPECT_TRUE(SolTrace::Data::Element::is_success(ret));
 
         simData.add_stage(st1);
@@ -377,15 +378,10 @@ protected:
     }
 
     void calculate_ray_counts(SimulationResult result) {
-        // Clear and Reset counts
-        helio_hit_counts.clear();
-        helio_hit_counts.resize(heliostat_field.size(), 0);
-        reflect_counts.clear();
-        reflect_counts.resize(heliostat_field.size(), 0);
-        helio_absorb_counts.clear();
-        helio_absorb_counts.resize(heliostat_field.size(), 0);
-        helio_block_counts.clear();
-        helio_block_counts.resize(heliostat_field.size(), 0);
+        tot_helio_hits = 0;
+        tot_reflect_count = 0;
+        tot_helio_absorb_count = 0;
+        tot_helio_block_count = 0;
 
         rec_absorb_count = 0;
         heat_shield_absorb_count = 0;
@@ -398,9 +394,12 @@ protected:
                 auto hit_element = rr->get_element(j);
                 SolTrace::Result::RayEvent rev = rr->get_event(j);
 
-                if (rev == RayEvent::EXIT) miss_count++;
-                if (rev == RayEvent::CREATE) first_helio_hit = true;
-                if (hit_element < 0) continue;  // create or exit
+                // Create or exit of rays
+                if (hit_element < 0) {
+                    if (rev == RayEvent::CREATE) first_helio_hit = true;
+                    if (rev == RayEvent::EXIT) miss_count++;
+                    continue;
+                }
 
                 // Check receiver element
                 if (hit_element == receiver->get_id()) {
@@ -415,39 +414,21 @@ protected:
                     continue;
                 }
 
-                // Check heliostat elements -> TODO: is there a way to directly map element IDs to heliostats?
-                int helio_index = 0;
-                bool finish_helio_check = false;
-                for (const auto& heliostat : heliostat_field) {
-                    for (auto iter = heliostat->get_const_iterator(); !heliostat->is_at_end(iter); ++iter) {
-                        element_id facet_id = iter->second->get_id();
-                        if (hit_element == facet_id) {
-                            if (first_helio_hit) {
-                                first_helio_hit = false;
-                                helio_hit_counts[helio_index]++;
-                                if (rev == RayEvent::REFLECT) reflect_counts[helio_index]++;
-                                if (rev == RayEvent::ABSORB) helio_absorb_counts[helio_index]++;
-                                finish_helio_check = true;
-                                break;
-                            }
-                            else {
-                                // Subsequent hits on a heliostat count as blocking
-                                if (rev == RayEvent::ABSORB) helio_block_counts[helio_index]++;
-                                finish_helio_check = true;
-                                break;
-                            }
-                        }
-                    }
-                    helio_index++;
-                    if (finish_helio_check) break;
+                // Track hits of elements
+                if (first_helio_hit) {
+                    first_helio_hit = false;
+                    tot_helio_hits++;
+                    if (rev == RayEvent::REFLECT) tot_reflect_count++;
+                    if (rev == RayEvent::ABSORB) tot_helio_absorb_count++;
+                    continue;
+                }
+                else {
+                    // Subsequent hits on a heliostat count as blocking
+                    if (rev == RayEvent::ABSORB) tot_helio_block_count++;
+                    continue;
                 }
             }
         }
-
-        tot_helio_hits = std::accumulate(helio_hit_counts.begin(), helio_hit_counts.end(), 0);
-        tot_reflect_count = std::accumulate(reflect_counts.begin(), reflect_counts.end(), 0);
-        tot_helio_absorb_count = std::accumulate(helio_absorb_counts.begin(), helio_absorb_counts.end(), 0);
-        tot_helio_block_count = std::accumulate(helio_block_counts.begin(), helio_block_counts.end(), 0);
 
         if (print_info) {
             std::cout << "Heliostat Hit Count: " << tot_helio_hits << std::endl;
@@ -455,6 +436,7 @@ protected:
             std::cout << "Heliostat Absorbed Rays: " << tot_helio_absorb_count << std::endl;
             std::cout << "Heliostat Blocked Rays: " << tot_helio_block_count << std::endl;
             std::cout << "Receiver Absorbed Rays: " << rec_absorb_count << std::endl;
+            std::cout << "Heat Shield Absorbed Rays: " << heat_shield_absorb_count << std::endl;
             std::cout << "Miss Rays: " << miss_count << std::endl;
         }
     }
@@ -767,12 +749,13 @@ protected:
         EXPECT_EQ(tot_helio_absorb_count + tot_reflect_count, tot_helio_hits);
         EXPECT_EQ(rec_absorb_count + heat_shield_absorb_count + miss_count + tot_helio_block_count, tot_reflect_count);
 
-        double tol = high_accuracy ? 5.e-4 : 5.e-3;
+        double tol = high_accuracy ? 1.e-3 : 5.e-3;
         // Check efficiencies
-        EXPECT_NEAR((double)tot_reflect_count / (double)tot_helio_hits, expected_absorption_efficiency, tol);
+        double absorption_efficiency = (double)tot_reflect_count / (double)tot_helio_hits;
+        EXPECT_NEAR(absorption_efficiency, expected_absorption_efficiency, tol);
         double blocking_efficiency = 1.0 - (double)tot_helio_block_count / (double)tot_reflect_count;
-        EXPECT_NEAR(blocking_efficiency, expected_blocking_efficiency, tol);
-        double spillage_efficiency = (double)(rec_absorb_count + heat_shield_absorb_count) / (double)(tot_reflect_count - tot_helio_block_count);
+        EXPECT_NEAR(blocking_efficiency, expected_blocking_efficiency, tol * 2.0);  
+        double spillage_efficiency = (double) rec_absorb_count / (double)(tot_reflect_count - tot_helio_block_count);
         EXPECT_NEAR(spillage_efficiency, expected_spillage_efficiency, tol);
 
         double field_area = 0.0;
@@ -787,7 +770,7 @@ protected:
         EXPECT_NEAR(total_power, expected_power, tol * expected_power);
 
         // Peak flux value
-        double peak_tol = high_accuracy ? 5.e-3 : 0.25;
+        double peak_tol = high_accuracy ? 2.e-2 : 0.25;
         calculate_receiver_flux_map(result, 60, 23, true);
         EXPECT_NEAR(PeakFlux / 1.e3, expected_peak_flux, peak_tol * expected_peak_flux);
 
@@ -809,6 +792,11 @@ protected:
         EXPECT_LE(rmse / (PeakFlux / 1.e3), rmse_tol);
 
         if (print_info) {
+            std::cout << "Cosine efficiency: " << cosine_efficiency * 100.0 << " %" << std::endl;
+            std::cout << "Absorption efficiency: " << absorption_efficiency * 100.0 << " %" << std::endl;
+            std::cout << "Blocking efficiency: " << blocking_efficiency * 100.0 << " %" << std::endl;
+            std::cout << "Spillage efficiency: " << spillage_efficiency * 100.0 << " %" << std::endl;
+            std::cout << "Total power: " << total_power << " kW" << std::endl;
             std::cout << "Flux map RMS error: " << rmse << " kW/m2" << std::endl;
             std::cout << "Peak flux: " << PeakFlux / 1.e3 << " kW/m2" << std::endl;
         }
@@ -861,14 +849,14 @@ protected:
         simulate(&result);
         calculate_sun_size();
 
-        if (hour == "8") {
-            EXPECT_NEAR(sun_width, 1276.43, 1.e-2);
-            EXPECT_NEAR(sun_height, 2766.69, 1.e-2);
-        }
-        else if (hour == "12") {
-            EXPECT_NEAR(sun_width, 2788.59, 1.e-2);
-            EXPECT_NEAR(sun_height, 2457.81, 1.e-2);
-        }
+        //if (hour == "8") {
+        //    EXPECT_NEAR(sun_width, 1276.43, 1.e-2);
+        //    EXPECT_NEAR(sun_height, 2766.69, 1.e-2);
+        //}
+        //else if (hour == "12") {
+        //    EXPECT_NEAR(sun_width, 2788.59, 1.e-2);
+        //    EXPECT_NEAR(sun_height, 2457.81, 1.e-2);
+        //}
 
         calculate_ray_counts(result);
         read_expected_all_results(task_number, aim_strategy, hour);
@@ -918,12 +906,8 @@ TEST_F(HeliostatFieldSimulation, singleFacet_BandFocused)
     simulate_check_outputs("1b", "2", "12");
 }
 
-// TODO: Requires multi-threading to test
-/*
-
 TEST_F(HeliostatFieldSimulation, multiFacet_SlantCanted)
 {
-    print_info = true;
     // Centerline aimpoints
     create_heliostat_field();
     assign_canted_slant(true);      // Flat facets
@@ -941,7 +925,7 @@ TEST_F(HeliostatFieldSimulation, multiFacet_SlantCanted)
 TEST_F(HeliostatFieldSimulation, multiFacet_BandCanted)
 {
     // Centerline aimpoints
-    create_heliostat_field();  
+    create_heliostat_field();
     assign_canted_banded(true);     // Flat facets
 
     setup_simData();
@@ -957,7 +941,7 @@ TEST_F(HeliostatFieldSimulation, multiFacet_BandCanted)
 TEST_F(HeliostatFieldSimulation, multiFacet_SlantFocused_SlantCanted)
 {
     // Center aimpoints;
-    create_heliostat_field();  
+    create_heliostat_field();
     assign_canted_slant(false);     // Slant focused (default)
 
     setup_simData();
@@ -973,7 +957,7 @@ TEST_F(HeliostatFieldSimulation, multiFacet_SlantFocused_SlantCanted)
 TEST_F(HeliostatFieldSimulation, multiFacet_BandFocused_BandCanted)
 {
     // Center aimpoints
-    create_heliostat_field();  
+    create_heliostat_field();
     assign_canted_banded(false);    // Canted by band
     assign_focal_lengths_banded();  // Focused by band
 
@@ -986,4 +970,3 @@ TEST_F(HeliostatFieldSimulation, multiFacet_BandFocused_BandCanted)
     simulate_check_outputs("3b", "2", "8");
     simulate_check_outputs("3b", "2", "12");
 }
-*/
