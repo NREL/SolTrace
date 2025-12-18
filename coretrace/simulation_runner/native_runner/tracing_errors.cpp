@@ -262,9 +262,7 @@ void Errors(
 			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
 			break;
 		default:
-			// TODO: Add error message here.
-            //throw std::exception("Unsupported sun shape in Errors function.");
-			break;
+			throw std::invalid_argument("Unsupported sun shape in Errors function.");
 		}
 	}
 

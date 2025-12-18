@@ -844,7 +844,7 @@ protected:
         else if (hour == "12") 
             update_simulation_geometry(0.0, 61.97); // Solar Noon
         else
-            throw std::exception("Hour not supported for simulate_check_outputs.");        
+            throw std::invalid_argument("Hour not supported for simulate_check_outputs.");        
         
         SimulationResult result;
         simulate(&result);
