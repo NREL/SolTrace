@@ -19,7 +19,7 @@ uint_fast64_t count_event_native(const SolTrace::NativeRunner::TRayData *ray_dat
     {
         double pos[3], cos[3];
         int elm, stage;
-        unsigned int ray;
+        uint_fast64_t ray;
         SolTrace::Result::RayEvent rev;
         if (ray_data->Query(i, pos, cos, &elm, &stage, &ray, &rev))
         {
@@ -38,7 +38,7 @@ void scan_events_native(const SolTrace::NativeRunner::TRayData *ray_data)
     {
         double pos[3], cos[3];
         int elm, stage;
-        unsigned int ray;
+        uint_fast64_t ray;
         SolTrace::Result::RayEvent rev;
         if (ray_data->Query(i, pos, cos, &elm, &stage, &ray, &rev))
         {

@@ -24,6 +24,13 @@ set(NATIVE_RUNNER_TEST_SRC
     tower_demo.cpp
 )
 
+if (NOT ENABLE_COVERAGE)
+    list(APPEND
+    NATIVE_RUNNER_TEST_SRC
+    native_runner_multithreading_test.cpp
+    )
+endif()
+
 add_executable(NativeRunnerUnitTests
     ${NATIVE_RUNNER_TEST_SRC}
 )

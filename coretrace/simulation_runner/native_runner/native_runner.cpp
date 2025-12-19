@@ -25,6 +25,7 @@ namespace SolTrace::NativeRunner
                                    as_power_tower(false),
                                    number_of_threads(1)
     {
+        this->my_manager = make_thread_manager();
     }
 
     NativeRunner::~NativeRunner()
@@ -57,7 +58,6 @@ namespace SolTrace::NativeRunner
     RunnerStatus NativeRunner::setup_parameters(const SimulationData *data)
     {
         // Get Parameter data
-        // TODO: Check that these parameters are used as expected
         const SimulationParameters &sim_params = data->get_simulation_parameters();
         this->tsys.sim_errors_sunshape = sim_params.include_sun_shape_errors;
         this->tsys.sim_errors_optical = sim_params.include_optical_errors;
@@ -69,9 +69,14 @@ namespace SolTrace::NativeRunner
 
     RunnerStatus NativeRunner::setup_sun(const SimulationData *data)
     {
-        // TODO: This should throw an error...
-        // Get RaySource data (this runner assumes there is only the Sun)
-        assert(data->get_number_of_ray_sources() == 1);
+        if (data->get_number_of_ray_sources() > 1)
+        {
+            throw std::invalid_argument("NativeRunner: Only 1 ray source is supported.");
+        }
+        else if (data->get_number_of_ray_sources() <= 0)
+        {
+            throw std::invalid_argument("NativeRunner: Ray source is required.");
+        }
 
         ray_source_ptr sun = data->get_ray_source();
         vector_copy(this->tsys.Sun.Origin, sun->get_position());
@@ -132,7 +137,10 @@ namespace SolTrace::NativeRunner
             break;
         }
         default:
-            // TODO: add error
+            if (data->get_simulation_parameters().include_sun_shape_errors)
+            {
+                throw std::invalid_argument("Unrecognized sun shape.");
+            }
             break;
         }
 
@@ -149,6 +157,11 @@ namespace SolTrace::NativeRunner
         tstage_ptr current_stage = nullptr;
         int_fast64_t element_number = 1;
         bool element_found_before_stage = false;
+
+        if (data->get_number_of_elements() <= 0)
+        {
+            throw std::invalid_argument("SimulationData has no elements.");
+        }
 
         for (auto iter = data->get_const_iterator();
              !data->is_at_end(iter);
@@ -267,73 +280,44 @@ namespace SolTrace::NativeRunner
 
     RunnerStatus NativeRunner::run_simulation()
     {
+        if (this->seeds.empty() ||
+            this->seeds.size() != this->number_of_threads)
+        {
+            this->seeds.clear();
+            for (unsigned k = 0; k < this->number_of_threads; ++k)
+            {
+                this->seeds.push_back(this->tsys.seed + 123 * k);
+            }
+        }
+        else
+        {
+            ; // Intentional no-op
+        }
+
         RunnerStatus sts = trace_native(
+            this->my_manager,
             &this->tsys,
-            this->tsys.seed,
+            this->seeds,
+            this->number_of_threads,
             this->tsys.sim_raycount,
             this->tsys.sim_raymax,
             this->tsys.sim_errors_sunshape,
             this->tsys.sim_errors_optical,
             this->as_power_tower);
 
-        {
-            // Hack to match up current state with return type
-            std::lock_guard<std::mutex> lk(this->tsys.state_mutex);
-            this->tsys.current_state = sts;
-        }
-
         return sts;
     }
 
     RunnerStatus NativeRunner::status_simulation(double *progress)
     {
-        RunnerStatus sts = RunnerStatus::ERROR;
-        // Create isolated scope for lock guard
-        {
-            std::lock_guard<std::mutex> lk(this->tsys.state_mutex);
-            sts = this->tsys.current_state;
-            if (progress != nullptr)
-            {
-                *progress = this->tsys.progress;
-            }
-        }
-        return sts;
+        return this->my_manager->status(progress);
     }
 
     RunnerStatus NativeRunner::cancel_simulation()
     {
-        RunnerStatus sts = RunnerStatus::ERROR;
-
-        // Create isolated scope for the lock
-        {
-            std::lock_guard<std::mutex> my_lock(this->tsys.state_mutex);
-            this->tsys.cancel = true;
-        }
-
-        int count = 0;
-        while (true)
-        {
-            ++count;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-            // Create isolated scope for the lock
-            {
-                std::lock_guard<std::mutex> my_lock(this->tsys.state_mutex);
-                if (this->tsys.current_state != RunnerStatus::RUNNING)
-                {
-                    sts = this->tsys.current_state;
-                    break;
-                }
-            }
-
-            if (count > 30)
-            {
-                sts = RunnerStatus::TIMEOUT;
-                break;
-            }
-        }
-
-        return sts;
+        // TODO: Should this have some sort of wait here for the termination?
+        this->my_manager->cancel();
+        return this->my_manager->status();
     }
 
     RunnerStatus NativeRunner::report_simulation(SolTrace::Result::SimulationResult *result,
@@ -346,13 +330,13 @@ namespace SolTrace::NativeRunner
         const TRayData ray_data = sys->RayData;
         std::map<unsigned int, SolTrace::Result::ray_record_ptr> ray_records;
         std::map<unsigned int, SolTrace::Result::ray_record_ptr>::iterator iter;
-        size_t ndata = ray_data.Count();
+        uint_fast64_t ndata = ray_data.Count();
 
         bool sts;
         Vector3d point, cosines;
         int element;
         int stage;
-        unsigned int raynum;
+        uint_fast64_t raynum;
 
         telement_ptr el = nullptr;
         element_id elid;
@@ -360,7 +344,9 @@ namespace SolTrace::NativeRunner
         SolTrace::Result::interaction_ptr intr = nullptr;
         SolTrace::Result::RayEvent rev;
 
-        for (size_t ii = 0; ii < ndata; ++ii)
+        // std::cout << "Num Events: " << ndata << std::endl;
+
+        for (uint_fast64_t ii = 0; ii < ndata; ++ii)
         {
             sts = ray_data.Query(ii,
                                  point.data,
@@ -412,7 +398,7 @@ namespace SolTrace::NativeRunner
             rec->add_interaction_record(intr);
         }
 
-        return RunnerStatus::SUCCESS;
+        return retval;
     }
 
     bool NativeRunner::set_aperture_planes(TSystem *tsys)

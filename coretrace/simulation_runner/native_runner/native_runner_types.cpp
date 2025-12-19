@@ -50,6 +50,7 @@
 
 #include <cstring>
 #include <memory>
+#include <sstream>
 
 #include "calculator_factory.hpp"
 #include "matvec.hpp"
@@ -236,210 +237,188 @@ namespace SolTrace::NativeRunner
     */
 
     TRayData::TRayData()
+        : nthreads(1),
+          nray_per_thread(0),
+          nray_remainder(0)
     {
-        m_dataCount = 0;
-        m_dataCapacity = 0;
+        this->Clear();
     }
 
     TRayData::~TRayData()
     {
-        Clear();
+        this->Clear();
     }
 
-    TRayData::ray_t *TRayData::Append(double pos[3],
-                                      double cos[3],
-                                      int element,
-                                      int stage,
-                                      unsigned int raynum,
-                                      SolTrace::Result::RayEvent it)
+    void TRayData::SetUp(unsigned nthreads, uint_fast64_t nrays)
     {
-        if (m_dataCount == m_dataCapacity)
+        this->Clear();
+        this->nthreads = nthreads;
+        this->nray_per_thread = nrays / nthreads;
+        this->nray_remainder = nrays % nthreads;
+        for (unsigned k = 0; k < nthreads; ++k)
         {
-            // need to allocate more blocks
-            // block_t *b = new block_t;
-            block_t_ptr b = std::make_shared<block_t>();
-            b->count = 0;
-            m_blockList.push_back(b);
-            m_dataCapacity += block_size;
+            this->records[k].clear();
         }
+        // std::cout << "nthreads: " << nthreads
+        //           << "  nray_per_thread: " << nray_per_thread
+        //           << std::endl;
+        return;
+    }
 
-        ray_t *r = Index(m_dataCount, true);
+    TRayData::ray_t_ptr TRayData::Append(unsigned thread_id,
+                                         double pos[3],
+                                         double cos[3],
+                                         int element,
+                                         int stage,
+                                         uint_fast64_t raynum,
+                                         SolTrace::Result::RayEvent rev)
+    {
+        // std::stringstream ss;
+        // ss << "Thread: " << thread_id << " Raynum: " << raynum
+        //    << " RayID: " << this->GetRayId(thread_id, raynum)
+        //    << std::endl;
+        // std::cout << ss.str();
+
+        ray_t_ptr r = this->GetNext(thread_id);
+
         if (r != nullptr)
         {
-            ::memcpy(&r->pos, pos, sizeof(double) * 3);
-            ::memcpy(&r->cos, cos, sizeof(double) * 3);
+            std::memcpy(&r->pos, pos, sizeof(double) * 3);
+            std::memcpy(&r->cos, cos, sizeof(double) * 3);
             r->element = element;
             r->stage = stage;
-            r->raynum = raynum;
-            r->event = it;
-            m_dataCount++;
-            return r;
+            r->raynum = this->GetRayId(thread_id, raynum);
+            r->event = rev;
         }
-        else
-            return nullptr;
+
+        return r;
     }
 
-    bool TRayData::Overwrite(unsigned int idx,
-                             double pos[3],
-                             double cos[3],
-                             int element,
-                             int stage,
-                             unsigned int raynum,
-                             SolTrace::Result::RayEvent it)
+    TRayData::ray_t_ptr TRayData::Index(uint_fast64_t idx) const
     {
-        ray_t *r = Index(idx, true);
-        if (r != 0)
+        uint_fast64_t n = idx;
+        uint_fast64_t nevents = 0;
+        unsigned k = 0;
+        ray_t_ptr r = nullptr;
+        while (k < this->nthreads)
         {
-            ::memcpy(r->pos, pos, sizeof(double) * 3);
-            ::memcpy(r->cos, cos, sizeof(double) * 3);
-            r->element = element;
-            r->stage = stage;
-            r->raynum = raynum;
-            return true;
+            auto iter = this->records.find(k);
+            assert(iter != this->records.end());
+            nevents = iter->second.size();
+            // std::cout << "k: " << k
+            //           << "  n: " << n
+            //           << "  nevents: " << nevents
+            //           << std::endl;
+            if (n >= nevents)
+            {
+                n -= nevents;
+            }
+            else
+            {
+                r = iter->second[n];
+                break;
+            }
+            ++k;
         }
-        else
-            return false;
+        return r;
     }
 
-    bool TRayData::Query(unsigned int idx,
+    bool TRayData::Query(uint_fast64_t idx,
                          double pos[3],
                          double cos[3],
                          int *element,
                          int *stage,
-                         unsigned int *raynum,
-                         SolTrace::Result::RayEvent *it) const
+                         uint_fast64_t *raynum,
+                         SolTrace::Result::RayEvent *rev) const
     {
-        ray_t *r = Index(idx, false);
-        if (r != 0)
+
+        ray_t_ptr r = this->Index(idx);
+
+        if (r != nullptr)
         {
-            if (pos != 0)
-                ::memcpy(pos, r->pos, sizeof(double) * 3);
-            if (cos != 0)
-                ::memcpy(cos, r->cos, sizeof(double) * 3);
-            if (element)
+            if (pos != nullptr)
+                std::memcpy(pos, r->pos, sizeof(double) * 3);
+            if (cos != nullptr)
+                std::memcpy(cos, r->cos, sizeof(double) * 3);
+            if (element != nullptr)
                 *element = r->element;
-            if (stage)
+            if (stage != nullptr)
                 *stage = r->stage;
-            if (raynum)
+            if (raynum != nullptr)
                 *raynum = r->raynum;
-            if (it)
-                *it = r->event;
-            return true;
-        }
-        else
-            return false;
-    }
-
-    void TRayData::Merge(TRayData &src)
-    {
-        std::vector<block_t_ptr> list, partial_blocks;
-        size_t i;
-
-        list.reserve(m_blockList.size() + src.m_blockList.size());
-
-        for (i = 0; i < m_blockList.size(); i++)
-        {
-            if (m_blockList[i]->count == block_size)
-                list.push_back(m_blockList[i]);
-            else
-                partial_blocks.push_back(m_blockList[i]);
+            if (rev != nullptr)
+                *rev = r->event;
         }
 
-        for (i = 0; i < src.m_blockList.size(); i++)
-        {
-            if (src.m_blockList[i]->count == block_size)
-                list.push_back(src.m_blockList[i]);
-            else
-                partial_blocks.push_back(src.m_blockList[i]);
-        }
-
-        src.m_blockList.clear();
-        src.m_dataCount = 0;
-        src.m_dataCapacity = 0;
-
-        m_blockList = list;
-        m_dataCapacity = m_dataCount = m_blockList.size() * block_size;
-
-        // append all the data in the partial blocks
-
-        for (i = 0; i < partial_blocks.size(); i++)
-        {
-            block_t_ptr b = partial_blocks[i];
-            for (size_t j = 0; j < b->count; j++)
-            {
-                ray_t &r = b->data[j];
-                Append(r.pos, r.cos, r.element, r.stage, r.raynum, r.event);
-            }
-            // delete b;
-        }
-        partial_blocks.clear();
+        return r != nullptr;
     }
 
     void TRayData::Clear()
     {
-        // for (size_t i = 0; i < m_blockList.size(); i++)
-        //     delete m_blockList[i];
-        m_blockList.clear();
-        assert(m_blockList.size() == 0);
-        m_dataCount = 0;
-        m_dataCapacity = 0;
+        this->records.clear();
+        return;
     }
 
     uint_fast64_t TRayData::Count() const
     {
-        return m_dataCount;
+        uint_fast64_t count = 0;
+        for (auto iter = this->records.cbegin();
+             iter != this->records.cend();
+             ++iter)
+        {
+            count += iter->second.size();
+        }
+        return count;
     }
 
-    TRayData::ray_t *TRayData::Index(uint_fast64_t i, bool write_access) const
+    TRayData::ray_t_ptr TRayData::GetNext(unsigned thread_id)
     {
-        if (i >= m_dataCapacity)
-            return nullptr;
+        ray_t_ptr r = nullptr;
+        // auto n = this->records[thread_id].size();
+        // this->records[thread_id].push_back(r);
+        auto it = this->records.find(thread_id);
+        if (it != this->records.end())
+        {
+            r = std::make_shared<ray_t>();
+            it->second.push_back(r);
+        }
+        return r;
+    }
 
-        size_t block_num = i / block_size;
-        size_t block_idx = i % block_size;
-
-        if (block_num >= m_blockList.size() || block_idx >= block_size)
-            return nullptr;
-
-        // update block.count to highest accessed index
-        block_t *b = m_blockList[block_num].get();
-
-        if (write_access && block_idx >= b->count)
-            b->count = block_idx + 1;
-
-        if (!write_access && block_idx >= b->count)
-            return nullptr;
-
-        return &(b->data[block_idx]);
+    uint_fast64_t TRayData::GetRayId(unsigned thread_id,
+                                     uint_fast64_t raynum)
+    {
+        uint_fast64_t rayid = thread_id * this->nray_per_thread + raynum;
+        rayid += std::min(static_cast<uint_fast64_t>(thread_id),
+                          this->nray_remainder);
+        return rayid;
     }
 
     void TRayData::Print() const
     {
-        printf("[ blocks: %zu count: %u capacity: %u ]\n",
-               m_blockList.size(),
-               (unsigned int)m_dataCount,
-               (unsigned int)m_dataCapacity);
+        uint_fast64_t n = this->Count();
 
-        size_t n = Count();
-        for (size_t i = 0; i < n; i++)
+        for (uint_fast64_t i = 0; i < n; ++i)
         {
             double pos[3], cos[3];
             int elm, stage;
-            unsigned int ray;
+            uint_fast64_t ray;
             SolTrace::Result::RayEvent rev;
             if (Query(i, pos, cos, &elm, &stage, &ray, &rev))
             {
-                printf("   [%zu] = { [%lg,%lg,%lg][%lg,%lg,%lg] %d %d %u %s\(%d) }\n",
+                printf("   [%llu] = { [%lg,%lg,%lg][%lg,%lg,%lg] %d %d %llu %s\(%d) }\n",
                        i,
                        pos[0], pos[1], pos[2],
                        cos[0], cos[1], cos[2],
-                       elm, stage, ray,
+                       elm,
+                       stage,
+                       static_cast<long long unsigned>(ray),
                        ray_event_string(rev).c_str(),
                        static_cast<int>(rev));
             }
         }
 
-        printf("\n");
+        return;
     }
 
     TStage::TStage()
@@ -466,11 +445,6 @@ namespace SolTrace::NativeRunner
 
     TSystem::TSystem()
     {
-
-        this->current_state = SolTrace::Runner::RunnerStatus::SUCCESS;
-        this->cancel = false;
-        this->progress = 1.0;
-
         SunRayCount = 0;
 
         sim_raycount = 1000;
@@ -491,34 +465,7 @@ namespace SolTrace::NativeRunner
     {
         StageList.clear();
         Sun.Reset();
-        // this->AllRayData.Clear();
         this->RayData.Clear();
-    }
-
-    // void TSystem::CollectResults()
-    // {
-    //     // Collect the ray data from the stages
-    //     // tstage_ptr st;
-    //     for (auto iter = this->StageList.cbegin();
-    //          iter != this->StageList.cend();
-    //          ++iter)
-    //     {
-    //         this->AllRayData.Merge((*iter)->RayData);
-    //     }
-    // }
-
-    void TSystem::errlog(const char *fmt, ...)
-    {
-        static char buf[513];
-        va_list arglist;
-        va_start(arglist, fmt);
-#ifdef WIN32
-        _vsnprintf(buf, 512, fmt, arglist);
-#else
-        vsnprintf(buf, 512, fmt, arglist);
-#endif
-        va_end(arglist);
-        messages.push_back(buf);
     }
 
     telement_ptr make_telement(element_ptr el,

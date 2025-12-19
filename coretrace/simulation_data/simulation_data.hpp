@@ -289,7 +289,7 @@ public:
     /// Serializes the current simulation data and writes it to the specified JSON file.
     void export_json_file(const std::string file_name);
 
-    /// @brief Clear elements and ray sources
+    /// @brief Clear elements and ray sources. Designed for use by the file stinput and json file readers when there is an error.
     /// @param reset_parameters Optional bool to reset simulation parameters
     void clear(bool reset_parameters = false);
 

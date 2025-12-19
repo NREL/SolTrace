@@ -42,7 +42,7 @@ uint_fast64_t GetPTElements(const bool AsPowerTower,
                             const bool in_multi_hit_loop, 
                             const double (&PosRayStage)[3],
                             const double (&reccm_helio)[3], 
-                            st_hash_tree &rec_hash,
+                            st_hash_tree *rec_hash,
                             const std::vector<void *> &sunint_elements,
                             std::vector<void *> &reflint_elements,
                             bool &has_elements);
