@@ -113,7 +113,7 @@ protected:
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
         runner.enable_power_tower();
         runner.enable_point_focus();
-        runner.set_number_of_threads(10);
+        runner.set_number_of_threads(14);
 
         // Initial setup of receiver
         receiver = SolTrace::Data::make_element<SingleElement>();
