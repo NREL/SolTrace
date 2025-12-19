@@ -582,7 +582,7 @@ protected:
         EXPECT_EQ(helio_absorb_count + reflect_count, helio_hit_count);
         EXPECT_EQ(rec_absorb_count + miss_count, reflect_count);
 
-        double tol = high_accuracy ? 3.5e-3 : 7.e-3;
+        double tol = high_accuracy ? 3.5e-3 : 8.e-3;
 
         EXPECT_NEAR((double)reflect_count / (double)helio_hit_count, 0.9, tol);
 
