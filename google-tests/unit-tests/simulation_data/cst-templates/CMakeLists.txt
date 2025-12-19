@@ -23,6 +23,13 @@ set(CST_TEST_SRC
 	heliostat_field_test.cpp
 )
 
+if(CMAKE_BUILD_TYPE STREQUAL "Release" OR FULL_FIELD_VALIDATION_TEST)
+	list(APPEND 
+	CST_TEST_SRC
+	heliostat_field_test.cpp
+	)
+endif()
+
 add_executable(CSTUnitTests
 	${CST_TEST_SRC}
 )
