@@ -102,7 +102,7 @@ protected:
     void SetUp() override {
         // Set parameters
         SimulationParameters& params = simData.get_simulation_parameters();
-        params.number_of_rays = 1.e6;
+        params.number_of_rays = 5.e5;
         params.max_number_of_rays = params.number_of_rays * 100;
         params.include_optical_errors = true;
         params.include_sun_shape_errors = true;

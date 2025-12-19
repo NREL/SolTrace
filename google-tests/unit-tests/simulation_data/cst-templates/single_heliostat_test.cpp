@@ -92,6 +92,7 @@ protected:
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
         runner.disable_power_tower();
         runner.disable_point_focus();
+        runner.set_number_of_threads(10);
 
         // Define mirror optical properties
         OpticalProperties mirror;
