@@ -378,7 +378,7 @@ protected:
         }
     }
 
-    void calculate_ray_counts(SimulationResult result) {
+    void calculate_ray_counts(const SimulationResult &result) {
         tot_helio_hits = 0;
         tot_reflect_count = 0;
         tot_helio_absorb_count = 0;
@@ -552,7 +552,7 @@ protected:
         NumberOfRays = 0;
     }
 
-    bool calculate_receiver_flux_map(SimulationResult result, int nbinsx, int nbinsy, bool is_cylinder) {
+    bool calculate_receiver_flux_map(const SimulationResult &result, int nbinsx, int nbinsy, bool is_cylinder) {
         reset_flux_map();
 
         double minx, maxx, miny, maxy;
@@ -744,7 +744,7 @@ protected:
 
     }
 
-    void check_outputs(SimulationResult result) {
+    void check_outputs(const SimulationResult &result) {
         SimulationParameters& params = simData.get_simulation_parameters();
         EXPECT_EQ(tot_helio_hits, params.number_of_rays);
         EXPECT_EQ(tot_helio_absorb_count + tot_reflect_count, tot_helio_hits);
@@ -832,7 +832,7 @@ protected:
         }
     }
 
-    void simulate_check_outputs(std::string task_number, std::string aim_strategy, std::string hour) {
+    void simulate_check_outputs(std::string task_number, std::string aim_strategy, std::string hour, bool save_results = false) {
         
         if (print_info) {
             std::cout << "\n\nTask: " << task_number << ", Aim: " << aim_strategy << ", Hour: " << hour << std::endl;
@@ -849,25 +849,19 @@ protected:
         SimulationResult result;
         simulate(&result);
         calculate_sun_size();
-
-        //if (hour == "8") {
-        //    EXPECT_NEAR(sun_width, 1276.43, 1.e-2);
-        //    EXPECT_NEAR(sun_height, 2766.69, 1.e-2);
-        //}
-        //else if (hour == "12") {
-        //    EXPECT_NEAR(sun_width, 2788.59, 1.e-2);
-        //    EXPECT_NEAR(sun_height, 2457.81, 1.e-2);
-        //}
-
         calculate_ray_counts(result);
         read_expected_all_results(task_number, aim_strategy, hour);
         check_outputs(result);
 
-        //result.write_csv_file("full_field_raydata.csv");
-        //std::string flux_result_filename = "heliostat_field_fluxmap_results.csv";
-        //save_flux_map_to_file(flux_result_filename);
-        //std::string flux_comparison_filename = "heliostat_field_fluxmap_comparison.csv";
-        //save_flux_comparison_to_file(flux_comparison_filename);
+        // Save results to file
+        if (!save_results) return;
+        std::string filename_postfix = "_Task_" + task_number + "_AimStrat_" + aim_strategy + "_Hour_" + hour;
+        std::string full_field_filename = "full_field_raydata" + filename_postfix + ".csv";
+        result.write_csv_file(full_field_filename);
+        std::string flux_result_filename = "field_fluxmap" + filename_postfix + ".csv";
+        save_flux_map_to_file(flux_result_filename);
+        std::string flux_comparison_filename = "field_fluxmap_comparison" + filename_postfix + ".csv";
+        save_flux_comparison_to_file(flux_comparison_filename);
     }
 
     void TearDown() override {
