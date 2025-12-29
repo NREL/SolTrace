@@ -162,7 +162,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug"
 	# add coverage target
 	add_custom_target(coverage
 		# gather data
-		COMMAND ${LCOV} --directory . --capture --exclude '/usr/*' --output-file coverage.info
+		COMMAND ${LCOV} --directory . --capture --exclude '/usr/*' --output-file coverage.info  -fprofile-update=atomic
 		# generate report
 		COMMAND ${GENHTML} --demangle-cpp -o coverage coverage.info
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
