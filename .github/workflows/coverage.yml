@@ -60,9 +60,9 @@ jobs:
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       shell: bash
       run: |
-        make coverage 
+        make coverage -fprofile-update=atomic
         # Strip third-party and system files (nlohmann::json lives under _deps/)
-        lcov --remove coverage.info '*/_deps/*' '*/nlohmann_json-src/*' --output-file coverage.info --ignore-errors unused -fprofile-update=atomic
+        lcov --remove coverage.info '*/_deps/*' '*/nlohmann_json-src/*' --output-file coverage.info --ignore-errors unused
 
 
     - name: Coveralls
