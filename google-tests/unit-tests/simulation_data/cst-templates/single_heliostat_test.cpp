@@ -592,6 +592,7 @@ protected:
 
         double peak_tol = high_accuracy ? 1.5e-2 : 0.25;
         if (!high_accuracy) {
+            // Low accuracy runs use low-resolution flux map for peak flux comparison
             calculate_receiver_flux_map(result, 30, 30, false);
         }
         else {
@@ -600,7 +601,7 @@ protected:
         EXPECT_NEAR(PeakFlux / 1.e3, expected_peak_flux, peak_tol * expected_peak_flux);
 
         // RMS of flux values
-        if (!high_accuracy) calculate_receiver_flux_map(result, 100, 150, false);  // Re-calculate
+        if (!high_accuracy) calculate_receiver_flux_map(result, 100, 150, false);  // Re-calculate for low-accuracy runs
         EXPECT_EQ(fluxGrid.nrows(), expected_fluxGrid.nrows());
         EXPECT_EQ(fluxGrid.ncols(), expected_fluxGrid.ncols());
         double rmse = 0.0;
