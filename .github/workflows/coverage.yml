@@ -62,7 +62,7 @@ jobs:
       run: |
         make coverage
         # Strip third-party and system files (nlohmann::json lives under _deps/)
-        lcov --remove coverage.info '*/_deps/*' '*/nlohmann_json-src/*' --output-file coverage.info --ignore-errors unused negative
+        lcov --remove coverage.info '*/_deps/*' '*/nlohmann_json-src/*' --output-file coverage.info --ignore-errors unused
 
 
     - name: Coveralls
