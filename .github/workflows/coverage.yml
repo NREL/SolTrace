@@ -5,6 +5,7 @@ on:
     branches: [ develop ]
   pull_request:
     branches: [ develop ]
+
 env:
   BUILD_TYPE: Debug
 
@@ -18,27 +19,24 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -o Acquire::Retries=3 lcov
-        sudo apt-get install -y libfontconfig1-dev
+        sudo apt-get install -y lcov libfontconfig1-dev
 
     - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
-      shell: bash
-      run: |
-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
-    - name: Setup cmake
+    - name: Clean previous coverage artifacts
+      run: |
+        rm -rf ${{ steps.strings.outputs.build-output-dir }}
+        find . -name "*.gcda" -delete || true
+        find . -name "*.gcno" -delete || true
+
+    - name: Setup CMake
       uses: jwlawson/actions-setup-cmake@v2
       with:
         cmake-version: '3.24.x'
 
-    - name: Test cmake version
-      run: cmake --version
-
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
         -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
@@ -51,22 +49,19 @@ jobs:
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ env.BUILD_TYPE }}
 
-    - name: Run Test
+    - name: Run Tests (single-threaded to avoid GCDA conflicts)
       working-directory: ${{ steps.strings.outputs.build-output-dir }}/google-tests
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest --output-on-failure --build-config ${{ env.BUILD_TYPE }} -VV
-                
-    - name: Coverage
+      run: ctest --output-on-failure --build-config ${{ env.BUILD_TYPE }} --no-parallel -VV
+
+    - name: Generate Coverage
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      shell: bash
       run: |
-        make coverage
-        # Strip third-party and system files (nlohmann::json lives under _deps/)
-        lcov --remove coverage.info '*/_deps/*' '*/nlohmann_json-src/*' --output-file coverage.info --ignore-errors mismatch
+        # Capture coverage info; ignore mismatches to prevent geninfo line errors
+        lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch
+        # Remove unwanted directories (3rd-party, deps)
+        lcov --remove coverage.info '*/_deps/*' '*/nlohmann_json-src/*' '/usr/*' --output-file coverage.info --ignore-errors mismatch
 
-
-    - name: Coveralls
+    - name: Upload to Coveralls
       uses: coverallsapp/github-action@v2
       with:
         path-to-lcov: ${{ steps.strings.outputs.build-output-dir }}/coverage.info
