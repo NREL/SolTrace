@@ -34,6 +34,7 @@ class HeliostatFieldSimulation : public ::testing::Test {
 public:
     bool high_accuracy = false;     // Runs 20 Million rays and tighter tolerance on checks
     bool print_info = false;        // Prints information on from simulation results (sun calculations, ray counts, flux calculations)
+    bool save_results = false;      // Saves flux map results to CSV files
 
     const Vector3d zero = { 0.0, 0.0, 0.0 }; // Global origin
     const Vector3d khat = { 0.0, 0.0, 1.0 }; // Global z-axis
@@ -832,7 +833,7 @@ protected:
         }
     }
 
-    void simulate_check_outputs(std::string task_number, std::string aim_strategy, std::string hour, bool save_results = false) {
+    void simulate_check_outputs(std::string task_number, std::string aim_strategy, std::string hour) {
         
         if (print_info) {
             std::cout << "\n\nTask: " << task_number << ", Aim: " << aim_strategy << ", Hour: " << hour << std::endl;
@@ -886,82 +887,82 @@ TEST_F(HeliostatFieldSimulation, singleFacet_SlantFocused)
     simulate_check_outputs("1a", "2", "12");
 }
 
-//TEST_F(HeliostatFieldSimulation, singleFacet_BandFocused)
-//{
-//    // Centerline aimpoints
-//    create_heliostat_field();
-//    assign_focal_lengths_banded();
-//    setup_simData();
-//    simulate_check_outputs("1b", "1", "8");
-//    simulate_check_outputs("1b", "1", "12");
-//
-//    // Scatter aimpoints
-//    set_scatter_aimpoints();
-//    simulate_check_outputs("1b", "2", "8");
-//    simulate_check_outputs("1b", "2", "12");
-//}
-//
-//TEST_F(HeliostatFieldSimulation, multiFacet_SlantCanted)
-//{
-//    // Centerline aimpoints
-//    create_heliostat_field();
-//    assign_canted_slant(true);      // Flat facets
-//
-//    setup_simData();
-//    simulate_check_outputs("2a", "1", "8");
-//    simulate_check_outputs("2a", "1", "12");
-//
-//    // Scatter aimpoints
-//    set_scatter_aimpoints();
-//    simulate_check_outputs("2a", "2", "8");
-//    simulate_check_outputs("2a", "2", "12");
-//}
-//
-//TEST_F(HeliostatFieldSimulation, multiFacet_BandCanted)
-//{
-//    // Centerline aimpoints
-//    create_heliostat_field();
-//    assign_canted_banded(true);     // Flat facets
-//
-//    setup_simData();
-//    simulate_check_outputs("2b", "1", "8");
-//    simulate_check_outputs("2b", "1", "12");
-//
-//    // Scatter aimpoints
-//    set_scatter_aimpoints();
-//    simulate_check_outputs("2b", "2", "8");
-//    simulate_check_outputs("2b", "2", "12");
-//}
-//
-//TEST_F(HeliostatFieldSimulation, multiFacet_SlantFocused_SlantCanted)
-//{
-//    // Center aimpoints;
-//    create_heliostat_field();
-//    assign_canted_slant(false);     // Slant focused (default)
-//
-//    setup_simData();
-//    simulate_check_outputs("3a", "1", "8");
-//    simulate_check_outputs("3a", "1", "12");
-//
-//    // Scatter aimpoints
-//    set_scatter_aimpoints();
-//    simulate_check_outputs("3a", "2", "8");
-//    simulate_check_outputs("3a", "2", "12");
-//}
-//
-//TEST_F(HeliostatFieldSimulation, multiFacet_BandFocused_BandCanted)
-//{
-//    // Center aimpoints
-//    create_heliostat_field();
-//    assign_canted_banded(false);    // Canted by band
-//    assign_focal_lengths_banded();  // Focused by band
-//
-//    setup_simData();
-//    simulate_check_outputs("3b", "1", "8");
-//    simulate_check_outputs("3b", "1", "12");
-//
-//    // Scatter aimpoints
-//    set_scatter_aimpoints();
-//    simulate_check_outputs("3b", "2", "8");
-//    simulate_check_outputs("3b", "2", "12");
-//}
+TEST_F(HeliostatFieldSimulation, singleFacet_BandFocused)
+{
+    // Centerline aimpoints
+    create_heliostat_field();
+    assign_focal_lengths_banded();
+    setup_simData();
+    simulate_check_outputs("1b", "1", "8");
+    simulate_check_outputs("1b", "1", "12");
+
+    // Scatter aimpoints
+    set_scatter_aimpoints();
+    simulate_check_outputs("1b", "2", "8");
+    simulate_check_outputs("1b", "2", "12");
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_SlantCanted)
+{
+    // Centerline aimpoints
+    create_heliostat_field();
+    assign_canted_slant(true);      // Flat facets
+
+    setup_simData();
+    simulate_check_outputs("2a", "1", "8");
+    simulate_check_outputs("2a", "1", "12");
+
+    // Scatter aimpoints
+    set_scatter_aimpoints();
+    simulate_check_outputs("2a", "2", "8");
+    simulate_check_outputs("2a", "2", "12");
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_BandCanted)
+{
+    // Centerline aimpoints
+    create_heliostat_field();
+    assign_canted_banded(true);     // Flat facets
+
+    setup_simData();
+    simulate_check_outputs("2b", "1", "8");
+    simulate_check_outputs("2b", "1", "12");
+
+    // Scatter aimpoints
+    set_scatter_aimpoints();
+    simulate_check_outputs("2b", "2", "8");
+    simulate_check_outputs("2b", "2", "12");
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_SlantFocused_SlantCanted)
+{
+    // Center aimpoints;
+    create_heliostat_field();
+    assign_canted_slant(false);     // Slant focused (default)
+
+    setup_simData();
+    simulate_check_outputs("3a", "1", "8");
+    simulate_check_outputs("3a", "1", "12");
+
+    // Scatter aimpoints
+    set_scatter_aimpoints();
+    simulate_check_outputs("3a", "2", "8");
+    simulate_check_outputs("3a", "2", "12");
+}
+
+TEST_F(HeliostatFieldSimulation, multiFacet_BandFocused_BandCanted)
+{
+    // Center aimpoints
+    create_heliostat_field();
+    assign_canted_banded(false);    // Canted by band
+    assign_focal_lengths_banded();  // Focused by band
+
+    setup_simData();
+    simulate_check_outputs("3b", "1", "8");
+    simulate_check_outputs("3b", "1", "12");
+
+    // Scatter aimpoints
+    set_scatter_aimpoints();
+    simulate_check_outputs("3b", "2", "8");
+    simulate_check_outputs("3b", "2", "12");
+}

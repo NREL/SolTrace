@@ -31,6 +31,7 @@ class SingleHeliostatSimulation : public ::testing::Test {
 public:
     bool high_accuracy = false;     // Runs 20 Million rays and tighter tolerance on checks
     bool print_info = false;        // Prints information on from simulation results (sun calculations, ray counts, flux calculations)
+    bool save_results = false;      // Saves flux map results to CSV files
 
     const Vector3d zero = { 0.0, 0.0, 0.0 }; // Global origin
     const Vector3d khat = { 0.0, 0.0, 1.0 }; // Global z-axis
@@ -673,12 +674,20 @@ protected:
         read_expected_all_results(task_number, position);
         check_outputs(result, position);
 
-        
-        //result.write_csv_file("single_heliostat_raydata.csv");
-        std::string flux_result_filename = "single_heliostat_fluxmap_results.csv";
+        if (!save_results) return;
+        std::string filename_postfix = "_Task_" + task_number + "_Position_" + position;
+        std::string heliostat_filename = "single_heliostat_raydata" + filename_postfix + ".csv";
+        result.write_csv_file(heliostat_filename);
+        std::string flux_result_filename = "single_heliostat_fluxmap" + filename_postfix + ".csv";
         save_flux_map_to_file(flux_result_filename);
-        std::string flux_comparison_filename = "single_heliostat_fluxmap_comparison.csv";
+        std::string flux_comparison_filename = "single_heliostat_fluxmap_comparison" + filename_postfix + ".csv";
         save_flux_comparison_to_file(flux_comparison_filename);
+        
+        if (print_info) {
+            std::cout << "Raydata saved to: " << heliostat_filename << std::endl;
+            std::cout << "Flux map saved to: " << flux_result_filename << std::endl;
+            std::cout << "Flux comparison results saved to: " << flux_comparison_filename << std::endl;
+        }
     }
 
     void TearDown() override {
@@ -696,91 +705,91 @@ TEST_F(SingleHeliostatSimulation, SingleFacetFlat_North)
     EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
 }
 
-//TEST_F(SingleHeliostatSimulation, SingleFacetFlat_Southeast)
-//{
-//    set_heliostat_to_southeast();
-//    setup_simData();
-//    simulate_check_outputs("1a", "SE");
-//    EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
-//    EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
-//}
-//
-//TEST_F(SingleHeliostatSimulation, SingleFacetFocused_North)
-//{
-//    set_slant_focal_length();
-//    setup_simData();
-//    simulate_check_outputs("1b", "N");
-//    EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
-//    EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
-//}
-//
-//TEST_F(SingleHeliostatSimulation, SingleFacetFocused_Southeast)
-//{
-//    set_heliostat_to_southeast();
-//    set_slant_focal_length();       // reset focal length after moving heliostat
-//    setup_simData();
-//    simulate_check_outputs("1b", "SE");
-//    EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
-//    EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
-//}
-//
-//TEST_F(SingleHeliostatSimulation, MultiFacetFlat_NoCanting_North)
-//{
-//    set_flat_multi_facet();
-//    setup_simData();
-//    simulate_check_outputs("2", "N");
-//    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);     // TODO: Why different from single facet?
-//    EXPECT_NEAR(sun_height, 10.4195, 1.e-4);
-//}
-//
-//TEST_F(SingleHeliostatSimulation, MultiFacetFlat_NoCanting_Southeast)
-//{
-//    set_flat_multi_facet();
-//    set_heliostat_to_southeast();
-//    setup_simData();
-//    simulate_check_outputs("2", "SE");
-//    EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
-//    EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
-//}
-//
-//TEST_F(SingleHeliostatSimulation, MultiFacetFlat_SlantCanting_North)
-//{
-//    set_onaxis_slant_canting();
-//    setup_simData();
-//    simulate_check_outputs("3", "N");
-//    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);     
-//    EXPECT_NEAR(sun_height, 10.4236, 1.e-4);  // TODO: Why different than flat facet case?
-//}
-//
-//TEST_F(SingleHeliostatSimulation, MultiFacetFlat_SlantCanting_Southeast)
-//{
-//    set_heliostat_to_southeast();
-//    set_onaxis_slant_canting();
-//    setup_simData();
-//    simulate_check_outputs("3", "SE");
-//    EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
-//    EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
-//}
-//
-//TEST_F(SingleHeliostatSimulation, MultiFacetFocused_SlantCanting_North)
-//{
-//    set_slant_focal_length();
-//    set_onaxis_slant_canting();
-//    setup_simData();
-//    simulate_check_outputs("4", "N");
-//    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);     // TODO: Why different from single facet?
-//    EXPECT_NEAR(sun_height, 10.4236, 1.e-4);
-//}
-//
-//TEST_F(SingleHeliostatSimulation, MultiFacetFocused_SlantCanting_Southeast)
-//{
-//    set_heliostat_to_southeast();
-//    set_slant_focal_length();
-//    set_onaxis_slant_canting();
-//    setup_simData();
-//    simulate_check_outputs("4", "SE");
-//    EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
-//    EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
-//}
+TEST_F(SingleHeliostatSimulation, SingleFacetFlat_Southeast)
+{
+    set_heliostat_to_southeast();
+    setup_simData();
+    simulate_check_outputs("1a", "SE");
+    EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
+    EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
+}
+
+TEST_F(SingleHeliostatSimulation, SingleFacetFocused_North)
+{
+    set_slant_focal_length();
+    setup_simData();
+    simulate_check_outputs("1b", "N");
+    EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
+    EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
+}
+
+TEST_F(SingleHeliostatSimulation, SingleFacetFocused_Southeast)
+{
+    set_heliostat_to_southeast();
+    set_slant_focal_length();       // reset focal length after moving heliostat
+    setup_simData();
+    simulate_check_outputs("1b", "SE");
+    EXPECT_NEAR(sun_width, 15.4557, 1.e-4);
+    EXPECT_NEAR(sun_height, 15.4557, 1.e-4);
+}
+
+TEST_F(SingleHeliostatSimulation, MultiFacetFlat_NoCanting_North)
+{
+    set_flat_multi_facet();
+    setup_simData();
+    simulate_check_outputs("2", "N");
+    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);     // TODO: Why different from single facet?
+    EXPECT_NEAR(sun_height, 10.4195, 1.e-4);
+}
+
+TEST_F(SingleHeliostatSimulation, MultiFacetFlat_NoCanting_Southeast)
+{
+    set_flat_multi_facet();
+    set_heliostat_to_southeast();
+    setup_simData();
+    simulate_check_outputs("2", "SE");
+    EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
+    EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
+}
+
+TEST_F(SingleHeliostatSimulation, MultiFacetFlat_SlantCanting_North)
+{
+    set_onaxis_slant_canting();
+    setup_simData();
+    simulate_check_outputs("3", "N");
+    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);     
+    EXPECT_NEAR(sun_height, 10.4236, 1.e-4);  // TODO: Why different than flat facet case?
+}
+
+TEST_F(SingleHeliostatSimulation, MultiFacetFlat_SlantCanting_Southeast)
+{
+    set_heliostat_to_southeast();
+    set_onaxis_slant_canting();
+    setup_simData();
+    simulate_check_outputs("3", "SE");
+    EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
+    EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
+}
+
+TEST_F(SingleHeliostatSimulation, MultiFacetFocused_SlantCanting_North)
+{
+    set_slant_focal_length();
+    set_onaxis_slant_canting();
+    setup_simData();
+    simulate_check_outputs("4", "N");
+    EXPECT_NEAR(sun_width, 12.4214, 1.e-4);     // TODO: Why different from single facet?
+    EXPECT_NEAR(sun_height, 10.4236, 1.e-4);
+}
+
+TEST_F(SingleHeliostatSimulation, MultiFacetFocused_SlantCanting_Southeast)
+{
+    set_heliostat_to_southeast();
+    set_slant_focal_length();
+    set_onaxis_slant_canting();
+    setup_simData();
+    simulate_check_outputs("4", "SE");
+    EXPECT_NEAR(sun_width, 11.8574, 1.e-3);
+    EXPECT_NEAR(sun_height, 11.5183, 1.e-3);
+}
 
 // TODO: add off-axis cases

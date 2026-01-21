@@ -443,7 +443,6 @@ TEST(SolarPositionCalculator, CrossValidationTest) {
     EXPECT_NEAR(sun_z, expected_sun_z, 1e-6);
 }
 
-
 TEST(SolarPositionCalculator, MultipleLocationsTimesTest) {
 
     /*locations to test:
