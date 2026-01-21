@@ -43,8 +43,6 @@ jobs:
         -DSOLTRACE_BUILD_CORETRACE=OFF
         -DSOLTRACE_BUILD_GUI=OFF
         -DENABLE_COVERAGE=ON
-        -DCMAKE_CXX_FLAGS="--coverage -fprofile-update=atomic"
-        -DCMAKE_C_FLAGS="--coverage -fprofile-update=atomic"
         -S ${{ github.workspace }}
 
     - name: Build
