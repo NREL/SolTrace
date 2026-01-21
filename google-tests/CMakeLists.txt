@@ -62,7 +62,6 @@ if(SOLTRACE_BUILD_CORETRACE)
 	)
 
 	if (ENABLE_COVERAGE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-	    target_compile_options(Test PRIVATE -fprofile-update=atomic)
 		target_link_options(Test PRIVATE --coverage)
 		target_link_libraries(Test gcov)
 	endif()

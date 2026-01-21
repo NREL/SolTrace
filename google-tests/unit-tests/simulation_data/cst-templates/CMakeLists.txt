@@ -19,13 +19,12 @@ set(CST_TEST_SRC
 	parabolic_trough_test.cpp
 	parabolic_dish_test.cpp
 	heliostat_test.cpp
-	single_heliostat_test.cpp
-	heliostat_field_test.cpp
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release" OR FULL_FIELD_VALIDATION_TEST)
 	list(APPEND 
 	CST_TEST_SRC
+	single_heliostat_test.cpp
 	heliostat_field_test.cpp
 	)
 endif()
