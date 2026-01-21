@@ -57,9 +57,9 @@ jobs:
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
       run: |
         # Capture coverage info; ignore mismatches to prevent geninfo line errors
-        lcov --capture --directory . --output-file coverage.info --ignore-errors mismatch
+        lcov --capture --directory . --output-file coverage.info --ignore-errors unused
         # Remove unwanted directories (3rd-party, deps)
-        lcov --remove coverage.info '*/_deps/*' '*/nlohmann_json-src/*' '/usr/*' --output-file coverage.info --ignore-errors mismatch
+        lcov --remove coverage.info '*/_deps/*' '*/nlohmann_json-src/*' '/usr/*' --output-file coverage.info --ignore-errors unused
 
     - name: Upload to Coveralls
       uses: coverallsapp/github-action@v2
