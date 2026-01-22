@@ -272,6 +272,28 @@ protected:
         }
     }
 
+    void assign_focal_lengths_canting_banded() {
+        // NOTE: This was created for task 1b where the focal lengths were set to the canting distances.
+        for (const auto& heliostat : heliostat_field) {
+            Vector3d heliostat_origin = heliostat->get_origin_global();
+            double distance = sqrt(pow(heliostat_origin[0], 2) + pow(heliostat_origin[1], 2));
+            double focal_length = 0.0;
+            if (distance <= 502.0)
+                focal_length = 516;
+            else if (distance > 502.0 && distance <= 885.0)
+                focal_length = 668.0;
+            else if (distance > 885.0 && distance <= 1267.0)
+                focal_length = 959.0;
+            else if (distance > 1267.0 && distance <= 1650.0)
+                focal_length = 1500.0;
+            else
+                throw std::runtime_error("Heliostat distance out of range for banded focal lengths.");
+
+            heliostat->set_focal_length(focal_length);
+            heliostat->create_geometry();
+        }
+    }
+
     void assign_canted_slant(bool flat_facets) {
         for (const auto& heliostat : heliostat_field) {
             Vector3d slant;
@@ -899,7 +921,7 @@ TEST_F(HeliostatFieldSimulation, singleFacet_BandFocused)
 {
     // Centerline aimpoints
     create_heliostat_field();
-    assign_focal_lengths_banded();
+    assign_focal_lengths_canting_banded();
     setup_simData();
     simulate_check_outputs("1b", "1", "8");
     simulate_check_outputs("1b", "1", "12");
