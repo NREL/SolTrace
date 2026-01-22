@@ -35,6 +35,7 @@ public:
     bool high_accuracy = false;     // Runs 20 Million rays and tighter tolerance on checks
     bool print_info = false;        // Prints information on from simulation results (sun calculations, ray counts, flux calculations)
     bool save_results = false;      // Saves flux map results to CSV files
+    bool save_raydata = false;      // Saves ray data to CSV file
 
     const Vector3d zero = { 0.0, 0.0, 0.0 }; // Global origin
     const Vector3d khat = { 0.0, 0.0, 1.0 }; // Global z-axis
@@ -353,6 +354,11 @@ protected:
 
     void simulate(SimulationResult* result) {
         if (high_accuracy) set_high_accuracy_params();
+        else { // Default parameters
+            SimulationParameters& params = simData.get_simulation_parameters();
+            params.number_of_rays = 5.e5;
+            params.max_number_of_rays = params.number_of_rays * 100;
+        }
 
         RunnerStatus sts = runner.setup_simulation(&simData);
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
@@ -857,12 +863,14 @@ protected:
         // Save results to file
         if (!save_results) return;
         std::string filename_postfix = "_Task_" + task_number + "_AimStrat_" + aim_strategy + "_Hour_" + hour;
-        std::string full_field_filename = "full_field_raydata" + filename_postfix + ".csv";
-        result.write_csv_file(full_field_filename);
         std::string flux_result_filename = "field_fluxmap" + filename_postfix + ".csv";
         save_flux_map_to_file(flux_result_filename);
         std::string flux_comparison_filename = "field_fluxmap_comparison" + filename_postfix + ".csv";
         save_flux_comparison_to_file(flux_comparison_filename);
+
+        if (!save_raydata) return;
+        std::string full_field_filename = "full_field_raydata" + filename_postfix + ".csv";
+        result.write_csv_file(full_field_filename);
     }
 
     void TearDown() override {
