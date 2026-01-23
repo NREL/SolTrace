@@ -25,13 +25,12 @@ using SolTrace::NativeRunner::TRayData;
 using SolTrace::NativeRunner::TSystem;
 using SolTrace::NativeRunner::TSun;
 
-// TODO: Refactor to remove duplicate code, read in files, create flux maps and compare.
-
 class SingleHeliostatSimulation : public ::testing::Test {
 public:
     bool high_accuracy = false;     // Runs 20 Million rays and tighter tolerance on checks
     bool print_info = false;        // Prints information on from simulation results (sun calculations, ray counts, flux calculations)
     bool save_results = false;      // Saves flux map results to CSV files
+    bool save_raydata = false;      // Saves ray data to CSV file
 
     const Vector3d zero = { 0.0, 0.0, 0.0 }; // Global origin
     const Vector3d khat = { 0.0, 0.0, 1.0 }; // Global z-axis
@@ -40,6 +39,8 @@ public:
     double solar_elevation = 59.96377;
 
     double rec_radius = 0.0;
+    double rec_height = 18.0;
+    double rec_width = 12.0;
 
     std::shared_ptr<SolTrace::Data::Sun> sun;
     std::shared_ptr<Heliostat> heliostat;
@@ -126,7 +127,7 @@ protected:
         receiver = SolTrace::Data::make_element<SingleElement>();
         receiver->get_front_optical_properties()->set_ideal_absorption();
         receiver->get_back_optical_properties()->set_ideal_reflection();
-        receiver->set_aperture(SolTrace::Data::make_aperture<SolTrace::Data::Rectangle>(12.0, 18.0));
+        receiver->set_aperture(SolTrace::Data::make_aperture<SolTrace::Data::Rectangle>(rec_width, rec_height));
         receiver->set_surface(SolTrace::Data::make_surface<SolTrace::Data::Flat>());
         Vector3d v1 = { 0.0, 1.0, 0.0 }; // Pointing North TODO: change to point towards heliostat
         Vector3d aim_point;
@@ -374,11 +375,15 @@ protected:
         reset_flux_map();
 
         double minx, maxx, miny, maxy;
-        minx = maxx = miny = maxy = 0.0;
+        minx = -rec_width / 2.0;
+        maxx = rec_width / 2.0;
+        miny = -rec_height / 2.0;
+        maxy = rec_height / 2.0;
+
         Vector3d rec_origin = receiver->get_origin_global();
 
         // Autoscale
-        if (true) {
+        if (false) {
             minx = miny = 1e199;
             maxx = maxy = -1e199;
             Vector3d local_position;
@@ -676,17 +681,21 @@ protected:
 
         if (!save_results) return;
         std::string filename_postfix = "_Task_" + task_number + "_Position_" + position;
-        std::string heliostat_filename = "single_heliostat_raydata" + filename_postfix + ".csv";
-        result.write_csv_file(heliostat_filename);
         std::string flux_result_filename = "single_heliostat_fluxmap" + filename_postfix + ".csv";
         save_flux_map_to_file(flux_result_filename);
         std::string flux_comparison_filename = "single_heliostat_fluxmap_comparison" + filename_postfix + ".csv";
         save_flux_comparison_to_file(flux_comparison_filename);
+        if (print_info) {
+            std::cout << "Flux map saved to: " << flux_result_filename << std::endl;
+            std::cout << "Flux comparison results saved to: " << flux_comparison_filename << std::endl;
+        }
+
+        if (!save_raydata) return;
+        std::string heliostat_filename = "single_heliostat_raydata" + filename_postfix + ".csv";
+        result.write_csv_file(heliostat_filename);
         
         if (print_info) {
             std::cout << "Raydata saved to: " << heliostat_filename << std::endl;
-            std::cout << "Flux map saved to: " << flux_result_filename << std::endl;
-            std::cout << "Flux comparison results saved to: " << flux_comparison_filename << std::endl;
         }
     }
 

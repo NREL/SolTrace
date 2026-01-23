@@ -42,6 +42,7 @@ public:
 
     // Receiver parameters
     Vector3d rec_origin = { 0.0, 0.0, 180.33 };   // This is the receiver center
+    double rec_width = 0.1; // Dummy value for flux map bin size
     double rec_radius = 15.45 / 2.0;
     double rec_height = 18.59;
     double rec_heat_shield_height = 3.2331;
@@ -587,9 +588,16 @@ protected:
         double minx, maxx, miny, maxy;
         minx = maxx = miny = maxy = 0.0;
         Vector3d rec_origin = receiver->get_origin_global();
+        
+        minx = -rec_width / 2.0;
+        maxx = rec_width / 2.0;
+
+        maxy = rec_height / 2.0;
+        miny = -rec_height / 2.0;
+
 
         // Autoscale
-        if (true) {
+        if (false) {
             minx = miny = 1e199;
             maxx = maxy = -1e199;
             Vector3d local_position;
