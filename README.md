@@ -111,7 +111,7 @@ On Mac, you can use Homebrew
 brew install embree
 ```
 
-On Windows (this works for Linux and MacOS as well), you need to download the binaries from the [github page](https://github.com/RenderKit/embree) (under the appropriate installation header). Follow the corresponding install instructions found there.
+On Windows (this works for Linux and MacOS as well), you need to download the binaries from the [github page](https://github.com/RenderKit/embree) (under the appropriate installation header). Follow the corresponding install instructions found there making sure to add the location of the embree DLL's to your system path.
 
 Once Embree is installed, clone the SolTrace repo, configure with embree enabled, and build:
 
