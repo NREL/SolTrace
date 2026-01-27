@@ -41,16 +41,6 @@ namespace SolTrace::EmbreeRunner
         void enable_point_focus() = delete;
 
     private:
-        // // Number of threads to use when tracing
-        // uint_fast64_t number_of_threads;
-        // std::vector<unsigned int> seeds;
-
-        // SolTrace::NativeRunner::ElementParameters eparams;
-        // SolTrace::NativeRunner::TSystem tsys;
-
-        // bool set_aperture_planes(SolTrace::NativeRunner::TSystem *tsys);
-        // bool set_aperture_planes(SolTrace::NativeRunner::tstage_ptr stage);
-        // bool aperture_plane(SolTrace::NativeRunner::telement_ptr Element);
 
         RTCDevice embree_device;
         RTCScene embree_scene;
