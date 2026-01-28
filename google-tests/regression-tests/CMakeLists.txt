@@ -5,11 +5,13 @@ include_directories(
 	.
 	# ../app/deploy/samples
 	../test_tools
+	../unit-tests/common
 	../../coretrace/simulation_data
 	../../coretrace/simulation_data/cst_templates
 	../../coretrace/simulation_results
 	../../coretrace/simulation_runner
 	../../coretrace/simulation_runner/native_runner
+	../../coretrace/simulation_runner/embree_runner
 )
 
 # file(GLOB UNIT_TEST_SRC *.cpp)
@@ -29,6 +31,13 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" OR SOLTRACE_BUILD_PERF_TEST)
 	)
 endif()
 
+if(SOLTRACE_BUILD_EMBREE_SUPPORT)
+	list(APPEND
+	REGRESSION_TEST_SRC
+	embree_runner_validation_test.cpp
+	)
+endif()
+
 add_executable(RegressionTests
 	${CSV_TOOL}
     ${REGRESSION_TEST_SRC}
@@ -42,6 +51,13 @@ target_link_libraries(
 	testtools
 	GTest::gtest_main
 )
+
+if(SOLTRACE_BUILD_EMBREE_SUPPORT)
+	target_link_libraries(
+		RegressionTests
+		embree_runner
+	)
+endif()
 
 if (ENABLE_COVERAGE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
 	target_link_options(RegressionTests PRIVATE --coverage)

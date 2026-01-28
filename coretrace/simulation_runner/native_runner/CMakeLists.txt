@@ -11,6 +11,7 @@ set(NATIVE_RUNNER_SRC
     calculator_factory.cpp
     cylinder_calculator.cpp
     determine_element_intersection_new.cpp
+    determine_interaction_type.cpp
     find_element_hit.cpp
     flat_calculator.cpp
     generate_ray.cpp
@@ -25,6 +26,7 @@ set(NATIVE_RUNNER_SRC
     thread_manager.cpp
     trace.cpp
     tracing_errors.cpp
+    trace_logger.cpp
     treemesh.cpp
 )
 
@@ -51,6 +53,5 @@ target_link_libraries(
 )
 
 if (NOT APPLE AND ENABLE_COVERAGE)
-	# SET(CMAKE_CXX_FLAGS "-O0 -coverage -fkeep-inline-functions")
     SET(CMAKE_CXX_FLAGS "-O0 -coverage")
 endif()

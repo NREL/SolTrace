@@ -39,9 +39,19 @@ protected:
 
 struct UnknownSurface : public Surface
 {
-    UnknownSurface() : Surface(SurfaceType::SURFACE_UNKNOWN){}
+    UnknownSurface() : Surface(SurfaceType::SURFACE_UNKNOWN) {}
     ~UnknownSurface() {}
-    virtual void write_json(nlohmann::ordered_json& json) const override {}
+    virtual void bounding_box(const double x_minmax[2],
+                                  const double y_minmax[2],
+                                  double &z_min,
+                                  double &z_max) const override
+    {
+        z_max = 1.0;
+        z_min = 0.0;
+        return;
+    }
+    virtual surface_ptr make_copy() const override { return make_surface<UnknownSurface>(*this); }
+    virtual void write_json(nlohmann::ordered_json &json) const override {}
 };
 
 TEST_F(CalculatorFactoryTest, SingletonBehavior)

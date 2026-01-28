@@ -22,6 +22,7 @@ calculator_ptr CalculatorFactory::make_calculator(
     surface_ptr surf,
     const ElementParameters &eparams)
 {
+    // TODO: Make logger accessible to intersection calculators...
     // Input validation
     if (surf == nullptr)
     {

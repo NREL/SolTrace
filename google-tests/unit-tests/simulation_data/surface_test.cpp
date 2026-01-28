@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <simulation_data_export.hpp>
 #include <surface.hpp>
 
 TEST(Surface, Typing)
@@ -7,8 +8,6 @@ TEST(Surface, Typing)
     // Test that each constructor properly sets the type
     auto cone = SolTrace::Data::make_surface<SolTrace::Data::Cone>(50.0);
     EXPECT_EQ(cone->get_type(), SolTrace::Data::CONE);
-    // cone = SolTrace::Data::make_surface<Cone>();
-    // EXPECT_EQ(cone->get_type(), CONE);
 
     auto cylinder = SolTrace::Data::make_surface<SolTrace::Data::Cylinder>(1.0);
     EXPECT_EQ(cylinder->get_type(), SolTrace::Data::CYLINDER);
@@ -18,13 +17,9 @@ TEST(Surface, Typing)
 
     auto para = SolTrace::Data::make_surface<SolTrace::Data::Parabola>(1.0, 1.0);
     EXPECT_EQ(para->get_type(), SolTrace::Data::PARABOLA);
-    // para = SolTrace::Data::make_surface<Parabola>();
-    // EXPECT_EQ(para->get_type(), PARABOLA);
 
     auto sph = SolTrace::Data::make_surface<SolTrace::Data::Sphere>(10.0);
     EXPECT_EQ(sph->get_type(), SolTrace::Data::SPHERE);
-    // sph = SolTrace::Data::make_surface<Sphere>();
-    // EXPECT_EQ(sph->get_type(), SPHERE);
 }
 
 TEST(Surface, MakeSurfaceFromType)
@@ -169,4 +164,183 @@ TEST(Surface, MakeSurfaceFromType)
         auto sphere_cast = std::dynamic_pointer_cast<SolTrace::Data::Sphere>(sphere);
         EXPECT_DOUBLE_EQ(sphere_cast->vertex_curv, 5.0);
     }
+}
+
+TEST(Cone, MakeCopy)
+{
+    const double xbox[2] = {-1.0, 2.0};
+    const double ybox[2] = {0.0, 1.0};
+    double z0, z1;
+    double z0copy, z1copy;
+
+    auto cone = make_surface<Cone>(35.0);
+    auto copy = cone->make_copy();
+
+    cone->bounding_box(xbox, ybox, z0, z1);
+    copy->bounding_box(xbox, ybox, z0copy, z1copy);
+    EXPECT_EQ(z0, z0copy);
+    EXPECT_EQ(z1, z1copy);
+    EXPECT_EQ(cone->z(xbox[0], ybox[1]), copy->z(xbox[0], ybox[1]));
+}
+
+TEST(Cone, BoundingBox)
+{
+    const double TOL = 1e-12;
+    const double THETA = 30.0;
+    const double xbox[2] = {-1.0, 2.0};
+    const double ybox[2] = {0.0, 1.0};
+    double z0, z1;
+
+    auto cone = make_surface<Cone>(THETA);
+    cone->bounding_box(xbox, ybox, z0, z1);
+    EXPECT_NEAR(z0, 0.0, TOL);
+    EXPECT_NEAR(z1, sqrt(4.0 + 1.0) / tan(THETA * D2R), TOL);
+}
+
+TEST(Cylinder, MakeCopy)
+{
+    const double xbox[2] = {-1.0, 1.0};
+    const double ybox[2] = {0.0, 5.0};
+    double z0, z1;
+    double z0copy, z1copy;
+
+    auto cylin = make_surface<Cylinder>(1.0);
+    auto copy = cylin->make_copy();
+
+    cylin->bounding_box(xbox, ybox, z0, z1);
+    copy->bounding_box(xbox, ybox, z0copy, z1copy);
+    EXPECT_EQ(z0, z0copy);
+    EXPECT_EQ(z1, z1copy);
+    EXPECT_EQ(cylin->z(xbox[0], ybox[1]), copy->z(xbox[0], ybox[1]));
+}
+
+TEST(Cylinder, BoundingBox)
+{
+    const double TOL = 1e-12;
+    const double R = 1.5;
+    const double xbox[2] = {-R, R};
+    const double ybox[2] = {0.0, 5.0};
+    double z0, z1;
+
+    auto cylin = make_surface<Cylinder>(R);
+    auto copy = cylin->make_copy();
+
+    cylin->bounding_box(xbox, ybox, z0, z1);
+    EXPECT_NEAR(z0, 0.0, TOL);
+    EXPECT_NEAR(z1, 2.0 * R, TOL);
+}
+
+TEST(Flat, MakeCopy)
+{
+    const double xbox[2] = {-1.0, 2.0};
+    const double ybox[2] = {0.0, 1.0};
+    double z0, z1;
+    double z0copy, z1copy;
+
+    auto flat = make_surface<Flat>();
+    auto copy = flat->make_copy();
+
+    flat->bounding_box(xbox, ybox, z0, z1);
+    copy->bounding_box(xbox, ybox, z0copy, z1copy);
+    EXPECT_EQ(z0, z0copy);
+    EXPECT_EQ(z1, z1copy);
+    EXPECT_EQ(flat->z(xbox[0], ybox[1]), copy->z(xbox[0], ybox[1]));
+}
+
+TEST(Flat, BoundingBox)
+{
+    const double TOL = 1e-12;
+    const double xbox[2] = {-PI, 2.0 * PI};
+    const double ybox[2] = {0.0, 5.0};
+    double z0, z1;
+
+    auto flat = make_surface<Flat>();
+    auto copy = flat->make_copy();
+
+    flat->bounding_box(xbox, ybox, z0, z1);
+    EXPECT_NEAR(z0, -1e-4, TOL);
+    EXPECT_NEAR(z1, 1e-4, TOL);
+}
+
+TEST(Parabola, MakeCopy)
+{
+    const double xbox[2] = {-1.0, 2.0};
+    const double ybox[2] = {0.0, 1.0};
+    double z0, z1;
+    double z0copy, z1copy;
+
+    auto para = make_surface<Parabola>(1.0, 2.0);
+    auto copy = para->make_copy();
+
+    para->bounding_box(xbox, ybox, z0, z1);
+    copy->bounding_box(xbox, ybox, z0copy, z1copy);
+    EXPECT_EQ(z0, z0copy);
+    EXPECT_EQ(z1, z1copy);
+    EXPECT_EQ(para->z(xbox[0], ybox[1]), copy->z(xbox[0], ybox[1]));
+}
+
+TEST(Parabola, BoundingBox)
+{
+    const double TOL = 1e-12;
+    const double xbox[2] = {-1.0, 2.0};
+    const double ybox[2] = {0.0, 1.0};
+    const double FX = 1.0;
+    const double FY = 2.0;
+    const double CX = 0.5 / FX;
+    const double CY = 0.5 / FY;
+    double z0, z1;
+
+    auto para = make_surface<Parabola>(FX, FY);
+
+    para->bounding_box(xbox, ybox, z0, z1);
+    EXPECT_NEAR(z0, 0.0, TOL);
+    EXPECT_NEAR(z1, 1.125, TOL);
+
+    const double xbox2[2] = {1.0, 4.0};
+    const double ybox2[2] = {0.5, 1.0};
+
+    para->bounding_box(xbox2, ybox2, z0, z1);
+    EXPECT_NEAR(z0, 0.5 * (CX * 1.0 + CY * 0.25), TOL);
+    EXPECT_NEAR(z1, 0.5 * (CX * 16.0 + CY * 1.0), TOL);
+}
+
+TEST(Sphere, MakeCopy)
+{
+    const double xbox[2] = {-1.0, 2.0};
+    const double ybox[2] = {0.0, 1.0};
+    double z0, z1;
+    double z0copy, z1copy;
+
+    auto sph = make_surface<Sphere>(0.5);
+    auto copy = sph->make_copy();
+
+    sph->bounding_box(xbox, ybox, z0, z1);
+    copy->bounding_box(xbox, ybox, z0copy, z1copy);
+    EXPECT_EQ(z0, z0copy);
+    EXPECT_EQ(z1, z1copy);
+    EXPECT_EQ(sph->z(xbox[0], ybox[1]), copy->z(xbox[0], ybox[1]));
+}
+
+TEST(Sphere, BoundingBox)
+{
+    const double TOL = 1e-12;
+    const double CURV = 0.25;
+    const double R = 1.0 / CURV;
+    const double xbox[2] = {-1.0, 4.0};
+    const double ybox[2] = {0.0, 3.0};
+    double z0, z1;
+
+    auto sph = make_surface<Sphere>(CURV);
+
+    sph->bounding_box(xbox, ybox, z0, z1);
+    EXPECT_NEAR(z0, 0.0, TOL);
+    EXPECT_NEAR(z1, R, TOL);
+
+    const double xbox2[2] = {0.0, 1.0};
+    const double ybox2[2] = {0.0, 1.0};
+    const double rsq = 2.0;
+
+    sph->bounding_box(xbox2, ybox2, z0, z1);
+    EXPECT_NEAR(z0, 0.0, TOL);
+    EXPECT_NEAR(z1, R - sqrt(R*R - rsq), TOL);
 }

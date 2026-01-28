@@ -2,10 +2,29 @@
 
 #include <cmath>
 
+#include <utilities.hpp>
 #include <vector3d.hpp>
-#include <cst_templates/utilities.hpp>
 
 #include "common.hpp"
+
+TEST(Utilities, IsApprox)
+{
+    const double TOL1 = 1e-12;
+    const double TOL2 = 1e-8;
+    const double x = 1.0;
+    const double y = x + 0.25 * TOL2;
+
+    EXPECT_TRUE(is_approx(x, y, TOL2));
+    EXPECT_FALSE(is_approx(x, y, TOL1));
+}
+
+TEST(Utilities, AbsMaxMin)
+{
+    const unsigned N = 5;
+    const double u[N] = {1.0, -2.0, -3.0, 4.0, -5.0};
+    EXPECT_EQ(abs_max(u, N), 5.0);
+    EXPECT_EQ(abs_min(u, N), 1.0);
+}
 
 TEST(Utilities, Projection)
 {

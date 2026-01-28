@@ -18,6 +18,7 @@ add_subdirectory(cst-templates)
 set(SIMULATION_DATA_TEST_SRC
     ../common/common.cpp
     linear_algebra_test.cpp
+    utilities_test.cpp
     aperture_test.cpp
     surface_test.cpp
     container_test.cpp

@@ -5,10 +5,10 @@
 #include <simulation_data.hpp>
 #include <simulation_result_export.hpp>
 #include <sun.hpp>
+#include <utilities.hpp>
 
 #include <cst_templates/arclength.hpp>
 #include <cst_templates/linear_fresnel.hpp>
-#include <cst_templates/utilities.hpp>
 
 #include "common.hpp"
 #include "count_absorbed_native.h"

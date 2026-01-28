@@ -407,7 +407,7 @@ namespace SolTrace::NativeRunner
             if (Query(i, pos, cos, &elm, &stage, &ray, &rev))
             {
                 printf("   [%llu] = { [%lg,%lg,%lg][%lg,%lg,%lg] %d %d %llu %s\(%d) }\n",
-                       i,
+                       static_cast<long long unsigned>(i),
                        pos[0], pos[1], pos[2],
                        cos[0], cos[1], cos[2],
                        elm,
@@ -469,7 +469,7 @@ namespace SolTrace::NativeRunner
     }
 
     telement_ptr make_telement(element_ptr el,
-                               int_fast64_t el_num,
+                               tstage_ptr my_stage,
                                const ElementParameters &eparams)
     {
         // std::cout << "Name: " << el->get_name()
@@ -487,6 +487,7 @@ namespace SolTrace::NativeRunner
         matrix_copy(telem->RLocToRef, el->get_local_to_stage());
 
         telem->aperture = el->get_aperture()->make_copy();
+        telem->surface = el->get_surface()->make_copy();
         telem->icalc =
             CalculatorFactory::get()->make_calculator(telem->aperture,
                                                       el->get_surface(),
@@ -496,9 +497,10 @@ namespace SolTrace::NativeRunner
         telem->Optics.Front = *el->get_front_optical_properties();
         telem->Optics.Back = *el->get_back_optical_properties();
 
-        // telem->element_number = el->get_id();
         telem->sim_data_id = el->get_id();
-        telem->element_number = el_num;
+        telem->element_number = my_stage->next_element_number();
+
+        telem->parent_stage = my_stage;
 
         return telem;
     }

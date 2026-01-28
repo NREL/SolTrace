@@ -4,10 +4,10 @@
 #include <native_runner_types.hpp>
 #include <simulation_data.hpp>
 #include <sun.hpp>
+#include <utilities.hpp>
 
 #include <cst_templates/arclength.hpp>
 #include <cst_templates/parabolic_trough.hpp>
-#include <cst_templates/utilities.hpp>
 
 #include "common.hpp"
 #include "count_absorbed_native.h"

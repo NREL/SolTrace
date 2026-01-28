@@ -3,13 +3,13 @@
 
 #include "native_runner_types.hpp"
 #include "simulation_data_export.hpp"
-#include "thread_manager.hpp"
+#include "trace_logger.hpp"
 
 namespace SolTrace::NativeRunner
 {
 
     bool SunToPrimaryStage(
-        thread_manager_ptr manager,
+        trace_logger_ptr logger,
         TSystem *System,
         TStage *Stage,
         TSun *Sun,
@@ -61,7 +61,7 @@ namespace SolTrace::NativeRunner
 
         if (dtot == 0.0)
         {
-            manager->error_log("error calculating sun position in primary stage, dtot = 0.0\n");
+            logger->error_log("error calculating sun position in primary stage, dtot = 0.0\n");
             return false;
         }
 
@@ -193,7 +193,7 @@ namespace SolTrace::NativeRunner
         }
 
         if (nelements == 0)
-            manager->error_log("error calculating sun position in primary stage because there are no elements");
+            logger->error_log("error calculating sun position in primary stage because there are no elements");
 
         return (nelements > 0);
     }

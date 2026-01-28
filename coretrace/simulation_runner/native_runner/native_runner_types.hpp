@@ -69,6 +69,22 @@
 namespace SolTrace::NativeRunner
 {
 
+	class GlobalRay_refactored
+	{
+	public:
+		GlobalRay_refactored() // : active(true)
+		{
+			Num = 0;
+			for (int i = 0; i < 3; i++)
+				Pos[i] = Cos[i] = 0.0;
+		}
+
+		double Pos[3];
+		double Cos[3];
+		uint_fast64_t Num;
+		// bool active;
+	};
+
 	// #define ACOSM1O180 0.017453292519943295 // acos(-1)/180.0
 	// #endif
 
@@ -132,15 +148,18 @@ namespace SolTrace::NativeRunner
 		uint_fast64_t newton_max_iters;
 	};
 
-	class TOpticalPropertySet
+	struct TOpticalPropertySet
 	{
-	public:
 		std::string Name;
 		// TOpticalProperties Front;
 		// TOpticalProperties Back;
 		SolTrace::Data::OpticalProperties Front;
 		SolTrace::Data::OpticalProperties Back;
 	};
+
+	// Forward declaration so TElement can have a stage pointer
+	struct TStage;
+	using tstage_ptr = typename std::shared_ptr<TStage>;
 
 	struct TElement
 	{
@@ -162,6 +181,7 @@ namespace SolTrace::NativeRunner
 		SolTrace::Data::aperture_ptr aperture;
 
 		/////////// SURFACE PARAMETERS ///////////////
+		SolTrace::Data::surface_ptr surface;
 		calculator_ptr icalc;
 
 		// double Kappa;
@@ -181,11 +201,12 @@ namespace SolTrace::NativeRunner
 		// of addition to element list
 		int_fast64_t element_number;
 		SolTrace::Data::element_id sim_data_id;
+		tstage_ptr parent_stage;
 	};
 
 	using telement_ptr = typename std::shared_ptr<TElement>;
 	telement_ptr make_telement(SolTrace::Data::element_ptr el,
-							   int_fast64_t el_num,
+							   tstage_ptr my_stage,
 							   const ElementParameters &eparams);
 
 	struct TSun
@@ -306,6 +327,18 @@ namespace SolTrace::NativeRunner
 		TStage();
 		~TStage();
 
+		void add_element(telement_ptr telem)
+		{
+			this->ElementList.push_back(telem);
+			return;
+		}
+
+		int_fast64_t next_element_number() const
+		{
+			// element number is 1-based
+			return this->ElementList.size() + 1;
+		}
+
 		bool MultiHitsPerRay;
 		bool Virtual;
 		bool TraceThrough;
@@ -328,7 +361,6 @@ namespace SolTrace::NativeRunner
 		int_fast64_t stage_id;
 	};
 
-	using tstage_ptr = typename std::shared_ptr<TStage>;
 	tstage_ptr make_tstage(const ElementParameters &eparams);
 	tstage_ptr make_tstage(SolTrace::Data::element_ptr el,
 						   const ElementParameters &eparams);

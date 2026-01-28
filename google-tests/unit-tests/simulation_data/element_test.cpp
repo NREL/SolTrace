@@ -255,6 +255,14 @@ TEST(Element, CompositeElementAccessors)
     EXPECT_FALSE(cmp->is_virtual());
     EXPECT_FALSE(elem2->is_virtual());
 
+    cmp->mark_virtual();
+    auto elem3 = make_configured_element();
+    EXPECT_FALSE(elem3->is_virtual());
+    cmp->add_element(elem3);
+    EXPECT_TRUE(elem3->is_virtual());
+    cmp->unmark_virtual();
+    EXPECT_FALSE(elem3->is_virtual());
+
     // Check that pass through functions are hooked up correctly
     auto iter = cmp->get_iterator();
     while (!cmp->is_at_end(iter))

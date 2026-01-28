@@ -21,7 +21,7 @@ The `pysoltrace` API is capable of running multi-threaded simulations, generatin
 
 The API requires the compiled coretrace library. Project files for building this library are generated using CMake as outlined in the steps below. It is possible to build only coretrace and not build the graphical interface by following the steps 1-7, but only building the `coretrace_api` project in step 7.vii.
 
-## Steps for Building SolTrace
+## Steps for Building SolTrace (Legacy)
 
 These are the general steps you need to follow to set up your computer for developing SolTrace:
 
@@ -77,6 +77,62 @@ These are the general steps you need to follow to set up your computer for devel
     7. Build all files. The output is stored in the soltrace repository folder, e.g., ```C:/stdev/soltrace/app/deploy/soltrace.exe```. 
 
         Note that output is NOT stored in the ```build-soltrace/``` directory!
+
+## Steps for Building SolTrace (work in progress)
+
+SolTrace has been updated to use multiple ray tracing engines in addition to the prior implementation. Currently, there is no graphical user interface (it is underdevelopment).
+
+Building SolTrace (develop branch) requires a C++-17 capable compiler and cmake 3.19 or greater.  Once these are available, building can be done in the normal pattern of configure and build:
+
+```sh
+git clone https://github.com/NatLabRockies/SolTrace.git
+cd SolTrace
+mkdir build
+cd build
+cmake ..
+cmake --build . -j4
+```
+
+Note the `-j4` instructs cmake to use 4 processes to compile the source code. This can be adjusted if the number of processors available is greater (or less) than 4.
+
+### Building with Intel's Embree Ray Tracing Library
+
+Information about Embree can be found on the [Embree webpage](https://www.embree.org/) or on the [Embree github page](https://github.com/RenderKit/embree).
+
+Prior to building SolTrace, you will need to install Embree v4.x.x. On Linux this is best done with a package manager. E.g.,
+
+```sh
+sudo apt-get update
+sudo apt-get install libembree-dev
+```
+On Mac, you can use Homebrew
+
+```sh
+brew install embree
+```
+
+On Windows (this works for Linux and MacOS as well), you need to download the binaries from the [github page](https://github.com/RenderKit/embree) (under the appropriate installation header). Follow the corresponding install instructions found there making sure to add the location of the embree DLL's to your system path.
+
+Once Embree is installed, clone the SolTrace repo, configure with embree enabled, and build:
+
+```sh
+git clone https://github.com/NatLabRockies/SolTrace.git
+cd SolTrace
+mkdir build
+cd build
+cmake .. -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON
+cmake --build . -j4
+```
+
+If cmake is having trouble locating the Embree install, you specify Embree's install location passing the `embree_DIR` variable to cmake. In this case the configure command would be
+
+```sh
+cmake .. -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON -Dembree_DIR=<EMBREE_INSTALL_DIR>
+```
+
+### Building with Nvidia's Optix Ray Tracing Library
+
+TODO.
 
 ## Contributing
 

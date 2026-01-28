@@ -6,6 +6,79 @@
 
 #include "common.hpp"
 
+// Bounding box test helper functions
+std::vector<double> generate_grid(double a, double b, uint_fast64_t npoints)
+{
+    double h = (b - a) / (npoints - 1);
+    std::vector<double> grid;
+    grid.resize(npoints);
+
+    for (uint_fast64_t k = 0; k < npoints; ++k)
+    {
+        grid[k] = k * h + a;
+    }
+
+    return grid;
+}
+
+bool is_in_box(double x, double y, const double xbox[2], const double ybox[2])
+{
+    return xbox[0] <= x && x <= xbox[1] &&
+           ybox[0] <= y && y <= ybox[1];
+}
+
+void bounding_box_test(aperture_ptr ap,
+                       double ax, double bx, uint_fast64_t nx,
+                       double ay, double by, uint_fast64_t ny,
+                       uint_fast64_t &nhit_outside,
+                       uint_fast64_t &nhit_inside)
+{
+    std::vector<double> xgrid = generate_grid(ax, bx, nx);
+    std::vector<double> ygrid = generate_grid(ay, by, ny);
+
+    double xbox[2] = {0.0, 0.0};
+    double ybox[2] = {0.0, 0.0};
+    ap->bounding_box(xbox[0], xbox[1], ybox[0], ybox[1]);
+
+    // std::cout << "Grid bounds: [ax, bx] X [ay, by] = "
+    //           << "[" << ax << ", " << bx << "] X ["
+    //           << ay << ", " << by << "]"
+    //           << std::endl;
+    // std::cout << "Bounding box: [ax, bx] X [ay, by] = "
+    //           << "[" << xbox[0] << ", " << xbox[1] << "] X ["
+    //           << ybox[0] << ", " << ybox[1] << "]"
+    //           << std::endl;
+
+    nhit_outside = 0;
+    nhit_inside = 0;
+
+    bool hit = false;
+    bool in_box = false;
+    for (auto xi : xgrid)
+    {
+        for (auto yj : ygrid)
+        {
+            // std::cout << "Checking grid point (x,y) = (" << xi << ", " << yj << ")" << std::endl;
+            hit = ap->is_in(xi, yj);
+            if (hit)
+            {
+                // std::cout << "Grid point within aperture" << std::endl;
+                in_box = is_in_box(xi, yj, xbox, ybox);
+                if (in_box)
+                {
+                    ++nhit_inside;
+                }
+                else
+                {
+                    ++nhit_outside;
+                }
+            }
+        }
+    }
+
+    return;
+}
+
 TEST(Aperture, ApertureBase)
 {
     struct TestAperture : public Aperture
@@ -15,18 +88,28 @@ TEST(Aperture, ApertureBase)
         {
         }
         virtual ~TestAperture() {}
-        virtual double aperture_area() const { return my_value; }
-        virtual double diameter_circumscribed_circle() const { return 2.0; }
-        virtual bool is_in(double x, double y) const { return false; }
-        virtual aperture_ptr make_copy() const
+        virtual double aperture_area() const override { return my_value; }
+        virtual double diameter_circumscribed_circle() const override { return 2.0; }
+        virtual void bounding_box(double &xmin,
+                                  double &xmax,
+                                  double &ymin,
+                                  double &ymax) const override
+        {
+            return;
+        }
+        virtual bool is_in(double x, double y) const override { return false; }
+        virtual aperture_ptr make_copy() const override
         {
             return make_aperture<TestAperture>(*this);
         }
-        virtual void write_json(nlohmann::ordered_json& jnode) const
+        virtual void write_json(nlohmann::ordered_json &jnode) const override
         {
             jnode["my_value"] = my_value;
         }
-        virtual std::tuple<std::vector<double>, std::vector<int>> triangulation() const { return std::make_tuple(std::vector<double>{}, std::vector<int>{});}
+        virtual std::tuple<std::vector<double>, std::vector<int>> triangulation() const override
+        {
+            return std::make_tuple(std::vector<double>{}, std::vector<int>{});
+        }
     };
 
     TestAperture ta1(1.2, ApertureType::CIRCLE);
@@ -45,7 +128,7 @@ TEST(Aperture, ApertureBase)
 
 TEST(Aperture, Annulus)
 {
-    const double RO = 5.0;
+    constexpr double RO = 5.0;
     const double RI = 1.0;
     const double ARC1 = 90.0;
     const double ARC2 = 360.0;
@@ -106,11 +189,33 @@ TEST(Aperture, Annulus)
     EXPECT_FALSE(a1->is_in(X3, Y3));
     EXPECT_FALSE(a1->is_in(X4, Y4));
     EXPECT_FALSE(a1->is_in(X5, Y5));
+
+    const uint_fast64_t NPOINTS = 1001;
+    constexpr double AX = -RO - 1.0;
+    constexpr double BX = RO + 1.0;
+    constexpr double AY = -RO - 1.0;
+    constexpr double BY = RO + 1.0;
+    constexpr double GRID_AREA = (BX - AX) * (BY - AY);
+    uint_fast64_t nhit_out = 0;
+    uint_fast64_t nhit_in = 0;
+    bounding_box_test(ann1,
+                      AX, BX, NPOINTS,
+                      AY, BY, NPOINTS,
+                      nhit_out, nhit_in);
+
+    double frac = ann1->aperture_area() / GRID_AREA;
+
+    EXPECT_EQ(nhit_out, 0);
+    EXPECT_NEAR((double)(nhit_in) / (NPOINTS * NPOINTS), frac, 1e-3);
+
+    std::cout << "Number of hits outside of bounding box: " << nhit_out << std::endl;
+    std::cout << "Number of hits inside bounding box: " << nhit_in << std::endl;
+    std::cout << "Expected fraction of hits: " << frac << std::endl;
 }
 
 TEST(Aperture, Circle)
 {
-    const double D = 2.0;
+    constexpr double D = 2.0;
     const double X1 = 0.5;
     const double Y1 = -0.5;
     const double X2 = 1.0;
@@ -132,13 +237,35 @@ TEST(Aperture, Circle)
     EXPECT_EQ(ap->aperture_area(), cir->aperture_area());
     EXPECT_TRUE(ap->is_in(X1, Y1));
     EXPECT_FALSE(ap->is_in(X2, Y2));
+
+    const uint_fast64_t NPOINTS = 1001;
+    constexpr double AX = -0.5 * D - 1.0;
+    constexpr double BX = 0.5 * D + 1.0;
+    constexpr double AY = -0.5 * D - 1.0;
+    constexpr double BY = 0.5 * D + 1.0;
+    constexpr double GRID_AREA = (BX - AX) * (BY - AY);
+    uint_fast64_t nhit_out = 0;
+    uint_fast64_t nhit_in = 0;
+    bounding_box_test(cir,
+                      AX, BX, NPOINTS,
+                      AY, BY, NPOINTS,
+                      nhit_out, nhit_in);
+
+    double frac = cir->aperture_area() / GRID_AREA;
+
+    EXPECT_EQ(nhit_out, 0);
+    EXPECT_NEAR((double)(nhit_in) / (NPOINTS * NPOINTS), frac, 1e-3);
+
+    std::cout << "Number of hits outside of bounding box: " << nhit_out << std::endl;
+    std::cout << "Number of hits inside bounding box: " << nhit_in << std::endl;
+    std::cout << "Expected fraction of hits: " << frac << std::endl;
 }
 
 TEST(Aperture, EqualateralTriangle)
 {
     const double TOL = 1e-12;
-    const double D = 2.0;
-    const double R = 0.5 * D;
+    constexpr double D = 2.0;
+    constexpr double R = 0.5 * D;
     const double S = sqrt(3.0) * R; // Side length of triangle
     const double AREA = sqrt(27.0) * R * R / 4.0;
 
@@ -178,6 +305,28 @@ TEST(Aperture, EqualateralTriangle)
     EXPECT_EQ(ap->aperture_area(), et->aperture_area());
     EXPECT_TRUE(ap->is_in(X1, Y1));
     EXPECT_FALSE(ap->is_in(X3, Y3));
+
+    const uint_fast64_t NPOINTS = 1001;
+    constexpr double AX = -R - 1.0;
+    constexpr double BX = R + 1.0;
+    constexpr double AY = -R - 1.0;
+    constexpr double BY = R + 1.0;
+    constexpr double GRID_AREA = (BX - AX) * (BY - AY);
+    uint_fast64_t nhit_out = 0;
+    uint_fast64_t nhit_in = 0;
+    bounding_box_test(et,
+                      AX, BX, NPOINTS,
+                      AY, BY, NPOINTS,
+                      nhit_out, nhit_in);
+
+    double frac = et->aperture_area() / GRID_AREA;
+
+    EXPECT_EQ(nhit_out, 0);
+    EXPECT_NEAR((double)(nhit_in) / (NPOINTS * NPOINTS), frac, 1e-3);
+
+    std::cout << "Number of hits outside of bounding box: " << nhit_out << std::endl;
+    std::cout << "Number of hits inside bounding box: " << nhit_in << std::endl;
+    std::cout << "Expected fraction of hits: " << frac << std::endl;
 }
 
 TEST(Aperture, Hexagon)
@@ -231,6 +380,28 @@ TEST(Aperture, Hexagon)
     EXPECT_EQ(ap->aperture_area(), hex->aperture_area());
     EXPECT_TRUE(ap->is_in(X2, Y2));
     EXPECT_FALSE(ap->is_in(X4, Y4));
+
+    const uint_fast64_t NPOINTS = 1001;
+    const double AX = -R - 1.0;
+    const double BX = R + 1.0;
+    const double AY = -R - 1.0;
+    const double BY = R + 1.0;
+    const double GRID_AREA = (BX - AX) * (BY - AY);
+    uint_fast64_t nhit_out = 0;
+    uint_fast64_t nhit_in = 0;
+    bounding_box_test(hex,
+                      AX, BX, NPOINTS,
+                      AY, BY, NPOINTS,
+                      nhit_out, nhit_in);
+
+    double frac = hex->aperture_area() / GRID_AREA;
+
+    EXPECT_EQ(nhit_out, 0);
+    EXPECT_NEAR((double)(nhit_in) / (NPOINTS * NPOINTS), frac, 1e-3);
+
+    std::cout << "Number of hits outside of bounding box: " << nhit_out << std::endl;
+    std::cout << "Number of hits inside bounding box: " << nhit_in << std::endl;
+    std::cout << "Expected fraction of hits: " << frac << std::endl;
 }
 
 TEST(Aperture, Rectangle)
@@ -320,6 +491,28 @@ TEST(Aperture, Rectangle)
     EXPECT_EQ(ap_shift->aperture_area(), rect_shift->aperture_area());
     EXPECT_TRUE(ap_shift->is_in(X6, Y6));
     EXPECT_FALSE(ap_shift->is_in(X8, Y8));
+
+    const uint_fast64_t NPOINTS = 1001;
+    const double AX = -LX - 1.0;
+    const double BX = LX + 1.0;
+    const double AY = -LY - 1.0;
+    const double BY = LY + 1.0;
+    const double GRID_AREA = (BX - AX) * (BY - AY);
+    uint_fast64_t nhit_out = 0;
+    uint_fast64_t nhit_in = 0;
+    bounding_box_test(rect,
+                      AX, BX, NPOINTS,
+                      AY, BY, NPOINTS,
+                      nhit_out, nhit_in);
+
+    double frac = rect->aperture_area() / GRID_AREA;
+
+    EXPECT_EQ(nhit_out, 0);
+    EXPECT_NEAR((double)(nhit_in) / (NPOINTS * NPOINTS), frac, 1e-3);
+
+    std::cout << "Number of hits outside of bounding box: " << nhit_out << std::endl;
+    std::cout << "Number of hits inside bounding box: " << nhit_in << std::endl;
+    std::cout << "Expected fraction of hits: " << frac << std::endl;
 }
 
 TEST(Aperture, IrregularTriangle)
@@ -338,6 +531,28 @@ TEST(Aperture, IrregularTriangle)
     EXPECT_NEAR(ap->aperture_area(), 0.5 * y2 * (x3 - x1), TOL);
     EXPECT_TRUE(ap->is_in(1.0, 1.0));
     EXPECT_FALSE(ap->is_in(1.5, 2.0));
+
+    const uint_fast64_t NPOINTS = 1001;
+    const double AX = x1 - 1.0;
+    const double BX = x3 + 1.0;
+    const double AY = y1 - 1.0;
+    const double BY = y2 + 1.0;
+    const double GRID_AREA = (BX - AX) * (BY - AY);
+    uint_fast64_t nhit_out = 0;
+    uint_fast64_t nhit_in = 0;
+    bounding_box_test(tri,
+                      AX, BX, NPOINTS,
+                      AY, BY, NPOINTS,
+                      nhit_out, nhit_in);
+
+    double frac = tri->aperture_area() / GRID_AREA;
+
+    EXPECT_EQ(nhit_out, 0);
+    EXPECT_NEAR((double)(nhit_in) / (NPOINTS * NPOINTS), frac, 1e-3);
+
+    std::cout << "Number of hits outside of bounding box: " << nhit_out << std::endl;
+    std::cout << "Number of hits inside bounding box: " << nhit_in << std::endl;
+    std::cout << "Expected fraction of hits: " << frac << std::endl;
 }
 
 TEST(Aperture, IrregularQuadrilateral)
@@ -361,12 +576,34 @@ TEST(Aperture, IrregularQuadrilateral)
     EXPECT_TRUE(ap->is_in(3.0, 1.0));
     EXPECT_TRUE(ap->is_in(1.0, 1.5));
     EXPECT_FALSE(ap->is_in(4.0, 1.0));
+
+    const uint_fast64_t NPOINTS = 1001;
+    const double AX = x1 - 1.0;
+    const double BX = x2 + 1.0;
+    const double AY = y1 - 1.0;
+    const double BY = y3 + 1.0;
+    const double GRID_AREA = (BX - AX) * (BY - AY);
+    uint_fast64_t nhit_out = 0;
+    uint_fast64_t nhit_in = 0;
+    bounding_box_test(quad,
+                      AX, BX, NPOINTS,
+                      AY, BY, NPOINTS,
+                      nhit_out, nhit_in);
+
+    double frac = quad->aperture_area() / GRID_AREA;
+
+    EXPECT_EQ(nhit_out, 0);
+    EXPECT_NEAR((double)(nhit_in) / (NPOINTS * NPOINTS), frac, 1e-3);
+
+    std::cout << "Number of hits outside of bounding box: " << nhit_out << std::endl;
+    std::cout << "Number of hits inside bounding box: " << nhit_in << std::endl;
+    std::cout << "Expected fraction of hits: " << frac << std::endl;
 }
 
 TEST(Aperture, MakeApertureFromType)
 {
     const double TOL = 1e-12;
-    
+
     // Test Circle creation
     std::vector<double> circle_args = {2.0}; // diameter
     auto circle_ap = Aperture::make_aperture_from_type(ApertureType::CIRCLE, circle_args);
@@ -374,7 +611,7 @@ TEST(Aperture, MakeApertureFromType)
     EXPECT_EQ(circle_ap->get_type(), ApertureType::CIRCLE);
     EXPECT_EQ(circle_ap->diameter_circumscribed_circle(), 2.0);
     EXPECT_NEAR(circle_ap->aperture_area(), PI, TOL);
-    
+
     // Test Rectangle creation
     std::vector<double> rect_args = {3.0, 2.0}; // width, height
     auto rect_ap = Aperture::make_aperture_from_type(ApertureType::RECTANGLE, rect_args);
@@ -382,7 +619,7 @@ TEST(Aperture, MakeApertureFromType)
     EXPECT_EQ(rect_ap->get_type(), ApertureType::RECTANGLE);
     EXPECT_NEAR(rect_ap->aperture_area(), 6.0, TOL);
     EXPECT_TRUE(rect_ap->is_in(0.0, 0.0)); // Center should be inside
-    
+
     // Test Annulus creation
     std::vector<double> annulus_args = {1.0, 3.0, 180.0}; // inner_radius, outer_radius, arc_angle
     auto annulus_ap = Aperture::make_aperture_from_type(ApertureType::ANNULUS, annulus_args);
@@ -390,39 +627,39 @@ TEST(Aperture, MakeApertureFromType)
     EXPECT_EQ(annulus_ap->get_type(), ApertureType::ANNULUS);
     EXPECT_EQ(annulus_ap->diameter_circumscribed_circle(), 6.0);
     EXPECT_NEAR(annulus_ap->aperture_area(), 0.5 * PI * (9.0 - 1.0), TOL);
-    
+
     // Test Hexagon creation
     std::vector<double> hex_args = {4.0}; // circumscribe_diameter
     auto hex_ap = Aperture::make_aperture_from_type(ApertureType::HEXAGON, hex_args);
     ASSERT_TRUE(hex_ap != nullptr);
     EXPECT_EQ(hex_ap->get_type(), ApertureType::HEXAGON);
     EXPECT_EQ(hex_ap->diameter_circumscribed_circle(), 4.0);
-    
+
     // Test Equilateral Triangle creation
     std::vector<double> tri_args = {2.0}; // circumscribe_diameter
     auto tri_ap = Aperture::make_aperture_from_type(ApertureType::EQUILATERAL_TRIANGLE, tri_args);
     ASSERT_TRUE(tri_ap != nullptr);
     EXPECT_EQ(tri_ap->get_type(), ApertureType::EQUILATERAL_TRIANGLE);
     EXPECT_EQ(tri_ap->diameter_circumscribed_circle(), 2.0);
-    
+
     // Test Irregular Triangle creation
     std::vector<double> irregular_tri_args = {0.0, 0.0, 1.0, 2.0, 2.0, 0.0}; // x1,y1, x2,y2, x3,y3
     auto irregular_tri_ap = Aperture::make_aperture_from_type(ApertureType::IRREGULAR_TRIANGLE, irregular_tri_args);
     ASSERT_TRUE(irregular_tri_ap != nullptr);
     EXPECT_EQ(irregular_tri_ap->get_type(), ApertureType::IRREGULAR_TRIANGLE);
     EXPECT_NEAR(irregular_tri_ap->aperture_area(), 2.0, TOL);
-    
+
     // Test Irregular Quadrilateral creation
     std::vector<double> quad_args = {0.0, 0.0, 3.0, 0.0, 4.0, 2.0, 1.0, 2.0}; // x1,y1, x2,y2, x3,y3, x4,y4
     auto quad_ap = Aperture::make_aperture_from_type(ApertureType::IRREGULAR_QUADRILATERAL, quad_args);
     ASSERT_TRUE(quad_ap != nullptr);
     EXPECT_EQ(quad_ap->get_type(), ApertureType::IRREGULAR_QUADRILATERAL);
-    
+
     // Test insufficient arguments - should return null pointer
     std::vector<double> insufficient_args = {1.0}; // Not enough args for annulus
     auto null_ap = Aperture::make_aperture_from_type(ApertureType::ANNULUS, insufficient_args);
     EXPECT_TRUE(null_ap == nullptr);
-    
+
     // Test empty arguments
     std::vector<double> empty_args;
     auto null_ap2 = Aperture::make_aperture_from_type(ApertureType::CIRCLE, empty_args);

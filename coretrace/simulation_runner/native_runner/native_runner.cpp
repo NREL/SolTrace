@@ -17,6 +17,7 @@
 // NativeRunner headers
 #include "native_runner_types.hpp"
 #include "trace.hpp"
+#include "trace_logger.hpp"
 
 namespace SolTrace::NativeRunner
 {
@@ -25,11 +26,16 @@ namespace SolTrace::NativeRunner
                                    as_power_tower(false),
                                    number_of_threads(1)
     {
-        this->my_manager = make_thread_manager();
+        this->my_logger = make_trace_logger();
+        this->my_manager = make_thread_manager(this->my_logger);
+        return;
     }
 
     NativeRunner::~NativeRunner()
     {
+        this->my_manager = nullptr;
+        this->my_logger = nullptr;
+        return;
     }
 
     RunnerStatus NativeRunner::initialize()
@@ -155,7 +161,7 @@ namespace SolTrace::NativeRunner
         auto my_map = std::map<int_fast64_t, tstage_ptr>();
         // int_fast64_t current_stage_id = -1;
         tstage_ptr current_stage = nullptr;
-        int_fast64_t element_number = 1;
+        // int_fast64_t element_number = 1;
         bool element_found_before_stage = false;
 
         if (data->get_number_of_elements() <= 0)
@@ -184,17 +190,17 @@ namespace SolTrace::NativeRunner
                 {
                     // TODO: Duplicate stage numbers. Need to make an error
                     // message.
+                    throw std::runtime_error("Duplicate stage numbers found.");
                     sts = RunnerStatus::ERROR;
                 }
 
                 current_stage = stage;
-                element_number = 1;
+                // element_number = 1;
             }
             else if (el->is_enabled() && el->is_single())
             {
                 if (current_stage == nullptr)
                 {
-                    // throw std::runtime_error("No stage to add element to");
                     element_found_before_stage = true;
                     continue;
                 }
@@ -205,10 +211,11 @@ namespace SolTrace::NativeRunner
                 }
 
                 telement_ptr elem = make_telement(iter->second,
-                                                  element_number,
+                                                  current_stage,
                                                   this->eparams);
-                ++element_number;
-                current_stage->ElementList.push_back(elem);
+                // ++element_number;
+                // current_stage->ElementList.push_back(elem);
+                current_stage->add_element(elem);
             }
         }
 
@@ -225,7 +232,7 @@ namespace SolTrace::NativeRunner
             // set to correspond to global coordinates. This is necessary
             // so that the element coordinate setup in make_element are
             // correct.
-            int_fast64_t element_number = 1;
+            // int_fast64_t element_number = 1;
             auto stage = make_tstage(this->eparams);
             stage->ElementList.reserve(data->get_number_of_elements());
             for (auto iter = data->get_const_iterator();
@@ -236,10 +243,11 @@ namespace SolTrace::NativeRunner
                 if (el->is_enabled() && el->is_single())
                 {
                     telement_ptr tel = make_telement(el,
-                                                     element_number,
+                                                     stage,
                                                      this->eparams);
-                    stage->ElementList.push_back(tel);
-                    ++element_number;
+                    // stage->ElementList.push_back(tel);
+                    // ++element_number;
+                    stage->add_element(tel);
                 }
             }
             my_map.insert(std::make_pair(0, stage));
@@ -280,22 +288,11 @@ namespace SolTrace::NativeRunner
 
     RunnerStatus NativeRunner::run_simulation()
     {
-        if (this->seeds.empty() ||
-            this->seeds.size() != this->number_of_threads)
-        {
-            this->seeds.clear();
-            for (unsigned k = 0; k < this->number_of_threads; ++k)
-            {
-                this->seeds.push_back(this->tsys.seed + 123 * k);
-            }
-        }
-        else
-        {
-            ; // Intentional no-op
-        }
+        this->set_seeds();
 
         RunnerStatus sts = trace_native(
             this->my_manager,
+            this->my_logger,
             &this->tsys,
             this->seeds,
             this->number_of_threads,
@@ -448,6 +445,24 @@ namespace SolTrace::NativeRunner
             Element->icalc->compute_z_aperture(Element->aperture);
 
         return true;
+    }
+
+    void NativeRunner::set_seeds()
+    {
+        if (this->seeds.empty() ||
+            this->seeds.size() != this->number_of_threads)
+        {
+            this->seeds.clear();
+            for (unsigned k = 0; k < this->number_of_threads; ++k)
+            {
+                this->seeds.push_back(this->tsys.seed + 123 * k);
+            }
+        }
+        else
+        {
+            ; // Intentional no-op
+        }
+        return;
     }
 
 } // namespace SolTrace::NativeRunner

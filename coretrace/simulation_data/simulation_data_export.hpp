@@ -9,6 +9,7 @@ using SolTrace::Data::Aperture;
 using SolTrace::Data::ApertureType;
 using SolTrace::Data::Circle;
 using SolTrace::Data::CompositeElement;
+using SolTrace::Data::Cone;
 using SolTrace::Data::Cylinder;
 using SolTrace::Data::DistributionType;
 using SolTrace::Data::EqualateralTriangle;
@@ -35,7 +36,7 @@ using SolTrace::Data::Vector3d;
 using SolTrace::Data::VirtualElement;
 using SolTrace::Data::VirtualPlane;
 
-// Template Types
+// CST Template Types
 using SolTrace::Data::Heliostat;
 using SolTrace::Data::LinearFresnel;
 using SolTrace::Data::ParabolicDish;
@@ -50,7 +51,7 @@ using SolTrace::Data::ray_source_ptr;
 using SolTrace::Data::stage_ptr;
 using SolTrace::Data::surface_ptr;
 
-// Functions
+// Construction Functions
 using SolTrace::Data::make_aperture;
 using SolTrace::Data::make_element;
 using SolTrace::Data::make_ray_source;
@@ -77,6 +78,15 @@ using SolTrace::Data::ZeroVec3;
 using SolTrace::Data::CalculateTransformMatrices;
 using SolTrace::Data::TransformToLocal;
 using SolTrace::Data::TransformToReference;
+
+// Utility Functions
+using SolTrace::Data::abs_max;
+using SolTrace::Data::abs_min;
+using SolTrace::Data::is_approx;
+using SolTrace::Data::project_onto_plane;
+using SolTrace::Data::project_onto_vector;
+using SolTrace::Data::rotate_vector_degrees;
+using SolTrace::Data::rotate_vector_radians;
 
 // Status Constants
 using SolTrace::Data::ELEMENT_ERROR;

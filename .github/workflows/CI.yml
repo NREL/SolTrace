@@ -61,6 +61,43 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libfontconfig1-dev
 
+    - name: Install embree (Ubuntu)
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libembree-dev
+
+    - name: Install embree (macOS)
+      if: matrix.os == 'macOS-latest'
+      run: |
+        brew install embree
+
+    - name: Install embree (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        $embreeVersion = "4.4.0"
+        $embreeUrl = "https://github.com/embree/embree/releases/download/v$embreeVersion/embree-$embreeVersion.x64.windows.zip"
+        $embreeZip = "$env:TEMP\embree.zip"
+        $embreeDir = "C:\embree"
+        
+        Write-Host "Downloading Embree $embreeVersion..."
+        Invoke-WebRequest -Uri $embreeUrl -OutFile $embreeZip
+        
+        Write-Host "Extracting Embree..."
+        Expand-Archive -Path $embreeZip -DestinationPath $embreeDir -Force
+        
+        # $embreeRoot = Get-ChildItem -Path $embreeDir -Directory -Filter "embree*" | Select-Object -First 1
+        $embreeCMake = Join-Path $embreeDir "lib\cmake\embree-$embreeVersion"
+        $embreeLib = Join-Path $embreeDir "bin"
+        
+        # Write-Host "Embree root: $($embreeRoot.FullName)"
+        Write-Host "Embree CMake: $embreeCMake"
+        Write-Host "Embree Lib: $embreeLib"
+        
+        echo "embree_DIR=$embreeCMake" >> $env:GITHUB_ENV
+        echo "$embreeLib" >> $env:GITHUB_PATH
+
     - name: Set reusable strings
       # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
@@ -77,6 +114,7 @@ jobs:
         -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
         -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
         -DSOLTRACE_BUILD_GUI=OFF
+        -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON
         -S ${{ github.workspace }}
 
     - name: Build-Windows

@@ -13,11 +13,11 @@
 #include <simulation_result_export.hpp>
 #include <stage_element.hpp>
 #include <sun.hpp>
+#include <utilities.hpp>
 
 #include <../../hpvm.h>
 
 #include <cst_templates/heliostat.hpp>
-#include <cst_templates/utilities.hpp>
 
 #include "common.hpp"
 #include "count_absorbed_native.h"

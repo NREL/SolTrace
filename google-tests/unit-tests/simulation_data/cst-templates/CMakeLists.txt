@@ -14,7 +14,7 @@ include_directories(
 
 # CST Template test files
 set(CST_TEST_SRC
-	utilities_test.cpp
+	# utilities_test.cpp
 	linear_fresnel_test.cpp
 	parabolic_trough_test.cpp
 	parabolic_dish_test.cpp

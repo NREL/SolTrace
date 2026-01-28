@@ -10,6 +10,8 @@
 
 #include <simulation_runner.hpp>
 
+#include "trace_logger.hpp"
+
 namespace SolTrace::NativeRunner
 {
 
@@ -18,7 +20,8 @@ namespace SolTrace::NativeRunner
     public:
         using ThreadStatus = SolTrace::Runner::RunnerStatus;
         using future = std::future<SolTrace::Runner::RunnerStatus>;
-        ThreadManager();
+        
+        ThreadManager(trace_logger_ptr logger);
         ~ThreadManager();
 
         // Functions for whoever "hired" the manager. Pattern for use is
@@ -27,6 +30,7 @@ namespace SolTrace::NativeRunner
         // the returned future to manage along with a unique id
         // 3. Call monitor_until_completion() to wait for everything
         // to finish.
+        // NOTE: Tasks should return type of ThreadManager::ThreadStatus
         
         // Must call prior to manage and not while running!!
         void initialize();
@@ -35,14 +39,12 @@ namespace SolTrace::NativeRunner
         ThreadStatus monitor_until_completion();
 
         // For the worker threads that are being managed
-        void error_log(const std::string &msg);
         void progress_update(unsigned int id, double progress);
         bool terminate(unsigned int id);
 
         // For general public use -- thread safe and can be called whenever
         ThreadStatus status(double *progress = nullptr) const;
         void cancel() const;
-        void print_log(std::ostream &os) const;
 
     private:
         // unsigned int next_id;
@@ -55,8 +57,7 @@ namespace SolTrace::NativeRunner
 
         std::map<unsigned int, future> threads;
 
-        mutable std::mutex message_mutex;
-        std::vector<std::string> messages;
+        trace_logger_ptr logger;
     };
 
     using thread_manager_ptr = std::shared_ptr<ThreadManager>;

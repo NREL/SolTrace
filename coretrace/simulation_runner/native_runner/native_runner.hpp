@@ -80,7 +80,7 @@ namespace SolTrace::NativeRunner
 
         void print_log(std::ostream &os)
         {
-            this->my_manager->print_log(os);
+            this->my_logger->print_log(os);
             return;
         }
 
@@ -109,7 +109,7 @@ namespace SolTrace::NativeRunner
         RunnerStatus setup_sun(const SolTrace::Data::SimulationData *data);
         RunnerStatus setup_elements(const SolTrace::Data::SimulationData *data);
 
-    private:
+    protected:
         // Use power tower speed ups
         bool as_power_tower;
 
@@ -120,12 +120,17 @@ namespace SolTrace::NativeRunner
 
         ElementParameters eparams;
 
+        trace_logger_ptr my_logger;
         thread_manager_ptr my_manager;
         TSystem tsys;
 
         bool set_aperture_planes(TSystem *tsys);
         bool set_aperture_planes(tstage_ptr stage);
         bool aperture_plane(telement_ptr Element);
+
+        void set_seeds();
+
+    private:
     };
 
 } // namespace SolTrace::NativeRunner

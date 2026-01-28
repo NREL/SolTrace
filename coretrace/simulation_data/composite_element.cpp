@@ -5,8 +5,6 @@
 
 #include "single_element.hpp"
 
-
-
 namespace SolTrace::Data
 {
 
@@ -17,16 +15,16 @@ namespace SolTrace::Data
         return;
     }
 
-    CompositeElement::CompositeElement(const nlohmann::ordered_json& jnode) : ElementBase(jnode),
-        number_of_elements(0),
-        my_elements()
+    CompositeElement::CompositeElement(const nlohmann::ordered_json &jnode) : ElementBase(jnode),
+                                                                              number_of_elements(0),
+                                                                              my_elements()
     {
         using json = nlohmann::ordered_json;
 
         // Common parameters are set in ElementBase constructor before here
 
         json jelements = jnode.at("elements");
-        for (auto& [key, jelement] : jelements.items())
+        for (auto &[key, jelement] : jelements.items())
         {
             bool is_single = jelement.at("is_single");
             if (is_single)
@@ -127,6 +125,11 @@ namespace SolTrace::Data
         {
             this->number_of_elements += el->get_number_of_elements();
             el->set_reference_element(this);
+            // Mark any added elements as virtual if needed
+            if (this->is_virtual())
+            {
+                el->mark_virtual();
+            }
         }
         return id;
     }
@@ -187,7 +190,7 @@ namespace SolTrace::Data
     }
 
     // Stage and Composite should have the same function
-    void CompositeElement::write_json(nlohmann::ordered_json& jnode) const
+    void CompositeElement::write_json(nlohmann::ordered_json &jnode) const
     {
         using json = nlohmann::ordered_json;
 

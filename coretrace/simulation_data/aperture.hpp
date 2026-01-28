@@ -42,17 +42,16 @@ namespace SolTrace::Data
     };
 
     inline const std::map<ApertureType, std::string> ApertureTypeMap =
-    {
-        {ApertureType::ANNULUS, "ANNULUS"},
-        {ApertureType::CIRCLE, "CIRCLE"},
-        {ApertureType::HEXAGON, "HEXAGON"},
-        {ApertureType::RECTANGLE, "RECTANGLE"},
-        {ApertureType::EQUILATERAL_TRIANGLE, "EQUILATERAL_TRIANGLE"},
-        {ApertureType::SINGLE_AXIS_CURVATURE_SECTION, "SINGLE_AXIS_CURVATURE_SECTION"},
-        {ApertureType::IRREGULAR_TRIANGLE, "IRREGULAR_TRIANGLE"},
-        {ApertureType::IRREGULAR_QUADRILATERAL, "IRREGULAR_QUADRILATERAL"},
-        {ApertureType::APERTURE_UNKNOWN, "APERTURE_UNKNOWN"}
-    };
+        {
+            {ApertureType::ANNULUS, "ANNULUS"},
+            {ApertureType::CIRCLE, "CIRCLE"},
+            {ApertureType::HEXAGON, "HEXAGON"},
+            {ApertureType::RECTANGLE, "RECTANGLE"},
+            {ApertureType::EQUILATERAL_TRIANGLE, "EQUILATERAL_TRIANGLE"},
+            {ApertureType::SINGLE_AXIS_CURVATURE_SECTION, "SINGLE_AXIS_CURVATURE_SECTION"},
+            {ApertureType::IRREGULAR_TRIANGLE, "IRREGULAR_TRIANGLE"},
+            {ApertureType::IRREGULAR_QUADRILATERAL, "IRREGULAR_QUADRILATERAL"},
+            {ApertureType::APERTURE_UNKNOWN, "APERTURE_UNKNOWN"}};
 
     struct Aperture;
     using aperture_ptr = std::shared_ptr<Aperture>;
@@ -93,11 +92,11 @@ namespace SolTrace::Data
                                                     const std::vector<double> &args);
 
         /**
-        * @brief Factory method to create apertures from json
-        * @param jnode the json containing necessary parameters for each aperture type
-        * @return Shared pointer to the created aperture
-        */
-        static aperture_ptr make_aperture_from_json(const nlohmann::ordered_json& jnode);
+         * @brief Factory method to create apertures from json
+         * @param jnode the json containing necessary parameters for each aperture type
+         * @return Shared pointer to the created aperture
+         */
+        static aperture_ptr make_aperture_from_json(const nlohmann::ordered_json &jnode);
 
         /**
          * @brief Get the aperture type
@@ -150,53 +149,70 @@ namespace SolTrace::Data
          */
         virtual aperture_ptr make_copy() const = 0;
 
+        virtual void bounding_box(double &xmin, double &xmax,
+                                  double &ymin, double &ymax) const = 0;
+
         /**
          * @brief Write aperture parameters to json
          * @param jnode JSON node
          */
-        virtual void write_json(nlohmann::ordered_json& jnode) const = 0;
+        virtual void write_json(nlohmann::ordered_json &jnode) const = 0;
 
         /**
          * @brief Get the aperture type string
          * @return The aperture type string
          */
-        inline std::string get_type_string() const {
-            switch (my_type) {
-            case ANNULUS: return "Annulus";
-            case CIRCLE: return "Circle";
-            case HEXAGON: return "Hexagon";
-            case RECTANGLE: return "Rectangle";
-            case EQUILATERAL_TRIANGLE: return "Regular Triangle";
-            case SINGLE_AXIS_CURVATURE_SECTION: return "Single Axis Curvature";
-            case IRREGULAR_TRIANGLE: return "Triangle";
-            case IRREGULAR_QUADRILATERAL: return "Quad";
-            case APERTURE_UNKNOWN: return "Unknown";
+        inline std::string get_type_string() const
+        {
+            switch (my_type)
+            {
+            case ANNULUS:
+                return "Annulus";
+            case CIRCLE:
+                return "Circle";
+            case HEXAGON:
+                return "Hexagon";
+            case RECTANGLE:
+                return "Rectangle";
+            case EQUILATERAL_TRIANGLE:
+                return "Regular Triangle";
+            case SINGLE_AXIS_CURVATURE_SECTION:
+                return "Single Axis Curvature";
+            case IRREGULAR_TRIANGLE:
+                return "Triangle";
+            case IRREGULAR_QUADRILATERAL:
+                return "Quad";
+            case APERTURE_UNKNOWN:
+                return "Unknown";
             }
             return "Unknown";
         }
 
     protected:
-        struct Point {
+        struct Point
+        {
         public:
             double x;
             double y;
-            Point(double ix, double iy) : x(ix), y(iy) { }
-            bool operator==(const Point& p) const {
+            Point(double ix, double iy) : x(ix), y(iy) {}
+            bool operator==(const Point &p) const
+            {
                 return x == p.x && y == p.y;
             }
         };
-        struct Triangle {
+        struct Triangle
+        {
         public:
             Point a;
             Point b;
             Point c;
-            Triangle(Point ia, Point ib, Point ic) : a(ia), b(ib), c(ic) { }
+            Triangle(Point ia, Point ib, Point ic) : a(ia), b(ib), c(ic) {}
         };
         /**
          * @brief Compute the mipoint between to points
          * @return The midpoint
          */
-        Point midpoint(const Point& v0, const Point& v1) const;
+        Point midpoint(const Point &v0, const Point &v1) const;
         /**
          * @brief Recursively Subdivide a triangle by midpoints
          * @param tri The triangle to subdivide
@@ -211,18 +227,18 @@ namespace SolTrace::Data
          * @param p The point of interest
          * @return index of p in v
          */
-        int index_of(std::vector<Point>& v, const Point& p) const;
+        int index_of(std::vector<Point> &v, const Point &p) const;
         /**
          * @brief Convert a list of Triangles in indexed (flattened) faceset
          * @param triangles The list to convert
          * @return indexed faceset
          */
         std::tuple<std::vector<double>, std::vector<int>>
-        indexed_triangles(const std::vector<Triangle>& triangles) const;
+        indexed_triangles(const std::vector<Triangle> &triangles) const;
     };
 
-
-    struct Annulus : public Aperture {
+    struct Annulus : public Aperture
+    {
         double inner_radius;
         double outer_radius;
         double arc_angle;
@@ -251,7 +267,7 @@ namespace SolTrace::Data
          * @brief Json-based constructor for annulus aperture
          * @param jnode contains ri, ro, and arc angle
          */
-        Annulus(const nlohmann::ordered_json& jnode);
+        Annulus(const nlohmann::ordered_json &jnode);
 
         virtual ~Annulus() {}
 
@@ -266,6 +282,11 @@ namespace SolTrace::Data
          * @return Diameter of outer circle
          */
         virtual double diameter_circumscribed_circle() const override;
+
+        virtual void bounding_box(double &xmin,
+                                  double &xmax,
+                                  double &ymin,
+                                  double &ymax) const override;
 
         /**
          * @brief Test if point is inside annulus aperture
@@ -285,7 +306,7 @@ namespace SolTrace::Data
          * @brief Write aperture parameters to json
          * @param jnode JSON node
          */
-        virtual void write_json(nlohmann::ordered_json& jnode) const override;
+        virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         /**
          * @brief Triangulate the annulus shape
@@ -311,7 +332,7 @@ namespace SolTrace::Data
          * @brief Json-based constructor for circular aperture
          * @param jnode contains diameter
          */
-        Circle(const nlohmann::ordered_json& jnode);
+        Circle(const nlohmann::ordered_json &jnode);
 
         virtual ~Circle() {}
 
@@ -326,6 +347,11 @@ namespace SolTrace::Data
          * @return Circle diameter (same as aperture diameter)
          */
         virtual double diameter_circumscribed_circle() const override;
+
+        virtual void bounding_box(double &xmin,
+                                  double &xmax,
+                                  double &ymin,
+                                  double &ymax) const override;
 
         /**
          * @brief Test if point is inside circular aperture
@@ -345,7 +371,7 @@ namespace SolTrace::Data
          * @brief Write aperture parameters to json
          * @param jnode JSON node
          */
-        virtual void write_json(nlohmann::ordered_json& jnode) const override;
+        virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         /**
          * @brief Triangulate the circle shape
@@ -377,7 +403,7 @@ namespace SolTrace::Data
          * @brief Json-based constructor for equilateral triangle aperture
          * @param jnode contains diameter of circumscribed circle
          */
-        EqualateralTriangle(const nlohmann::ordered_json& jnode);
+        EqualateralTriangle(const nlohmann::ordered_json &jnode);
 
         virtual ~EqualateralTriangle() {}
 
@@ -392,6 +418,11 @@ namespace SolTrace::Data
          * @return Diameter of circumscribed circle
          */
         virtual double diameter_circumscribed_circle() const override;
+
+        virtual void bounding_box(double &xmin,
+                                  double &xmax,
+                                  double &ymin,
+                                  double &ymax) const override;
 
         /**
          * @brief Test if point is inside triangular aperture
@@ -411,7 +442,7 @@ namespace SolTrace::Data
          * @brief Write aperture parameters to json
          * @param jnode JSON node
          */
-        virtual void write_json(nlohmann::ordered_json& jnode) const override;
+        virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         /**
          * @brief Triangulate the triangle shape
@@ -439,7 +470,7 @@ namespace SolTrace::Data
          * @brief Json-based constructor for hexagonal aperture
          * @param jnode contains diameter of circumscribed circle
          */
-        Hexagon(const nlohmann::ordered_json& jnode);
+        Hexagon(const nlohmann::ordered_json &jnode);
 
         virtual ~Hexagon() {}
 
@@ -454,6 +485,11 @@ namespace SolTrace::Data
          * @return Diameter of circumscribed circle
          */
         virtual double diameter_circumscribed_circle() const override;
+
+        virtual void bounding_box(double &xmin,
+                                  double &xmax,
+                                  double &ymin,
+                                  double &ymax) const override;
 
         /**
          * @brief Test if point is inside hexagonal aperture
@@ -473,7 +509,7 @@ namespace SolTrace::Data
          * @brief Write aperture parameters to json
          * @param jnode JSON node
          */
-        virtual void write_json(nlohmann::ordered_json& jnode) const override;
+        virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         /**
          * @brief Triangulate the hexagon shape
@@ -512,7 +548,7 @@ namespace SolTrace::Data
          * @brief Json-based constructor for rectangular aperture
          * @param jnode contains xlen, ylen, xl, yl
          */
-        Rectangle(const nlohmann::ordered_json& jnode);
+        Rectangle(const nlohmann::ordered_json &jnode);
 
         virtual ~Rectangle() {}
 
@@ -527,6 +563,11 @@ namespace SolTrace::Data
          * @return Diagonal length of rectangle
          */
         virtual double diameter_circumscribed_circle() const override;
+
+        virtual void bounding_box(double &xmin,
+                                  double &xmax,
+                                  double &ymin,
+                                  double &ymax) const override;
 
         /**
          * @brief Test if point is inside rectangular aperture
@@ -546,7 +587,7 @@ namespace SolTrace::Data
          * @brief Write aperture parameters to json
          * @param jnode JSON node
          */
-        virtual void write_json(nlohmann::ordered_json& jnode) const override;
+        virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         /**
          * @brief Triangulate the rectangle shape
@@ -556,10 +597,10 @@ namespace SolTrace::Data
         triangulation() const override;
     };
 
-    struct SingleAxisCurvatureSection : public Aperture
-    {
-        // TODO: Implement this?
-    };
+    // struct SingleAxisCurvatureSection : public Aperture
+    // {
+    //     // TODO: Implement this?
+    // };
 
     struct IrregularTriangle : public Aperture
     {
@@ -588,7 +629,7 @@ namespace SolTrace::Data
          * @brief Json-based constructor for irregular triangle aperture
          * @param jnode contains x1, y1, x2, y2, x3, y3
          */
-        IrregularTriangle(const nlohmann::ordered_json& jnode);
+        IrregularTriangle(const nlohmann::ordered_json &jnode);
 
         ~IrregularTriangle() {}
 
@@ -603,6 +644,11 @@ namespace SolTrace::Data
          * @return Diameter of smallest circle containing triangle
          */
         virtual double diameter_circumscribed_circle() const override;
+
+        virtual void bounding_box(double &xmin,
+                                  double &xmax,
+                                  double &ymin,
+                                  double &ymax) const override;
 
         /**
          * @brief Test if point is inside irregular triangle
@@ -622,7 +668,7 @@ namespace SolTrace::Data
          * @brief Write aperture parameters to json
          * @param jnode JSON node
          */
-        virtual void write_json(nlohmann::ordered_json& jnode) const override;
+        virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         /**
          * @brief Triangulate the triangle shape
@@ -664,7 +710,7 @@ namespace SolTrace::Data
          * @brief Json-based constructor for irregular quadrilateral aperture
          * @param jnode contains x1, y1, x2, y2, x3, y3, x4, y4
          */
-        IrregularQuadrilateral(const nlohmann::ordered_json& jnode);
+        IrregularQuadrilateral(const nlohmann::ordered_json &jnode);
 
         ~IrregularQuadrilateral() {}
 
@@ -679,6 +725,11 @@ namespace SolTrace::Data
          * @return Diameter of smallest circle containing quadrilateral
          */
         virtual double diameter_circumscribed_circle() const override;
+
+        virtual void bounding_box(double &xmin,
+                                  double &xmax,
+                                  double &ymin,
+                                  double &ymax) const override;
 
         /**
          * @brief Test if point is inside irregular quadrilateral
@@ -698,7 +749,7 @@ namespace SolTrace::Data
          * @brief Write aperture parameters to json
          * @param jnode JSON node
          */
-        virtual void write_json(nlohmann::ordered_json& jnode) const override;
+        virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         /**
          * @brief Triangulate the quad shape

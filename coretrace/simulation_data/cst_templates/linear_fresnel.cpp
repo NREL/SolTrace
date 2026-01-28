@@ -7,8 +7,7 @@
 #include "constants.hpp"
 #include "element.hpp"
 #include "surface.hpp"
-
-#include "cst_templates/utilities.hpp"
+#include "utilities.hpp"
 
 namespace SolTrace::Data
 {

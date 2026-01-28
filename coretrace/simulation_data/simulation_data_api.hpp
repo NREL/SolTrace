@@ -11,6 +11,7 @@
 #include "stage_element.hpp"
 #include "sun.hpp"
 #include "surface.hpp"
+#include "utilities.hpp"
 #include "vector3d.hpp"
 #include "virtual_element.hpp"
 

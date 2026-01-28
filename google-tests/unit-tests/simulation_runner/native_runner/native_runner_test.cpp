@@ -15,6 +15,7 @@
 #include <simulation_data_export.hpp>
 #include <simulation_result_export.hpp>
 #include <simulation_runner.hpp>
+#include <trace_logger.hpp>
 
 #include "common.hpp"
 #include "count_absorbed_native.h"
@@ -25,30 +26,6 @@ using SolTrace::NativeRunner::MTRand;
 using SolTrace::NativeRunner::NativeRunner;
 using SolTrace::NativeRunner::TRayData;
 using SolTrace::NativeRunner::TSystem;
-
-int_fast64_t count_element_event(const SimulationResult &res, element_id el, RayEvent rev)
-{
-    int_fast64_t count = 0;
-
-    for (auto ray_idx = 0;
-         ray_idx < res.get_number_of_records();
-         ++ray_idx)
-    {
-        auto rr = res[ray_idx];
-        for (auto event_idx = 0;
-             event_idx < rr->get_number_of_interactions();
-             ++event_idx)
-        {
-            if (rr->get_event(event_idx) == rev &&
-                rr->get_element(event_idx) == el)
-            {
-                ++count;
-            }
-        }
-    }
-
-    return count;
-}
 
 TEST(RandomNumberGenerator, SingleNumberMersenneTwister)
 {
@@ -75,13 +52,13 @@ TEST(NativeRunnerTypes, TSun)
     EXPECT_EQ(sys->Sun.ShapeIndex, SunShape::PILLBOX);
 }
 
-TEST(NativeRunnerTypes, MakeElement)
-{
-}
+// TEST(NativeRunnerTypes, MakeElement)
+// {
+// }
 
-TEST(NativeRunnerTypes, MakeStage)
-{
-}
+// TEST(NativeRunnerTypes, MakeStage)
+// {
+// }
 
 // TEST(NativeRunnerTypes, TElement)
 // {
@@ -130,12 +107,12 @@ TEST(NativeRunnerTypes, MakeStage)
 //     // TODO: Implement test
 // }
 
-TEST(ThreadManager, Logging)
+TEST(TraceLogger, Logging)
 {
-    SolTrace::NativeRunner::ThreadManager manager;
-    manager.error_log("This is a test message to test logging");
+    SolTrace::NativeRunner::TraceLogger logger;
+    logger.error_log("This is a test message to test logging");
     std::stringstream ss;
-    manager.print_log(ss);
+    logger.print_log(ss);
     EXPECT_GT(ss.str().size(), 0);
 }
 

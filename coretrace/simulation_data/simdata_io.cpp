@@ -583,6 +583,14 @@ bool process_stages(
         stage->set_aim_vector(AX, AY, AZ);
         stage->set_zrot(ZRot);
         stage->compute_coordinate_rotations();
+        if (virt)
+        {
+            stage->mark_virtual();
+        }
+        else
+        {
+            stage->unmark_virtual();
+        }
 
         // Loop through elements
         for (int i_element = 0; i_element < count_element; i_element++)

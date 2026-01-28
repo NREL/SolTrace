@@ -127,7 +127,6 @@ namespace SolTrace::NativeRunner
 						CopyVec3(LastPosRaySurfElement, PosRaySurfElement);
 						CopyVec3(LastCosRaySurfElement, CosRaySurfElement);
 						CopyVec3(LastDFXYZ, DFXYZ);
-						// LastElementNumber = ((i == 0 && !PT_override) ? Element->element_number : j + 1); // mjw change from j index to element id
 						LastElementNumber = Element->element_number;
 						LastRayNumber = RayNumber;
 						TransformToReference(PosRaySurfElement, CosRaySurfElement,

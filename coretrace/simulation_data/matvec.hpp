@@ -70,6 +70,25 @@ namespace SolTrace::Data
     void MatrixVectorMult(const double M[3][3],
                           const double V[3],
                           double MxV[3]);
+
+    template <typename R, typename T>
+    inline void MatrixVectorMult_generic(const R M[3][3],
+                                         const T V[3],
+                                         T MxV[3])
+    {
+        MxV[0] = M[0][0] * V[0] + M[0][1] * V[1] + M[0][2] * V[2];
+        MxV[1] = M[1][0] * V[0] + M[1][1] * V[1] + M[1][2] * V[2];
+        MxV[2] = M[2][0] * V[0] + M[2][1] * V[1] + M[2][2] * V[2];
+        return;
+    }
+
+    // void MatrixVectorMult(const double M[3][3],
+    //                       const double V[3],
+    //                       double MxV[3])
+    // {
+    //     return MatrixVectorMult_generic(M, V, MxV);
+    // }
+
     void MatrixTranspose(const double InputMatrix[3][3],
                          int NumRowsCols,
                          double OutputMatrix[3][3]);

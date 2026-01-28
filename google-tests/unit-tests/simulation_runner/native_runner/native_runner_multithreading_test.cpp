@@ -37,7 +37,7 @@ TEST(NativeRunner, StatusAndCancelMultiThread)
     sts = runner.status_simulation();
     EXPECT_EQ(sts, RunnerStatus::RUNNING);
 
-    double prog;
+    double prog = -1.0;
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sts = runner.status_simulation(&prog);
     EXPECT_EQ(sts, RunnerStatus::RUNNING);

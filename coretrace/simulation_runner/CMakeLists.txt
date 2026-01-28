@@ -1,5 +1,9 @@
 add_subdirectory(native_runner)
 
+if (SOLTRACE_BUILD_EMBREE_SUPPORT)
+    add_subdirectory(embree_runner)
+endif()
+
 # find cuda and optix libraries, if found then add optix_runner
 if (SOLTRACE_BUILD_OPTIX_SUPPORT)
 
@@ -41,7 +45,5 @@ if (SOLTRACE_BUILD_OPTIX_SUPPORT)
     else()
         message(STATUS "OptiX or CUDA not found, skipping optix_runner")
     endif()
-
-
 
 endif()

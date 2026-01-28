@@ -25,14 +25,14 @@ set(SIMDATA_SRC
     stage_element.cpp
     sun.cpp
     surface.cpp
-    virtual_element.cpp
+    utilities.cpp
     vector3d.cpp
+    virtual_element.cpp
     cst_templates/arclength.cpp
     cst_templates/heliostat.cpp
     cst_templates/linear_fresnel.cpp
     cst_templates/parabolic_dish.cpp
     cst_templates/parabolic_trough.cpp
-    cst_templates/utilities.cpp
     solar_position_calculators/solar_position_calculator.cpp
     solar_position_calculators/lib_irradproc.cpp
     solar_position_calculators/solpos.cpp
@@ -60,14 +60,14 @@ set(SIMDATA_HDRS
     stage_element.hpp
     sun.hpp
     surface.hpp
+    utilities.hpp
     vector3d.hpp
-    # virtual_element.hpp
+    virtual_element.hpp
     cst_templates/arclength.hpp
     cst_templates/heliostat.hpp
     cst_templates/linear_fresnel.hpp
     cst_templates/parabolic_dish.hpp
     cst_templates/parabolic_trough.hpp
-    cst_templates/utilities.hpp
     solar_position_calculators/solar_position_calculator.hpp
     solar_position_calculators/lib_irradproc.h
     solar_position_calculators/solpos00.h

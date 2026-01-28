@@ -19,7 +19,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y lcov libfontconfig1-dev
+        sudo apt-get install -y lcov libfontconfig1-dev libembree-dev
 
     - name: Set reusable strings
       id: strings
@@ -43,6 +43,7 @@ jobs:
         -DSOLTRACE_BUILD_CORETRACE=OFF
         -DSOLTRACE_BUILD_GUI=OFF
         -DENABLE_COVERAGE=ON
+        -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON
         -S ${{ github.workspace }}
 
     - name: Build
