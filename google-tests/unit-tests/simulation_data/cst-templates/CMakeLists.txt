@@ -11,7 +11,6 @@ include_directories(
 	../../../../coretrace/simulation_runner
 	../../../../coretrace/simulation_runner/native_runner
 	../../../../coretrace/simulation_runner/embree_runner
-	${embree_DIR}/include
 )
 
 # CST Template test files
