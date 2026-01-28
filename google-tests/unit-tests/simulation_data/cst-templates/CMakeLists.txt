@@ -10,6 +10,8 @@ include_directories(
 	../../../../coretrace/simulation_results
 	../../../../coretrace/simulation_runner
 	../../../../coretrace/simulation_runner/native_runner
+	../../../../coretrace/simulation_runner/embree_runner
+	${embree_DIR}/include
 )
 
 # CST Template test files
@@ -39,6 +41,7 @@ target_link_libraries(
 	native_runner
 	testtools
 	GTest::gtest_main
+    embree_runner
 )
 
 if (ENABLE_COVERAGE AND CMAKE_BUILD_TYPE STREQUAL "Debug")

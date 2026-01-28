@@ -8,6 +8,7 @@
 #include <gtest/gtest.h>
 
 #include <native_runner.hpp>
+#include <embree_runner.hpp>
 #include <native_runner_types.hpp>
 #include <simulation_data.hpp>
 #include <simulation_result_export.hpp>
@@ -26,9 +27,12 @@ using Heliostat = SolTrace::Data::Heliostat;
 
 using SolTrace::Runner::RunnerStatus;
 using SolTrace::NativeRunner::NativeRunner;
+using SolTrace::EmbreeRunner::EmbreeRunner;
+
 using SolTrace::NativeRunner::TRayData;
 using SolTrace::NativeRunner::TSystem;
 using SolTrace::NativeRunner::TSun;
+
 
 class HeliostatFieldSimulation : public ::testing::Test {
 public:
@@ -60,7 +64,8 @@ public:
 
 protected:
     SimulationData simData;
-    NativeRunner runner;
+    //NativeRunner runner;
+    EmbreeRunner runner;
 
     // Sun outputs
     double sun_width;
@@ -104,18 +109,14 @@ protected:
 
     void SetUp() override {
         // Set parameters
-        SimulationParameters& params = simData.get_simulation_parameters();
-        params.number_of_rays = 5.e5;
-        params.max_number_of_rays = params.number_of_rays * 100;
-        params.include_optical_errors = true;
-        params.include_sun_shape_errors = true;
-        params.seed = 123;
+        set_default_params();
 
         // Initialize runner
         RunnerStatus sts = runner.initialize();
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
-        runner.enable_power_tower();
-        runner.enable_point_focus();
+        // Native runner speedups
+        //runner.enable_power_tower();
+        //runner.enable_point_focus();
         runner.set_number_of_threads(14);
 
         // Initial setup of receiver
@@ -163,6 +164,15 @@ protected:
         SimulationParameters& params = simData.get_simulation_parameters();
         params.number_of_rays = 20.e6;
         params.max_number_of_rays = params.number_of_rays * 100;
+    }
+
+    void set_default_params() {
+        SimulationParameters& params = simData.get_simulation_parameters();
+        params.number_of_rays = 5.e5;
+        params.max_number_of_rays = params.number_of_rays * 100;
+        params.include_optical_errors = true;
+        params.include_sun_shape_errors = true;
+        params.seed = 123;
     }
 
     void create_heliostat_field() {
@@ -377,11 +387,7 @@ protected:
 
     void simulate(SimulationResult* result) {
         if (high_accuracy) set_high_accuracy_params();
-        else { // Default parameters
-            SimulationParameters& params = simData.get_simulation_parameters();
-            params.number_of_rays = 5.e5;
-            params.max_number_of_rays = params.number_of_rays * 100;
-        }
+        else set_default_params();
 
         RunnerStatus sts = runner.setup_simulation(&simData);
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
