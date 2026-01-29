@@ -17,6 +17,7 @@ add_subdirectory(cst-templates)
 # Add test files for simulation_data
 set(SIMULATION_DATA_TEST_SRC
     ../common/common.cpp
+    lib_weatherfile_test.cpp
     linear_algebra_test.cpp
     utilities_test.cpp
     aperture_test.cpp

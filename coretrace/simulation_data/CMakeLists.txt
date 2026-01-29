@@ -17,6 +17,8 @@ set(SIMDATA_SRC
     aperture.cpp
     composite_element.cpp
     element.cpp
+    lib_util.cpp
+    lib_weatherfile.cpp
     matvec.cpp
     optical_properties.cpp
     simdata_io.cpp
@@ -49,6 +51,8 @@ set(SIMDATA_HDRS
     element.hpp
     error_distributions.hpp
     json_helpers.hpp
+    lib_util.h
+    lib_weatherfile.h
     simulation_data_export.hpp
     matvec.hpp
     optical_properties.hpp
