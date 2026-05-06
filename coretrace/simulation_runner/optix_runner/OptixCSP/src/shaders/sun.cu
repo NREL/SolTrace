@@ -171,6 +171,56 @@ namespace OptixCSP {
             cos_t
         );
 
+        params.rng_states[ray_number] = rng;
+
+        // Transform to world space
+        float3 world_dir = normalize(local_dir.x * u + local_dir.y * v + local_dir.z * w);
+        return world_dir;
+    }
+
+    __device__ float3 sampleRayDirectionInCone_LimbDarkened(float3 dir, unsigned int ray_number)
+    {
+        curandState rng = params.rng_states[ray_number];
+
+        const float max_angle_mrad = params.sun_max_angle; // [mrad]
+        const float max_int = params.sun_max_intensity;
+
+        // Orthonormal basis about dir
+        float3 w = normalize(dir);
+        float3 u = normalize(cross(fabsf(w.x) > 0.99f ? make_float3(0, 1, 0) : make_float3(1, 0, 0), w));
+        float3 v = cross(w, u);
+
+        float theta = 0.f;
+        float theta2 = 0.f;
+        float stest = 0.f;
+
+        do
+        {
+            float thetax = (2.f * curand_uniform(&rng) - 1.f) * max_angle_mrad;
+            float thetay = (2.f * curand_uniform(&rng) - 1.f) * max_angle_mrad;
+            theta2 = thetax * thetax + thetay * thetay;
+            theta = sqrtf(theta2);
+
+            stest = 1.f - 0.5138f * powf(theta / max_angle_mrad, 4.f);
+        } while ((curand_uniform(&rng) > (stest / max_int)) || (theta2 > (max_angle_mrad * max_angle_mrad)));
+
+        // Convert theta (mrad) to radians
+        float theta_rad = theta * 0.001f;
+
+        // Random azimuth
+        float phi = 2.f * M_PIf * curand_uniform(&rng);
+
+        // Local direction in cone coordinates
+        float sin_t = sinf(theta_rad);
+        float cos_t = cosf(theta_rad);
+        float3 local_dir = make_float3(
+            sin_t * cosf(phi),
+            sin_t * sinf(phi),
+            cos_t
+        );
+
+        params.rng_states[ray_number] = rng;
+
         // Transform to world space
         float3 world_dir = normalize(local_dir.x * u + local_dir.y * v + local_dir.z * w);
         return world_dir;
@@ -218,6 +268,9 @@ extern "C" __global__ void __raygen__sun_source()
                 break;
             case(OptixCSP::SunShape::BUIE_CSR):
                 ray_dir = OptixCSP::sampleRayDirectionInCone_BuieCSR(init_ray_dir, params.buie_kappa, params.buie_gamma, ray_number);
+                break;
+            case(OptixCSP::SunShape::LIMBDARKENED):
+                ray_dir = OptixCSP::sampleRayDirectionInCone_LimbDarkened(init_ray_dir, ray_number);
                 break;
             default:
                 assert(false);

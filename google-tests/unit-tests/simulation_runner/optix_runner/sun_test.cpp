@@ -384,6 +384,76 @@ TEST(Sun, PillboxSunAngleDistribution)
     EXPECT_LE(max_theta, HALF_WIDTH_MRAD + 0.1);
 }
 
+TEST(Sun, LimbDarkenedSunAngleDistribution)
+{
+    const int N_RAYS = 200e3;
+    const double MAX_ANGLE_MRAD = 4.65;
+    const double UNIFORM_DISK_MEAN_RADIUS_FRAC = 2.0 / 3.0;
+
+    SimulationData sd_limbdarkened;
+    auto sun_pos = glm::dvec3(0.0, 0.0, 100.0);
+
+    make_sun_sd(sd_limbdarkened, SolTrace::Data::SunShape::LIMBDARKENED,
+                0.0, 0.0, true, sun_pos);
+
+    sd_limbdarkened.get_simulation_parameters().number_of_rays = N_RAYS;
+    sd_limbdarkened.get_simulation_parameters().max_number_of_rays = N_RAYS * 10;
+
+    OptixRunner runner_limbdarkened;
+    ASSERT_EQ(runner_limbdarkened.initialize(), RunnerStatus::SUCCESS);
+    ASSERT_EQ(runner_limbdarkened.setup_simulation(&sd_limbdarkened), RunnerStatus::SUCCESS);
+    ASSERT_EQ(runner_limbdarkened.run_simulation(), RunnerStatus::SUCCESS);
+
+    SimulationResult result;
+    ASSERT_EQ(runner_limbdarkened.report_simulation(&result, 0), RunnerStatus::SUCCESS);
+
+    const std::vector<float3> dirs = estimate_dirs_from_result(result);
+    EXPECT_FALSE(dirs.empty());
+
+    float3 sun_dir_nominal = make_float3(
+        static_cast<float>(sun_pos[0]),
+        static_cast<float>(sun_pos[1]),
+        static_cast<float>(sun_pos[2]));
+    {
+        double nx = sun_dir_nominal.x;
+        double ny = sun_dir_nominal.y;
+        double nz = sun_dir_nominal.z;
+        double n = std::sqrt(nx * nx + ny * ny + nz * nz);
+        ASSERT_GT(n, 0.0);
+        sun_dir_nominal.x = static_cast<float>(nx / n);
+        sun_dir_nominal.y = static_cast<float>(ny / n);
+        sun_dir_nominal.z = static_cast<float>(nz / n);
+    }
+    sun_dir_nominal.x = -sun_dir_nominal.x;
+    sun_dir_nominal.y = -sun_dir_nominal.y;
+    sun_dir_nominal.z = -sun_dir_nominal.z;
+
+    double max_theta = 0.0;
+    int count_valid = 0;
+    double theta_sum = 0.0;
+
+    for (const auto& d : dirs)
+    {
+        if (!is_valid_dir(d))
+            continue;
+
+        double theta = angle_mrad(d, sun_dir_nominal);
+        ++count_valid;
+        theta_sum += theta;
+        if (theta > max_theta)
+            max_theta = theta;
+    }
+
+    EXPECT_GT(count_valid, 0);
+    EXPECT_LE(max_theta, MAX_ANGLE_MRAD + 0.1);
+
+    const double mean_theta = theta_sum / static_cast<double>(count_valid);
+    const double mean_theta_frac = mean_theta / MAX_ANGLE_MRAD;
+
+    EXPECT_LT(mean_theta_frac, UNIFORM_DISK_MEAN_RADIUS_FRAC);
+    EXPECT_GT(mean_theta_frac, 0.55);
+}
+
 TEST(Sun, BuieCSRSunAngleDistribution)
 {
     const int N_RAYS = 200e3;

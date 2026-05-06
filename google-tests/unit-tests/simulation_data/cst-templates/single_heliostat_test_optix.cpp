@@ -390,7 +390,7 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, NoErrors)
     sim_native.runner.disable_stages(); // Disable stages
     sim_native.use_optical_errors = use_optical;
     sim_native.use_sunshape_errors = use_sunshape;
-    sim_native.runner.set_number_of_threads(10);
+    sim_native.runner.set_number_of_threads(N_threads);
     sim_native.initialize();
     
     // Make optix
@@ -412,7 +412,7 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SunShapePillBoxOnly)
     sim_native.runner.disable_stages(); // Disable stages
     sim_native.use_optical_errors = use_optical;
     sim_native.use_sunshape_errors = use_sunshape;
-    sim_native.runner.set_number_of_threads(10);
+    sim_native.runner.set_number_of_threads(N_threads);
     sim_native.initialize();
 
     // Make optix
@@ -436,7 +436,7 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SunShapeGaussOnly)
     sim_native.use_sunshape_errors = use_sunshape;
     sim_native.sun_shape = SunShape::GAUSSIAN;
     sim_native.gauss_sigma = 2;
-    sim_native.runner.set_number_of_threads(10);
+    sim_native.runner.set_number_of_threads(N_threads);
     sim_native.initialize();
 
     // Make optix
@@ -460,7 +460,7 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SlopeGaussOnly)
     sim_native.runner.disable_stages(); // Disable stages
     sim_native.use_optical_errors = use_optical;
     sim_native.use_sunshape_errors = use_sunshape;
-    sim_native.runner.set_number_of_threads(10);
+    sim_native.runner.set_number_of_threads(N_threads);
     sim_native.initialize();
 
     // Make optix
@@ -483,7 +483,7 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SlopePillBoxOnly)
     sim_native.use_optical_errors = use_optical;
     sim_native.use_sunshape_errors = use_sunshape;
     sim_native.error_dist = DistributionType::PILLBOX;
-    sim_native.runner.set_number_of_threads(10);
+    sim_native.runner.set_number_of_threads(N_threads);
     sim_native.initialize();
 
     // Make optix
@@ -506,7 +506,7 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SunShapeAndSlope)
     sim_native.runner.disable_stages(); // Disable stages
     sim_native.use_optical_errors = use_optical;
     sim_native.use_sunshape_errors = use_sunshape;
-    sim_native.runner.set_number_of_threads(10);
+    sim_native.runner.set_number_of_threads(N_threads);
     sim_native.initialize();
 
     // Make optix
@@ -530,7 +530,7 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SpecGaussOnly)
     sim_native.use_sunshape_errors = use_sunshape;
     sim_native.slope_error = 0;     // Turn off slope error
     sim_native.spec_error = 2;    // Set specularity error
-    sim_native.runner.set_number_of_threads(10);
+    sim_native.runner.set_number_of_threads(N_threads);
     sim_native.initialize();
 
     // Make optix
@@ -557,7 +557,7 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SpecPillBoxOnly)
     sim_native.slope_error = 0;     // Turn off slope error
     sim_native.spec_error = 2;      // Set specularity error
     sim_native.error_dist = DistributionType::PILLBOX;
-    sim_native.runner.set_number_of_threads(10);
+    sim_native.runner.set_number_of_threads(N_threads);
     sim_native.initialize();
 
     // Make optix
@@ -584,7 +584,7 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SunShapeSlopeAndSpec)
     sim_native.use_sunshape_errors = use_sunshape;
     sim_native.slope_error = 2;     // Turn off slope error
     sim_native.spec_error = 2;    // Set specularity error
-    sim_native.runner.set_number_of_threads(10);
+    sim_native.runner.set_number_of_threads(N_threads);
     sim_native.initialize();
 
     // Make optix
@@ -593,6 +593,30 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SunShapeSlopeAndSpec)
     sim_optix.use_sunshape_errors = use_sunshape;
     sim_optix.slope_error = 2;     // Turn off slope error
     sim_optix.spec_error = 2;    // Set specularity error
+    sim_optix.initialize();
+
+    CompareRunners(sim_native, sim_optix, N_rays_glob);
+}
+
+TEST(SingleHeliostatOptixNative_ErrorTesting, SunShapeLimbDarkenedOnly)
+{
+    bool use_optical = false;
+    bool use_sunshape = true;
+
+    // Make native
+    SingleHeliostatSimulationHelper<NativeRunner> sim_native;
+    sim_native.runner.disable_stages(); // Disable stages
+    sim_native.use_optical_errors = use_optical;
+    sim_native.use_sunshape_errors = use_sunshape;
+    sim_native.runner.set_number_of_threads(N_threads);
+    sim_native.sun_shape = SunShape::LIMBDARKENED;
+    sim_native.initialize();
+
+    // Make optix
+    SingleHeliostatSimulationHelper<OptixRunner> sim_optix;
+    sim_optix.use_optical_errors = use_optical;
+    sim_optix.use_sunshape_errors = use_sunshape;
+    sim_optix.sun_shape = SunShape::LIMBDARKENED;
     sim_optix.initialize();
 
     CompareRunners(sim_native, sim_optix, N_rays_glob);
