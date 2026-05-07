@@ -124,10 +124,6 @@ void GeometryManager::collect_geometry_info(const std::vector<std::shared_ptr<Cs
     }
 
     // print out computed minimum distance
-    if (m_verbose)
-    {
-        std::cout << "Minimum distance to sun plane: " << m_sun_plane_distance << std::endl;
-    }
     if(m_verbose)
         std::cout << "Minimum distance to sun plane: " << m_sun_plane_distance << std::endl;
 }
