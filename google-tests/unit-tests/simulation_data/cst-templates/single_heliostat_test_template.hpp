@@ -61,6 +61,8 @@ public:
     SunShape sun_shape = SolTrace::Data::SunShape::PILLBOX;
     double half_width = 4.65;
     double gauss_sigma = 0;
+    std::vector<double> user_angle = {};
+    std::vector<double> user_intensity = {};
 
     SimulationData simData;
     RunnerT runner;
@@ -155,7 +157,7 @@ public:
         glm::dvec3 sun_pos = {0.0, 0.0, 1000.0};
         sun = SolTrace::Data::make_ray_source<Sun>();
         sun->set_position(sun_pos);
-        sun->set_shape(sun_shape, gauss_sigma, half_width, 0.0);
+        sun->set_shape(sun_shape, gauss_sigma, half_width, 0.0, user_angle, user_intensity);
         sun->set_gen_type(sun_gen_type);
         simData.add_ray_source(sun);
 

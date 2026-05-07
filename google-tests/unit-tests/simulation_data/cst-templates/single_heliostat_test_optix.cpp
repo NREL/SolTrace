@@ -621,3 +621,49 @@ TEST(SingleHeliostatOptixNative_ErrorTesting, SunShapeLimbDarkenedOnly)
 
     CompareRunners(sim_native, sim_optix, N_rays_glob);
 }
+
+TEST(SingleHeliostatOptixNative_ErrorTesting, SunShapeUserDefinedOnly)
+{
+    const std::vector<double> user_angle = {
+        0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35,
+        1.5, 1.65, 1.8, 1.95, 2.1, 2.25, 2.4, 2.55, 2.7, 2.85,
+        3.0, 3.15, 3.3, 3.45, 3.6, 3.75, 3.9, 4.05, 4.2, 4.35,
+        4.5, 4.65, 4.8, 4.95, 5.1, 5.25, 5.4, 5.55, 5.7, 5.85,
+        6.0, 6.15, 6.3, 6.45, 6.6, 6.75, 6.9, 7.05, 7.2, 7.35,
+        7.5, 7.65, 7.8, 7.95
+    };
+
+    const std::vector<double> user_intensity = {
+        1.0, 0.999872, 0.999485, 0.998837, 0.997923, 0.996734, 0.99526, 0.993487, 0.991399, 0.988976,
+        0.986193, 0.983019, 0.979417, 0.975345, 0.970747, 0.965558, 0.959697, 0.953063, 0.945528, 0.936933,
+        0.927069, 0.915665, 0.902358, 0.886653, 0.867855, 0.844965, 0.816477, 0.78003, 0.731687, 0.66436,
+        0.563875, 0.397159, 5.34e-05, 5.07e-05, 4.82e-05, 4.59e-05, 4.38e-05, 4.18e-05, 3.99e-05, 3.82e-05,
+        3.66e-05, 3.51e-05, 3.37e-05, 3.24e-05, 3.11e-05, 3.00e-05, 2.89e-05, 2.78e-05, 2.69e-05, 2.59e-05,
+        2.51e-05, 2.42e-05, 2.34e-05, 2.27e-05
+    };
+
+    bool use_optical = false;
+    bool use_sunshape = true;
+
+    // Make native
+    SingleHeliostatSimulationHelper<NativeRunner> sim_native;
+    sim_native.runner.disable_stages(); // Disable stages
+    sim_native.use_optical_errors = use_optical;
+    sim_native.use_sunshape_errors = use_sunshape;
+    sim_native.runner.set_number_of_threads(N_threads);
+    sim_native.sun_shape = SunShape::USER_DEFINED;
+    sim_native.user_angle = user_angle;
+    sim_native.user_intensity = user_intensity;
+    sim_native.initialize();
+
+    // Make optix
+    SingleHeliostatSimulationHelper<OptixRunner> sim_optix;
+    sim_optix.use_optical_errors = use_optical;
+    sim_optix.use_sunshape_errors = use_sunshape;
+    sim_optix.sun_shape = SunShape::USER_DEFINED;
+    sim_optix.user_angle = user_angle;
+    sim_optix.user_intensity = user_intensity;
+    sim_optix.initialize();
+
+    CompareRunners(sim_native, sim_optix, N_rays_glob);
+}
