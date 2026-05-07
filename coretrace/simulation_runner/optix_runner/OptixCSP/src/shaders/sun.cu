@@ -226,6 +226,77 @@ namespace OptixCSP {
         return world_dir;
     }
 
+    __device__ float3 sampleRayDirectionInCone_UserDefined(float3 dir, int user_capacity, float* user_angle, 
+        float* user_intensity, unsigned int ray_number)
+    {
+        curandState rng = params.rng_states[ray_number];
+
+        if (user_capacity <= 0 || user_angle == nullptr || user_intensity == nullptr)
+        {
+            return normalize(dir);
+        }
+
+        const float max_angle_mrad = params.sun_max_angle;  // [mrad]
+        const float max_int = params.sun_max_intensity;
+
+        // Orthonormal basis about dir
+        float3 w = normalize(dir);
+        float3 u = normalize(cross(fabsf(w.x) > 0.99f ? make_float3(0, 1, 0) : make_float3(1, 0, 0), w));
+        float3 v = cross(w, u);
+
+        float theta = 0.f;
+        float theta2 = 0.f;
+        float stest = 0.f;
+
+        do
+        {
+            float thetax = (2.f * curand_uniform(&rng) - 1.f) * max_angle_mrad;
+            float thetay = (2.f * curand_uniform(&rng) - 1.f) * max_angle_mrad;
+            theta2 = thetax * thetax + thetay * thetay;
+            theta = sqrtf(theta2);
+
+            int i = 0;
+            while (i < user_capacity - 1 && user_angle[i] < theta)
+                i++;
+
+            if (i == 0)
+                stest = user_intensity[0];
+            else
+            {
+                const float denom = user_angle[i] - user_angle[i - 1];
+                if (fabsf(denom) <= 1.0e-7f)
+                    stest = user_intensity[i];
+                else
+                {
+                    stest = user_intensity[i - 1] + (user_intensity[i] - user_intensity[i - 1]) * (theta - user_angle[i - 1])
+                        / denom;
+                }
+            }
+
+        } while ((curand_uniform(&rng) > (stest / max_int)) || (theta2 > (max_angle_mrad * max_angle_mrad)));
+
+        // Convert theta (mrad) to radians
+        float theta_rad = theta * 0.001f;
+
+        // Random azimuth
+        float phi = 2.f * M_PIf * curand_uniform(&rng);
+
+        // Local direction in cone coordinates
+        float sin_t = sinf(theta_rad);
+        float cos_t = cosf(theta_rad);
+        float3 local_dir = make_float3(
+            sin_t * cosf(phi),
+            sin_t * sinf(phi),
+            cos_t
+        );
+
+        params.rng_states[ray_number] = rng;
+
+        // Transform to world space
+        float3 world_dir = normalize(local_dir.x * u + local_dir.y * v + local_dir.z * w);
+        return world_dir;
+    }
+
 }
 // == Ray Generation Program - Sun Source (Parallelogram Sampling)
 extern "C" __global__ void __raygen__sun_source()
@@ -271,6 +342,10 @@ extern "C" __global__ void __raygen__sun_source()
                 break;
             case(OptixCSP::SunShape::LIMBDARKENED):
                 ray_dir = OptixCSP::sampleRayDirectionInCone_LimbDarkened(init_ray_dir, ray_number);
+                break;
+            case(OptixCSP::SunShape::USER_DEFINED):
+                ray_dir = OptixCSP::sampleRayDirectionInCone_UserDefined(init_ray_dir, params.sun_user_capacity, 
+                    params.sun_user_angle, params.sun_user_intensity, ray_number);
                 break;
             default:
                 assert(false);

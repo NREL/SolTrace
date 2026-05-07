@@ -16,6 +16,9 @@ dataManager::dataManager()
 	  geometry_data_array_D(nullptr),
 	  material_data_array_front_D(nullptr),
 	  material_data_array_back_D(nullptr),
+	  sun_user_angle_D(nullptr),
+	  sun_user_intensity_D(nullptr),
+	  sun_user_capacity(0),
 	  rng_states_D(nullptr),
 	  rng_states_capacity(0)
 {
@@ -41,6 +44,9 @@ dataManager::dataManager()
 	launch_params_H.sun_max_angle = 0.0f;
 	launch_params_H.sun_max_intensity = 0.0f;
 	launch_params_H.sun_gen_type = OptixCSP::GenType::UNKNOWN;
+	launch_params_H.sun_user_angle = nullptr;
+	launch_params_H.sun_user_intensity = nullptr;
+	launch_params_H.sun_user_capacity = 0;
 
 	launch_params_H.sun_v0 = make_float3(0.0f, 0.0f, 0.0f);
 	launch_params_H.sun_v1 = make_float3(0.0f, 0.0f, 0.0f);
@@ -163,6 +169,52 @@ void dataManager::updateMaterialDataArray(std::vector<MaterialData> material_dat
 	}
 }
 
+void dataManager::allocateSunUserData(const std::vector<float>& user_angle,
+	                                  const std::vector<float>& user_intensity)
+{
+	if (user_angle.size() != user_intensity.size())
+	{
+		throw std::runtime_error("User-defined sun angle/intensity vectors must have the same size.");
+	}
+
+	if (sun_user_angle_D != nullptr)
+	{
+		CUDA_CHECK(cudaFree(sun_user_angle_D));
+		sun_user_angle_D = nullptr;
+	}
+
+	if (sun_user_intensity_D != nullptr)
+	{
+		CUDA_CHECK(cudaFree(sun_user_intensity_D));
+		sun_user_intensity_D = nullptr;
+	}
+
+	launch_params_H.sun_user_angle = nullptr;
+	launch_params_H.sun_user_intensity = nullptr;
+	launch_params_H.sun_user_capacity = 0;
+	sun_user_capacity = 0;
+
+	if (user_angle.empty())
+	{
+		return;
+	}
+
+	CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&sun_user_angle_D),
+		                  user_angle.size() * sizeof(float)));
+	CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&sun_user_intensity_D),
+		                  user_intensity.size() * sizeof(float)));
+
+	CUDA_CHECK(cudaMemcpy(sun_user_angle_D, user_angle.data(),
+		                  user_angle.size() * sizeof(float), cudaMemcpyHostToDevice));
+	CUDA_CHECK(cudaMemcpy(sun_user_intensity_D, user_intensity.data(),
+		                  user_intensity.size() * sizeof(float), cudaMemcpyHostToDevice));
+
+	launch_params_H.sun_user_angle = sun_user_angle_D;
+	launch_params_H.sun_user_intensity = sun_user_intensity_D;
+	launch_params_H.sun_user_capacity = static_cast<int>(user_angle.size());
+	sun_user_capacity = user_angle.size();
+}
+
 void dataManager::cleanup() {
 	if (launch_params_D) {
 		CUDA_CHECK(cudaFree(launch_params_D));
@@ -186,6 +238,20 @@ void dataManager::cleanup() {
 		material_data_array_back_D = nullptr;
 	}
 	launch_params_H.material_data_array_back = nullptr;
+
+	if (sun_user_angle_D != nullptr) {
+		CUDA_CHECK(cudaFree(sun_user_angle_D));
+		sun_user_angle_D = nullptr;
+	}
+	launch_params_H.sun_user_angle = nullptr;
+
+	if (sun_user_intensity_D != nullptr) {
+		CUDA_CHECK(cudaFree(sun_user_intensity_D));
+		sun_user_intensity_D = nullptr;
+	}
+	launch_params_H.sun_user_intensity = nullptr;
+	launch_params_H.sun_user_capacity = 0;
+	sun_user_capacity = 0;
 
 	if (rng_states_D != nullptr) {
 		CUDA_CHECK(cudaFree(rng_states_D));

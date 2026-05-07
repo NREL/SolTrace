@@ -29,6 +29,10 @@ namespace OptixCSP
         curandState *rng_states_D;
         size_t rng_states_capacity;
 
+        float *sun_user_angle_D;
+        float *sun_user_intensity_D;
+        size_t sun_user_capacity;
+
         dataManager();
         ~dataManager();
 
@@ -56,6 +60,9 @@ namespace OptixCSP
         // update material_data_array_D on the device
         // then launch_params_D.material_data_array = material_data_array_D gets a copy.
         void updateMaterialDataArray(std::vector<MaterialData> material_data_array_H);
+
+        void allocateSunUserData(const std::vector<float>& user_angle,
+                                 const std::vector<float>& user_intensity);
 
         void ensureCurandStates(unsigned int num_states,
                                 unsigned long long seed,

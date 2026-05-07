@@ -156,6 +156,7 @@ void SolTraceSystem::initialize()
 
     // Assign sun shape parameters (if necessary)
     data_manager->launch_params_H.include_sun_shape_errors = this->m_include_sun_shape_errors;
+    data_manager->allocateSunUserData({}, {});  // Clear sun user data
     if (this->m_include_sun_shape_errors)
     {
         // Map SolTrace::Data::SunShape to OptixCSP::SunShape for device code
@@ -182,8 +183,21 @@ void SolTraceSystem::initialize()
             break;
         }
         case SolTrace::Data::SunShape::USER_DEFINED:
+        {
             data_manager->launch_params_H.sun_shape = SunShape::USER_DEFINED;
+            std::vector<double> user_angle, user_intensity;
+            m_sun->get_user_data(user_angle, user_intensity);
+
+            if (user_angle.empty() || user_intensity.empty())
+            {
+                throw std::runtime_error("User-defined sun shape requires non-empty angle and intensity arrays.");
+            }
+
+            std::vector<float> user_angle_float(user_angle.begin(), user_angle.end());
+            std::vector<float> user_intensity_float(user_intensity.begin(), user_intensity.end());
+            data_manager->allocateSunUserData(user_angle_float, user_intensity_float);
             break;
+        }
         case SolTrace::Data::SunShape::UNKNOWN:
         default:
             data_manager->launch_params_H.sun_shape = SunShape::UNKNOWN;

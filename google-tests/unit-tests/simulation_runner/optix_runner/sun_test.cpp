@@ -522,4 +522,101 @@ TEST(Sun, BuieCSRSunAngleDistribution)
     EXPECT_GT(frac_beyond_disc, 0.05);
 }
 
+TEST(Sun, UserDefinedSunAngleDistribution)
+{
+    const int N_RAYS = 200e3;
+    const double MAX_ANGLE_MRAD = 7.95;
+
+    const std::vector<double> user_angle = {
+        0.0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1.05, 1.2, 1.35,
+        1.5, 1.65, 1.8, 1.95, 2.1, 2.25, 2.4, 2.55, 2.7, 2.85,
+        3.0, 3.15, 3.3, 3.45, 3.6, 3.75, 3.9, 4.05, 4.2, 4.35,
+        4.5, 4.65, 4.8, 4.95, 5.1, 5.25, 5.4, 5.55, 5.7, 5.85,
+        6.0, 6.15, 6.3, 6.45, 6.6, 6.75, 6.9, 7.05, 7.2, 7.35,
+        7.5, 7.65, 7.8, 7.95
+    };
+
+    const std::vector<double> user_intensity = {
+        1.0, 0.999872, 0.999485, 0.998837, 0.997923, 0.996734, 0.99526, 0.993487, 0.991399, 0.988976,
+        0.986193, 0.983019, 0.979417, 0.975345, 0.970747, 0.965558, 0.959697, 0.953063, 0.945528, 0.936933,
+        0.927069, 0.915665, 0.902358, 0.886653, 0.867855, 0.844965, 0.816477, 0.78003, 0.731687, 0.66436,
+        0.563875, 0.397159, 5.34e-05, 5.07e-05, 4.82e-05, 4.59e-05, 4.38e-05, 4.18e-05, 3.99e-05, 3.82e-05,
+        3.66e-05, 3.51e-05, 3.37e-05, 3.24e-05, 3.11e-05, 3.00e-05, 2.89e-05, 2.78e-05, 2.69e-05, 2.59e-05,
+        2.51e-05, 2.42e-05, 2.34e-05, 2.27e-05
+    };
+
+    SimulationData sd_user_defined;
+    element_ptr plate;
+    make_default_sd_sun(sd_user_defined, plate);
+
+    SimulationParameters& params = sd_user_defined.get_simulation_parameters();
+    params.include_sun_shape_errors = true;
+    params.number_of_rays = N_RAYS;
+    params.max_number_of_rays = N_RAYS * 10;
+
+    auto sun_pos = glm::dvec3(0.0, 0.0, 100.0);
+    auto sun = make_ray_source<Sun>();
+    sun->set_position(sun_pos[0], sun_pos[1], sun_pos[2]);
+    sun->set_shape(SolTrace::Data::SunShape::USER_DEFINED, 0.0, 0.0, 0.0, user_angle, user_intensity);
+    sd_user_defined.add_ray_source(sun);
+
+    OptixRunner runner_user_defined;
+    ASSERT_EQ(runner_user_defined.initialize(), RunnerStatus::SUCCESS);
+    ASSERT_EQ(runner_user_defined.setup_simulation(&sd_user_defined), RunnerStatus::SUCCESS);
+    ASSERT_EQ(runner_user_defined.run_simulation(), RunnerStatus::SUCCESS);
+
+    SimulationResult result;
+    ASSERT_EQ(runner_user_defined.report_simulation(&result, 0), RunnerStatus::SUCCESS);
+
+    const std::vector<float3> dirs = estimate_dirs_from_result(result);
+    EXPECT_FALSE(dirs.empty());
+
+    float3 sun_dir_nominal = make_float3(
+        static_cast<float>(sun_pos[0]),
+        static_cast<float>(sun_pos[1]),
+        static_cast<float>(sun_pos[2]));
+    {
+        double nx = sun_dir_nominal.x;
+        double ny = sun_dir_nominal.y;
+        double nz = sun_dir_nominal.z;
+        double n = std::sqrt(nx * nx + ny * ny + nz * nz);
+        ASSERT_GT(n, 0.0);
+        sun_dir_nominal.x = static_cast<float>(nx / n);
+        sun_dir_nominal.y = static_cast<float>(ny / n);
+        sun_dir_nominal.z = static_cast<float>(nz / n);
+    }
+    sun_dir_nominal.x = -sun_dir_nominal.x;
+    sun_dir_nominal.y = -sun_dir_nominal.y;
+    sun_dir_nominal.z = -sun_dir_nominal.z;
+
+    double max_theta = 0.0;
+    int count_valid = 0;
+    int count_beyond_disc = 0;
+    int count_beyond_table = 0;
+
+    for (const auto& d : dirs)
+    {
+        if (!is_valid_dir(d))
+            continue;
+
+        double theta = angle_mrad(d, sun_dir_nominal);
+        ++count_valid;
+        if (theta > max_theta)
+            max_theta = theta;
+        if (theta > 4.65)
+            ++count_beyond_disc;
+        if (theta > MAX_ANGLE_MRAD)
+            ++count_beyond_table;
+    }
+
+    EXPECT_GT(count_valid, 0);
+    EXPECT_LE(max_theta, MAX_ANGLE_MRAD + 0.1);
+    EXPECT_EQ(count_beyond_table, 0);
+
+    const double frac_beyond_disc = static_cast<double>(count_beyond_disc) /
+                                    static_cast<double>(count_valid);
+    EXPECT_GT(frac_beyond_disc, 0.0);
+    EXPECT_LT(frac_beyond_disc, 0.05);
+}
+
 

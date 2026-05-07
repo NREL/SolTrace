@@ -29,7 +29,8 @@ namespace OptixCSP {
             SolTrace::Data::SunShape::GAUSSIAN,
             SolTrace::Data::SunShape::PILLBOX,
             SolTrace::Data::SunShape::BUIE_CSR,
-            SolTrace::Data::SunShape::LIMBDARKENED
+            SolTrace::Data::SunShape::LIMBDARKENED,
+            SolTrace::Data::SunShape::USER_DEFINED
     };
 
     class SolTraceSystem {

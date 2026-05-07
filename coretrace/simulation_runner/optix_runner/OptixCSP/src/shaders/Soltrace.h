@@ -62,6 +62,10 @@ namespace OptixCSP{
 		unsigned long long          sun_dir_seed;   // seed for the sun direction randomization
         GenType                     sun_gen_type;
 
+        float*                      sun_user_angle; // User defined sun angle
+        float*                      sun_user_intensity; // User defined sun intensity
+        int                         sun_user_capacity; // Number of user defined values
+
         float3                      sun_v0;
         float3                      sun_v1;
         float3                      sun_v2;
