@@ -6,7 +6,9 @@
 #include <lib_irradproc.h>
 #include <constants.hpp>
 
-#include <exception>
+#include <cmath>
+#include <stdexcept>
+
 
 
 namespace SolTrace::Data {
@@ -216,9 +218,9 @@ void SolarPositionCalculator::calculate_sun_position() {
     this->Zenith = zenith;
     this->Elevation = 90.0 - zenith;
 
-    this->X = sin(zenith * D2R) * sin(azimuth * D2R);
-    this->Y = sin(zenith * D2R) * cos(azimuth * D2R);
-    this->Z = cos(zenith * D2R);
+    this->X = std::sin(zenith * D2R) * std::sin(azimuth * D2R);
+    this->Y = std::sin(zenith * D2R) * std::cos(azimuth * D2R);
+    this->Z = std::cos(zenith * D2R);
     this->calculated = true;
 }
 

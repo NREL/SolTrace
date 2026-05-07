@@ -193,7 +193,6 @@ namespace SolTrace::NativeRunner
                     if (retval.second == false)
                     {
                         throw std::runtime_error("Duplicate stage numbers found.");
-                        sts = RunnerStatus::ERROR;
                     }
 
                     current_stage = stage;

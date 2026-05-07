@@ -29,25 +29,22 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+#include "lib_irradproc.h"
 
-
+#include <algorithm>
+#include <assert.h>
+#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <limits>
 #include <math.h>
+#include <numeric>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
-#include <numeric>
-#include <assert.h>
 
 #include "constants.hpp"
-
-//#include "lib_util.h"
-#include "lib_irradproc.h"
-//#include "lib_pv_incidence_modifier.h"
-//#include "lib_weatherfile.h"
 
 #ifndef M_PI
     const double M_PI = SolTrace::Data::PI;

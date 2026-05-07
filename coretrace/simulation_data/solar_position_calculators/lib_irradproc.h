@@ -34,8 +34,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __irradproc_h
 #define __irradproc_h
 
+#include <functional>
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 //#include "lib_weatherfile.h"
 //#include "lib_util.h"
