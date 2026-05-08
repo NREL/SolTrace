@@ -27,7 +27,6 @@ using SolTrace::Runner::RunnerStatus;
 
 // Helper class for single heliostat simulation logic reusable inside tests
 // RunnerT must implement the same interface as NativeRunner/EmbreeRunner/OptixRunner
-
 template <typename RunnerT>
 class SingleHeliostatSimulationHelper {
 public:
@@ -61,6 +60,7 @@ public:
     SunShape sun_shape = SolTrace::Data::SunShape::PILLBOX;
     double half_width = 4.65;
     double gauss_sigma = 0;
+    double csr = 0;
     std::vector<double> user_angle = {};
     std::vector<double> user_intensity = {};
 
@@ -157,7 +157,7 @@ public:
         glm::dvec3 sun_pos = {0.0, 0.0, 1000.0};
         sun = SolTrace::Data::make_ray_source<Sun>();
         sun->set_position(sun_pos);
-        sun->set_shape(sun_shape, gauss_sigma, half_width, 0.0, user_angle, user_intensity);
+        sun->set_shape(sun_shape, gauss_sigma, half_width, csr, user_angle, user_intensity);
         sun->set_gen_type(sun_gen_type);
         simData.add_ray_source(sun);
 
@@ -780,3 +780,203 @@ protected:
 
     void TearDown() override { }
 };
+
+static void write_to_dict(std::string key_name, double val_native,
+    double val_optix, std::map<std::string, double>& dict_native,
+    std::map<std::string, double>& dict_optix)
+{
+    dict_native[key_name] = val_native;
+    dict_optix[key_name] = val_optix;
+}
+
+struct CompareRunnerOptions
+{
+    int seed = 123;
+    bool ignore_direct = true;
+    bool save = false;
+    bool save_flux = false;
+
+    CompareRunnerOptions() {};
+
+    CompareRunnerOptions(int seed_arg, bool ignore_direct_arg, 
+        bool save_arg, bool save_flux_arg)
+    {
+        seed = seed_arg;
+        ignore_direct = ignore_direct_arg;
+        save = save_arg;
+        save_flux = save_flux_arg;
+    }
+};
+
+template <typename RunnerA, typename RunnerB>
+static void CompareRunners(SingleHeliostatSimulationHelper<RunnerA>& sim_a,
+    SingleHeliostatSimulationHelper<RunnerB>& sim_b, int N_rays, const std::string& file_label = "",
+    bool skip_a = false, const CompareRunnerOptions& options = {})
+{
+    double err_frac = 0.01;
+    double err_abs = err_frac * (double)N_rays;
+
+    // Run cases
+    sim_a.seed = options.seed;
+    sim_a.sun_gen_type = SolTrace::Data::GenType::HALTON;
+    sim_a.setup_simData();
+    sim_a.update_simulation_geometry(sim_a.solar_azimuth, sim_a.solar_elevation);
+    SimulationResult result_a;
+    if (!skip_a)
+        sim_a.simulate(&result_a, N_rays);
+    sim_a.calculate_ray_counts(result_a);
+    sim_a.calculate_sun_size(result_a);
+    sim_a.read_expected_all_results("1a", "N");
+    sim_a.calculate_receiver_flux_map(result_a, 30, 30, false, options.ignore_direct);
+
+    sim_b.seed = options.seed;
+    sim_b.sun_gen_type = SolTrace::Data::GenType::HALTON;
+    sim_b.setup_simData();
+    sim_b.update_simulation_geometry(sim_b.solar_azimuth, sim_b.solar_elevation);
+    SimulationResult result_b;
+    sim_b.simulate(&result_b, N_rays);
+    sim_b.calculate_ray_counts(result_b);
+    sim_b.calculate_sun_size(result_b);
+    sim_b.read_expected_all_results("1a", "N");
+    sim_b.calculate_receiver_flux_map(result_b, 30, 30, false, options.ignore_direct);
+
+    std::map<std::string, double> dict_a;
+    std::map<std::string, double> dict_b;
+    if (options.save_flux)
+    {
+        std::string file_fluxmap_native = "native_flux_" + file_label + SolTrace::Data::GenTypeMap.at(sim_a.sun_gen_type)
+            + "_" + std::to_string(int(N_rays / 1e3)) + "k.csv";
+        sim_a.save_flux_map_to_file(file_fluxmap_native);
+
+        std::string file_fluxmap_optix = "optix_flux_" + file_label + SolTrace::Data::GenTypeMap.at(sim_b.sun_gen_type)
+            + "_" + std::to_string(int(N_rays / 1e3)) + "k.csv";
+        sim_b.save_flux_map_to_file(file_fluxmap_optix);
+    }
+
+    // Compare
+    EXPECT_EQ(result_a.get_number_of_records(), result_b.get_number_of_records());
+    EXPECT_NEAR(sim_a.helio_hit_count, sim_b.helio_hit_count, err_abs);
+    EXPECT_NEAR(sim_a.reflect_count, sim_b.reflect_count, err_abs);
+    EXPECT_NEAR(sim_a.helio_absorb_count, sim_b.helio_absorb_count, err_abs);
+    EXPECT_NEAR(sim_a.rec_absorb_count, sim_b.rec_absorb_count, err_abs);
+    EXPECT_NEAR(sim_a.rec_hit_count, sim_b.rec_hit_count, err_abs);
+    EXPECT_NEAR(sim_a.rec_direct_hit_count, sim_b.rec_direct_hit_count, err_abs);
+    EXPECT_NEAR(sim_a.rec_via_helio_hit_count, sim_b.rec_via_helio_hit_count, err_abs);
+
+    write_to_dict("00_helio_hit_count", sim_a.helio_hit_count, sim_b.helio_hit_count, dict_a, dict_b);
+    write_to_dict("01_reflect_count", sim_a.reflect_count, sim_b.reflect_count, dict_a, dict_b);
+    write_to_dict("02_helio_absorb_count", sim_a.helio_absorb_count, sim_b.helio_absorb_count, dict_a, dict_b);
+    write_to_dict("03_rec_absorb_count", sim_a.rec_absorb_count, sim_b.rec_absorb_count, dict_a, dict_b);
+    write_to_dict("04_rec_hit_count", sim_a.rec_hit_count, sim_b.rec_hit_count, dict_a, dict_b);
+    write_to_dict("05_rec_direct_hit_count", sim_a.rec_direct_hit_count, sim_b.rec_direct_hit_count, dict_a, dict_b);
+    write_to_dict("06_rec_via_helio_hit_count", sim_a.rec_via_helio_hit_count, sim_b.rec_via_helio_hit_count, dict_a, dict_b);
+
+    // Helio rays add up
+    EXPECT_EQ(sim_a.reflect_count + sim_a.helio_absorb_count, sim_a.helio_hit_count);
+    EXPECT_EQ(sim_b.reflect_count + sim_b.helio_absorb_count, sim_b.helio_hit_count);
+
+    // Receiver rays add up
+    EXPECT_EQ(sim_a.rec_direct_hit_count + sim_a.rec_via_helio_hit_count, sim_a.rec_hit_count);
+    EXPECT_EQ(sim_b.rec_direct_hit_count + sim_b.rec_via_helio_hit_count, sim_b.rec_hit_count);
+
+    // Reflectivity
+    double reflectivity_a = (double)sim_a.reflect_count / (double)sim_a.helio_hit_count;
+    double reflectivity_b = (double)sim_b.reflect_count / (double)sim_b.helio_hit_count;
+    EXPECT_NEAR(reflectivity_a, 0.9, 0.02);
+    EXPECT_NEAR(reflectivity_b, 0.9, 0.02);
+
+    write_to_dict("07_reflectivity", reflectivity_a, reflectivity_b, dict_a, dict_b);
+
+    write_to_dict("08_sun_count", sim_a.sun_ray_count, sim_b.sun_ray_count, dict_a, dict_b);
+
+    // Fraction of hits after helio
+    double frac_rec_via_helio_a = (double)sim_a.rec_via_helio_hit_count / (double)sim_a.reflect_count;
+    double frac_rec_via_helio_b = (double)sim_b.rec_via_helio_hit_count / (double)sim_b.reflect_count;
+    EXPECT_NEAR(frac_rec_via_helio_a, frac_rec_via_helio_b, err_frac);
+
+    write_to_dict("09_frac_rec_via_helio", frac_rec_via_helio_a, frac_rec_via_helio_b, dict_a, dict_b);
+
+    // Compare power per ray
+    double power_tol = (5. / (double)N_rays) * 1e3;
+    EXPECT_NEAR(sim_a.power_per_ray, sim_b.power_per_ray, power_tol);
+
+    write_to_dict("10_power_per_ray", sim_a.power_per_ray, sim_b.power_per_ray, dict_a, dict_b);
+
+    std::cerr << "Ray Count: " << sim_a.reflect_count << std::endl;
+
+    // Total power absorbed
+    double tol = 8.e-3;
+    double total_power_a = (double)sim_a.rec_absorb_count * sim_a.power_per_ray * 1.e-3; // [kW]
+    double total_power_b = (double)sim_b.rec_absorb_count * sim_b.power_per_ray * 1.e-3; // [kW]
+    EXPECT_NEAR(total_power_a, total_power_b, tol * sim_a.expected_power);
+    double total_power_diff = total_power_b - total_power_a;
+    double total_power_diff_frac = total_power_diff / sim_a.expected_power;
+
+    write_to_dict("11_total_power", total_power_a, total_power_b, dict_a, dict_b);
+
+    // Peak flux
+    double peak_tol = 0.25;
+    double peak_flux_a = sim_a.PeakFlux / 1.e3;
+    double peak_flux_b = sim_b.PeakFlux / 1.e3;
+    EXPECT_NEAR(peak_flux_a, peak_flux_b, peak_tol * sim_a.expected_peak_flux);
+    double peak_flux_diff = peak_flux_b - peak_flux_a;
+    double peak_flux_diff_frac = peak_flux_diff / sim_a.expected_peak_flux;
+
+    write_to_dict("12_peak_flux", peak_flux_a, peak_flux_b, dict_a, dict_b);
+
+    double centroid0_a = sim_a.Centroid[0];
+    double centroid0_b = sim_b.Centroid[0];
+    double centroid1_a = sim_a.Centroid[1];
+    double centroid1_b = sim_b.Centroid[1];
+
+    write_to_dict("13_centroid0", centroid0_a, centroid0_b, dict_a, dict_b);
+    write_to_dict("14_centroid1", centroid1_a, centroid1_b, dict_a, dict_b);
+
+    write_to_dict("15_sigmaflux", sim_a.SigmaFlux, sim_b.SigmaFlux, dict_a, dict_b);
+
+    // RMS
+    sim_a.calculate_receiver_flux_map(result_a, 100, 150, false, options.ignore_direct);  // Re-calculate for low-accuracy runs
+    sim_b.calculate_receiver_flux_map(result_b, 100, 150, false, options.ignore_direct);
+    EXPECT_EQ(sim_a.fluxGrid.nrows(), sim_b.fluxGrid.nrows());
+    EXPECT_EQ(sim_a.fluxGrid.ncols(), sim_b.fluxGrid.ncols());
+    double rmse = 0.0;
+    for (size_t r = 0; r < sim_a.fluxGrid.nrows(); r++) {
+        for (size_t c = 0; c < sim_a.fluxGrid.ncols(); c++) {
+            double flux_a = sim_a.fluxGrid.at(r, c) * sim_a.zScale / 1.e3;
+            double flux_b = sim_b.fluxGrid.at(r, c) * sim_b.zScale / 1.e3;
+            rmse += pow(flux_a - flux_b, 2);
+        }
+    }
+
+    // RMS
+    rmse = sqrt(rmse / (sim_a.fluxGrid.nrows() * sim_a.fluxGrid.ncols()));
+    double rmse_tol = 0.11; // Should be 0.11
+    EXPECT_LE(rmse / (peak_flux_a), rmse_tol);
+
+
+    // Average flux
+    EXPECT_NEAR(sim_a.AveFlux / 1000.0, sim_b.AveFlux / 1000.0, rmse_tol);
+
+    write_to_dict("16_average_flux", sim_a.AveFlux / 1000.0, sim_b.AveFlux / 1000.0, dict_a, dict_b);
+
+    // Uniformity
+    write_to_dict("17_uniformity", sim_a.Uniformity, sim_b.Uniformity, dict_a, dict_b);
+
+    write_to_dict("18_rmse", rmse, rmse, dict_a, dict_b);
+    double rmse_over_peak = rmse / (peak_flux_a);
+    write_to_dict("19_rmse_over_peak", rmse_over_peak, rmse_over_peak, dict_a, dict_b);
+
+    if (options.save)
+    {
+        std::string file_outputs_native = "native_outputs_" + file_label + SolTrace::Data::GenTypeMap.at(sim_a.sun_gen_type)
+            + "_" + std::to_string(int(N_rays / 1e3)) + "k.csv";
+        sim_a.save_outputs(file_outputs_native, dict_a);
+
+        std::string file_outputs_optix = "optix_outputs_" + file_label + SolTrace::Data::GenTypeMap.at(sim_b.sun_gen_type)
+            + "_" + std::to_string(int(N_rays / 1e3)) + "k.csv";
+        sim_b.save_outputs(file_outputs_optix, dict_b);
+    }
+
+
+    int x = 0;
+}
