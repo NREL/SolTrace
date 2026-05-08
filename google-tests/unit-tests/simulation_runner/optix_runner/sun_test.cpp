@@ -5,145 +5,376 @@
 #include <simulation_data_export.hpp>
 #include <simulation_result_export.hpp>
 
+#include <algorithm>
+#include <functional>
+
 using SolTrace::Runner::RunnerStatus;
 
-// Helper to compute angle (in mrad) between two vectors
-static double angle_mrad(const float3& a, const float3& b)
+namespace
 {
-    const double ax = static_cast<double>(a.x);
-    const double ay = static_cast<double>(a.y);
-    const double az = static_cast<double>(a.z);
-    const double bx = static_cast<double>(b.x);
-    const double by = static_cast<double>(b.y);
-    const double bz = static_cast<double>(b.z);
-    double dot = ax * bx + ay * by + az * bz;
-    double na = std::sqrt(ax * ax + ay * ay + az * az);
-    double nb = std::sqrt(bx * bx + by * by + bz * bz);
-    if (na == 0.0 || nb == 0.0)
-        return 0.0;
-    dot /= (na * nb);
-    if (dot > 1.0) dot = 1.0;
-    if (dot < -1.0) dot = -1.0;
-    double theta = std::acos(dot); // radians
-    return theta * 1000.0; // mrad
-}
+    constexpr double kSolarDiscAngleMrad = 4.65;
+    constexpr double kLimbDarkeningCoeff = 0.5138;
 
-// Simple validity check for direction vectors
-static bool is_valid_dir(const float3& v)
-{
-    const double ax = v.x;
-    const double ay = v.y;
-    const double az = v.z;
-    const double n2 = ax * ax + ay * ay + az * az;
-    // Accept unit-ish vectors; reject zeros/huge
-    return (n2 > 0.5 && n2 < 2.0);
-}
+    static double angle_mrad(const float3& a, const float3& b);
+    static bool is_valid_dir(const float3& v);
 
-static std::vector<float3> estimate_dirs_from_result(const SimulationResult& result)
-{
-    std::vector<float3> dirs;
-    dirs.reserve(result.get_number_of_records());
-
-    for (int i = 0; i < result.get_number_of_records(); ++i)
+    static double clamp01(double x)
     {
-        ray_record_ptr rec = result[i];
-        if (!rec)
-            continue;
-
-        const int n_interactions = rec->get_number_of_interactions();
-        if (n_interactions < 2)
-            continue;
-
-        glm::dvec3 p0, p1;
-        rec->get_position(0, p0);
-        rec->get_position(1, p1);
-
-        const double dx = p1[0] - p0[0];
-        const double dy = p1[1] - p0[1];
-        const double dz = p1[2] - p0[2];
-        const double n = std::sqrt(dx * dx + dy * dy + dz * dz);
-        if (n <= 0.0)
-            continue;
-
-        dirs.push_back(make_float3(
-            static_cast<float>(dx / n),
-            static_cast<float>(dy / n),
-            static_cast<float>(dz / n)));
+        if (x <= 0.0)
+            return 0.0;
+        if (x >= 1.0)
+            return 1.0;
+        return x;
     }
 
-    return dirs;
-}
-
-// Build a simple scene with a single flat plate receiver
-void make_default_sd_sun(SimulationData& sd, element_ptr& plate)
-{
-    sd.clear();
-
-    // Make stage
-    auto stage = make_stage(0);
-    stage->set_origin(0, 0, 0);
-    stage->set_aim_vector(0, 0, 1);
-    stage->set_name("stage");
-
-    // Make reflective flat plate
-    plate = make_element<SingleElement>();
-    plate->set_origin(0, 0, 50);
-    plate->set_aim_vector(0, 0, 100);  // Face up towards sun
-    plate->set_surface(make_surface<Flat>());
-    plate->set_aperture(make_aperture<Rectangle>(5, 5));
-    InteractionType itype = InteractionType::REFLECTION;
-    DistributionType dtype = DistributionType::NONE; // No errors
-    double transmissivity = 0;
-    double reflectivity = 1;
-    double slope_err = 0;  // Error not supported
-    double spec_err = 0;
-    double ri_front = 0;   // Refraction not supported
-    double ri_back = 0;
-    OpticalProperties plate_optics(itype, dtype, transmissivity,
-        reflectivity, slope_err, spec_err, ri_front, ri_back);
-    plate->set_front_optical_properties(plate_optics);
-    plate->set_back_optical_properties(plate_optics);
-    plate->set_name("plate");
-
-    // Add element to stage
-    stage->add_element(plate);
-
-    // Add stage to sd
-    sd.add_stage(stage);
-
-    // Set parameters
-    SimulationParameters& params = sd.get_simulation_parameters();
-    params.number_of_rays = 10000;
-    params.max_number_of_rays = params.number_of_rays * 100;
-    params.include_optical_errors = false;
-    params.include_sun_shape_errors = false;
-    params.seed = 123;
-}
-
-void count_hits_sun(const SimulationResult& result,
-    int& absorbed_count, int& transmitted_count,
-    int& reflected_count)
-{
-    absorbed_count = 0;
-    transmitted_count = 0;
-    reflected_count = 0;
-    int n_records = result.get_number_of_records();
-
-    for (int i = 0; i < n_records; i++)
+    // Source == 1, SunShape::GAUSSIAN:
+    // thetax, thetay ~ N(0, sigma), theta = sqrt(thetax^2 + thetay^2)
+    // => theta is Rayleigh-distributed with parameter sigma
+    static double cdf_gaussian(double theta_mrad, double sigma_mrad)
     {
-        ray_record_ptr rec = result[i];
+        if (theta_mrad <= 0.0)
+            return 0.0;
+        if (sigma_mrad <= 0.0)
+            return 1.0;
 
-        int n_interactions = rec->get_number_of_interactions();
-        for (int j = 0; j < n_interactions; j++)
+        const double x = theta_mrad / sigma_mrad;
+        return clamp01(1.0 - std::exp(-0.5 * x * x));
+    }
+
+    // Source == 1, SunShape::PILLBOX:
+    // uniform over a disk of radius delop in (thetax, thetay)
+    // => radial CDF is (theta / R)^2
+    static double cdf_pillbox(double theta_mrad, double half_width_mrad)
+    {
+        if (theta_mrad <= 0.0)
+            return 0.0;
+        if (half_width_mrad <= 0.0)
+            return 1.0;
+        if (theta_mrad >= half_width_mrad)
+            return 1.0;
+
+        const double x = theta_mrad / half_width_mrad;
+        return clamp01(x * x);
+    }
+
+    // Source == 1, SunShape::LIMBDARKENED:
+    // accepted with stest = 1 - 0.5138 * (theta / MaxAngle)^4
+    // sampled uniformly in area, so radial density is proportional to:
+    // theta * stest(theta)
+    static double cdf_limbdarkened(double theta_mrad, double max_angle_mrad)
+    {
+        if (theta_mrad <= 0.0)
+            return 0.0;
+        if (max_angle_mrad <= 0.0)
+            return 1.0;
+        if (theta_mrad >= max_angle_mrad)
+            return 1.0;
+
+        const double x = theta_mrad / max_angle_mrad;
+        const double x2 = x * x;
+        const double x6 = x2 * x2 * x2;
+
+        // Integral of x * (1 - a x^4) dx from 0..x, normalized by 0..1
+        const double numerator = 3.0 * x2 - kLimbDarkeningCoeff * x6;
+        const double denominator = 3.0 - kLimbDarkeningCoeff;
+
+        return clamp01(numerator / denominator);
+    }
+
+    // Source == 1, SunShape::BUIE_CSR:
+    // stest(theta) matches tracing_errors.cpp exactly
+    static double buie_intensity(double theta_mrad, double buie_kappa, double buie_gamma)
+    {
+        if (theta_mrad <= kSolarDiscAngleMrad)
+            return std::cos(0.326 * theta_mrad) / std::cos(0.308 * theta_mrad);
+
+        return std::exp(buie_kappa) * std::pow(std::abs(theta_mrad), buie_gamma);
+    }
+
+    // Radial density is proportional to theta * stest(theta)
+    static double buie_radial_integral(double theta_mrad,
+        double max_angle_mrad,
+        double buie_kappa,
+        double buie_gamma,
+        int n_steps = 4096)
+    {
+        if (theta_mrad <= 0.0 || max_angle_mrad <= 0.0)
+            return 0.0;
+
+        if (theta_mrad > max_angle_mrad)
+            theta_mrad = max_angle_mrad;
+
+        const double h = theta_mrad / static_cast<double>(n_steps);
+        double sum = 0.0;
+
+        for (int i = 0; i <= n_steps; ++i)
         {
-            RayEvent rev = rec->get_event(j);
+            const double t = h * static_cast<double>(i);
+            const double f = t * buie_intensity(t, buie_kappa, buie_gamma);
 
-            if (rev == RayEvent::ABSORB)
-                absorbed_count++;
-            else if (rev == RayEvent::TRANSMIT)
-                transmitted_count++;
-            else if (rev == RayEvent::REFLECT)
-                reflected_count++;
+            if (i == 0 || i == n_steps)
+                sum += 0.5 * f;
+            else
+                sum += f;
+        }
+
+        return sum * h;
+    }
+
+    static double cdf_buie_csr(double theta_mrad,
+        double max_angle_mrad,
+        double buie_kappa,
+        double buie_gamma)
+    {
+        if (theta_mrad <= 0.0)
+            return 0.0;
+        if (max_angle_mrad <= 0.0)
+            return 1.0;
+        if (theta_mrad >= max_angle_mrad)
+            return 1.0;
+
+        const double norm = buie_radial_integral(max_angle_mrad, max_angle_mrad, buie_kappa, buie_gamma);
+        if (norm <= 0.0)
+            return 0.0;
+
+        const double value = buie_radial_integral(theta_mrad, max_angle_mrad, buie_kappa, buie_gamma) / norm;
+        return clamp01(value);
+    }
+
+    static std::vector<double> collect_theta_mrad(const std::vector<float3>& dirs, const float3& sun_dir_nominal)
+    {
+        std::vector<double> thetas;
+        thetas.reserve(dirs.size());
+
+        for (const auto& d : dirs)
+        {
+            if (!is_valid_dir(d))
+                continue;
+
+            thetas.push_back(angle_mrad(d, sun_dir_nominal));
+        }
+
+        return thetas;
+    }
+
+    static double ks_statistic(const std::vector<double>& samples,
+        const std::function<double(double)>& cdf)
+    {
+        if (samples.empty())
+            return 1.0;
+
+        std::vector<double> sorted = samples;
+        std::sort(sorted.begin(), sorted.end());
+
+        const double n = static_cast<double>(sorted.size());
+        double d = 0.0;
+
+        for (size_t i = 0; i < sorted.size(); ++i)
+        {
+            const double f = clamp01(cdf(sorted[i]));
+            const double emp_lo = static_cast<double>(i) / n;
+            const double emp_hi = static_cast<double>(i + 1) / n;
+            d = std::max(d, std::abs(f - emp_lo));
+            d = std::max(d, std::abs(emp_hi - f));
+        }
+
+        return d;
+    }
+
+    static double ks_pvalue_asymptotic(double d, size_t n)
+    {
+        if (n == 0)
+            return 0.0;
+        if (d <= 0.0)
+            return 1.0;
+
+        const double sqrtn = std::sqrt(static_cast<double>(n));
+        const double x = (sqrtn + 0.12 + 0.11 / sqrtn) * d;
+
+        double sum = 0.0;
+        for (int k = 1; k <= 100; ++k)
+        {
+            const double term = std::exp(-2.0 * k * k * x * x);
+            if (k % 2 == 1)
+                sum += term;
+            else
+                sum -= term;
+
+            if (term < 1.0e-12)
+                break;
+        }
+
+        return clamp01(2.0 * sum);
+    }
+
+    static double ks_pvalue(const std::vector<double>& samples,
+        const std::function<double(double)>& cdf)
+    {
+        return ks_pvalue_asymptotic(ks_statistic(samples, cdf), samples.size());
+    }
+
+    static float3 normalize_float3(const glm::dvec3& v)
+    {
+        float3 out = make_float3(
+            static_cast<float>(v[0]),
+            static_cast<float>(v[1]),
+            static_cast<float>(v[2]));
+
+        double nx = out.x;
+        double ny = out.y;
+        double nz = out.z;
+        const double n = std::sqrt(nx * nx + ny * ny + nz * nz);
+        if (n > 0.0)
+        {
+            out.x = static_cast<float>(nx / n);
+            out.y = static_cast<float>(ny / n);
+            out.z = static_cast<float>(nz / n);
+        }
+
+        out.x = -out.x;
+        out.y = -out.y;
+        out.z = -out.z;
+        return out;
+    }
+
+    // Helper to compute angle (in mrad) between two vectors
+    static double angle_mrad(const float3& a, const float3& b)
+    {
+        const double ax = static_cast<double>(a.x);
+        const double ay = static_cast<double>(a.y);
+        const double az = static_cast<double>(a.z);
+        const double bx = static_cast<double>(b.x);
+        const double by = static_cast<double>(b.y);
+        const double bz = static_cast<double>(b.z);
+        double dot = ax * bx + ay * by + az * bz;
+        double na = std::sqrt(ax * ax + ay * ay + az * az);
+        double nb = std::sqrt(bx * bx + by * by + bz * bz);
+        if (na == 0.0 || nb == 0.0)
+            return 0.0;
+        dot /= (na * nb);
+        if (dot > 1.0) dot = 1.0;
+        if (dot < -1.0) dot = -1.0;
+        double theta = std::acos(dot); // radians
+        return theta * 1000.0; // mrad
+    }
+
+    // Simple validity check for direction vectors
+    static bool is_valid_dir(const float3& v)
+    {
+        const double ax = v.x;
+        const double ay = v.y;
+        const double az = v.z;
+        const double n2 = ax * ax + ay * ay + az * az;
+        // Accept unit-ish vectors; reject zeros/huge
+        return (n2 > 0.5 && n2 < 2.0);
+    }
+
+    static std::vector<float3> estimate_dirs_from_result(const SimulationResult& result)
+    {
+        std::vector<float3> dirs;
+        dirs.reserve(result.get_number_of_records());
+
+        for (int i = 0; i < result.get_number_of_records(); ++i)
+        {
+            ray_record_ptr rec = result[i];
+            if (!rec)
+                continue;
+
+            const int n_interactions = rec->get_number_of_interactions();
+            if (n_interactions < 2)
+                continue;
+
+            glm::dvec3 p0, p1;
+            rec->get_position(0, p0);
+            rec->get_position(1, p1);
+
+            const double dx = p1[0] - p0[0];
+            const double dy = p1[1] - p0[1];
+            const double dz = p1[2] - p0[2];
+            const double n = std::sqrt(dx * dx + dy * dy + dz * dz);
+            if (n <= 0.0)
+                continue;
+
+            dirs.push_back(make_float3(
+                static_cast<float>(dx / n),
+                static_cast<float>(dy / n),
+                static_cast<float>(dz / n)));
+        }
+
+        return dirs;
+    }
+
+    // Build a simple scene with a single flat plate receiver
+    void make_default_sd_sun(SimulationData& sd, element_ptr& plate)
+    {
+        sd.clear();
+
+        // Make stage
+        auto stage = make_stage(0);
+        stage->set_origin(0, 0, 0);
+        stage->set_aim_vector(0, 0, 1);
+        stage->set_name("stage");
+
+        // Make reflective flat plate
+        plate = make_element<SingleElement>();
+        plate->set_origin(0, 0, 50);
+        plate->set_aim_vector(0, 0, 100);  // Face up towards sun
+        plate->set_surface(make_surface<Flat>());
+        plate->set_aperture(make_aperture<Rectangle>(5, 5));
+        InteractionType itype = InteractionType::REFLECTION;
+        DistributionType dtype = DistributionType::NONE; // No errors
+        double transmissivity = 0;
+        double reflectivity = 1;
+        double slope_err = 0;  // Error not supported
+        double spec_err = 0;
+        double ri_front = 0;   // Refraction not supported
+        double ri_back = 0;
+        OpticalProperties plate_optics(itype, dtype, transmissivity,
+            reflectivity, slope_err, spec_err, ri_front, ri_back);
+        plate->set_front_optical_properties(plate_optics);
+        plate->set_back_optical_properties(plate_optics);
+        plate->set_name("plate");
+
+        // Add element to stage
+        stage->add_element(plate);
+
+        // Add stage to sd
+        sd.add_stage(stage);
+
+        // Set parameters
+        SimulationParameters& params = sd.get_simulation_parameters();
+        params.number_of_rays = 10000;
+        params.max_number_of_rays = params.number_of_rays * 100;
+        params.include_optical_errors = false;
+        params.include_sun_shape_errors = false;
+        params.seed = 123;
+    }
+
+    void count_hits_sun(const SimulationResult& result,
+        int& absorbed_count, int& transmitted_count,
+        int& reflected_count)
+    {
+        absorbed_count = 0;
+        transmitted_count = 0;
+        reflected_count = 0;
+        int n_records = result.get_number_of_records();
+
+        for (int i = 0; i < n_records; i++)
+        {
+            ray_record_ptr rec = result[i];
+
+            int n_interactions = rec->get_number_of_interactions();
+            for (int j = 0; j < n_interactions; j++)
+            {
+                RayEvent rev = rec->get_event(j);
+
+                if (rev == RayEvent::ABSORB)
+                    absorbed_count++;
+                else if (rev == RayEvent::TRANSMIT)
+                    transmitted_count++;
+                else if (rev == RayEvent::REFLECT)
+                    reflected_count++;
+            }
         }
     }
 }
@@ -277,34 +508,16 @@ TEST(Sun, GaussianSunAngleDistribution)
     const std::vector<float3> dirs = estimate_dirs_from_result(result);
     EXPECT_FALSE(dirs.empty());
 
-    float3 sun_dir_nominal = make_float3(
-        static_cast<float>(sun_pos[0]),
-        static_cast<float>(sun_pos[1]),
-        static_cast<float>(sun_pos[2]));
-    {
-        double nx = sun_dir_nominal.x;
-        double ny = sun_dir_nominal.y;
-        double nz = sun_dir_nominal.z;
-        double n = std::sqrt(nx * nx + ny * ny + nz * nz);
-        ASSERT_GT(n, 0.0);
-        sun_dir_nominal.x = static_cast<float>(nx / n);
-        sun_dir_nominal.y = static_cast<float>(ny / n);
-        sun_dir_nominal.z = static_cast<float>(nz / n);
-    }
-    sun_dir_nominal.x = -sun_dir_nominal.x;
-    sun_dir_nominal.y = -sun_dir_nominal.y;
-    sun_dir_nominal.z = -sun_dir_nominal.z;
+    const float3 sun_dir_nominal = normalize_float3(sun_pos);
+    const std::vector<double> thetas = collect_theta_mrad(dirs, sun_dir_nominal);
+    ASSERT_FALSE(thetas.empty());
 
     int count_valid = 0;
     int count_within_3sigma = 0;
     int count_beyond_sigma = 0;
 
-    for (const auto& d : dirs)
+    for (const double theta : thetas)
     {
-        if (!is_valid_dir(d))
-            continue;
-
-        double theta = angle_mrad(d, sun_dir_nominal);
         ++count_valid;
         if (theta <= 3.0 * SIGMA_MRAD)
             ++count_within_3sigma;
@@ -321,6 +534,12 @@ TEST(Sun, GaussianSunAngleDistribution)
 
     EXPECT_GT(frac_within_3sigma, 0.98);
     EXPECT_GT(frac_beyond_sigma, 0.1);
+
+    const double p_value = ks_pvalue(thetas, [SIGMA_MRAD](double theta)
+        {
+            return cdf_gaussian(theta, SIGMA_MRAD);
+        });
+    EXPECT_GT(p_value, 1.0e-6);
 }
 
 TEST(Sun, PillboxSunAngleDistribution)
@@ -348,33 +567,15 @@ TEST(Sun, PillboxSunAngleDistribution)
     const std::vector<float3> dirs = estimate_dirs_from_result(result);
     EXPECT_FALSE(dirs.empty());
 
-    float3 sun_dir_nominal = make_float3(
-        static_cast<float>(sun_pos[0]),
-        static_cast<float>(sun_pos[1]),
-        static_cast<float>(sun_pos[2]));
-    {
-        double nx = sun_dir_nominal.x;
-        double ny = sun_dir_nominal.y;
-        double nz = sun_dir_nominal.z;
-        double n = std::sqrt(nx * nx + ny * ny + nz * nz);
-        ASSERT_GT(n, 0.0);
-        sun_dir_nominal.x = static_cast<float>(nx / n);
-        sun_dir_nominal.y = static_cast<float>(ny / n);
-        sun_dir_nominal.z = static_cast<float>(nz / n);
-    }
-    sun_dir_nominal.x = -sun_dir_nominal.x;
-    sun_dir_nominal.y = -sun_dir_nominal.y;
-    sun_dir_nominal.z = -sun_dir_nominal.z;
+    const float3 sun_dir_nominal = normalize_float3(sun_pos);
+    const std::vector<double> thetas = collect_theta_mrad(dirs, sun_dir_nominal);
+    ASSERT_FALSE(thetas.empty());
 
     double max_theta = 0.0;
     int count_valid = 0;
 
-    for (const auto& d : dirs)
+    for (const double theta : thetas)
     {
-        if (!is_valid_dir(d))
-            continue;
-
-        double theta = angle_mrad(d, sun_dir_nominal);
         ++count_valid;
         if (theta > max_theta)
             max_theta = theta;
@@ -382,6 +583,12 @@ TEST(Sun, PillboxSunAngleDistribution)
 
     EXPECT_GT(count_valid, 0);
     EXPECT_LE(max_theta, HALF_WIDTH_MRAD + 0.1);
+
+    const double p_value = ks_pvalue(thetas, [HALF_WIDTH_MRAD](double theta)
+        {
+            return cdf_pillbox(theta, HALF_WIDTH_MRAD);
+        });
+    EXPECT_GT(p_value, 1.0e-6);
 }
 
 TEST(Sun, LimbDarkenedSunAngleDistribution)
@@ -410,34 +617,16 @@ TEST(Sun, LimbDarkenedSunAngleDistribution)
     const std::vector<float3> dirs = estimate_dirs_from_result(result);
     EXPECT_FALSE(dirs.empty());
 
-    float3 sun_dir_nominal = make_float3(
-        static_cast<float>(sun_pos[0]),
-        static_cast<float>(sun_pos[1]),
-        static_cast<float>(sun_pos[2]));
-    {
-        double nx = sun_dir_nominal.x;
-        double ny = sun_dir_nominal.y;
-        double nz = sun_dir_nominal.z;
-        double n = std::sqrt(nx * nx + ny * ny + nz * nz);
-        ASSERT_GT(n, 0.0);
-        sun_dir_nominal.x = static_cast<float>(nx / n);
-        sun_dir_nominal.y = static_cast<float>(ny / n);
-        sun_dir_nominal.z = static_cast<float>(nz / n);
-    }
-    sun_dir_nominal.x = -sun_dir_nominal.x;
-    sun_dir_nominal.y = -sun_dir_nominal.y;
-    sun_dir_nominal.z = -sun_dir_nominal.z;
+    const float3 sun_dir_nominal = normalize_float3(sun_pos);
+    const std::vector<double> thetas = collect_theta_mrad(dirs, sun_dir_nominal);
+    ASSERT_FALSE(thetas.empty());
 
     double max_theta = 0.0;
     int count_valid = 0;
     double theta_sum = 0.0;
 
-    for (const auto& d : dirs)
+    for (const double theta : thetas)
     {
-        if (!is_valid_dir(d))
-            continue;
-
-        double theta = angle_mrad(d, sun_dir_nominal);
         ++count_valid;
         theta_sum += theta;
         if (theta > max_theta)
@@ -452,18 +641,25 @@ TEST(Sun, LimbDarkenedSunAngleDistribution)
 
     EXPECT_LT(mean_theta_frac, UNIFORM_DISK_MEAN_RADIUS_FRAC);
     EXPECT_GT(mean_theta_frac, 0.55);
+
+    const double p_value = ks_pvalue(thetas, [MAX_ANGLE_MRAD](double theta)
+        {
+            return cdf_limbdarkened(theta, MAX_ANGLE_MRAD);
+        });
+    EXPECT_GT(p_value, 1.0e-6);
 }
 
 TEST(Sun, BuieCSRSunAngleDistribution)
 {
     const int N_RAYS = 200e3;
     const double MAX_ANGLE_MRAD = 43.6;
+    const double CSR = 0.1;
 
     SimulationData sd_buie;
     auto sun_pos = glm::dvec3(0.0, 0.0, 100.0);
 
     make_sun_sd(sd_buie, SolTrace::Data::SunShape::BUIE_CSR,
-                0.0, 0.0, true, sun_pos, 0.1);
+                0.0, 0.0, true, sun_pos, CSR);
 
     sd_buie.get_simulation_parameters().number_of_rays = N_RAYS;
     sd_buie.get_simulation_parameters().max_number_of_rays = N_RAYS * 10;
@@ -479,34 +675,16 @@ TEST(Sun, BuieCSRSunAngleDistribution)
     const std::vector<float3> dirs = estimate_dirs_from_result(result);
     EXPECT_FALSE(dirs.empty());
 
-    float3 sun_dir_nominal = make_float3(
-        static_cast<float>(sun_pos[0]),
-        static_cast<float>(sun_pos[1]),
-        static_cast<float>(sun_pos[2]));
-    {
-        double nx = sun_dir_nominal.x;
-        double ny = sun_dir_nominal.y;
-        double nz = sun_dir_nominal.z;
-        double n = std::sqrt(nx * nx + ny * ny + nz * nz);
-        ASSERT_GT(n, 0.0);
-        sun_dir_nominal.x = static_cast<float>(nx / n);
-        sun_dir_nominal.y = static_cast<float>(ny / n);
-        sun_dir_nominal.z = static_cast<float>(nz / n);
-    }
-    sun_dir_nominal.x = -sun_dir_nominal.x;
-    sun_dir_nominal.y = -sun_dir_nominal.y;
-    sun_dir_nominal.z = -sun_dir_nominal.z;
+    const float3 sun_dir_nominal = normalize_float3(sun_pos);
+    const std::vector<double> thetas = collect_theta_mrad(dirs, sun_dir_nominal);
+    ASSERT_FALSE(thetas.empty());
 
     double max_theta = 0.0;
     int count_valid = 0;
     int count_beyond_disc = 0;
 
-    for (const auto& d : dirs)
+    for (const double theta : thetas)
     {
-        if (!is_valid_dir(d))
-            continue;
-
-        double theta = angle_mrad(d, sun_dir_nominal);
         ++count_valid;
         if (theta > max_theta)
             max_theta = theta;
@@ -520,6 +698,14 @@ TEST(Sun, BuieCSRSunAngleDistribution)
     const double frac_beyond_disc = static_cast<double>(count_beyond_disc) /
                                      static_cast<double>(count_valid);
     EXPECT_GT(frac_beyond_disc, 0.05);
+
+    const double buie_gamma = 2.2 * std::log(0.52 * CSR) * std::pow(CSR, 0.43) - 0.1;
+    const double buie_kappa = 0.9 * std::log(13.5 * CSR) * std::pow(CSR, -0.3);
+    const double p_value = ks_pvalue(thetas, [MAX_ANGLE_MRAD, buie_kappa, buie_gamma](double theta)
+        {
+            return cdf_buie_csr(theta, MAX_ANGLE_MRAD, buie_kappa, buie_gamma);
+        });
+    EXPECT_GT(p_value, 1.0e-6);
 }
 
 TEST(Sun, UserDefinedSunAngleDistribution)
@@ -618,5 +804,3 @@ TEST(Sun, UserDefinedSunAngleDistribution)
     EXPECT_GT(frac_beyond_disc, 0.0);
     EXPECT_LT(frac_beyond_disc, 0.05);
 }
-
-
