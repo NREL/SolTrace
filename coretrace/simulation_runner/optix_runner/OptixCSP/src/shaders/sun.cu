@@ -226,6 +226,7 @@ namespace OptixCSP {
         return world_dir;
     }
 
+    // Could switch to binary search or spline fitting in future if linear interpolation causes slowdown
     __device__ float3 sampleRayDirectionInCone_UserDefined(float3 dir, int user_capacity, float* user_angle, 
         float* user_intensity, unsigned int ray_number)
     {

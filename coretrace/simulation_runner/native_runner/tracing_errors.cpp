@@ -234,6 +234,8 @@ void Errors(
 
 			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
 			break;
+
+		// Could switch to binary search or spline fitting in future if linear interpolation causes slowdown
 		case SunShape::USER_DEFINED:
 			do
 			{
