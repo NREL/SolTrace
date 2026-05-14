@@ -97,6 +97,7 @@ public:
     uint_fast64_t tot_rec_hits;
     uint_fast64_t rec_direct_count;
     uint_fast64_t rec_via_helio_count;
+    uint_fast64_t rec_via_rec_count;        // These are rays that reflect inside the cylinder
 
     // Flux map
     HPM2D fluxGrid;
@@ -454,6 +455,7 @@ public:
         tot_rec_hits = 0;
         rec_direct_count = 0;
         rec_via_helio_count = 0;
+        rec_via_rec_count = 0;
 
         for (size_t i = 0; i < result.get_number_of_records(); i++) {
             const ray_record_ptr rr = result[i];
@@ -474,7 +476,15 @@ public:
                     tot_rec_hits++;
                     if (rev == RayEvent::ABSORB) rec_absorb_count++;
                     if (j == 1) rec_direct_count++;
-                    else rec_via_helio_count++;
+                    else if (j == 2)
+                    {
+                        rec_via_helio_count++;
+                    }
+                    else
+                    {
+                        rec_via_rec_count++;
+                    }
+                        
                     continue;
                 }
 
