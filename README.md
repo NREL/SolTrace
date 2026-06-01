@@ -133,7 +133,82 @@ cmake .. -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON -Dembree_DIR=<EMBREE_INSTALL_DIR>
 
 ### Building with Nvidia's Optix Ray Tracing Library
 
-TODO.
+SolTrace includes an OptiX-based runner built for GPU-accelerated ray tracing.
+
+#### Prerequisites
+
+* NVIDIA GPU with a driver compatible with your target CUDA toolkit and OptiX SDK.
+* CUDA Toolkit 12.0 or newer.
+* NVIDIA OptiX SDK 8.x or newer.
+* CMake 3.19 or newer.
+* C++17-capable compiler.
+
+Verified build and test configurations from OptixCSP development include:
+
+* Windows: Visual Studio 2022, CUDA 12.8, OptiX 9.0
+* Windows: Visual Studio 2022, CUDA 12.8, OptiX 8.1
+* Windows: Visual Studio 2022, CUDA 12.3, OptiX 8.1
+* Linux (redhat 8.0): gcc 11.2, CUDA 12.3, OptiX 8.0
+* Linux (redhat 8.0): gcc 12.1, CUDA 12.3, OptiX 8.0
+* Linux (ubuntu 22.04): gcc 11.4, CUDA 12.8, OptiX 9.0
+
+> Note: The OptiX runtime library is provided by the NVIDIA driver. The OptiX SDK provides the headers used at build time.
+
+#### Quick checks
+
+Before building, confirm the GPU, driver, and CUDA toolchain are visible:
+
+```sh
+nvidia-smi
+nvcc --version
+```
+
+On Linux, you can also confirm the OptiX runtime library is available from the driver:
+
+```sh
+ldconfig -p | grep nvoptix
+```
+
+#### Install the CUDA Toolkit
+
+Install the CUDA Toolkit from NVIDIA before configuring SolTrace: <https://developer.nvidia.com/cuda-downloads>.
+
+Use `nvidia-smi` to check the maximum CUDA version supported by your installed NVIDIA driver, then choose a compatible CUDA Toolkit release.
+
+#### Install the OptiX SDK
+
+Download the OptiX SDK from NVIDIA: <https://developer.nvidia.com/designworks/optix/download>.
+
+If your NVIDIA driver does not support the latest OptiX release, use the legacy downloads page: <https://developer.nvidia.com/designworks/optix/downloads/legacy>.
+
+#### Configure and build SolTrace with OptiX support
+
+Linux example:
+
+```sh
+git clone https://github.com/NREL/SolTrace.git
+cd SolTrace
+mkdir build
+cd build
+cmake .. \
+    -DSOLTRACE_BUILD_OPTIX_SUPPORT=ON \
+    -DOptiX_INSTALL_DIR=/path/to/NVIDIA-OptiX-SDK
+cmake --build . -j4
+```
+
+Windows example:
+
+```bat
+mkdir build
+cd build
+cmake .. ^
+    -G "Visual Studio 17 2022" ^
+    -DSOLTRACE_BUILD_OPTIX_SUPPORT=ON ^
+    -DOptiX_INSTALL_DIR="C:/ProgramData/NVIDIA Corporation/OptiX SDK 8.1.0"
+cmake --build . --config Release -j
+```
+
+If CMake cannot find the OptiX SDK automatically, set `OptiX_INSTALL_DIR` to the SDK root containing `include/optix.h`, or add that location to `CMAKE_PREFIX_PATH`.
 
 ## Contributing
 
