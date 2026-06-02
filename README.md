@@ -143,7 +143,7 @@ SolTrace includes an OptiX-based runner built for GPU-accelerated ray tracing.
 * CMake 3.19 or newer.
 * C++17-capable compiler.
 
-Verified build and test configurations from OptixCSP development include:
+Verified build and test configurations from GPU runner development include:
 
 * Windows: Visual Studio 2022, CUDA 12.8, OptiX 9.0
 * Windows: Visual Studio 2022, CUDA 12.8, OptiX 8.1
