@@ -148,9 +148,9 @@ Verified build and test configurations from GPU runner development include:
 * Windows: Visual Studio 2022, CUDA 12.8, OptiX 9.0
 * Windows: Visual Studio 2022, CUDA 12.8, OptiX 8.1
 * Windows: Visual Studio 2022, CUDA 12.3, OptiX 8.1
-* Linux (redhat 8.0): gcc 11.2, CUDA 12.3, OptiX 8.0
-* Linux (redhat 8.0): gcc 12.1, CUDA 12.3, OptiX 8.0
-* Linux (ubuntu 22.04): gcc 11.4, CUDA 12.8, OptiX 9.0
+* Linux (Red Hat 8.0): gcc 11.2, CUDA 12.3, OptiX 8.0
+* Linux (Red Hat 8.0): gcc 12.1, CUDA 12.3, OptiX 8.0
+* Linux (Ubuntu 22.04): gcc 11.4, CUDA 12.8, OptiX 9.0
 
 > Note: The OptiX runtime library is provided by the NVIDIA driver. The OptiX SDK provides the headers used at build time.
 
