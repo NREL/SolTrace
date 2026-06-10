@@ -4,137 +4,92 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ optix_CI ]
   pull_request:
-    branches: [ develop ]
+    branches: [ optix_CI ]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  gpu-build:
+    runs-on: gpu-runner
 
-    strategy:
-      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
-      fail-fast: false
-
-      # Set up a matrix to run the following 3 configurations:
-      # 1. <Windows, Release, latest MSVC compiler toolchain on the default runner image, default generator>
-      # 2. <Linux, Release, latest GCC compiler toolchain on the default runner image, default generator>
-      # 3. <Linux, Release, latest Clang compiler toolchain on the default runner image, default generator>
-      #
-      # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
-      matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-        build_type: [Release, RelWithDebInfo]
-        c_compiler: [gcc, clang, cl]
-        include:
-          - os: windows-latest
-            c_compiler: cl
-            cpp_compiler: cl
-          - os: ubuntu-latest
-            c_compiler: gcc
-            cpp_compiler: g++
-          - os: ubuntu-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-          - os: macOS-latest
-            c_compiler: clang
-            cpp_compiler: clang++
-          - os: macOS-latest
-            c_compiler: gcc
-            cpp_compiler: g++
-        exclude:
-          - os: windows-latest
-            c_compiler: gcc
-          - os: windows-latest
-            c_compiler: clang
-          - os: ubuntu-latest
-            c_compiler: cl
-          - os: macOS-latest
-            c_compiler: cl
+    env:
+      BUILD_TYPE: Release
+      C_COMPILER: gcc
+      CXX_COMPILER: g++
 
     steps:
     - uses: actions/checkout@v4
-  
-    - name: Install lfontconfig
-      if: matrix.os == 'ubuntu-latest'
+
+    - name: Inspect runner
+      run: |
+        echo "Runner OS: $RUNNER_OS"
+        echo "Runner arch: $RUNNER_ARCH"
+        echo "Runner name: $RUNNER_NAME"
+        echo "Runner temp: $RUNNER_TEMP"
+        echo "Runner tool cache: $RUNNER_TOOL_CACHE"
+        echo "Workspace: $GITHUB_WORKSPACE"
+
+        echo ""
+        echo "OS release:"
+        cat /etc/os-release || true
+        uname -a || true
+
+        echo ""
+        echo "CPU:"
+        lscpu || true
+
+        echo ""
+        echo "Memory:"
+        free -h || true
+
+        echo ""
+        echo "Disk:"
+        df -h || true
+
+        echo ""
+        echo "Compilers and CMake:"
+        command -v gcc || true
+        gcc --version || true
+        command -v g++ || true
+        g++ --version || true
+        command -v clang || true
+        clang --version || true
+        command -v cmake || true
+        cmake --version || true
+
+        echo ""
+        echo "GPU and CUDA:"
+        command -v nvidia-smi || true
+        nvidia-smi || true
+        command -v nvcc || true
+        nvcc --version || true
+
+    - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y libfontconfig1-dev
-
-    - name: Install embree (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libembree-dev
-
-    - name: Install embree (macOS)
-      if: matrix.os == 'macOS-latest'
-      run: |
-        brew install embree
-
-    - name: Install embree (Windows)
-      if: matrix.os == 'windows-latest'
-      shell: pwsh
-      run: |
-        $embreeVersion = "4.4.0"
-        $embreeUrl = "https://github.com/embree/embree/releases/download/v$embreeVersion/embree-$embreeVersion.x64.windows.zip"
-        $embreeZip = "$env:TEMP\embree.zip"
-        $embreeDir = "C:\embree"
-        
-        Write-Host "Downloading Embree $embreeVersion..."
-        Invoke-WebRequest -Uri $embreeUrl -OutFile $embreeZip
-        
-        Write-Host "Extracting Embree..."
-        Expand-Archive -Path $embreeZip -DestinationPath $embreeDir -Force
-        
-        # $embreeRoot = Get-ChildItem -Path $embreeDir -Directory -Filter "embree*" | Select-Object -First 1
-        $embreeCMake = Join-Path $embreeDir "lib\cmake\embree-$embreeVersion"
-        $embreeLib = Join-Path $embreeDir "bin"
-        
-        # Write-Host "Embree root: $($embreeRoot.FullName)"
-        Write-Host "Embree CMake: $embreeCMake"
-        Write-Host "Embree Lib: $embreeLib"
-        
-        echo "embree_DIR=$embreeCMake" >> $env:GITHUB_ENV
-        echo "$embreeLib" >> $env:GITHUB_PATH
+        sudo apt-get install -y libfontconfig1-dev libembree-dev
 
     - name: Set reusable strings
-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
       id: strings
       shell: bash
       run: |
         echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
-        -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
-        -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
-        -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+        -DCMAKE_CXX_COMPILER=${{ env.CXX_COMPILER }}
+        -DCMAKE_C_COMPILER=${{ env.C_COMPILER }}
+        -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }}
         -DSOLTRACE_BUILD_GUI=OFF
         -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON
         -S ${{ github.workspace }}
 
-    - name: Build-Windows
-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      if: matrix.os == 'windows-latest'
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-      
-    - name: Build-Mac-Linux
-      if: matrix.os != 'windows-latest'
-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
-
-    # - name: List test directory
-    #   run: |
-    #       dir build/google-tests
-          
+    - name: Build
+      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ env.BUILD_TYPE }}
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      # Execute tests defined by the CMake configuration. Note that --build-config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: |
         cd ${{ steps.strings.outputs.build-output-dir }}/google-tests
-        ctest --output-on-failure --build-config ${{ matrix.build_type }} -VV
+        ctest --output-on-failure --build-config ${{ env.BUILD_TYPE }} -VV
