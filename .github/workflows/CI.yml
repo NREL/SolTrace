@@ -4,9 +4,9 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ optix_CI ]
+    branches: [ develop, optix_CI_dummy ]
   pull_request:
-    branches: [ optix_CI ]
+    branches: [ develop, optix_CI_dummy ]
 
 jobs:
   gpu-build:
