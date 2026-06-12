@@ -197,5 +197,8 @@ jobs:
       - name: Test GPU Build
         working-directory: ./build
         run: |
+          # Copy the compiled PTX shaders into the specific OptiX test directory
+          cp -r lib/ptx/ google-tests/unit-tests/simulation_runner/optix_runner/
+          
           cd google-tests
           ctest --output-on-failure --build-config Release -VV
