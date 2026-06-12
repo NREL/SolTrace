@@ -162,7 +162,13 @@ jobs:
           nvcc --version
           echo "OptiX SDK is located at: $OptiX_INSTALL_DIR"
 
-      - name: Configure SolTrace with OptiX
+      - name: Install Embree
+        # This installs the Linux Embree libraries inside your custom container on the fly
+        run: |
+          apt-get update
+          apt-get install -y libembree-dev
+
+      - name: Configure SolTrace with OptiX & Embree
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
@@ -172,3 +178,9 @@ jobs:
 
       - name: Build SolTrace with OptiX
         run: cmake --build build -j4
+
+      - name: Test GPU Build
+        working-directory: ./build
+        run: |
+          cd google-tests
+          ctest --output-on-failure --build-config Release -VV
