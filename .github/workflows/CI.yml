@@ -177,8 +177,9 @@ jobs:
       - name: Run OptiX Tests Directly with Validation
         working-directory: ./build/google-tests/unit-tests/simulation_runner/optix_runner
         run: |
-          # Copy the PTX files to the local execution directory
-          cp ../../../../../lib/ptx/*.ptx .
+          # Copy the PTX files from the build/lib/ptx directory to here.
+          # Note: We use 4 levels (../../../../) to get from 'optix_runner' back up to the 'build' folder.
+          cp ../../../../lib/ptx/*.ptx .
 
           echo "--- Running OptixRunnerUnitTests directly with validation enabled ---"
           # This runs the executable directly. Setting OPTIX_FORCE_VALIDATION=1
