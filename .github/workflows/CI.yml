@@ -164,7 +164,6 @@ jobs:
 
       - name: Configure SolTrace
         run: |
-          # We changed ${{ github.workspace }} to $GITHUB_WORKSPACE (bash variable)
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DSOLTRACE_BUILD_OPTIX_SUPPORT=ON \
@@ -176,22 +175,8 @@ jobs:
       - name: Build SolTrace
         run: cmake --build build -j4
 
-      - name: Verify PTX Directory
-        run: |
-          echo "--- Checking the absolute PTX directory ---"
-          # Using the container's environment variable
-          ls -l $GITHUB_WORKSPACE/build/lib/ptx/
-          
-      - name: Run OptiX Tests Directly with Validation
-        working-directory: ./build/google-tests/unit-tests/simulation_runner/optix_runner
-        run: |
-          echo "--- Running OptixRunnerUnitTests directly with validation enabled ---"
-          # No copying needed now! The C++ code knows the absolute path.
-          OPTIX_FORCE_VALIDATION=1 ./OptixRunnerUnitTests
-
-      - name: Run All Other Tests via CTest
+      - name: Test GPU Build
         working-directory: ./build
-        run: |
-          cd google-tests
-          ctest --output-on-failure --build-config Release -VV -E 'CSTUnitTests|OptixRunnerUnitTests'
+        # Runs the entire test suite, natively using the GPU!
+        run: ctest --output-on-failure --build-config Release -VV
 
