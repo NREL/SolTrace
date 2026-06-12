@@ -141,11 +141,13 @@ jobs:
 
   # New Dedicated GPU Run Job (Runs in parallel with the CPU Matrix)
   build-gpu:
-    name: Build with OptiX (GPU)
+    name: build-gpu (ubuntu-24.04-gpu, Release, gcc, OptiX)
     runs-on: gpu-runner
     container:
       image: ghcr.io/nlr-soltrace/soltrace-build-env:latest
       options: --gpus all
+      env:
+        NVIDIA_DRIVER_CAPABILITIES: all
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -161,6 +163,8 @@ jobs:
           echo "NVCC version:"
           nvcc --version
           echo "OptiX SDK is located at: $OptiX_INSTALL_DIR"
+          echo "Looking for OptiX Runtime Library:"
+          find /usr/lib /usr/local/nvidia/lib /usr/local/nvidia/lib64 -name "libnvoptix.so*" || echo "Not found"
 
       - name: Install Embree
         # This installs the Linux Embree libraries inside your custom container on the fly
