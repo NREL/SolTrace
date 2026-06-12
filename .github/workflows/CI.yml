@@ -138,3 +138,36 @@ jobs:
       run: |
         cd ${{ steps.strings.outputs.build-output-dir }}/google-tests
         ctest --output-on-failure --build-config ${{ matrix.build_type }} -VV
+
+  # New Dedicated GPU Run Job (Runs in parallel with the CPU Matrix)
+  build-gpu:
+    name: Build with OptiX (GPU)
+    runs-on: gpu-runner
+    container:
+      image: ghcr.io/nlr-soltrace/soltrace-build-env:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Environment
+        run: |
+          echo "Verifying the GPU runner environment..."
+          nvidia-smi
+          echo "NVCC version:"
+          nvcc --version
+          echo "OptiX SDK is located at: $OptiX_INSTALL_DIR"
+
+      - name: Configure SolTrace with OptiX
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DSOLTRACE_BUILD_GUI=ON \
+            -DSOLTRACE_BUILD_EMBREE_SUPPORT=OFF \
+            -S ${{ github.workspace }}
+
+      - name: Build SolTrace with OptiX
+        run: cmake --build build -j4
