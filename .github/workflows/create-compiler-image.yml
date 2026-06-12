@@ -2,7 +2,7 @@ name: Build and Publish compiler image
 
 on:
   push:
-    branches: [ main ]
+    branches: [ optix_CI_test ]
     paths:
       - '.github/docker/**' # Only runs when changes are made to the docker files
 
