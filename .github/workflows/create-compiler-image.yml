@@ -1,7 +1,6 @@
 name: Build and Publish compiler image
 
 on:
-  push:
   workflow_dispatch:
 
 env:
