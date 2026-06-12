@@ -11,7 +11,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}-build-env
+  IMAGE_NAME: nlr-soltrace/soltrace-build-env
 
 jobs:
   build-and-push:
