@@ -141,8 +141,8 @@ jobs:
 
   # New Dedicated GPU Run Job (Runs in parallel with the CPU Matrix)
   build-gpu:
-    name: build (ubuntu-24.04-gpu, Release, gcc, OptiX)
-    runs-on: gpu-runner # Corrected to your exact runner name/label
+    name: build-gpu (ubuntu-24.04-gpu, Release, gcc, OptiX)
+    runs-on: gpu-runner
     container:
       image: ghcr.io/nlr-soltrace/soltrace-build-env:latest
       options: --gpus all
@@ -164,31 +164,33 @@ jobs:
 
       - name: Configure SolTrace
         run: |
+          # Define SAMPLES_PTX_DIR so the C++ macro points to the absolute path
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DSOLTRACE_BUILD_OPTIX_SUPPORT=ON \
             -DSOLTRACE_BUILD_GUI=OFF \
             -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON \
+            -DSAMPLES_PTX_DIR="${{ github.workspace }}/build/lib/ptx" \
             -S .
 
       - name: Build SolTrace
         run: cmake --build build -j4
 
+      - name: Verify PTX Directory
+        run: |
+          echo "--- Checking the absolute PTX directory ---"
+          ls -l ${{ github.workspace }}/build/lib/ptx/
+          
       - name: Run OptiX Tests Directly with Validation
         working-directory: ./build/google-tests/unit-tests/simulation_runner/optix_runner
         run: |
-          # Copy the PTX files from the build/lib/ptx directory to here.
-          # Note: We use 4 levels (../../../../) to get from 'optix_runner' back up to the 'build' folder.
-          cp ../../../../lib/ptx/*.ptx .
-
           echo "--- Running OptixRunnerUnitTests directly with validation enabled ---"
-          # This runs the executable directly. Setting OPTIX_FORCE_VALIDATION=1
-          # forces OptiX to print the exact reason the module creation fails.
+          # No copying needed now! The C++ code knows the absolute path.
           OPTIX_FORCE_VALIDATION=1 ./OptixRunnerUnitTests
 
       - name: Run All Other Tests via CTest
         working-directory: ./build
         run: |
-          # Exclude the failing suites so they don't block the build while we debug
           cd google-tests
           ctest --output-on-failure --build-config Release -VV -E 'CSTUnitTests|OptixRunnerUnitTests'
+
