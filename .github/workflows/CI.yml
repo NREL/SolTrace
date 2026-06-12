@@ -148,6 +148,7 @@ jobs:
       options: --gpus all
       env:
         NVIDIA_DRIVER_CAPABILITIES: all
+        CUDA_CACHE_PATH: /tmp
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
