@@ -164,13 +164,13 @@ jobs:
 
       - name: Configure SolTrace
         run: |
-          # Define SAMPLES_PTX_DIR so the C++ macro points to the absolute path
+          # We changed ${{ github.workspace }} to $GITHUB_WORKSPACE (bash variable)
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DSOLTRACE_BUILD_OPTIX_SUPPORT=ON \
             -DSOLTRACE_BUILD_GUI=OFF \
             -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON \
-            -DSAMPLES_PTX_DIR="${{ github.workspace }}/build/lib/ptx" \
+            -DSAMPLES_PTX_DIR="$GITHUB_WORKSPACE/build/lib/ptx" \
             -S .
 
       - name: Build SolTrace
@@ -179,7 +179,8 @@ jobs:
       - name: Verify PTX Directory
         run: |
           echo "--- Checking the absolute PTX directory ---"
-          ls -l ${{ github.workspace }}/build/lib/ptx/
+          # Using the container's environment variable
+          ls -l $GITHUB_WORKSPACE/build/lib/ptx/
           
       - name: Run OptiX Tests Directly with Validation
         working-directory: ./build/google-tests/unit-tests/simulation_runner/optix_runner
