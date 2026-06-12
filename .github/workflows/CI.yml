@@ -145,6 +145,7 @@ jobs:
     runs-on: gpu-runner
     container:
       image: ghcr.io/nlr-soltrace/soltrace-build-env:latest
+      options: --gpus all
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
