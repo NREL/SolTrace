@@ -2,11 +2,6 @@ name: Build and Publish compiler image
 
 on:
   push:
-    branches:
-      - optix_CI_test
-    paths:
-      - '.github/docker/**'
-      - '.github/workflows/create-compiler-image.yml'
   workflow_dispatch:
 
 env:
