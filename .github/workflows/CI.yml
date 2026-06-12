@@ -185,6 +185,15 @@ jobs:
       - name: Build SolTrace with OptiX
         run: cmake --build build -j4
 
+      - name: Find PTX Files
+        working-directory: ./build
+        run: |
+          echo "--- Contents of the OptiX test executable directory: ---"
+          ls -l google-tests/unit-tests/simulation_runner/optix_runner/
+          echo
+          echo "--- Searching for all .ptx files in the build directory: ---"
+          find . -name "*.ptx" -print
+
       - name: Test GPU Build
         working-directory: ./build
         run: |
