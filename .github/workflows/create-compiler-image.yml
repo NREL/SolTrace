@@ -2,10 +2,13 @@ name: Build and Publish compiler image
 
 on:
   push:
-    branches: [ optix_CI_test ]
+    branches:
+      - optix_CI_test
     paths:
-      - '.github/docker/**' # Only runs when changes are made to the docker files
+      - '.github/docker/**'
+      - '.github/workflows/create-compiler-image.yml'
   workflow_dispatch:
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}-build-env
@@ -16,7 +19,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
