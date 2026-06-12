@@ -172,8 +172,9 @@ jobs:
         run: |
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DSOLTRACE_BUILD_GUI=ON \
+            -DSOLTRACE_BUILD_OPTIX_SUPPORT=ON \
             -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON \
+            -DSOLTRACE_BUILD_GUI=OFF \
             -S .
 
       - name: Build SolTrace with OptiX
