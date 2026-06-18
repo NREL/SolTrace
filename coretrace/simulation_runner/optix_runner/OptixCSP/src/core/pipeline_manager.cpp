@@ -131,7 +131,9 @@ void pipelineManager::loadModules()
         // If it fails, print the REAL error message from the LOG buffer
         if (result != OPTIX_SUCCESS)
         {
-            std::cerr << "--- OPTIX COMPILATION LOG ---\n" << LOG << "\n--- END LOG ---\n";
+            std::cerr << "--- OPTIX COMPILATION LOG ---\n"
+                      << std::string(LOG, LOG_SIZE)
+                      << "\n--- END LOG ---\n";
             // Now, re-throw the error so the test still fails
             throw std::runtime_error("optixModuleCreate failed for intersection.ptx");
         }
