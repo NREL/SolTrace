@@ -13,6 +13,7 @@ add_definitions(-DPROJECT_DIR="${CMAKE_CURRENT_BINARY_DIR}")
 add_subdirectory(test_tools)
 add_subdirectory(unit-tests)
 add_subdirectory(regression-tests)
+add_subdirectory(round_robin_study/regression-tests)
 
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)

@@ -23,34 +23,6 @@ set(CST_TEST_SRC
 	heliostat_test.cpp
 )
 
-# Add headers for Visual Studio solution
-set(CST_TEST_HEADERS
-	heliostat_field_test_template.hpp
-	single_heliostat_test_template.hpp
-)
-
-if(CMAKE_BUILD_TYPE STREQUAL "Release" OR FULL_FIELD_VALIDATION_TEST)
-	# In release or full-field validation builds, also add backend-specific tests
-	if(SOLTRACE_BUILD_OPTIX_SUPPORT)
-		list(APPEND CST_TEST_SRC
-			single_heliostat_test_optix.cpp
-			heliostat_field_test_optix.cpp
-		)
-	endif()
-	if(SOLTRACE_BUILD_EMBREE_SUPPORT)
-		list(APPEND CST_TEST_SRC
-			single_heliostat_test_embree.cpp
-			heliostat_field_test_embree.cpp
-		)
-	endif()
-	if(FULL_FIELD_VALIDATION_TEST)
-		list(APPEND CST_TEST_SRC
-			single_heliostat_test_native.cpp
-			heliostat_field_test_native.cpp
-		)
-	endif()
-endif()
-
 add_executable(CSTUnitTests
 	${CST_TEST_SRC}
 	${CST_TEST_HEADERS}
