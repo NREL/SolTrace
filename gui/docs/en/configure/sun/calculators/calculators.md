@@ -2,6 +2,9 @@
 title: "Directional Sun Position Calculators"
 ---
 
-[Directional Sun Position Calculators EN] Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi accumsan sed lectus id lacinia. Donec dui massa, eleifend non ipsum in, venenatis pulvinar arcu. Integer rutrum malesuada dictum. Sed tempor, arcu ac sodales pretium, nunc tellus vulputate purus, ut venenatis sapien arcu id turpis. Maecenas ornare tortor nibh, a porttitor dui finibus non.
-
-Proin lobortis felis ipsum. Mauris et sodales orci. Fusce iaculis rutrum dui in sodales. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris gravida odio sed volutpat efficitur. Cras rutrum, felis eu vehicula mollis, nisl diam viverra nunc, vel suscipit nulla tellus quis justo. Sed scelerisque nulla quis enim ullamcorper porta. Fusce aliquet ante non erat lacinia, feugiat eleifend lorem pulvinar.
+For a directional sun, SolTrace supports five options for defining the sun's position:
+1. Duffie & Beckman
+2. SOLPOS 2.0
+3. Solar Position Algorithm (SPA)
+4. Legacy (from orginal SolTrace)
+5. Global Coordinates (azimuth and elevation angle)

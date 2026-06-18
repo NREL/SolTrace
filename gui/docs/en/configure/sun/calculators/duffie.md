@@ -1,7 +1,8 @@
 ---
-title: "Duffie & Beckman Calculator"
+title: "Duffie & Beckman Sun Position"
 ---
 
-[Duffie & Beckman Calculator EN] Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi accumsan sed lectus id lacinia. Donec dui massa, eleifend non ipsum in, venenatis pulvinar arcu. Integer rutrum malesuada dictum. Sed tempor, arcu ac sodales pretium, nunc tellus vulputate purus, ut venenatis sapien arcu id turpis. Maecenas ornare tortor nibh, a porttitor dui finibus non.
+The Duffie & Beckman solar position method calculates the apparent location of the sun using Earth-Sun geometric relationships based on date, time, and geographic location (latitude and longitude). Key advantages of the method include its computational efficiency, straightforward implementation, and sufficient accuracy (~\pm3 degrees) for most engineering and annual performance simulations. Limitations include reduced astronomical precision compared to modern ephemeris-based models, limited treatment of atmospheric refraction and Earth orbital perturbations, and potential inaccuracies near sunrise, sunset, or when sub-arcminute tracking accuracy is required.
 
-Proin lobortis felis ipsum. Mauris et sodales orci. Fusce iaculis rutrum dui in sodales. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris gravida odio sed volutpat efficitur. Cras rutrum, felis eu vehicula mollis, nisl diam viverra nunc, vel suscipit nulla tellus quis justo. Sed scelerisque nulla quis enim ullamcorper porta. Fusce aliquet ante non erat lacinia, feugiat eleifend lorem pulvinar.
+Reference:
+    J. A. Dufﬁe and W. A. Beckman, Solar Engineering of Thermal Processes, 1st ed. John Wiley & Sons, Ltd, 2013. doi: 10.1002/9781118671603.

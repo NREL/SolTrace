@@ -2,6 +2,9 @@
 title: "Solar Position Algorithm (SPA)"
 ---
 
-[Solar Position Algorithm (SPA) EN] Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi accumsan sed lectus id lacinia. Donec dui massa, eleifend non ipsum in, venenatis pulvinar arcu. Integer rutrum malesuada dictum. Sed tempor, arcu ac sodales pretium, nunc tellus vulputate purus, ut venenatis sapien arcu id turpis. Maecenas ornare tortor nibh, a porttitor dui finibus non.
+Solar Position Algorithm (SPA) is a high-precision solar position model developed by NLR to calculate the sun’s apparent position from date, time, and observer location. The algorithm uses detailed astronomical models that account for Earth orbital variations, nutation, aberration, and atmospheric refraction. SPA is widely used in CSP, photovoltaic, solar resource, and tracking system applications where high pointing accuracy is required ($\pm 0.0003$ degrees). Its primary advantages are sub-arcminute accuracy and broad industry acceptance, while disadvantages include greater computational complexity and higher execution cost compared to simpler engineering formulations such as Duffie & Beckman or SOLPOS.
 
-Proin lobortis felis ipsum. Mauris et sodales orci. Fusce iaculis rutrum dui in sodales. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris gravida odio sed volutpat efficitur. Cras rutrum, felis eu vehicula mollis, nisl diam viverra nunc, vel suscipit nulla tellus quis justo. Sed scelerisque nulla quis enim ullamcorper porta. Fusce aliquet ante non erat lacinia, feugiat eleifend lorem pulvinar.
+References:
+    https://midcdmz.nlr.gov/spa/
+    
+    I. Reda and A. Andreas, “Solar Position Algorithm for Solar Radiation Applications (Revised),” NREL/TP-560-34302, 15003974, Jan. 2008. doi: 10.2172/15003974.

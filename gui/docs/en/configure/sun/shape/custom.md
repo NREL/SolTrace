@@ -2,6 +2,4 @@
 title: "Custom Emission Profile"
 ---
 
-[Custom Emission Profile EN] Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi accumsan sed lectus id lacinia. Donec dui massa, eleifend non ipsum in, venenatis pulvinar arcu. Integer rutrum malesuada dictum. Sed tempor, arcu ac sodales pretium, nunc tellus vulputate purus, ut venenatis sapien arcu id turpis. Maecenas ornare tortor nibh, a porttitor dui finibus non.
-
-Proin lobortis felis ipsum. Mauris et sodales orci. Fusce iaculis rutrum dui in sodales. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris gravida odio sed volutpat efficitur. Cras rutrum, felis eu vehicula mollis, nisl diam viverra nunc, vel suscipit nulla tellus quis justo. Sed scelerisque nulla quis enim ullamcorper porta. Fusce aliquet ante non erat lacinia, feugiat eleifend lorem pulvinar.
+The custom sun option allows specification of a sun intensity profile as a function of radial angular position away from the centroid of the solar disc. Since the sunshape is axisymmetric,  only half of the profile (from the sun’s center to the edge) is required. Specify the normalized solar intensity profile in each table row along with the radial angular position in units of milliradians. The first entry in the table should be at 0 mrad, and the angular position must increase monotonically. The angular step size does not need to be constant. The intensity values can be in any units because the code scales the distribution to a peak of unity.  
