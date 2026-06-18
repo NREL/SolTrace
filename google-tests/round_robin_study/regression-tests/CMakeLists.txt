@@ -41,38 +41,42 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" OR FULL_FIELD_VALIDATION_TEST)
 	endif()
 endif()
 
-add_executable(CSTRegressionTests
-	${CST_TEST_SRC}
-	${CST_TEST_HEADERS}
-)
+if(CST_TEST_SRC)
+	add_executable(CSTRegressionTests
+		${CST_TEST_SRC}
+		${CST_TEST_HEADERS}
+	)
 
-# Always link core simdata and native runner
-set(CST_LIBS
-	simdata
-	native_runner
-	testtools
-	GTest::gtest_main
-)
+	# Always link core simdata and native runner
+	set(CST_LIBS
+		simdata
+		native_runner
+		testtools
+		GTest::gtest_main
+	)
 
-# Conditionally link OptiX and Embree runners
-if(SOLTRACE_BUILD_OPTIX_SUPPORT)
-	list(APPEND CST_LIBS optix_runner)
+	# Conditionally link OptiX and Embree runners
+	if(SOLTRACE_BUILD_OPTIX_SUPPORT)
+		list(APPEND CST_LIBS optix_runner)
+	endif()
+
+	if(SOLTRACE_BUILD_EMBREE_SUPPORT)
+		list(APPEND CST_LIBS embree_runner)
+	endif()
+
+	target_link_libraries(CSTRegressionTests PRIVATE ${CST_LIBS})
+
+	if(ENABLE_COVERAGE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+		target_link_options(CSTRegressionTests PRIVATE --coverage)
+		target_link_libraries(CSTRegressionTests PRIVATE gcov)
+	endif()
+
+	if(UNIX)
+		target_link_libraries(CSTRegressionTests PRIVATE pthread)
+	endif()
+
+	add_test(NAME CSTRegressionTests COMMAND CSTRegressionTests)
+else()
+	message(STATUS "Skipping CSTRegressionTests because no test source files were selected.")
 endif()
-
-if(SOLTRACE_BUILD_EMBREE_SUPPORT)
-	list(APPEND CST_LIBS embree_runner)
-endif()
-
-target_link_libraries(CSTRegressionTests ${CST_LIBS})
-
-if (ENABLE_COVERAGE AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-	target_link_options(CSTRegressionTests PRIVATE --coverage)
-	target_link_libraries(CSTRegressionTests gcov)
-endif()
-
-if(UNIX)
-	target_link_libraries(CSTRegressionTests pthread)
-endif()
-
-add_test(NAME CSTRegressionTests COMMAND CSTRegressionTests)
 
