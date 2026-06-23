@@ -11,15 +11,26 @@ env:
 
 jobs:
   coverage:
-    runs-on: ubuntu-latest
+    runs-on: gpu-runner
+    timeout-minutes: 60
+
+    container:
+      image: ghcr.io/nlr-soltrace/soltrace-build-env:latest
+      options: --gpus all
+      env:
+        NVIDIA_DRIVER_CAPABILITIES: all
+        CUDA_CACHE_PATH: /tmp
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
     - uses: actions/checkout@v4
 
     - name: Install dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y lcov libfontconfig1-dev libembree-dev
+        apt-get update
+        apt-get install -y lcov libfontconfig1-dev libembree-dev
 
     - name: Set reusable strings
       id: strings
@@ -31,11 +42,6 @@ jobs:
         find . -name "*.gcda" -delete || true
         find . -name "*.gcno" -delete || true
 
-    - name: Setup CMake
-      uses: jwlawson/actions-setup-cmake@v2
-      with:
-        cmake-version: '3.24.x'
-
     - name: Configure CMake
       run: >
         cmake -B ${{ steps.strings.outputs.build-output-dir }}
@@ -44,6 +50,8 @@ jobs:
         -DSOLTRACE_BUILD_GUI=OFF
         -DENABLE_COVERAGE=ON
         -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON
+        -DSOLTRACE_BUILD_OPTIX_SUPPORT=ON
+        -DSAMPLES_PTX_DIR="$GITHUB_WORKSPACE/build/lib/ptx"
         -S ${{ github.workspace }}
 
     - name: Build
