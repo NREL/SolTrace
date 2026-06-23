@@ -21,12 +21,7 @@ set(SIMRES_HDRS
 
 set(POSITION_INDEPENDENT_CODE ON)
 
-if(WIN32)
-    # Hack to build on Windows
-    add_library(simresult STATIC ${SIMRES_SRC})
-else(WIN32)
-    add_library(simresult SHARED ${SIMRES_SRC})
-endif()
+add_library(simresult STATIC ${SIMRES_SRC})
 
 set_target_properties(simresult
     PROPERTIES

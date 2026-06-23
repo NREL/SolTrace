@@ -27,12 +27,7 @@ set(POSITION_INDEPENDENT_CODE ON)
 
 FIND_PACKAGE(embree 4 REQUIRED)
 
-if(WIN32)
-    # Hack to build on Windows
-    add_library(embree_runner STATIC ${EMBREE_RUNNER_SRC})
-else(WIN32)
-    add_library(embree_runner SHARED ${EMBREE_RUNNER_SRC})
-endif()
+add_library(embree_runner STATIC ${EMBREE_RUNNER_SRC})
 
 set_target_properties(
     embree_runner

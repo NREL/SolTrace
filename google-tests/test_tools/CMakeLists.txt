@@ -17,12 +17,7 @@ set(TEST_TOOLS_SRC
 
 set(POSITION_INDEPENDENT_CODE ON)
 
-if(WIN32)
-    # Hack to build on Windows
-    add_library(testtools STATIC ${TEST_TOOLS_SRC})
-else(WIN32)
-    add_library(testtools SHARED ${TEST_TOOLS_SRC})
-endif()
+add_library(testtools STATIC ${TEST_TOOLS_SRC})
 
 set_target_properties(testtools
     PROPERTIES

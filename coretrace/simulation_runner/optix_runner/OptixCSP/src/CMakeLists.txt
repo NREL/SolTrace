@@ -5,16 +5,7 @@
 # ---------------------------------------------------------------------------
 # core target
 # ---------------------------------------------------------------------------
-if(WIN32)
-  add_library(OptixCSP_core STATIC)
-else()
-  add_library(OptixCSP_core SHARED)
-endif()
-
-# Enable automatic symbol export for Windows
-set_target_properties(OptixCSP_core PROPERTIES
-    WINDOWS_EXPORT_ALL_SYMBOLS ON
-)
+add_library(OptixCSP_core STATIC)
 
 # Link against CUDA and simulation_data (simdata)
 target_link_libraries(OptixCSP_core PRIVATE

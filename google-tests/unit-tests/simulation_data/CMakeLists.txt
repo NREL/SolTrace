@@ -3,7 +3,8 @@ Project(SimulationDataUnitTests)
 include_directories(
     .
     ../common
-    ../../app/deploy/samples
+    ${SAMPLE_DIR}
+    ${TEST_INPUT_DIR}
     ../../../coretrace/simulation_data
     ../../../coretrace/simulation_results
     ../../../coretrace/simulation_runner

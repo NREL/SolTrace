@@ -1,0 +1,562 @@
+name: GUI Release
+
+on:
+  # Manual runs are useful while iterating on packaging from a feature branch.
+  workflow_dispatch:
+  # Tag pushes are the release path. Assets are uploaded to a draft release
+  # named after the tag.
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  # Needed by `gh release create/upload` below.
+  contents: write
+
+env:
+  BUILD_TYPE: Release
+  QT_VERSION: "6.11.1"
+  # Keep Embree pinned independently from Qt. The workflow expects the upstream
+  # release assets to include CMake package files under lib/cmake/embree-X.Y.Z.
+  EMBREE_VERSION: "4.4.1"
+  CUDA_VERSION: "12.6.1"
+  OPTIX_DEV_REF: "f1f6dd803f3159992d248178f6e09421c6eb8b6d"
+  APP_NAME: SolTrace
+
+jobs:
+  bundle:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      # Let one platform fail without cancelling the rest. Packaging failures
+      # tend to be platform-specific, especially while adding new bundle types.
+      fail-fast: false
+      matrix:
+        # Each row is a complete Embree-enabled artifact flavor. Embree is the
+        # supported release path going forward.
+        include:
+          - name: macOS ARM64 Embree bundle
+            id: macos-arm64-embree
+            platform: macos
+            runner: macos-26
+            shell: bash
+            qt_host: mac
+            qt_arch: clang_64
+            qt_modules: qtgraphs qtquick3d qtshadertools
+            aqt_version: "==3.3.*"
+            aqt_source: ""
+            cmake_extra: -DCMAKE_OSX_ARCHITECTURES=arm64
+            embree_enabled: "ON"
+            optix_enabled: "OFF"
+            # Pick the upstream macOS ARM/universal archive without hardcoding
+            # the exact file name. If RenderKit changes naming, the install step
+            # prints the complete asset list before failing.
+            embree_asset_regex: ".*(arm64|aarch64|universal).*mac(osx|os)?.*\\.zip$"
+            artifact_name: SolTrace-macOS-ARM64-Embree
+            asset_name: SolTrace-macOS-arm64-Embree.zip
+
+          - name: Windows x64 Embree bundle
+            id: windows-x64-embree
+            platform: windows
+            runner: windows-latest
+            shell: pwsh
+            qt_host: windows
+            qt_arch: win64_msvc2022_64
+            qt_modules: all
+            aqt_version: ""
+            aqt_source: git+https://github.com/miurahr/aqtinstall.git@master
+            cmake_extra: ""
+            embree_enabled: "ON"
+            optix_enabled: "OFF"
+            # RenderKit's Windows binary archive is expected to contain the DLLs
+            # and bundled CMake config used by find_package(embree 4 REQUIRED).
+            embree_asset_regex: ".*x64.*windows.*\\.zip$"
+            artifact_name: SolTrace-Windows-x64-Embree
+            asset_name: SolTrace-Windows-x64-Embree.zip
+
+          - name: Linux x64 Embree AppImage
+            id: linux-x64-embree
+            platform: linux
+            runner: ubuntu-22.04
+            shell: bash
+            qt_host: linux
+            qt_arch: linux_gcc_64
+            qt_modules: all
+            aqt_version: "==3.3.*"
+            aqt_source: ""
+            cmake_extra: ""
+            embree_enabled: "ON"
+            optix_enabled: "OFF"
+            # Linux Embree archives are expected to be tarballs. The regex is
+            # intentionally broad across x64/x86_64 spelling.
+            embree_asset_regex: ".*(x86_64|x64).*linux.*\\.(tar\\.gz|tgz)$"
+            artifact_name: SolTrace-Linux-x64-Embree
+            asset_name: SolTrace-Linux-x86_64-Embree.AppImage
+
+          - name: Windows x64 Embree OptiX bundle
+            id: windows-x64-embree-optix
+            platform: windows
+            runner: windows-2022
+            shell: pwsh
+            qt_host: windows
+            qt_arch: win64_msvc2022_64
+            qt_modules: all
+            aqt_version: ""
+            aqt_source: git+https://github.com/miurahr/aqtinstall.git@master
+            cmake_extra: '-G "Visual Studio 17 2022" -A x64'
+            embree_enabled: "ON"
+            optix_enabled: "ON"
+            embree_asset_regex: ".*x64.*windows.*\\.zip$"
+            artifact_name: SolTrace-Windows-x64-Embree-OptiX
+            asset_name: SolTrace-Windows-x64-Embree-OptiX.zip
+
+          - name: Linux x64 Embree OptiX AppImage
+            id: linux-x64-embree-optix
+            platform: linux
+            runner: ubuntu-22.04
+            shell: bash
+            qt_host: linux
+            qt_arch: linux_gcc_64
+            qt_modules: all
+            aqt_version: "==3.3.*"
+            aqt_source: ""
+            cmake_extra: ""
+            embree_enabled: "ON"
+            optix_enabled: "ON"
+            embree_asset_regex: ".*(x86_64|x64).*linux.*\\.(tar\\.gz|tgz)$"
+            artifact_name: SolTrace-Linux-x64-Embree-OptiX
+            asset_name: SolTrace-Linux-x86_64-Embree-OptiX.AppImage
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout OptiX headers
+        if: matrix.optix_enabled == 'ON'
+        uses: actions/checkout@v4
+        with:
+          repository: NVIDIA/optix-dev
+          ref: ${{ env.OPTIX_DEV_REF }}
+          path: optix-dev
+
+      - name: Install Qt
+        # Most platforms use a released aqt version.
+        if: matrix.aqt_version != ''
+        uses: jurplel/install-qt-action@v4
+        with:
+          aqtversion: ${{ matrix.aqt_version }}
+          version: ${{ env.QT_VERSION }}
+          host: ${{ matrix.qt_host }}
+          target: desktop
+          arch: ${{ matrix.qt_arch }}
+          modules: ${{ matrix.qt_modules }}
+
+      - name: Install CUDA Toolkit
+        if: matrix.optix_enabled == 'ON'
+        uses: Jimver/cuda-toolkit@v0.2.35
+        with:
+          cuda: ${{ env.CUDA_VERSION }}
+          linux-local-args: '["--toolkit"]'
+          log-file-suffix: '${{ matrix.id }}.txt'
+
+      - name: Install Qt
+        # Windows Qt 6.11 currently needs an unreleased aqt fix, so this path
+        # uses install-qt-action's full pip source override.
+        if: matrix.aqt_source != ''
+        uses: jurplel/install-qt-action@v4
+        with:
+          aqtsource: ${{ matrix.aqt_source }}
+          version: ${{ env.QT_VERSION }}
+          host: ${{ matrix.qt_host }}
+          target: desktop
+          arch: ${{ matrix.qt_arch }}
+          modules: ${{ matrix.qt_modules }}
+
+      - name: Install Linux packaging dependencies
+        if: matrix.platform == 'linux'
+        shell: bash
+        run: |
+          sudo apt-get update
+          # libtiff5 satisfies Qt's upstream Linux imageformat plugin.
+          # imagemagick provides `convert`, used to resize our 2048px app icon
+          # to a real 256x256 hicolor icon for linuxdeploy validation.
+          sudo apt-get install -y \
+            file \
+            libgl1-mesa-dev \
+            libtiff5 \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            imagemagick \
+            patchelf \
+            unzip
+
+      - name: Install Embree
+        # Non-Windows Embree installation path. We use GitHub release metadata
+        # instead of hardcoded URLs so asset names can drift a little across
+        # Embree releases. The matrix regex decides which asset is selected.
+        if: matrix.embree_enabled == 'ON' && matrix.platform != 'windows'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          release="v${{ env.EMBREE_VERSION }}"
+          archive_dir="${{ runner.temp }}/embree-archive"
+          install_dir="${{ runner.temp }}/embree"
+          mkdir -p "$archive_dir" "$install_dir"
+
+          echo "Available Embree release assets:"
+          gh release view "$release" --repo RenderKit/embree --json assets --jq '.assets[].name'
+
+          # Print all assets above, then select the first asset matching this
+          # matrix row. `|| true` keeps `set -euo pipefail` from aborting before
+          # we can emit the clearer "No Embree asset matched" message.
+          asset_name="$(gh release view "$release" --repo RenderKit/embree --json assets --jq '.assets[].name' \
+            | grep -Ei '${{ matrix.embree_asset_regex }}' \
+            | head -n 1 || true)"
+
+          if [ -z "$asset_name" ]; then
+            echo "No Embree asset matched regex: ${{ matrix.embree_asset_regex }}" >&2
+            exit 1
+          fi
+
+          gh release download "$release" \
+            --repo RenderKit/embree \
+            --pattern "$asset_name" \
+            --dir "$archive_dir"
+
+          archive_path="$archive_dir/$asset_name"
+          case "$archive_path" in
+            *.zip)
+              unzip -q "$archive_path" -d "$install_dir"
+              ;;
+            *.tar.gz|*.tgz)
+              tar -xzf "$archive_path" -C "$install_dir"
+              ;;
+            *)
+              echo "Unsupported Embree archive format: $archive_path" >&2
+              exit 1
+              ;;
+          esac
+
+          # CMake needs this exact package directory for find_package(embree 4).
+          embree_cmake_dir="$(find "$install_dir" -type d \( \
+            -path "*/lib/cmake/embree-${{ env.EMBREE_VERSION }}" -o \
+            -path "*/lib64/cmake/embree-${{ env.EMBREE_VERSION }}" \
+          \) | head -n 1)"
+          if [ -z "$embree_cmake_dir" ]; then
+            echo "Could not find Embree CMake package directory after extraction." >&2
+            find "$install_dir" -maxdepth 5 -type d | sort
+            exit 1
+          fi
+
+          # Later packaging steps need the directory containing libembree and
+          # related runtime libraries. For Linux, LD_LIBRARY_PATH lets linuxdeploy
+          # discover these dependencies; for macOS we copy dylibs explicitly.
+          embree_runtime_file="$(find "$install_dir" -type f \( -name 'libembree*.so*' -o -name 'libembree*.dylib' \) -print -quit)"
+          if [ -z "$embree_runtime_file" ]; then
+            echo "Could not find Embree runtime library directory after extraction." >&2
+            find "$install_dir" -maxdepth 5 -type f | sort
+            exit 1
+          fi
+          embree_runtime_dir="$(dirname "$embree_runtime_file")"
+
+          echo "embree_DIR=$embree_cmake_dir" >> "$GITHUB_ENV"
+          echo "EMBREE_RUNTIME_DIR=$embree_runtime_dir" >> "$GITHUB_ENV"
+          echo "$embree_runtime_dir" >> "$GITHUB_PATH"
+          echo "Embree CMake package: $embree_cmake_dir"
+          echo "Embree runtime dir: $embree_runtime_dir"
+
+      - name: Install Embree
+        # Windows needs PowerShell archive handling and PATH/GITHUB_ENV syntax,
+        # but otherwise mirrors the POSIX Embree install step above.
+        if: matrix.embree_enabled == 'ON' && matrix.platform == 'windows'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $release = "v${{ env.EMBREE_VERSION }}"
+          $archiveDir = Join-Path $env:RUNNER_TEMP "embree-archive"
+          $installDir = Join-Path $env:RUNNER_TEMP "embree"
+          New-Item -ItemType Directory -Force -Path $archiveDir, $installDir | Out-Null
+
+          Write-Host "Available Embree release assets:"
+          gh release view $release --repo RenderKit/embree --json assets --jq '.assets[].name'
+
+          # Match the matrix-selected Windows release ZIP and let the failure
+          # message show the regex if no asset matches.
+          $assetName = gh release view $release --repo RenderKit/embree --json assets --jq '.assets[].name' |
+            Where-Object { $_ -match '${{ matrix.embree_asset_regex }}' } |
+            Select-Object -First 1
+
+          if (-not $assetName) {
+            throw "No Embree asset matched regex: ${{ matrix.embree_asset_regex }}"
+          }
+
+          gh release download $release `
+            --repo RenderKit/embree `
+            --pattern $assetName `
+            --dir $archiveDir
+
+          $archivePath = Join-Path $archiveDir $assetName
+          Expand-Archive -Path $archivePath -DestinationPath $installDir -Force
+
+          # Feed Embree's bundled CMake config to find_package(embree 4).
+          $embreeCMakeDir = Get-ChildItem -Path $installDir -Directory -Recurse |
+            Where-Object {
+              $_.FullName -like "*\lib\cmake\embree-${{ env.EMBREE_VERSION }}" -or
+              $_.FullName -like "*\lib64\cmake\embree-${{ env.EMBREE_VERSION }}"
+            } |
+            Select-Object -First 1
+          if (-not $embreeCMakeDir) {
+            Get-ChildItem -Path $installDir -Directory -Recurse | Select-Object -ExpandProperty FullName
+            throw "Could not find Embree CMake package directory after extraction."
+          }
+
+          # The DLL directory is added to PATH for configure/build and copied
+          # into the final dist/bin directory after install.
+          $embreeRuntime = Get-ChildItem -Path $installDir -File -Recurse -Filter "embree*.dll" |
+            Select-Object -First 1
+          if (-not $embreeRuntime) {
+            Get-ChildItem -Path $installDir -File -Recurse | Select-Object -ExpandProperty FullName
+            throw "Could not find Embree runtime DLL directory after extraction."
+          }
+
+          "embree_DIR=$($embreeCMakeDir.FullName)" >> $env:GITHUB_ENV
+          "EMBREE_RUNTIME_DIR=$($embreeRuntime.DirectoryName)" >> $env:GITHUB_ENV
+          "$($embreeRuntime.DirectoryName)" >> $env:GITHUB_PATH
+          Write-Host "Embree CMake package: $($embreeCMakeDir.FullName)"
+          Write-Host "Embree runtime dir: $($embreeRuntime.DirectoryName)"
+
+      - name: Set POSIX paths
+        # Use slash paths for bash platforms. These outputs are intentionally
+        # named with underscores; GitHub expression access is less brittle than
+        # hyphenated output names.
+        if: matrix.platform != 'windows'
+        id: paths
+        shell: bash
+        run: |
+          echo "build_dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+          echo "install_dir=${{ github.workspace }}/dist" >> "$GITHUB_OUTPUT"
+          echo "asset=${{ github.workspace }}/${{ matrix.asset_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Set Windows paths
+        # Same logical outputs as the POSIX step, but emitted from PowerShell.
+        if: matrix.platform == 'windows'
+        id: paths_windows
+        shell: pwsh
+        run: |
+          "build_dir=${{ github.workspace }}/build" >> $env:GITHUB_OUTPUT
+          "install_dir=${{ github.workspace }}/dist" >> $env:GITHUB_OUTPUT
+          "asset=${{ github.workspace }}/${{ matrix.asset_name }}" >> $env:GITHUB_OUTPUT
+
+      - name: Configure
+        # Release artifacts include embree_runner. Linux and Windows add
+        # optix_runner in dedicated matrix rows. Cachegen has been problematic
+        # on Actions during earlier macOS GUI builds, so keep it disabled for
+        # deterministic release CI.
+        run: >
+          cmake -S "${{ github.workspace }}"
+          -B "${{ steps.paths.outputs.build_dir || steps.paths_windows.outputs.build_dir }}"
+          -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}"
+          -DSOLTRACE_BUILD_GUI=ON
+          -DSOLTRACE_BUILD_TESTS=OFF
+          -DSOLTRACE_BUILD_EMBREE_SUPPORT=${{ matrix.embree_enabled }}
+          -DSOLTRACE_BUILD_OPTIX_SUPPORT=${{ matrix.optix_enabled }}
+          -DOptiX_INSTALL_DIR="${{ github.workspace }}/optix-dev"
+          -DQT_QML_NO_CACHEGEN=ON
+          ${{ matrix.cmake_extra }}
+
+      - name: Build
+        run: >
+          cmake --build "${{ steps.paths.outputs.build_dir || steps.paths_windows.outputs.build_dir }}"
+          --target "${{ env.APP_NAME }}"
+          --config "${{ env.BUILD_TYPE }}"
+          --verbose
+
+      - name: Build installable support tools
+        # The top-level install includes coretrace/simdriver install rules even
+        # for GUI release packaging, so build simdriver before cmake --install.
+        run: >
+          cmake --build "${{ steps.paths.outputs.build_dir || steps.paths_windows.outputs.build_dir }}"
+          --target simdriver
+          --config "${{ env.BUILD_TYPE }}"
+          --verbose
+
+      - name: Install bundle
+        run: >
+          cmake --install "${{ steps.paths.outputs.build_dir || steps.paths_windows.outputs.build_dir }}"
+          --config "${{ env.BUILD_TYPE }}"
+          --prefix "${{ steps.paths.outputs.install_dir || steps.paths_windows.outputs.install_dir }}"
+
+      - name: Copy Embree runtime libraries into macOS bundle
+        # Qt's deploy script handles Qt frameworks, but Embree is outside Qt's
+        # dependency graph. Put Embree/TBB dylibs in the .app before zipping.
+        if: matrix.embree_enabled == 'ON' && matrix.platform == 'macos'
+        shell: bash
+        run: |
+          frameworks_dir="${{ steps.paths.outputs.install_dir }}/${{ env.APP_NAME }}.app/Contents/Frameworks"
+          mkdir -p "$frameworks_dir"
+          find "$EMBREE_RUNTIME_DIR" -maxdepth 1 -type f \( \
+            -name 'libembree*.dylib' -o \
+            -name 'libtbb*.dylib' \
+          \) -exec cp {} "$frameworks_dir/" \;
+
+      - name: Copy Embree runtime libraries into Windows bundle
+        # Windows apps expect third-party runtime DLLs next to the executable.
+        if: matrix.embree_enabled == 'ON' && matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $binDir = "${{ steps.paths_windows.outputs.install_dir }}/bin"
+          Get-ChildItem -Path "$env:EMBREE_RUNTIME_DIR" -File -Filter "*.dll" |
+            Copy-Item -Destination $binDir -Force
+
+      - name: Copy CUDA runtime libraries into Windows bundle
+        # OptiX itself is supplied by the NVIDIA driver, but CUDA runtime DLLs
+        # linked by the app should travel with the Windows bundle.
+        if: matrix.optix_enabled == 'ON' && matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          $binDir = "${{ steps.paths_windows.outputs.install_dir }}/bin"
+          Get-ChildItem -Path "$env:CUDA_PATH/bin" -File -Filter "cudart64_*.dll" |
+            Copy-Item -Destination $binDir -Force
+
+      - name: Package macOS bundle
+        # ditto preserves macOS bundle metadata/resource forks better than a
+        # generic zip command.
+        if: matrix.platform == 'macos'
+        shell: bash
+        run: |
+          test -d "${{ steps.paths.outputs.install_dir || steps.paths_windows.outputs.install_dir }}/${{ env.APP_NAME }}.app"
+          ditto -c -k --sequesterRsrc --keepParent \
+            "${{ steps.paths.outputs.install_dir || steps.paths_windows.outputs.install_dir }}/${{ env.APP_NAME }}.app" \
+            "${{ steps.paths.outputs.asset || steps.paths_windows.outputs.asset }}"
+
+      - name: Package Windows bundle
+        # Package the complete install tree; Qt deploy/install places DLLs and
+        # plugins under dist/bin and related directories.
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${{ steps.paths.outputs.install_dir || steps.paths_windows.outputs.install_dir }}/bin/${{ env.APP_NAME }}.exe")) {
+            throw "Expected installed executable was not found."
+          }
+          Compress-Archive `
+            -Path "${{ steps.paths.outputs.install_dir || steps.paths_windows.outputs.install_dir }}/*" `
+            -DestinationPath "${{ steps.paths.outputs.asset || steps.paths_windows.outputs.asset }}" `
+            -Force
+
+      - name: Package Linux AppImage
+        # Build a minimal AppDir and let linuxdeploy plus the Qt plugin pull in
+        # Qt libraries, plugins, QML imports, and the Embree runtime.
+        if: matrix.platform == 'linux'
+        shell: bash
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
+          QML_SOURCES_PATHS: ${{ github.workspace }}/gui/ui
+        run: |
+          if [ -n "${EMBREE_RUNTIME_DIR:-}" ]; then
+            export LD_LIBRARY_PATH="$EMBREE_RUNTIME_DIR${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          fi
+          if [ -n "${CUDA_PATH:-}" ] && [ -d "$CUDA_PATH/lib64" ]; then
+            export LD_LIBRARY_PATH="$CUDA_PATH/lib64${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          fi
+
+          appdir="${{ github.workspace }}/AppDir"
+          tools="${{ github.workspace }}/appimage-tools"
+          mkdir -p \
+            "$appdir/usr/bin" \
+            "$appdir/usr/share/applications" \
+            "$appdir/usr/share/icons/hicolor/256x256/apps" \
+            "$tools"
+
+          cp "${{ steps.paths.outputs.install_dir }}/bin/${{ env.APP_NAME }}" "$appdir/usr/bin/${{ env.APP_NAME }}"
+          # linuxdeploy validates actual image dimensions against the hicolor
+          # directory. The source PNG is much larger, so resize it here.
+          convert "${{ github.workspace }}/gui/appicon/soltrace_icon.png" \
+            -resize 256x256 \
+            "$appdir/usr/share/icons/hicolor/256x256/apps/${{ env.APP_NAME }}.png"
+
+          # Generate desktop metadata inside CI for now. If Linux packaging
+          # grows more involved, this can move into a repo-owned .desktop file.
+          cat > "$appdir/usr/share/applications/${{ env.APP_NAME }}.desktop" <<EOF
+          [Desktop Entry]
+          Type=Application
+          Name=${{ env.APP_NAME }}
+          Exec=${{ env.APP_NAME }}
+          Icon=${{ env.APP_NAME }}
+          Categories=Science;Engineering;
+          Terminal=false
+          EOF
+
+          # Use the continuous linuxdeploy AppImages so we do not need to install
+          # the tooling into the runner image.
+          curl -L \
+            -o "$tools/linuxdeploy-x86_64.AppImage" \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -L \
+            -o "$tools/linuxdeploy-plugin-qt-x86_64.AppImage" \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x "$tools/"*.AppImage
+
+          "$tools/linuxdeploy-x86_64.AppImage" \
+            --appdir "$appdir" \
+            --executable "$appdir/usr/bin/${{ env.APP_NAME }}" \
+            --desktop-file "$appdir/usr/share/applications/${{ env.APP_NAME }}.desktop" \
+            --icon-file "$appdir/usr/share/icons/hicolor/256x256/apps/${{ env.APP_NAME }}.png" \
+            --plugin qt \
+            --output appimage
+
+          # linuxdeploy writes the AppImage in the current directory using its
+          # own naming convention. Normalize it to the matrix asset name.
+          mv ./*.AppImage "${{ steps.paths.outputs.asset }}"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ steps.paths.outputs.asset || steps.paths_windows.outputs.asset }}
+          if-no-files-found: error
+
+      - name: Publish POSIX GitHub release
+        # Matrix legs upload concurrently. Create the draft release if needed,
+        # but tolerate another matrix leg creating it first.
+        if: matrix.platform != 'windows' && startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          if ! gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release create "$TAG_NAME" \
+              --draft \
+              --generate-notes \
+              --title "$TAG_NAME" || gh release view "$TAG_NAME" >/dev/null
+          fi
+          gh release upload "$TAG_NAME" "${{ steps.paths.outputs.asset || steps.paths_windows.outputs.asset }}" --clobber
+
+      - name: Publish Windows GitHub release
+        # Same create-if-needed logic as POSIX, written in PowerShell because
+        # this leg runs on the Windows runner.
+        if: matrix.platform == 'windows' && startsWith(github.ref, 'refs/tags/')
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          gh release view "$env:TAG_NAME" *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create "$env:TAG_NAME" `
+              --draft `
+              --generate-notes `
+              --title "$env:TAG_NAME"
+            if ($LASTEXITCODE -ne 0) {
+              gh release view "$env:TAG_NAME"
+              if ($LASTEXITCODE -ne 0) {
+                exit $LASTEXITCODE
+              }
+            }
+          }
+          gh release upload "$env:TAG_NAME" "${{ steps.paths.outputs.asset || steps.paths_windows.outputs.asset }}" --clobber

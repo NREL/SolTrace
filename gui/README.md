@@ -1,0 +1,107 @@
+# SolTrace Qt GUI
+
+This directory contains the Qt-based SolTrace graphical application. It is a
+new, alpha-stage interface for building SolTrace models, running simulations,
+and inspecting results.
+
+The application is under active development. Expect incomplete workflows,
+rough edges, and behavior that may change quickly. The built-in documentation
+panel is the best place to start once the application is running.
+
+## Requirements
+
+- Qt 6.11 or newer, including these additional components:
+  - Qt Core
+  - Qt Gui
+  - Qt Quick
+  - Qt Quick 3D
+  - Qt Widgets
+  - Qt Graphs
+- CMake 3.16 or newer
+- A C++20-capable compiler
+- Network access during the first CMake configure, unless the CPM dependencies
+  are already cached
+
+The GUI builds against libraries from the repository's `coretrace` directory,
+so build it from that repository level rather than copying `gui/` elsewhere.
+
+To obtain Qt, you can:
+- Download and install prebuilt packages using Qt's official installer (requires free Qt account). 
+Though this is an open source framework, the Qt organization gates binary 
+downloads behind an account for hosting cost reasons
+- Use your platform's built in package manager, if available
+    - Mac users can use `brew` to obtain the latest Qt
+    - Linux users may not have the latest 6.11 version in their distribution 
+    repositories
+- Use a tool like `https://github.com/miurahr/aqtinstall` to install binary packages
+    - Example: `aqt install-qt mac desktop 6.11.1 clang_64 -m qtgraphs qtquick3d`
+- Compile from source from `https://github.com/qt` (not recommended due to build complexity)
+    
+
+## Recommended Developer Workflow: Qt Creator
+
+Qt Creator is the recommended way to work on this GUI during development.
+
+1. Open Qt Creator.
+2. Choose **File > Open File or Project...**.
+3. Select `<path_to_soltrace>/CMakeLists.txt`.
+4. Choose a Qt 6.11+ kit with a C++20-capable compiler.
+5. Enable the `SOLTRACE_BUILD_GUI` option.
+6. Configure the project.
+7. Build and run the `SolTrace` target.
+
+If CMake cannot find Qt, check that the selected kit points at the intended Qt
+installation. If CMake cannot fetch dependencies, make sure the machine has
+network access or that the CPM cache already contains the required packages.
+
+## Command Line Build
+
+From the repository root:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DSOLTRACE_BUILD_GUI=On
+cmake --build build --target SolTrace
+```
+
+Run the built application from the generated build tree. The exact path depends
+on platform and generator. Common examples:
+
+```sh
+# macOS bundle
+open build/gui/SolTrace.app
+
+# Linux or single-config generators
+./build/gui/SolTrace
+
+# Windows multi-config generators
+build\gui\Release\SolTrace.exe
+```
+
+## Install/Deploy
+
+The CMake project includes install and Qt deployment rules. These are still under development. 
+
+For a local install:
+
+```sh
+cmake --install build --prefix install
+```
+
+On multi-config generators:
+
+```sh
+cmake --install build --config Release --prefix install
+```
+
+Deployment is still part of the alpha workflow, so prefer running from Qt
+Creator or from the build tree while developing.
+
+## Notes
+
+- The executable target is named `SolTrace`.
+- The QML module URI is `SolTrace`.
+- Application documentation files under `gui/docs` are embedded as Qt
+  resources.
+- Assets under `gui/assets` are embedded as Qt resources.
+- Third-party header-only dependencies such as EnTT and magic_enum are fetched
+  through CPM during configuration.

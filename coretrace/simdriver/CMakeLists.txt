@@ -40,6 +40,11 @@ if(UNIX)
     target_link_libraries(simdriver PRIVATE pthread)
 endif()
 
+if (NOT APPLE AND ENABLE_COVERAGE)
+    target_link_options(simdriver PRIVATE --coverage)
+    target_link_libraries(simdriver PRIVATE gcov)
+endif()
+
 install(TARGETS simdriver
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

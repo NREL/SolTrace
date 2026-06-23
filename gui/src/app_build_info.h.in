@@ -1,0 +1,14 @@
+#pragma once
+
+namespace SolTrace::GUI::App::BuildInfo {
+
+inline constexpr auto version = "@PROJECT_VERSION@";
+inline constexpr auto git_commit = "@SOLTRACE_GIT_COMMIT@";
+inline constexpr auto git_branch = "@SOLTRACE_GIT_BRANCH@";
+inline constexpr auto git_tag = "@SOLTRACE_GIT_TAG@";
+inline constexpr auto git_describe = "@SOLTRACE_GIT_DESCRIBE@";
+inline constexpr auto git_dirty = "@SOLTRACE_GIT_DIRTY@";
+#cmakedefine01 SOLTRACE_IS_PRERELEASE
+inline constexpr bool is_prerelease = SOLTRACE_IS_PRERELEASE;
+
+} // namespace SolTrace::GUI::App::BuildInfo

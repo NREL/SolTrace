@@ -10,6 +10,9 @@ FetchContent_Declare(
 add_definitions(-DPROJECT_DIR="${CMAKE_CURRENT_BINARY_DIR}")
 # file(GLOB CSV_TOOL test_tools/*.cpp test_tools/*.h)
 
+set(SAMPLE_DIR "${CMAKE_SOURCE_DIR}/gui/assets/examples")
+set(TEST_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/input-files")
+
 add_subdirectory(test_tools)
 add_subdirectory(unit-tests)
 add_subdirectory(regression-tests)
@@ -18,7 +21,12 @@ add_subdirectory(round_robin_study/regression-tests)
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-file(GLOB SAMPLE_FILES ../app/deploy/samples/*.stinput ../app/deploy/samples/*.mon)
+file(GLOB SAMPLE_FILES
+	"${SAMPLE_DIR}/*.stinput"
+	"${SAMPLE_DIR}/*.mon"
+	"${TEST_INPUT_DIR}/*.stinput"
+	"${TEST_INPUT_DIR}/*.mon"
+)
 file(GLOB GROUND_FILES ./ground_results/*.csv)
 
 file(COPY ${SAMPLE_FILES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
@@ -33,7 +41,8 @@ if(SOLTRACE_BUILD_CORETRACE)
 		test_tools
 		../coretrace
 		../coretrace/strace
-		../app/deploy/samples
+		${SAMPLE_DIR}
+		${TEST_INPUT_DIR}
 		../coretrace/simulation_data
 		../coretrace/simulation_results
 	)

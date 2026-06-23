@@ -205,6 +205,9 @@ orleans.codegen.cs
 app/build_linux/soltrace
 app/deploy/linux_64/
 
+# Mac specific
+**/*.DS_Store
+
 # Since there are multiple workflows, uncomment next line to ignore bower_components
 # (https://github.com/github/gitignore/pull/1529#issuecomment-104372622)
 #bower_components/
@@ -248,6 +251,7 @@ typings/
 
 # Visual Studio 6 workspace options file
 *.opt
+!gui/assets/examples/*.opt
 
 # Visual Studio 6 auto-generated workspace file (contains which files were open etc.)
 *.vbw
@@ -312,6 +316,8 @@ __pycache__/
 
 # Out of source build directories
 build*
+
+straced
 
 # Test stuff
 google-tests/*.stinput

@@ -24,12 +24,7 @@ set(OPTIX_RUNNER_SRC
 
 set(POSITION_INDEPENDENT_CODE ON)
 
-if(WIN32)
-    # Hack to build on Windows
-    add_library(optix_runner STATIC ${OPTIX_RUNNER_SRC})
-else(WIN32)
-    add_library(optix_runner SHARED ${OPTIX_RUNNER_SRC})
-endif()
+add_library(optix_runner STATIC ${OPTIX_RUNNER_SRC})
 
 set_target_properties(
     optix_runner

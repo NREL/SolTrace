@@ -83,12 +83,7 @@ source_group("Header Files" FILES ${SIMDATA_HDRS})
 
 set(POSITION_INDEPENDENT_CODE ON)
 
-if(WIN32)
-    # Hack to build on Windows
-    add_library(simdata STATIC ${SIMDATA_SRC} ${SIMDATA_HDRS})
-else(WIN32)
-    add_library(simdata SHARED ${SIMDATA_SRC} ${SIMDATA_HDRS})
-endif()
+add_library(simdata STATIC ${SIMDATA_SRC} ${SIMDATA_HDRS})
 set_target_properties(simdata
     PROPERTIES
     DEBUG_POSTFIX "d"

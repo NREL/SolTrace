@@ -5,7 +5,8 @@ include_directories(
 	../
 	../../common
 	../../../test_tools
-	../../../app/deploy/samples
+	${SAMPLE_DIR}
+	${TEST_INPUT_DIR}
 	../../../../coretrace/simulation_data
 	../../../../coretrace/simulation_results
 	../../../../coretrace/simulation_runner
@@ -57,4 +58,3 @@ if(UNIX)
 endif()
 
 add_test(NAME CSTUnitTests COMMAND CSTUnitTests)
-

@@ -3,7 +3,8 @@ Project(RegressionTests)
 
 include_directories(
 	.
-	# ../app/deploy/samples
+	${SAMPLE_DIR}
+	${TEST_INPUT_DIR}
 	../test_tools
 	../unit-tests/common
 	../../coretrace/simulation_data

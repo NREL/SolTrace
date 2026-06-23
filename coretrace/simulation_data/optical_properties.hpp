@@ -34,7 +34,7 @@ namespace SolTrace::Data
         OPTICS_ID_UNASSIGNED = -2        
     };
 
-    class OpticalPropertySet;
+    struct OpticalPropertySet;
     struct OpticalPropertySetReference;
     using OpticalPropertySetContainer = Container<optics_id, OpticalPropertySet>;
     using OpticalPropertySetResolver = std::function<OpticalPropertySetReference(const optics_id)>;
@@ -66,9 +66,8 @@ namespace SolTrace::Data
         std::weak_ptr<const OpticalPropertySet> optical_property_set;
     };
 
-    struct OpticalPropertySet
+    class OpticalPropertySet
     {
-    private:
 
         class OpticalPropertiesFace
         {

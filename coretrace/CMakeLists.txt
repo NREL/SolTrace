@@ -123,7 +123,7 @@ endif(MSVC)
 #####################################################################################################################
 
 if(SOLTRACE_BUILD_CORETRACE)
-	add_library(coretrace_api SHARED ${CORETRACE_SRC} ${CORETRACE_HEADERS})
+	add_library(coretrace_api STATIC ${CORETRACE_SRC} ${CORETRACE_HEADERS})
 	set_target_properties(coretrace_api
 		PROPERTIES
 		DEBUG_POSTFIX "d"
