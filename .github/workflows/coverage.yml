@@ -34,7 +34,7 @@ jobs:
 
     - name: Set reusable strings
       id: strings
-      run: echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+      run: echo "build-output-dir=$GITHUB_WORKSPACE/build" >> "$GITHUB_OUTPUT"
 
     - name: Clean previous coverage artifacts
       run: |
@@ -52,7 +52,7 @@ jobs:
         -DSOLTRACE_BUILD_EMBREE_SUPPORT=ON
         -DSOLTRACE_BUILD_OPTIX_SUPPORT=ON
         -DSAMPLES_PTX_DIR="$GITHUB_WORKSPACE/build/lib/ptx"
-        -S ${{ github.workspace }}
+        -S $GITHUB_WORKSPACE
 
     - name: Build
       run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ env.BUILD_TYPE }}
