@@ -55,6 +55,10 @@ target_link_libraries(OptixCSP_core
     PRIVATE CUDA::cuda_driver
             CUDA::cudart)
 
+if (NOT APPLE AND ENABLE_COVERAGE)
+    SET(CMAKE_CXX_FLAGS "-O0 -coverage")
+endif()
+
 # have to specify the Optix_INCLUDE directory for the CUDA compiler 
 target_compile_options(OptixCSP_core PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>:--use_fast_math -lineinfo -I"${OptiX_INCLUDE}">
