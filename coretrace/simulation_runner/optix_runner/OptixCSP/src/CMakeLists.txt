@@ -85,8 +85,8 @@ foreach(shader ${SHADERS})
             --use_fast_math
             -lineinfo
             -std=c++17
-#            -arch=sm_${DETECTED_COMPUTE_CAP}
-            -arch=sm_75
+            -arch=sm_${DETECTED_COMPUTE_CAP}
+            #-arch=sm_75
             -I"${OptiX_INCLUDE}"
             -I${CMAKE_CURRENT_SOURCE_DIR}/core
             -DOPTIX_INCLUDE_INTERNAL_FUNCTIONS
