@@ -42,7 +42,7 @@ target_link_libraries(GUIUnitTests
 
 target_compile_definitions(GUIUnitTests
     PRIVATE
-        SOLTRACE_REPO_ROOT="${CMAKE_SOURCE_DIR}"
+        SOLTRACE_REPO_ROOT="${CMAKE_CURRENT_SOURCE_DIR}/../../.."
 )
 
 set_target_properties(GUIUnitTests PROPERTIES
