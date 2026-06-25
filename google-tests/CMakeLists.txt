@@ -10,7 +10,7 @@ FetchContent_Declare(
 add_definitions(-DPROJECT_DIR="${CMAKE_CURRENT_BINARY_DIR}")
 # file(GLOB CSV_TOOL test_tools/*.cpp test_tools/*.h)
 
-set(SAMPLE_DIR "${CMAKE_SOURCE_DIR}/gui/assets/examples")
+set(SAMPLE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../gui/assets/examples")
 set(TEST_INPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/input-files")
 
 add_subdirectory(test_tools)
