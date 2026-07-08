@@ -52,7 +52,7 @@ ScrollView {
 
 
                 STComboBox {
-                    model: ["Day", "Blueprint", "Adaptive)"]
+                    model: ["Day", "Blueprint", "Adaptive"]
                     currentIndex: App.view.sim.sky
                     onCurrentIndexChanged: App.view.sim.sky = currentIndex
                 }

@@ -15,7 +15,7 @@ ScrollView {
         spacing: 12
 
         Header {
-            text: "Github"
+            text: "GitHub"
         }
 
         Rectangle {
