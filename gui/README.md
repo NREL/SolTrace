@@ -47,6 +47,7 @@ Qt Creator is the recommended way to work on this GUI during development.
 2. Choose **File > Open File or Project...**.
 3. Select `<path_to_soltrace>/CMakeLists.txt`.
 4. Choose a Qt 6.11+ kit with a C++20-capable compiler.
+    Note: For building OptiX on Windows, use MSVC 2022 64-bit compiler.
 5. Enable the `SOLTRACE_BUILD_GUI` option.
 6. Configure the project.
 7. Build and run the `SolTrace` target.
