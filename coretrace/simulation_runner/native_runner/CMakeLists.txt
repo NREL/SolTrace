@@ -8,6 +8,7 @@ include_directories(
 )
 
 set(NATIVE_RUNNER_SRC
+    bbox_calculator.cpp
     calculator_factory.cpp
     cylinder_calculator.cpp
     determine_element_intersection_new.cpp

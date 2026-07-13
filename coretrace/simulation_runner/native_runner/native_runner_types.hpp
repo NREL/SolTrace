@@ -176,6 +176,10 @@ namespace SolTrace::NativeRunner
 		// double ConeHalfAngle;
 		// double CurvOfRev;
 
+		/////////// BOUNDING BOX ///////////////
+		glm::dvec3 BBoxMin; // global AABB lower bound
+		glm::dvec3 BBoxMax; // global AABB upper bound
+
 		/////////// OPTICAL PARAMETERS ///////////////
 		SolTrace::Data::OpticalPropertySet Optics;
 

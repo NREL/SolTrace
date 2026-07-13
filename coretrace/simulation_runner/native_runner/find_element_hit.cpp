@@ -1,12 +1,48 @@
 
 #include "simulation_data_export.hpp"
 
+#include <limits>
+
 #include "determine_element_intersection_new.hpp"
 #include "find_element_hit.hpp"
 #include "native_runner_types.hpp"
 
 namespace SolTrace::NativeRunner
 {
+
+// Slab method ray-AABB intersection test.
+	// origin    : ray origin in global coordinates
+	// inv_dir   : component-wise 1/direction (precomputed; IEEE 754 ±inf handles
+	//             zero direction components correctly)
+	// bbox_min/max: global axis-aligned bounding box of the element
+	// Returns false if the ray definitely misses; true if it may hit.
+	static bool hit_bounding_box_slab(const glm::dvec3 &origin,
+	                                  const glm::dvec3 &inv_dir,
+	                                  const glm::dvec3 &bbox_min,
+	                                  const glm::dvec3 &bbox_max)
+	{
+		// TODO: This should be caught elsewhere
+		// Degenerate bbox (e.g. uninitialized): always fall through to full test
+		if (!glm::any(glm::greaterThan(bbox_max, bbox_min)))
+			return true;
+
+		// t_enter starts at 0 so we only accept forward intersections;
+		// also handles rays that originate inside the box.
+		double t_enter = 0.0;
+		double t_exit  = std::numeric_limits<double>::infinity();
+
+		for (int ax = 0; ax < 3; ++ax)
+		{
+			double t1 = (bbox_min[ax] - origin[ax]) * inv_dir[ax];
+			double t2 = (bbox_max[ax] - origin[ax]) * inv_dir[ax];
+			if (t1 > t2) std::swap(t1, t2);
+			t_enter = std::max(t_enter, t1);
+			t_exit  = std::min(t_exit,  t2);
+			if (t_enter > t_exit)
+				return false;
+		}
+		return true;
+	}
 
 	void FindElementHit(
 		// stage info
@@ -48,6 +84,15 @@ namespace SolTrace::NativeRunner
         glm::dvec3 CosRaySurfElement = glm::dvec3{0.0};
         StageHit = false;
 
+		// Compute global ray once for the bbox pre-test.
+		// BBoxMin/BBoxMax are in global coordinates; PosRayStage/CosRayStage are
+		// in stage coordinates, so apply the stage local-to-global transform.
+		const glm::dvec3 PosRayGlob_bbox = Stage->RLocToRef * PosRayStage + Stage->Origin;
+		const glm::dvec3 CosRayGlob_bbox = Stage->RLocToRef * CosRayStage;
+		// Precompute 1/direction; IEEE 754 div-by-zero gives ±inf which makes
+		// the slab test correct for axis-aligned rays.
+		const glm::dvec3 inv_dir = glm::dvec3(1.0) / CosRayGlob_bbox;
+
         for (uint_fast64_t j = 0; j < nintelements; j++)
 		{
 			TElement *Element; // = Stage->ElementList[j];
@@ -77,6 +122,17 @@ namespace SolTrace::NativeRunner
 			// if (!Element->Enabled)
 			// 	continue;
 
+			// Bounding box pre-test: skip the full intersection if the ray
+			// clearly misses the element's global AABB.
+			if (!hit_bounding_box_slab(PosRayGlob_bbox, inv_dir,
+			                           Element->BBoxMin, Element->BBoxMax))
+				continue;
+
+			ErrorFlag = 0;
+            HitBackSide = 0;
+            InterceptFlag = 0;
+			double PathLength = 0;
+
 			//  {Transform ray to element[j] coord system of Stage[i]}
             Data::TransformToLocal(PosRayStage,
                                    CosRayStage,
@@ -84,11 +140,6 @@ namespace SolTrace::NativeRunner
                                    Element->RRefToLoc,
                                    PosRayElement,
                                    CosRayElement);
-
-            ErrorFlag = 0;
-            HitBackSide = 0;
-            InterceptFlag = 0;
-			double PathLength = 0;
 
 			// increment position by tiny amount to get off the element
 			// if tracing to the same element

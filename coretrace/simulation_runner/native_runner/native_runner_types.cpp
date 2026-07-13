@@ -54,6 +54,7 @@
 
 #include "glm/ext/matrix_transform.hpp"
 
+#include "bbox_calculator.hpp"
 #include "calculator_factory.hpp"
 #include "native_runner_types.hpp"
 #include "simulation_data_export.hpp"
@@ -132,6 +133,8 @@ namespace SolTrace::NativeRunner
         Origin = glm::dvec3{0.0};
         AimPoint = glm::dvec3{0.0};
         PosSunCoords = glm::dvec3{0.0};
+        BBoxMin = glm::dvec3{0.0};
+        BBoxMax = glm::dvec3{0.0};
 
         RRefToLoc = {0.0};
         RLocToRef = {0.0};
@@ -496,6 +499,8 @@ namespace SolTrace::NativeRunner
         telem->element_number = my_stage->next_element_number();
 
         telem->parent_stage = my_stage;
+
+        compute_element_bounds(telem.get(), telem->BBoxMin, telem->BBoxMax);
 
         return telem;
     }
