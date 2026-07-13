@@ -14,7 +14,7 @@ using SolTrace::EmbreeRunner::TRayData;
 
 using SolTrace::Result::ray_record_ptr;
 using SolTrace::Result::RayEvent;
-using SolTrace::Result::SimulationResult;
+using SolTrace::Result::RayHistoryResult;
 
 TEST(EmbreeRunner, SingleRayValidationTest)
 {
@@ -257,7 +257,7 @@ TEST(EmbreeRunner, PowerTowerSmokeTest)
     EXPECT_TRUE(n >= NRAYS);
     EXPECT_TRUE(num_absorbed > 0);
 
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -319,7 +319,7 @@ TEST(EmbreeRunner, PowerTowerTest)
 
     std::cout << "Time: " << dur.count() << " ms" << std::endl;
 
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
     EXPECT_EQ(result.get_number_of_records(), NRAYS);

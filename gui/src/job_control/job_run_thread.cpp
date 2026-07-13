@@ -71,7 +71,7 @@ make_runner(ThreadRunnerBackend backend) {
 
 void construct_result(QPromise<SimResult>&                promise,
                       SimDataPtr                          exported_source,
-                      SolTrace::Result::SimulationResult& result) {
+                      SolTrace::Result::RayHistoryResult& result) {
 
     SECTION(90, "Building lookup tables");
 
@@ -81,7 +81,7 @@ void construct_result(QPromise<SimResult>&                promise,
         .map    = exported_source->element_map,
     };
 
-    auto destination = db::SimulationResult::convert(opts);
+    auto destination = db::RayHistoryResult::convert(opts);
 
     destination->database = std::move(exported_source->source_database);
 
@@ -224,7 +224,7 @@ void execute_thread_runner(QPromise<SimResult>&      promise,
         qDebug() << Q_FUNC_INFO << "Build result database";
 
 
-        SolTrace::Result::SimulationResult soltrace_result;
+        SolTrace::Result::RayHistoryResult soltrace_result;
 
         SOLTRACE_SECTION(
             report_simulation(&soltrace_result, 100), 90, "Report simulation");

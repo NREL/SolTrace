@@ -22,7 +22,7 @@ namespace db {
 class Database;
 
 struct SimulationResultConversion {
-    SolTrace::Result::SimulationResult&                                 result;
+    SolTrace::Result::RayHistoryResult&                                 result;
     SolTrace::Data::SimulationData const&                               data;
     std::unordered_map<SolTrace::Data::element_id, entt::entity> const& map;
 };
@@ -52,10 +52,10 @@ struct RayRecord {
     std::vector<RayEvent> events;
 };
 
-class SimulationResult {
+class RayHistoryResult {
 public:
-    SimulationResult();
-    ~SimulationResult();
+    RayHistoryResult();
+    ~RayHistoryResult();
 
     std::vector<RayRecord> records;
 
@@ -69,11 +69,11 @@ public:
     std::unique_ptr<Database const> database;
 
     // TODO: Why is this fallible?
-    static std::unique_ptr<SimulationResult>
+    static std::unique_ptr<RayHistoryResult>
     convert(SimulationResultConversion const&);
 };
 
-using SimulationResultPtr = std::shared_ptr<SimulationResult>;
+using SimulationResultPtr = std::shared_ptr<RayHistoryResult>;
 
 struct SimulationResultRecord {
     QString             name;

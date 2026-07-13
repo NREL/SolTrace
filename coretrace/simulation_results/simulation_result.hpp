@@ -10,20 +10,72 @@
 
 #include "element.hpp"
 
-// SimulationResult headers
+// RayHistoryResult headers
 #include "records.hpp"
 
 namespace SolTrace::Result
 {
+    enum class ResultType
+    {
+        RAY_HISTORY,   ///< Full per-ray interaction history (current default behavior)
+        ELEMENT_STATS, ///< Aggregated per-element statistics only
+        RAW_HITS,      ///< Raw compacted hit buffer, no aggregation
+    };
+
+    /**
+     * Abstract base for all result types produced by a SimulationRunner.
+     * Runners inspect get_result_type() at setup_simulation() time to configure
+     * internal data structures, and validate the result at report_simulation() time.
+     * Sun-plane metadata is stored here so all result types carry it without
+     * requiring a down-cast.
+     */
+    class SimulationResult
+    {
+    public:
+        virtual ~SimulationResult() = default;
+
+        SimulationResult(const SimulationResult &) = delete;
+        SimulationResult &operator=(const SimulationResult &) = delete;
+
+        virtual ResultType get_result_type() const = 0;
+
+        // Sun metadata — common to all result types
+        void set_sun_ray_count(uint_fast64_t ray_count) { sun_ray_count = ray_count; }
+        uint_fast64_t get_sun_ray_count() const { return sun_ray_count; }
+        void set_sun_dimensions(double width, double height)
+        {
+            sun_width = width;
+            sun_height = height;
+        }
+        void get_sun_dimensions(double &width, double &height) const
+        {
+            width = sun_width;
+            height = sun_height;
+        }
+        void set_sun_A_box(double A) { A_sun_box = A; }
+        double get_sun_A_box() const { return A_sun_box; }
+
+    protected:
+        SimulationResult() = default;
+
+    private:
+        uint_fast64_t sun_ray_count = 0;
+        double sun_width = 0;
+        double sun_height = 0;
+        double A_sun_box = 0;
+    };
+
     using RayRecordContainer = typename std::vector<ray_record_ptr>;
     using ElementRecordContainer = typename std::map<SolTrace::Data::element_id,
                                                      element_record_ptr>;
 
-    class SimulationResult
+    class RayHistoryResult : public SimulationResult
     {
     public:
-        SimulationResult();
-        virtual ~SimulationResult();
+        RayHistoryResult();
+        ~RayHistoryResult() override;
+
+        ResultType get_result_type() const override { return ResultType::RAY_HISTORY; }
 
         // Functions for getting and analyzing results
         uint_fast64_t get_number_of_records() const
@@ -64,28 +116,13 @@ namespace SolTrace::Result
         // Operator overloads
         const ray_record_ptr &operator[](int_fast64_t idx) const;
         friend std::ostream &operator<<(std::ostream &os,
-                                        const SimulationResult &simres);
-
-        // Sun results
-        void set_sun_ray_count(uint_fast64_t ray_count) { this->sun_ray_count = ray_count; }
-        uint_fast64_t get_sun_ray_count() { return this->sun_ray_count; }
-        void set_sun_dimensions(double width, double height) { this->sun_width = width; this->sun_height = height; }
-        void get_sun_dimensions(double& width, double& height) { width = this->sun_width; height = this->sun_height; }
-        void set_sun_A_box(double A) { this->A_sun_box = A; }
-        double get_sun_A_box() { return this->A_sun_box; }
+                                        const RayHistoryResult &simres);
 
     private:
         RayRecordContainer ray_history;
         ElementRecordContainer element_view;
 
         void add_element_view(const ray_record_ptr rp);
-
-        // Sun results
-        uint_fast64_t sun_ray_count = 0;
-        double sun_width = 0;
-        double sun_height = 0;
-        double A_sun_box = 0;
-        
     };
 
 } // namespace SolTrace::Result

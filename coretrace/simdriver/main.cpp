@@ -46,7 +46,7 @@
 // using SolTrace::Data::SimulationData;
 // using SolTrace::Data::SimulationParameters;
 using SolTrace::NativeRunner::NativeRunner;
-using SolTrace::Result::SimulationResult;
+using SolTrace::Result::RayHistoryResult;
 using SolTrace::Runner::RunnerStatus;
 
 static void print_usage(const char *prog)
@@ -252,7 +252,7 @@ int main(int argc, char *argv[])
     // Set up and run the simulation
     // -------------------------------------------------------------------------
     RunnerStatus sts;
-    SimulationResult result;
+    RayHistoryResult result;
 
 #ifdef SOLTRACE_EMBREE_SUPPORT
     if (use_embree)

@@ -4,6 +4,7 @@
 #include "simulation_result_api.hpp"
 
 // Types
+using SolTrace::Result::SimulationResult;
 using SolTrace::Result::interaction_ptr;
 using SolTrace::Result::ElementRecord;
 using SolTrace::Result::element_record_ptr;
@@ -11,9 +12,13 @@ using SolTrace::Result::InteractionRecord;
 using SolTrace::Result::interaction_ptr;
 using SolTrace::Result::ray_id;
 using SolTrace::Result::RayEvent;
+using SolTrace::Result::RayHistoryResult;
+using SolTrace::Result::RayHistorySpec;
 using SolTrace::Result::RayRecord;
 using SolTrace::Result::ray_record_ptr;
-using SolTrace::Result::SimulationResult;
+using SolTrace::Result::ResultSpec;
+using SolTrace::Result::ResultType;
+using SolTrace::Result::RayHistoryResult;
 
 // Functions
 using SolTrace::Result::make_element_record;

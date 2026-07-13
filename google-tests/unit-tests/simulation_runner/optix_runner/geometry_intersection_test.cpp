@@ -133,7 +133,7 @@ TEST(OptixRunner, FlatRectangle)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -201,7 +201,7 @@ TEST(OptixRunner, FlatEquilateralTriangle)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -270,7 +270,7 @@ TEST(OptixRunner, FlatTriangle)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -338,7 +338,7 @@ TEST(OptixRunner, FlatTriangle_CW)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -405,7 +405,7 @@ TEST(OptixRunner, FlatQuadrilateral)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -478,7 +478,7 @@ TEST(OptixRunner, FlatQuadrilateral_CW)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -546,7 +546,7 @@ TEST(OptixRunner, ParabolaRectangle)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -612,7 +612,7 @@ TEST(OptixRunner, Cylinder)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -677,7 +677,7 @@ TEST(OptixRunner, FlatCircle)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -737,7 +737,7 @@ TEST(OptixRunner, FlatHexagon)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -803,7 +803,7 @@ TEST(OptixRunner, FlatAnnulus_FullArc)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -865,7 +865,7 @@ TEST(OptixRunner, FlatAnnulus_PartialArc)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -931,7 +931,7 @@ TEST(OptixRunner, ParabolicHexagon)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -1001,7 +1001,7 @@ TEST(OptixRunner, ParabolicTriangle)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -1073,7 +1073,7 @@ TEST(OptixRunner, ParabolicAnnulus)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -1145,7 +1145,7 @@ TEST(OptixRunner, ParabolicQuadrilateral)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();
@@ -1219,7 +1219,7 @@ TEST(OptixRunner, ParabolicCircle)
 
     SimulationData sd;
     element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    RayHistoryResult result;
 
     OptixRunner runner;
     RunnerStatus sts = runner.initialize();

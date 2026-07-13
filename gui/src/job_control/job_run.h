@@ -30,7 +30,7 @@ class RunningJob : public QObject {
 
     void* m_watcher;
 
-    std::shared_ptr<db::SimulationResult> m_result;
+    std::shared_ptr<db::RayHistoryResult> m_result;
 
 public:
     explicit RunningJob(
@@ -41,7 +41,7 @@ public:
         QObject*            parent  = nullptr);
     virtual ~RunningJob();
 
-    std::shared_ptr<db::SimulationResult> take();
+    std::shared_ptr<db::RayHistoryResult> take();
 
 public slots:
     void pause();

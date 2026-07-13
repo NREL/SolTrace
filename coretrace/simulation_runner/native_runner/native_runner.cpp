@@ -44,8 +44,10 @@ namespace SolTrace::NativeRunner
         return RunnerStatus::SUCCESS;
     }
 
-    RunnerStatus NativeRunner::setup_simulation(const SimulationData *data)
+    RunnerStatus NativeRunner::setup_simulation(const SimulationData *data,
+                                                const SolTrace::Result::ResultSpec &spec)
     {
+        this->m_result_type = spec.get_type();
 
         RunnerStatus sts;
 
@@ -328,9 +330,26 @@ namespace SolTrace::NativeRunner
         return this->my_manager->status();
     }
 
+    std::unique_ptr<SolTrace::Result::SimulationResult> NativeRunner::create_result()
+    {
+        switch (this->m_result_type)
+        {
+        case SolTrace::Result::ResultType::RAY_HISTORY:
+            return std::make_unique<SolTrace::Result::RayHistoryResult>();
+        default:
+            return nullptr;
+        }
+    }
+
     RunnerStatus NativeRunner::report_simulation(SolTrace::Result::SimulationResult *result,
                                                  int level)
     {
+        auto *sim_result = dynamic_cast<SolTrace::Result::RayHistoryResult *>(result);
+        if (sim_result == nullptr)
+        {
+            return RunnerStatus::ERROR;
+        }
+
         RunnerStatus retval = RunnerStatus::SUCCESS;
 
         const TSystem *sys = this->get_system();
@@ -383,7 +402,7 @@ namespace SolTrace::NativeRunner
             if (iter == ray_records.end())
             {
                 rec = SolTrace::Result::make_ray_record(raynum);
-                result->add_ray_record(rec);
+                sim_result->add_ray_record(rec);
                 ray_records[raynum] = rec;
                 assert(rev == SolTrace::Result::RayEvent::CREATE);
             }

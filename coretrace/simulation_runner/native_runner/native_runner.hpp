@@ -31,11 +31,14 @@ namespace SolTrace::NativeRunner
         NativeRunner &operator=(NativeRunner &&) = delete;
 
         virtual RunnerStatus initialize() override;
-        virtual RunnerStatus setup_simulation(const SolTrace::Data::SimulationData *data) override;
+        virtual RunnerStatus setup_simulation(const SolTrace::Data::SimulationData *data,
+                                              const SolTrace::Result::ResultSpec &spec
+                                                  = SolTrace::Result::RayHistorySpec{}) override;
         virtual RunnerStatus update_simulation(const SolTrace::Data::SimulationData *data) override;
         virtual RunnerStatus run_simulation() override;
         virtual RunnerStatus status_simulation(double *progress = nullptr) override;
         virtual RunnerStatus cancel_simulation() override;
+        virtual std::unique_ptr<SolTrace::Result::SimulationResult> create_result() override;
         virtual RunnerStatus report_simulation(SolTrace::Result::SimulationResult *result,
                                                int level_spec) override;
 
@@ -143,6 +146,7 @@ namespace SolTrace::NativeRunner
         trace_logger_ptr my_logger;
         thread_manager_ptr my_manager;
         TSystem tsys;
+        SolTrace::Result::ResultType m_result_type = SolTrace::Result::ResultType::RAY_HISTORY;
 
         bool set_aperture_planes(TSystem *tsys);
         bool set_aperture_planes(tstage_ptr stage);

@@ -66,7 +66,7 @@ public:
 
     SimulationData simData;
     RunnerT runner;
-    SimulationResult result;
+    RayHistoryResult result;
 
     double sun_width;
     double sun_height;
@@ -239,7 +239,7 @@ public:
         heliostat->update_geometry(azimuth, elevation);
     }
 
-    void simulate(SimulationResult* result, int N_rays = -1) {
+    void simulate(RayHistoryResult* result, int N_rays = -1) {
         if (high_accuracy) set_high_accuracy_params();
         else set_default_params();
 
@@ -258,7 +258,7 @@ public:
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
     }
 
-    void calculate_sun_size(SimulationResult& result) {
+    void calculate_sun_size(RayHistoryResult& result) {
         double dni = 1000.0; // W/m2 (constant for all tests)
 
         result.get_sun_dimensions(this->sun_width, this->sun_height);
@@ -273,7 +273,7 @@ public:
         }
     }
 
-    void calculate_ray_counts(SimulationResult result) {
+    void calculate_ray_counts(RayHistoryResult result) {
         // Reset counts
         helio_hit_count = 0;
         reflect_count = 0;
@@ -416,7 +416,7 @@ public:
         NumberOfRays = 0;
     }
 
-    bool calculate_receiver_flux_map(SimulationResult result, int nbinsx, int nbinsy, bool is_cylinder,
+    bool calculate_receiver_flux_map(RayHistoryResult result, int nbinsx, int nbinsy, bool is_cylinder,
         bool ignore_direct = false) {
         reset_flux_map();
 
@@ -614,7 +614,7 @@ public:
         return true;
     }
 
-    void check_outputs(SimulationResult result, std::string position) {
+    void check_outputs(RayHistoryResult result, std::string position) {
         // Check heliostat aim vector and z-rotation
         if (position == "N") {
             EXPECT_NEAR(heliostat->get_aim_vector_ref().x, 0.0, 1.e-3);
@@ -736,7 +736,7 @@ public:
 
         update_simulation_geometry(solar_azimuth, solar_elevation);
 
-        SimulationResult result;
+        RayHistoryResult result;
         simulate(&result);
 
         calculate_sun_size(result);
@@ -822,7 +822,7 @@ static void CompareRunners(SingleHeliostatSimulationHelper<RunnerA>& sim_a,
     sim_a.sun_gen_type = SolTrace::Data::GenType::HALTON;
     sim_a.setup_simData();
     sim_a.update_simulation_geometry(sim_a.solar_azimuth, sim_a.solar_elevation);
-    SimulationResult result_a;
+    RayHistoryResult result_a;
     if (!skip_a)
         sim_a.simulate(&result_a, N_rays);
     sim_a.calculate_ray_counts(result_a);
@@ -834,7 +834,7 @@ static void CompareRunners(SingleHeliostatSimulationHelper<RunnerA>& sim_a,
     sim_b.sun_gen_type = SolTrace::Data::GenType::HALTON;
     sim_b.setup_simData();
     sim_b.update_simulation_geometry(sim_b.solar_azimuth, sim_b.solar_elevation);
-    SimulationResult result_b;
+    RayHistoryResult result_b;
     sim_b.simulate(&result_b, N_rays);
     sim_b.calculate_ray_counts(result_b);
     sim_b.calculate_sun_size(result_b);

@@ -101,7 +101,7 @@ RunningJob::RunningJob(SimDataPtr data,
 
 RunningJob::~RunningJob() = default;
 
-std::shared_ptr<db::SimulationResult> RunningJob::take() {
+std::shared_ptr<db::RayHistoryResult> RunningJob::take() {
     return std::move(m_result);
 }
 

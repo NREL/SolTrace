@@ -50,16 +50,16 @@ static RayRecord extract(uint64_t                          id,
     };
 }
 
-SimulationResult::SimulationResult() = default;
+RayHistoryResult::RayHistoryResult() = default;
 
-SimulationResult::~SimulationResult() = default;
+RayHistoryResult::~RayHistoryResult() = default;
 
 
-std::unique_ptr<SimulationResult>
-SimulationResult::convert(SimulationResultConversion const& opts) {
+std::unique_ptr<RayHistoryResult>
+RayHistoryResult::convert(SimulationResultConversion const& opts) {
     qDebug() << Q_FUNC_INFO << "Converting results...";
 
-    auto ret = std::make_unique<SimulationResult>();
+    auto ret = std::make_unique<RayHistoryResult>();
 
     ret->records.reserve(opts.result.get_number_of_records());
 

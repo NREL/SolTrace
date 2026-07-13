@@ -147,7 +147,7 @@ namespace
     }
 
     // Run the simulation and populate `result`.  Returns false on any failure.
-    static bool run_sim(SimulationData& sd, SimulationResult& result)
+    static bool run_sim(SimulationData& sd, RayHistoryResult& result)
     {
         OptixRunner runner;
         if (runner.initialize()           != RunnerStatus::SUCCESS) return false;
@@ -159,7 +159,7 @@ namespace
 
     // Extract the X and Y components of position[0] (the ray-generation point)
     // for every ray that has at least one surface interaction recorded.
-    static void collect_source_xy(const SimulationResult& result,
+    static void collect_source_xy(const RayHistoryResult& result,
                                   std::vector<double>& xs,
                                   std::vector<double>& ys)
     {
@@ -190,7 +190,7 @@ TEST(RayPositionSampling, Random_UniformMarginals)
     make_large_plate_scene(sd);
     add_sun(sd, SolTrace::Data::GenType::RANDOM);
 
-    SimulationResult result;
+    RayHistoryResult result;
     ASSERT_TRUE(run_sim(sd, result));
     ASSERT_GT(result.get_number_of_records(), 0);
 
@@ -213,7 +213,7 @@ TEST(RayPositionSampling, Halton_UniformMarginals)
     make_large_plate_scene(sd);
     add_sun(sd, SolTrace::Data::GenType::HALTON);
 
-    SimulationResult result;
+    RayHistoryResult result;
     ASSERT_TRUE(run_sim(sd, result));
     ASSERT_GT(result.get_number_of_records(), 0);
 
@@ -238,7 +238,7 @@ TEST(RayPositionSampling, Halton_Deterministic)
     make_large_plate_scene(sd1, /*seed=*/1);
     add_sun(sd1, SolTrace::Data::GenType::HALTON);
 
-    SimulationResult r1;
+    RayHistoryResult r1;
     ASSERT_TRUE(run_sim(sd1, r1));
 
     // Run 2: seed = 99999 (different, should be ignored by Halton)
@@ -246,7 +246,7 @@ TEST(RayPositionSampling, Halton_Deterministic)
     make_large_plate_scene(sd2, /*seed=*/99999);
     add_sun(sd2, SolTrace::Data::GenType::HALTON);
 
-    SimulationResult r2;
+    RayHistoryResult r2;
     ASSERT_TRUE(run_sim(sd2, r2));
 
     ASSERT_EQ(r1.get_number_of_records(), r2.get_number_of_records());
@@ -285,7 +285,7 @@ TEST(RayPositionSampling, Random_SeedDependent)
     make_large_plate_scene(sd2, /*seed=*/2);
     add_sun(sd2, SolTrace::Data::GenType::RANDOM);
 
-    SimulationResult r1, r2;
+    RayHistoryResult r1, r2;
     ASSERT_TRUE(run_sim(sd1, r1));
     ASSERT_TRUE(run_sim(sd2, r2));
     ASSERT_GT(r1.get_number_of_records(), 0);

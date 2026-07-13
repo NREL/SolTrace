@@ -12,5 +12,5 @@ namespace SD     = SolTrace::Data;
 using SimDataPtr = std::shared_ptr<db::DatabaseExport>;
 
 
-using ResultPtr = std::shared_ptr<db::SimulationResult>;
+using ResultPtr = std::shared_ptr<db::RayHistoryResult>;
 using SimResult = std::variant<ResultPtr, QString>;

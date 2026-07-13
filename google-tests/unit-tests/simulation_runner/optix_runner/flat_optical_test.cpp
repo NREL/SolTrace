@@ -63,7 +63,7 @@ void make_default_sd(SimulationData& sd, element_ptr& plate)
 	params.seed = 123;
 }
 
-void count_hits(const SimulationResult& result,
+void count_hits(const RayHistoryResult& result,
 	int& absorbed_count, int& transmitted_count,
 	int& reflected_count)
 {
@@ -117,7 +117,7 @@ TEST(FlatOptixOptical, Transmissivity)
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
 	// Collect results
-	SimulationResult result;
+	RayHistoryResult result;
 	sts = runner.report_simulation(&result, 0);
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -154,7 +154,7 @@ TEST(FlatOptixOptical, Reflectivity)
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
 	// Collect results
-	SimulationResult result;
+	RayHistoryResult result;
 	sts = runner.report_simulation(&result, 0);
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -190,7 +190,7 @@ TEST(FlatOptixOptical, SimResults)
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
 	// Collect results
-	SimulationResult result;
+	RayHistoryResult result;
 	sts = runner.report_simulation(&result, 0);
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -251,7 +251,7 @@ TEST(FlatOptixOptical, Absorption)
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
 	// Collect results
-	SimulationResult result;
+	RayHistoryResult result;
 	sts = runner.report_simulation(&result, 0);
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -285,7 +285,7 @@ TEST(FlatOptixOptical, IdealReflection)
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
 	// Collect results
-	SimulationResult result;
+	RayHistoryResult result;
 	sts = runner.report_simulation(&result, 0);
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -321,7 +321,7 @@ TEST(FlatOptixOptical, SeedReproducibility)
 		runner.setup_simulation(&sd);
 		runner.run_simulation();
 
-		SimulationResult result;
+		RayHistoryResult result;
 		runner.report_simulation(&result, 0);
 
 		int absorbed_count, transmitted_count, reflected_count;
@@ -360,7 +360,7 @@ TEST(FlatOptixOptical, RayCountScaling)
 		runner.setup_simulation(&sd);
 		runner.run_simulation();
 
-		SimulationResult result;
+		RayHistoryResult result;
 		runner.report_simulation(&result, 0);
 
 		int absorbed_count, transmitted_count, reflected_count;
@@ -403,7 +403,7 @@ TEST(FlatOptixOptical, MixedReflectionAbsorption)
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
 	// Collect results
-	SimulationResult result;
+	RayHistoryResult result;
 	sts = runner.report_simulation(&result, 0);
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 

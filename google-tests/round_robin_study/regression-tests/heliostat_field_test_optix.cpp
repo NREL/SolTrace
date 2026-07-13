@@ -26,7 +26,7 @@ static void CompareRunners(HeliostatFieldSimulationHelper<EmbreeRunner>& sim_emb
 	const std::string& hour, const std::string& file_label = "")
 {
 	sim_embree.update_from_hour(hour);
-	SimulationResult result_embree;
+	RayHistoryResult result_embree;
 	sim_embree.simulate(&result_embree, N_rays);
 	sim_embree.calculate_ray_counts(result_embree);
 	sim_embree.calculate_sun_size(result_embree);
@@ -39,7 +39,7 @@ static void CompareRunners(HeliostatFieldSimulationHelper<EmbreeRunner>& sim_emb
 	}
 
 	sim_optix.update_from_hour(hour);
-	SimulationResult result_optix;
+	RayHistoryResult result_optix;
 	sim_optix.simulate(&result_optix, N_rays);
 	sim_optix.calculate_ray_counts(result_optix);
 	sim_optix.calculate_sun_size(result_optix);

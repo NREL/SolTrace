@@ -64,7 +64,7 @@ TEST(NativeRunner, Multithreading)
 
     EXPECT_TRUE(dur.count() < 20000.0);
 
-    SimulationResult result;
+    RayHistoryResult result;
     sts = nr.report_simulation(&result, 0);
     EXPECT_EQ(sts, SolTrace::Runner::RunnerStatus::SUCCESS);
 

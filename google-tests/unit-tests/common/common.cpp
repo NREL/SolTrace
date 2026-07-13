@@ -66,7 +66,7 @@ element_ptr make_configured_element(SimulationData& sd)
     return el;
 }
 
-int_fast64_t count_element_event(const SimulationResult &res, element_id el, RayEvent rev)
+int_fast64_t count_element_event(const RayHistoryResult &res, element_id el, RayEvent rev)
 {
     int_fast64_t count = 0;
 

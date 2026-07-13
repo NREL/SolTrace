@@ -24,7 +24,7 @@
 using Heliostat = SolTrace::Data::Heliostat;
 using SolTrace::Runner::RunnerStatus;
 
-static void save_hit_pos_to_file(const SimulationResult& result, std::string filename)
+static void save_hit_pos_to_file(const RayHistoryResult& result, std::string filename)
 {
     std::ofstream outputFile(filename, std::ios::out | std::ios::trunc);
     if (!outputFile.is_open()) {
@@ -414,7 +414,7 @@ public:
         }
     }
 
-    void simulate(SimulationResult* result, int N_rays = -1) {
+    void simulate(RayHistoryResult* result, int N_rays = -1) {
         if (high_accuracy) set_high_accuracy_params();
         else set_default_params();
 
@@ -433,7 +433,7 @@ public:
         EXPECT_EQ(sts, RunnerStatus::SUCCESS);
     }
 
-    void calculate_sun_size(SimulationResult& result) {
+    void calculate_sun_size(RayHistoryResult& result) {
         double dni = 1000.0; // W/m2 (constant for all tests)
 
         result.get_sun_dimensions(this->sun_width, this->sun_height);
@@ -448,7 +448,7 @@ public:
         }
     }
 
-    void calculate_ray_counts(const SimulationResult& result) {
+    void calculate_ray_counts(const RayHistoryResult& result) {
         tot_helio_hits = 0;
         tot_reflect_count = 0;
         tot_helio_absorb_count = 0;
@@ -528,7 +528,7 @@ public:
         }
     }
 
-    void calculate_outputs(const SimulationResult& result, bool ignore_direct = false) {
+    void calculate_outputs(const RayHistoryResult& result, bool ignore_direct = false) {
         
         absorption_efficiency = (double)tot_reflect_count / (double)tot_helio_hits;
         blocking_efficiency = 1.0 - (double)tot_helio_block_count / (double)tot_reflect_count;
@@ -660,7 +660,7 @@ public:
         NumberOfRays = 0;
     }
 
-    bool calculate_receiver_flux_map(const SimulationResult& result, int nbinsx, int nbinsy, 
+    bool calculate_receiver_flux_map(const RayHistoryResult& result, int nbinsx, int nbinsy, 
         bool is_cylinder, bool ignore_direct) 
     {
         reset_flux_map();
@@ -882,7 +882,7 @@ public:
 
     }
 
-    void check_outputs(const SimulationResult& result) {
+    void check_outputs(const RayHistoryResult& result) {
         SimulationParameters& params = simData.get_simulation_parameters();
         EXPECT_EQ(tot_helio_hits, params.number_of_rays);
         EXPECT_EQ(tot_helio_absorb_count + tot_reflect_count, tot_helio_hits);
@@ -997,7 +997,7 @@ public:
         // Update simulation geometry based on hour
         update_from_hour(hour);
 
-        SimulationResult result;
+        RayHistoryResult result;
         simulate(&result);
         calculate_sun_size(result);
         calculate_ray_counts(result);

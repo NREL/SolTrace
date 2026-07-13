@@ -95,7 +95,7 @@ TEST(OptixRunnerBatchSize, BatchedRunMatchesHitCount)
     ASSERT_EQ(ref_runner.setup_simulation(&sd_ref), RunnerStatus::SUCCESS);
     ASSERT_EQ(ref_runner.run_simulation(), RunnerStatus::SUCCESS);
 
-    SimulationResult ref_result;
+    RayHistoryResult ref_result;
     ASSERT_EQ(ref_runner.report_simulation(&ref_result, 0), RunnerStatus::SUCCESS);
     const int ref_hits = ref_result.get_number_of_records();
 
@@ -112,7 +112,7 @@ TEST(OptixRunnerBatchSize, BatchedRunMatchesHitCount)
     ASSERT_EQ(batch_runner.setup_simulation(&sd_batch), RunnerStatus::SUCCESS);
     ASSERT_EQ(batch_runner.run_simulation(), RunnerStatus::SUCCESS);
 
-    SimulationResult batch_result;
+    RayHistoryResult batch_result;
     ASSERT_EQ(batch_runner.report_simulation(&batch_result, 0), RunnerStatus::SUCCESS);
     const int batch_hits = batch_result.get_number_of_records();
 
@@ -145,7 +145,7 @@ TEST(OptixRunnerBatchSize, SmallBatchMultipleIterations)
     ASSERT_EQ(runner.setup_simulation(&sd), RunnerStatus::SUCCESS);
     ASSERT_EQ(runner.run_simulation(), RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     ASSERT_EQ(runner.report_simulation(&result, 0), RunnerStatus::SUCCESS);
 
     EXPECT_EQ(result.get_number_of_records(), N_rays);
@@ -177,7 +177,7 @@ TEST(OptixRunnerBatchSize, BatchSizeExceedingRaysCompletesInOneIteration)
     ASSERT_EQ(runner.setup_simulation(&sd), RunnerStatus::SUCCESS);
     ASSERT_EQ(runner.run_simulation(), RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     ASSERT_EQ(runner.report_simulation(&result, 0), RunnerStatus::SUCCESS);
 
     EXPECT_EQ(result.get_number_of_records(), N_rays);

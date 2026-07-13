@@ -91,7 +91,7 @@ TEST(GenerateRay, HaltonCommonSenseSingleThread)
     sts = runner.run_simulation();
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
     ASSERT_EQ(result.get_number_of_records(), NRAYS);
@@ -285,7 +285,7 @@ TEST(NativeRunner, RayIdAssignmentMultiThread)
     sts = runner.run_simulation();
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 

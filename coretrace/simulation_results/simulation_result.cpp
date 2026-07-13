@@ -16,26 +16,26 @@ namespace SolTrace::Result
 {
     using element_id = SolTrace::Data::element_id;
 
-    SimulationResult::SimulationResult()
+    RayHistoryResult::RayHistoryResult()
     {
         return;
     }
 
-    SimulationResult::~SimulationResult()
+    RayHistoryResult::~RayHistoryResult()
     {
         this->ray_history.clear();
         this->element_view.clear();
         return;
     }
 
-    void SimulationResult::add_ray_record(ray_record_ptr rp)
+    void RayHistoryResult::add_ray_record(ray_record_ptr rp)
     {
         this->ray_history.push_back(rp);
         this->add_element_view(rp);
         return;
     }
 
-    const element_record_ptr SimulationResult::get_element_record(element_id elid) const
+    const element_record_ptr RayHistoryResult::get_element_record(element_id elid) const
     {
         auto iter = this->element_view.find(elid);
         element_record_ptr retval = nullptr;
@@ -52,13 +52,13 @@ namespace SolTrace::Result
         return retval;
     }
 
-    void SimulationResult::write_csv_file(std::string csv_name,
+    void RayHistoryResult::write_csv_file(std::string csv_name,
                                           int precision) const
     {
         return this->write_csv_file(csv_name.c_str(), precision);
     }
 
-    void SimulationResult::write_csv_file(const char *csv_name,
+    void RayHistoryResult::write_csv_file(const char *csv_name,
                                           int precision) const
     {
         std::ofstream csv(csv_name);
@@ -84,12 +84,12 @@ namespace SolTrace::Result
         return;
     }
 
-    const ray_record_ptr &SimulationResult::operator[](int_fast64_t idx) const
+    const ray_record_ptr &RayHistoryResult::operator[](int_fast64_t idx) const
     {
         if (idx < 0 || idx >= this->ray_history.size())
         {
             std::stringstream ss;
-            ss << "SimulationResult: Index " << idx
+            ss << "RayHistoryResult: Index " << idx
                << " is out of bounds [0, " << this->ray_history.size() - 1
                << "].";
             throw std::invalid_argument(ss.str());
@@ -97,7 +97,7 @@ namespace SolTrace::Result
         return this->ray_history[idx];
     }
 
-    std::ostream &operator<<(std::ostream &os, const SimulationResult &simres)
+    std::ostream &operator<<(std::ostream &os, const RayHistoryResult &simres)
     {
         os << "Simulation Results -- " << simres.ray_history.size() << " Rays\n";
         for (uint_fast64_t k = 0; k < simres.ray_history.size(); ++k)
@@ -109,7 +109,7 @@ namespace SolTrace::Result
         return os;
     }
 
-    void SimulationResult::add_element_view(const ray_record_ptr rp)
+    void RayHistoryResult::add_element_view(const ray_record_ptr rp)
     {
         element_record_ptr erec;
         interaction_ptr ip;

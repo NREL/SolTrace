@@ -17,7 +17,7 @@ namespace SolTrace::EmbreeRunner
     using SolTrace::NativeRunner::tstage_ptr;
     using SolTrace::NativeRunner::TSystem;
 
-    using SolTrace::Result::SimulationResult;
+    using SolTrace::Result::RayHistoryResult;
 
     EmbreeRunner::EmbreeRunner() : NativeRunner(),
                                    embree_device(nullptr),
@@ -32,10 +32,11 @@ namespace SolTrace::EmbreeRunner
         return;
     }
 
-    RunnerStatus EmbreeRunner::setup_simulation(const SimulationData *data)
+    RunnerStatus EmbreeRunner::setup_simulation(const SimulationData *data,
+                                                const SolTrace::Result::ResultSpec &spec)
     {
 
-        RunnerStatus sts = NativeRunner::setup_simulation(data);
+        RunnerStatus sts = NativeRunner::setup_simulation(data, spec);
 
         make_embree_scene(this->my_logger,
                           &this->tsys,

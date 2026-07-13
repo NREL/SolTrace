@@ -38,7 +38,7 @@ class SimulationModule : public QObject {
 
     db::SimulationResultPtr m_current_result;
 
-    QVector<std::shared_ptr<db::SimulationResult>> m_completed_sims;
+    QVector<std::shared_ptr<db::RayHistoryResult>> m_completed_sims;
 
 private slots:
     void job_done();

@@ -9,7 +9,7 @@
 using SolTrace::Runner::RunnerStatus;
 using SolTrace::Runner::SimulationRunner;
 
-using SolTrace::Result::SimulationResult;
+using SolTrace::Result::RayHistoryResult;
 
 using SolTrace::Data::optics_id;
 
@@ -68,8 +68,10 @@ RunnerStatus OptixRunner::initialize()
     return RunnerStatus::SUCCESS;
 }
 
-RunnerStatus OptixRunner::setup_simulation(const SimulationData *data)
+RunnerStatus OptixRunner::setup_simulation(const SimulationData *data,
+                                           SolTrace::Result::ResultType result_type)
 {
+    this->m_result_type = spec.get_type();
 
     // Reset
     this->m_sys.reset();
@@ -465,9 +467,26 @@ SolTrace::Result::RayEvent hit_type_to_ray_event(OptixCSP::HitType hit_type)
     return static_cast<SolTrace::Result::RayEvent>(hit_type);
 }
 
-RunnerStatus OptixRunner::report_simulation(SimulationResult *result,
+std::unique_ptr<SolTrace::Result::SimulationResult> OptixRunner::create_result()
+{
+    switch (this->m_result_type)
+    {
+    case SolTrace::Result::ResultType::RAY_HISTORY:
+        return std::make_unique<SolTrace::Result::RayHistoryResult>();
+    default:
+        return nullptr;
+    }
+}
+
+RunnerStatus OptixRunner::report_simulation(SolTrace::Result::SimulationResult *result,
                                             int level)
 {
+    auto *sim_result = dynamic_cast<SolTrace::Result::RayHistoryResult *>(result);
+    if (sim_result == nullptr)
+    {
+        return RunnerStatus::ERROR;
+    }
+
     // Declare results
     RunnerStatus retval = RunnerStatus::SUCCESS;
     std::map<unsigned int, SolTrace::Result::ray_record_ptr> ray_records;
@@ -510,7 +529,7 @@ RunnerStatus OptixRunner::report_simulation(SimulationResult *result,
         if (iter == ray_records.end())
         {
             rec = SolTrace::Result::make_ray_record(raynum);
-            result->add_ray_record(rec);
+            sim_result->add_ray_record(rec);
             ray_records[raynum] = rec;
             assert(rev == SolTrace::Result::RayEvent::CREATE);
         }

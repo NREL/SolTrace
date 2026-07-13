@@ -16,12 +16,15 @@ public:
 
     virtual SolTrace::Runner::RunnerStatus initialize() override;
     virtual SolTrace::Runner::RunnerStatus setup_simulation(
-        const SolTrace::Data::SimulationData *data) override;
+        const SolTrace::Data::SimulationData *data,
+        const SolTrace::Result::ResultSpec   &spec
+            = SolTrace::Result::RayHistorySpec{}) override;
     virtual SolTrace::Runner::RunnerStatus update_simulation(
         const SolTrace::Data::SimulationData *data) override;
     virtual SolTrace::Runner::RunnerStatus run_simulation() override;
     virtual SolTrace::Runner::RunnerStatus status_simulation(double *progress = nullptr) override;
     virtual SolTrace::Runner::RunnerStatus cancel_simulation() override;
+    virtual std::unique_ptr<SolTrace::Result::SimulationResult> create_result() override;
     virtual SolTrace::Runner::RunnerStatus report_simulation(
         SolTrace::Result::SimulationResult *result,
         int level_spec) override;
@@ -74,6 +77,7 @@ public:
 
 private:
     OptixCSP::SolTraceSystem m_sys;
+    SolTrace::Result::ResultType m_result_type = SolTrace::Result::ResultType::RAY_HISTORY;
 
     const SolTrace::Data::SimulationData *m_simdata;
     SolTrace::Runner::RunnerStatus setup_parameters(

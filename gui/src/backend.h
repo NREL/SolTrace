@@ -18,7 +18,7 @@
 class ResultsBackend : public QObject {
     Q_OBJECT
 
-    QPointer<db::SimulationResult> m_results;
+    QPointer<db::RayHistoryResult> m_results;
 
     std::unique_ptr<analysis::RayGeometry> m_ray_geometry;
 

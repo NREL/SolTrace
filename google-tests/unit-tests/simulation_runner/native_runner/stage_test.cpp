@@ -98,7 +98,7 @@ static SimulationData create_two_flat_elements_simulation(const bool separateSta
     return sd;
 }
 
-static void count_hits(const SimulationResult& result, element_ptr& plate1, 
+static void count_hits(const RayHistoryResult& result, element_ptr& plate1, 
     element_ptr& plate2, std::vector<int>& plate1_hits, std::vector<int>& plate2_hits)
 {
     plate1_hits = { 0,0,0 };
@@ -162,7 +162,7 @@ TEST(StageTest, StageOn)
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
     // Collect results
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -226,7 +226,7 @@ TEST(StageTest, StageOff)
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
     // Collect results
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -259,7 +259,7 @@ TEST(StageTest, OffComparison)
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
     // Get results
-    SimulationResult result_nostage;
+    RayHistoryResult result_nostage;
     sts = runner_nostage.report_simulation(&result_nostage, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
     std::vector<int> plate1_hits_nostage = { 0,0,0 };
@@ -279,7 +279,7 @@ TEST(StageTest, OffComparison)
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
     // Get results
-    SimulationResult result_stageoff;
+    RayHistoryResult result_stageoff;
     sts = runner_stageoff.report_simulation(&result_stageoff, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
     std::vector<int> plate1_hits_stageoff = { 0,0,0 };
@@ -463,7 +463,7 @@ TEST(StageTest, NoStagesCreatesSingleInternalStage)
     sts = runner.run_simulation();
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
     EXPECT_EQ(result.get_number_of_records(), NRays);

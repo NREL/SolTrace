@@ -173,7 +173,7 @@ TEST(ElementRecord, OutputOperator)
 
 }
 
-TEST(SimulationResult, Accessors)
+TEST(RayHistoryResult, Accessors)
 {
     // Test constants
     const uint_fast32_t NRAYS = 3;
@@ -185,7 +185,7 @@ TEST(SimulationResult, Accessors)
         RayEvent::ABSORB,
         RayEvent::EXIT};
 
-    SimulationResult sr;
+    RayHistoryResult sr;
 
     for (uint_fast32_t k = 0; k < NRAYS; ++k)
     {
@@ -212,7 +212,7 @@ TEST(SimulationResult, Accessors)
     EXPECT_EQ(sr.get_number_of_records(), idx);
 }
 
-TEST(SimulationResult, OstreamOperator)
+TEST(RayHistoryResult, OstreamOperator)
 {
 
     // Test constants
@@ -225,7 +225,7 @@ TEST(SimulationResult, OstreamOperator)
         RayEvent::ABSORB,
         RayEvent::EXIT};
 
-    SimulationResult sr;
+    RayHistoryResult sr;
 
     for (uint_fast32_t k = 0; k < NRAYS; ++k)
     {
@@ -247,7 +247,7 @@ TEST(SimulationResult, OstreamOperator)
     EXPECT_TRUE(ss.str().size() > 0);
 }
 
-TEST(SimulationResult, IndexOperator)
+TEST(RayHistoryResult, IndexOperator)
 {
     // Test constants
     const uint_fast32_t NRAYS = 3;
@@ -260,7 +260,7 @@ TEST(SimulationResult, IndexOperator)
         RayEvent::ABSORB,
         RayEvent::EXIT};
 
-    SimulationResult sr;
+    RayHistoryResult sr;
 
     for (uint_fast32_t k = 0; k < NRAYS; ++k)
     {
@@ -288,7 +288,7 @@ TEST(SimulationResult, IndexOperator)
     EXPECT_EQ(ir->event, my_types[INDEX]);
 }
 
-TEST(SimulationResult, WriteCSV)
+TEST(RayHistoryResult, WriteCSV)
 {
     // Test constants
     const uint_fast32_t NRAYS = 3;
@@ -302,7 +302,7 @@ TEST(SimulationResult, WriteCSV)
 
     std::string csv_file("temp_string.csv");
 
-    SimulationResult sr;
+    RayHistoryResult sr;
 
     for (uint_fast32_t k = 0; k < NRAYS; ++k)
     {

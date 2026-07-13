@@ -271,7 +271,7 @@ namespace
         return (n2 > 0.5 && n2 < 2.0);
     }
 
-    static std::vector<float3> estimate_dirs_from_result(const SimulationResult& result)
+    static std::vector<float3> estimate_dirs_from_result(const RayHistoryResult& result)
     {
         std::vector<float3> dirs;
         dirs.reserve(result.get_number_of_records());
@@ -356,7 +356,7 @@ namespace
         params.seed = 123;
     }
 
-    void count_hits_sun(const SimulationResult& result,
+    void count_hits_sun(const RayHistoryResult& result,
         int& absorbed_count, int& transmitted_count,
         int& reflected_count)
     {
@@ -407,7 +407,7 @@ TEST(Sun, SmokeTest)
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
     // Collect results
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -508,7 +508,7 @@ TEST(Sun, GaussianSunAngleDistribution)
     ASSERT_EQ(runner_gaussian.setup_simulation(&sd_gaussian), RunnerStatus::SUCCESS);
     ASSERT_EQ(runner_gaussian.run_simulation(), RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     ASSERT_EQ(runner_gaussian.report_simulation(&result, 0), RunnerStatus::SUCCESS);
 
     const std::vector<float3> dirs = estimate_dirs_from_result(result);
@@ -567,7 +567,7 @@ TEST(Sun, PillboxSunAngleDistribution)
     ASSERT_EQ(runner_pillbox.setup_simulation(&sd_pillbox), RunnerStatus::SUCCESS);
     ASSERT_EQ(runner_pillbox.run_simulation(), RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     ASSERT_EQ(runner_pillbox.report_simulation(&result, 0), RunnerStatus::SUCCESS);
 
     const std::vector<float3> dirs = estimate_dirs_from_result(result);
@@ -617,7 +617,7 @@ TEST(Sun, LimbDarkenedSunAngleDistribution)
     ASSERT_EQ(runner_limbdarkened.setup_simulation(&sd_limbdarkened), RunnerStatus::SUCCESS);
     ASSERT_EQ(runner_limbdarkened.run_simulation(), RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     ASSERT_EQ(runner_limbdarkened.report_simulation(&result, 0), RunnerStatus::SUCCESS);
 
     const std::vector<float3> dirs = estimate_dirs_from_result(result);
@@ -675,7 +675,7 @@ TEST(Sun, BuieCSRSunAngleDistribution)
     ASSERT_EQ(runner_buie.setup_simulation(&sd_buie), RunnerStatus::SUCCESS);
     ASSERT_EQ(runner_buie.run_simulation(), RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     ASSERT_EQ(runner_buie.report_simulation(&result, 0), RunnerStatus::SUCCESS);
 
     const std::vector<float3> dirs = estimate_dirs_from_result(result);
@@ -757,7 +757,7 @@ TEST(Sun, UserDefinedSunAngleDistribution)
     ASSERT_EQ(runner_user_defined.setup_simulation(&sd_user_defined), RunnerStatus::SUCCESS);
     ASSERT_EQ(runner_user_defined.run_simulation(), RunnerStatus::SUCCESS);
 
-    SimulationResult result;
+    RayHistoryResult result;
     ASSERT_EQ(runner_user_defined.report_simulation(&result, 0), RunnerStatus::SUCCESS);
 
     const std::vector<float3> dirs = estimate_dirs_from_result(result);

@@ -65,7 +65,7 @@ TEST(OpticalErrors, Gaussian)
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
     // Collect results
-    SimulationResult result_error;
+    RayHistoryResult result_error;
     sts = runner.report_simulation(&result_error, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
     ASSERT_EQ(result_error.get_number_of_records(), NRAYS);
@@ -167,7 +167,7 @@ TEST(OpticalErrors, Uniform)
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
     // Collect results
-    SimulationResult result_error;
+    RayHistoryResult result_error;
     sts = runner.report_simulation(&result_error, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
     ASSERT_EQ(result_error.get_number_of_records(), NRAYS);

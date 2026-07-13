@@ -73,7 +73,7 @@ void make_two_plate_sd(SimulationData& sd, element_ptr& plate1, element_ptr& pla
 	params.seed = 123;
 }
 
-void count_hits_two_plate(const SimulationResult& result,
+void count_hits_two_plate(const RayHistoryResult& result,
 	int plate1_id, int plate2_id,
 	int& absorbed_plate1, int& transmitted_plate1, int& reflected_plate1,
 	int& absorbed_plate2, int& transmitted_plate2, int& reflected_plate2,
@@ -132,7 +132,7 @@ TEST(TwoPlateOptix, ReflectionToAbsorber)
 	ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
 	// Collect results
-	SimulationResult result;
+	RayHistoryResult result;
 	sts = runner.report_simulation(&result, 0);
 	ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -197,7 +197,7 @@ TEST(TwoPlateOptix, BatchMaxRayLimit)
 	ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
 	// Collect results
-	SimulationResult result;
+	RayHistoryResult result;
 	sts = runner.report_simulation(&result, 0);
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 
@@ -222,7 +222,7 @@ TEST(TwoPlateOptix, SimResults)
 	ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 
 	// Collect results
-	SimulationResult result;
+	RayHistoryResult result;
 	sts = runner.report_simulation(&result, 0);
 	EXPECT_EQ(sts, RunnerStatus::SUCCESS);
 	int n_records = result.get_number_of_records();
@@ -276,7 +276,7 @@ TEST(TwoPlateOptix, TrimExcessRaysOption)
 		ASSERT_EQ(runner.setup_simulation(&sd), RunnerStatus::SUCCESS);
 		ASSERT_EQ(runner.run_simulation(), RunnerStatus::SUCCESS);
 
-		SimulationResult result;
+		RayHistoryResult result;
 		ASSERT_EQ(runner.report_simulation(&result, 0), RunnerStatus::SUCCESS);
 		EXPECT_EQ(result.get_number_of_records(), n_rays);
 	}
@@ -291,7 +291,7 @@ TEST(TwoPlateOptix, TrimExcessRaysOption)
 		ASSERT_EQ(runner.setup_simulation(&sd), RunnerStatus::SUCCESS);
 		ASSERT_EQ(runner.run_simulation(), RunnerStatus::SUCCESS);
 
-		SimulationResult result;
+		RayHistoryResult result;
 		ASSERT_EQ(runner.report_simulation(&result, 0), RunnerStatus::SUCCESS);
 		EXPECT_GE(result.get_number_of_records(), n_rays);
 	}

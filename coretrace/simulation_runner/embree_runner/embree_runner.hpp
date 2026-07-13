@@ -30,7 +30,9 @@ namespace SolTrace::EmbreeRunner
         EmbreeRunner(const EmbreeRunner &) = delete;
         EmbreeRunner(EmbreeRunner &&) = delete;
 
-        virtual RunnerStatus setup_simulation(const SolTrace::Data::SimulationData *data) override;
+        virtual RunnerStatus setup_simulation(const SolTrace::Data::SimulationData *data,
+                                              const SolTrace::Result::ResultSpec &spec
+                                                  = SolTrace::Result::RayHistorySpec{}) override;
         virtual RunnerStatus run_simulation() override;
         virtual RunnerStatus update_simulation(const SolTrace::Data::SimulationData *data) override;
 

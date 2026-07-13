@@ -65,6 +65,6 @@ inline std::shared_ptr<Rectangle> create_rectangle_aperture(double x_length = 2.
     return rect;
 }
 
-int_fast64_t count_element_event(const SimulationResult &res, element_id el, RayEvent rev);
+int_fast64_t count_element_event(const RayHistoryResult &res, element_id el, RayEvent rev);
 
 #endif

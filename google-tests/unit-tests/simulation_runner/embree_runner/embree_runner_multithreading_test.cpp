@@ -120,7 +120,7 @@ TEST(EmbreeRunner, RayIdAssignmentMultiThread)
     EXPECT_GT(prog, 0.0);
     std::cout << "Progress: " << prog << std::endl;
 
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS);
 

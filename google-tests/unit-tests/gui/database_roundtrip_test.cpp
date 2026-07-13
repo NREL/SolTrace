@@ -331,7 +331,7 @@ void configure_tiny_deterministic_run(SD::SimulationData& data) {
     params.include_optical_errors   = false;
 }
 
-std::unique_ptr<SolTrace::Result::SimulationResult>
+std::unique_ptr<SolTrace::Result::RayHistoryResult>
 run_native_trace(SD::SimulationData& data, bool disable_stages = false) {
     SolTrace::NativeRunner::NativeRunner runner;
     runner.set_number_of_threads(1);
@@ -342,7 +342,7 @@ run_native_trace(SD::SimulationData& data, bool disable_stages = false) {
               SolTrace::Runner::RunnerStatus::SUCCESS);
     EXPECT_EQ(runner.run_simulation(), SolTrace::Runner::RunnerStatus::SUCCESS);
 
-    auto result = std::make_unique<SolTrace::Result::SimulationResult>();
+    auto result = std::make_unique<SolTrace::Result::RayHistoryResult>();
     EXPECT_EQ(runner.report_simulation(result.get(), 0),
               SolTrace::Runner::RunnerStatus::SUCCESS);
 
@@ -350,7 +350,7 @@ run_native_trace(SD::SimulationData& data, bool disable_stages = false) {
 }
 
 std::vector<SolTrace::Result::ray_record_ptr>
-collect_ray_records(SolTrace::Result::SimulationResult const& result) {
+collect_ray_records(SolTrace::Result::RayHistoryResult const& result) {
     std::vector<SolTrace::Result::ray_record_ptr> records;
     records.reserve(result.get_number_of_records());
 
@@ -363,7 +363,7 @@ collect_ray_records(SolTrace::Result::SimulationResult const& result) {
 }
 
 std::map<SolTrace::Result::ray_id, SolTrace::Result::ray_record_ptr>
-collect_ray_records_by_id(SolTrace::Result::SimulationResult const& result) {
+collect_ray_records_by_id(SolTrace::Result::RayHistoryResult const& result) {
     std::map<SolTrace::Result::ray_id, SolTrace::Result::ray_record_ptr>
         records;
 
@@ -402,8 +402,8 @@ void expect_ray_record_near(SolTrace::Result::RayRecord const& actual,
     }
 }
 
-std::string sun_box_summary(SolTrace::Result::SimulationResult& actual,
-                            SolTrace::Result::SimulationResult& expected) {
+std::string sun_box_summary(SolTrace::Result::RayHistoryResult& actual,
+                            SolTrace::Result::RayHistoryResult& expected) {
     double actual_width    = 0.0;
     double actual_height   = 0.0;
     double expected_width  = 0.0;
@@ -429,8 +429,8 @@ std::string sun_box_summary(SolTrace::Result::SimulationResult& actual,
            << result.get_failure().toStdString();
 }
 
-void expect_sun_box_near(SolTrace::Result::SimulationResult& actual,
-                         SolTrace::Result::SimulationResult& expected,
+void expect_sun_box_near(SolTrace::Result::RayHistoryResult& actual,
+                         SolTrace::Result::RayHistoryResult& expected,
                          bool compare_sun_ray_count = true) {
     SCOPED_TRACE(sun_box_summary(actual, expected));
 

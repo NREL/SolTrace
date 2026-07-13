@@ -388,7 +388,7 @@ TEST(io_json, performance_comparison)
     ASSERT_EQ(sts, RunnerStatus::SUCCESS) << "runner.setup_simulation() failed";
     sts = runner.run_simulation();
     ASSERT_EQ(sts, RunnerStatus::SUCCESS) << "runner.run_simulation() failed";
-    SimulationResult result_original;
+    RayHistoryResult result_original;
     sts = runner.report_simulation(&result_original, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS) << "runner.report_simulation() failed";
 
@@ -400,7 +400,7 @@ TEST(io_json, performance_comparison)
     ASSERT_EQ(sts, RunnerStatus::SUCCESS) << "runner_round_trip.setup_simulation() failed";
     sts = runner_round_trip.run_simulation();
     ASSERT_EQ(sts, RunnerStatus::SUCCESS) << "runner_round_trip.run_simulation() failed";
-    SimulationResult result_round_trip;
+    RayHistoryResult result_round_trip;
     sts = runner_round_trip.report_simulation(&result_round_trip, 0);
     ASSERT_EQ(sts, RunnerStatus::SUCCESS) << "runner_round_trip.report_simulation() failed";
     // Compare number of records

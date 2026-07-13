@@ -57,7 +57,7 @@ bool get_runner_element_and_stage(const EmbreeRunner *runner,
     return found;
 }
 
-// int_fast64_t count_element_event(const SimulationResult &res, element_id el, RayEvent rev)
+// int_fast64_t count_element_event(const RayHistoryResult &res, element_id el, RayEvent rev)
 // {
 //     int_fast64_t count = 0;
 
@@ -142,7 +142,7 @@ TEST(EmbreeRunner, ValidationTest1)
 
     // ray_data->Print();
 
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
     EXPECT_EQ(result.get_number_of_records(), NRAYS);
@@ -170,7 +170,7 @@ TEST(EmbreeRunner, ValidationTest1)
     {
         element = stoi(ground_raydata[6][i]);
         stage = stoi(ground_raydata[7][i]);
-        // Legacy SolTrace and CSV file had 1-based ray IDs. SimulationResult
+        // Legacy SolTrace and CSV file had 1-based ray IDs. RayHistoryResult
         // has 0-based ray ID's so subtract 1 here.
         rayidx = stoul(ground_raydata[8][i]) - 1;
 
@@ -213,7 +213,7 @@ TEST(EmbreeRunner, ValidationTest1)
 
             rr->get_position(iidx, point);
             // Legacy SolTrace stored the incoming ray direction whereas
-            // EmbreeRunner/SimulationResult stores the exit direction so
+            // EmbreeRunner/RayHistoryResult stores the exit direction so
             // we take the direction for the previous ray event.
             rr->get_direction(iidx - 1, cosines);
         }
@@ -238,7 +238,7 @@ TEST(EmbreeRunner, ValidationTest1)
 
                 rr->get_position(iidx, point);
                 // Legacy SolTrace stored the incoming ray direction whereas
-                // EmbreeRunner/SimulationResult stores the exit direction so
+                // EmbreeRunner/RayHistoryResult stores the exit direction so
                 // we take the direction for the previous ray event.
                 rr->get_direction(iidx - 1, cosines);
             }
@@ -260,7 +260,7 @@ TEST(EmbreeRunner, ValidationTest1)
             break;
         }
 
-        // Runner and SimulationResult store everything in global
+        // Runner and RayHistoryResult store everything in global
         // coordinate whereas the CSV file is in stage coordinates
         // as per legacy SolTrace
         el->convert_global_to_reference(pos_stage, point);
@@ -451,7 +451,7 @@ TEST(EmbreeRunner, ValidationTest2)
 
     // ray_data->Print();
 
-    SimulationResult result;
+    RayHistoryResult result;
     sts = runner.report_simulation(&result, 0);
     EXPECT_EQ(sts, RunnerStatus::SUCCESS);
     EXPECT_EQ(result.get_number_of_records(), NRAYS);
@@ -493,7 +493,7 @@ TEST(EmbreeRunner, ValidationTest2)
     {
         element = stoi(ground_raydata[6][i]);
         stage = stoi(ground_raydata[7][i]);
-        // Legacy SolTrace and CSV file had 1-based ray IDs. SimulationResult
+        // Legacy SolTrace and CSV file had 1-based ray IDs. RayHistoryResult
         // has 0-based ray ID's so subtract 1 here.
         rayidx = stoul(ground_raydata[8][i]) - 1;
 
@@ -540,7 +540,7 @@ TEST(EmbreeRunner, ValidationTest2)
 
             rr->get_position(iidx, point);
             // Legacy SolTrace stored the incoming ray direction whereas
-            // EmbreeRunner/SimulationResult stores the exit direction so
+            // EmbreeRunner/RayHistoryResult stores the exit direction so
             // we take the direction for the previous ray event.
             rr->get_direction(iidx - 1, cosines);
         }
@@ -580,7 +580,7 @@ TEST(EmbreeRunner, ValidationTest2)
 
                 rr->get_position(iidx, point);
                 // Legacy SolTrace stored the incoming ray direction whereas
-                // EmbreeRunner/SimulationResult stores the exit direction so
+                // EmbreeRunner/RayHistoryResult stores the exit direction so
                 // we take the direction for the previous ray event.
                 rr->get_direction(iidx - 1, cosines);
             }
@@ -603,7 +603,7 @@ TEST(EmbreeRunner, ValidationTest2)
             break;
         }
 
-        // Runner and SimulationResult store everything in global
+        // Runner and RayHistoryResult store everything in global
         // coordinate whereas the CSV file is in stage coordinates
         // as per legacy SolTrace
         el->convert_global_to_reference(pos_stage, point);

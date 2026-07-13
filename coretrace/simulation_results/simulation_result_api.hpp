@@ -2,6 +2,7 @@
 #define SOLTRACE_SIMULATION_RESULT_API_H
 
 #include "records.hpp"
+#include "result_spec.hpp"
 #include "simulation_result.hpp"
 
 #endif

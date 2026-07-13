@@ -333,7 +333,7 @@ TEST(LinearFresnel, Tracing)
     EXPECT_TRUE(n >= NRAYS);
     EXPECT_TRUE(num_absorbed > N_ABSORBED_THRESH);
 
-    // SimulationResult my_res;
+    // RayHistoryResult my_res;
     // my_runner.report_simulation(&my_res, 0);
 
     // std::cout << my_res << std::endl;
@@ -481,7 +481,7 @@ TEST(LinearFresnel, UpdateGeometry)
     EXPECT_TRUE(n >= NRAYS);
     EXPECT_TRUE(num_absorbed > N_ABSORBED_THRESH);
 
-    // SimulationResult my_res;
+    // RayHistoryResult my_res;
     // my_runner.report_simulation(&my_res, 0);
     // std::cout << my_res << std::endl;
 }
