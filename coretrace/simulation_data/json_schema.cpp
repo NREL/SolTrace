@@ -247,8 +247,9 @@ std::string schema_version     = root.at("schema_version");
 std::string local_upgrade_log;
 if (schema_version == "2025.11.12") {
     if (!upgrade_20251112_20260715(root, local_upgrade_log)) {
-        throw std::runtime_error("Failure upgrade json"); 
-    } 
+        throw std::runtime_error(
+            "Failed to upgrade JSON file schema from 2025.11.12 to 2026.07.15");
+    }
 }
 
 if (upgrade_log != nullptr) {
