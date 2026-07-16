@@ -227,36 +227,36 @@ void write_json_file(SimulationData& sd, std::string filename) {
 }
 
 void load_json_file(SimulationData& sd, std::string filename, std::string* upgrade_log) {
-using json = nlohmann::ordered_json;
+    using json = nlohmann::ordered_json;
 
-// Clear simulation data
-sd.clear();
+    // Clear simulation data
+    sd.clear();
 
-// Load json file
-std::ifstream ifs(filename);
-if (!ifs.is_open()) throw std::runtime_error("Failure opening json");
+    // Load json file
+    std::ifstream ifs(filename);
+    if (!ifs.is_open()) throw std::runtime_error("Failure opening json");
 
-// Load json from file stream
-json root;
-ifs >> root;
+    // Load json from file stream
+    json root;
+    ifs >> root;
 
-// File meta data
-std::string schema_version     = root.at("schema_version");
+    // File meta data
+    std::string schema_version     = root.at("schema_version");
 
-// Upgrade to modern version
-std::string local_upgrade_log;
-if (schema_version == "2025.11.12") {
-    if (!upgrade_20251112_20260715(root, local_upgrade_log)) {
-        throw std::runtime_error(
-            "Failed to upgrade JSON file schema from 2025.11.12 to 2026.07.15");
+    // Upgrade to modern version
+    std::string local_upgrade_log;
+    if (schema_version == "2025.11.12") {
+        if (!upgrade_20251112_20260715(root, local_upgrade_log)) {
+            throw std::runtime_error(
+                "Failed to upgrade JSON file schema from 2025.11.12 to 2026.07.15");
+        }
     }
-}
 
-if (upgrade_log != nullptr && !local_upgrade_log.empty()) {
-    *upgrade_log = local_upgrade_log;
-}
+    if (upgrade_log != nullptr && !local_upgrade_log.empty()) {
+        *upgrade_log = local_upgrade_log;
+    }
 
-// Check file is up to date
+    // Check file is up to date
     if (root.at("schema_version") != kSchemaVersion) {
         std::stringstream ss;
         ss << "Unsupported or unrecognized schema version: "
