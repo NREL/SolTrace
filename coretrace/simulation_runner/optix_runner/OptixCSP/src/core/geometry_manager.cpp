@@ -6,6 +6,7 @@
 
 #include <optix_stubs.h>
 
+#include <iostream>
 #include <stdexcept>
 #include <sstream>
 #include <vector>
@@ -284,6 +285,23 @@ void GeometryManager::clean_up()
     m_sun_plane_distance = -1.0f;
     m_aabb_input = {};
     m_accel_build_options = {};
+}
+
+GeometryManager::~GeometryManager() noexcept
+{
+    try
+    {
+        clean_up();
+    }
+    catch (const std::exception &error)
+    {
+        std::cerr << "[OptixRunner] Geometry cleanup failed during destruction: "
+                  << error.what() << '\n';
+    }
+    catch (...)
+    {
+        std::cerr << "[OptixRunner] Geometry cleanup failed during destruction with an unknown error.\n";
+    }
 }
 
 void GeometryManager::create_geometries(LaunchParams &params)

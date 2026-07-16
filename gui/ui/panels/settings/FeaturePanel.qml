@@ -76,61 +76,42 @@ ScrollView {
             text: "New in SolTrace"
         }
 
-        STPropertyPanel {
-            title: "Backend Features"
-            Layout.fillWidth: true
-            CardGallery {
-                model: backendFeatureModel
-                Layout.fillWidth: true
-                Layout.columnSpan: 2
-                delegate: ColumnLayout {
-                    property string name
-                    property string icon
-                    property string description
-                    spacing: 5
-                    RowLayout {
-                        spacing: 8
-                        Label {
-                            text: icon
-                            font.family: "Font Awesome 7 Free"
-                            font.pointSize: 16
-                        }
-                        SubHeader { text: name }
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        text: description
-                        wrapMode: Text.WordWrap
-                    }
-                }
-            }
-        }
+        Repeater {
+            model: [
+                { title: "Backend Features", source: backendFeatureModel },
+                { title: "GUI Features", source: guiFeatureModel }
+            ]
 
-        STPropertyPanel {
-            title: "GUI Features"
-            Layout.fillWidth: true
-            CardGallery {
-                model: guiFeatureModel
+            STPropertyPanel {
+                title: modelData.title
                 Layout.fillWidth: true
-                Layout.columnSpan: 2
-                delegate: ColumnLayout {
-                    property string name
-                    property string icon
-                    property string description
-                    spacing: 5
-                    RowLayout {
-                        spacing: 8
-                        Label {
-                            text: icon
-                            font.family: "Font Awesome 7 Free"
-                            font.pointSize: 16
+                CardGallery {
+                    model: modelData.source
+                    Layout.fillWidth: true
+                    Layout.columnSpan: 2
+                    delegate: ColumnLayout {
+                        property string name
+                        property string icon
+                        property string description
+                        spacing: 5
+                        RowLayout {
+                            spacing: 8
+                            Label {
+                                text: icon
+                                font.family: "Font Awesome 7 Free"
+                                font.pointSize: 16
+                            }
+                            SubHeader {
+                                Layout.fillWidth: true
+                                text: name
+                                wrapMode: Text.WordWrap
+                            }
                         }
-                        SubHeader { text: name }
-                    }
-                    Label {
-                        Layout.fillWidth: true
-                        text: description
-                        wrapMode: Text.WordWrap
+                        Label {
+                            Layout.fillWidth: true
+                            text: description
+                            wrapMode: Text.WordWrap
+                        }
                     }
                 }
             }

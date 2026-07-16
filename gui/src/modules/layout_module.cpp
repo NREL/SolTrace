@@ -16,6 +16,13 @@ void LayoutModule::edited_entity_changed() {
         return;
     }
 
+    m_current_database->clear_selection();
+    if (m_edited_element.is_valid() &&
+        m_current_database->as_registry().all_of<db::ElementComponent>(
+            m_edited_element)) {
+        m_current_database->add_to_selection(m_edited_element);
+    }
+
     set_edited_element_name(m_current_database->name_of(m_edited_element));
 }
 

@@ -14,15 +14,14 @@ static QString build_info_string() {
                    ? QStringLiteral("(none)")
                    : QString::fromUtf8(BuildInfo::git_tag);
 
-    return QStringLiteral(
-               "SolTrace build\n"
-               "Version: %1\n"
-               "Commit: %2\n"
-               "Describe: %3\n"
-               "Branch: %4\n"
-               "Tag: %5\n"
-               "Dirty: %6\n"
-               "Prerelease: %7")
+    return QStringLiteral("SolTrace build\n"
+                          "Version: %1\n"
+                          "Commit: %2\n"
+                          "Describe: %3\n"
+                          "Branch: %4\n"
+                          "Tag: %5\n"
+                          "Dirty: %6\n"
+                          "Prerelease: %7")
         .arg(QString::fromUtf8(BuildInfo::version),
              QString::fromUtf8(BuildInfo::git_commit),
              QString::fromUtf8(BuildInfo::git_describe),
@@ -30,7 +29,7 @@ static QString build_info_string() {
              tag,
              QString::fromUtf8(BuildInfo::git_dirty),
              BuildInfo::is_prerelease ? QStringLiteral("true")
-                                       : QStringLiteral("false"));
+                                      : QStringLiteral("false"));
 }
 
 void AppData::load_session() {
@@ -45,7 +44,7 @@ void AppData::load_session() {
         s.value("show_right_panel", true).toBool());
     m_view->right_panel()->set_saved_visible(
         s.value("show_right_panel_saved", false).toBool());
-    m_view->settings_panel()->set_visible(
+    m_view->full_panel()->set_visible(
         s.value("show_settings_panel", false).toBool());
     m_view->left_panel()->update_size();
     m_view->right_panel()->update_size();
@@ -59,7 +58,8 @@ void AppData::load_session() {
     m_view->right_panel()->set_inline_docs(
         s.value("right_panel_inline_docs", false).toBool());
 
-    m_view->set_workflow_phase(s.value("workflow_phase", 0).toUInt());
+    m_view->set_workflow_phase(static_cast<ViewModule::WorkflowPhase>(
+        s.value("workflow_phase", 0).toUInt()));
 
     m_view->set_configure_section(s.value("configure_section", 0).toUInt());
     m_view->set_simulate_section(s.value("simulate_section", 0).toUInt());
@@ -68,8 +68,13 @@ void AppData::load_session() {
     m_view->set_sun_section(s.value("sun_section", 0).toUInt());
     m_view->set_right_panel_section(s.value("right_panel_section", 0).toUInt());
 
-    m_view->set_documentation_section(
-        s.value("documentation_section", 0).toUInt());
+    m_view->full_panel()->set_mode(static_cast<FullPanelData::FullPanelMode>(
+        s.value("full_panel_mode", 0).toUInt()));
+    m_view->full_panel()->set_settings_section(
+        s.value("settings_section", 0).toUInt());
+    m_view->full_panel()->set_docs_section(s.value("docs_section", 0).toUInt());
+    m_view->full_panel()->set_build_section(
+        s.value("build_section", 0).toUInt());
 
     // Viewport
     auto* sim = m_view->sim();
@@ -78,7 +83,6 @@ void AppData::load_session() {
     sim->set_perspective(static_cast<SimulationViewState::Perspective>(
         s.value("sim_perspective", 0).toInt()));
     sim->set_sun_viz(s.value("sim_sun_viz", true).toBool());
-    sim->set_blueprint_mode(s.value("sim_blueprint_mode", false).toBool());
     sim->set_sun_viz_scale(s.value("sim_sun_viz_scale", 50.0).toDouble());
     sim->set_sun_color(
         s.value("sim_sun_color", QColor("yellow")).value<QColor>());
@@ -89,12 +93,18 @@ void AppData::load_session() {
 
     s.beginGroup("Sun");
 
-    // Position
-    m_sun->position()->set_from_calculator(
-        s.value("position_from_calculator", true).toBool());
-    m_sun->position()->set_x(s.value("position_x", 1000.0).toDouble());
-    m_sun->position()->set_y(s.value("position_y", 1000.0).toDouble());
-    m_sun->position()->set_z(s.value("position_z", 1000.0).toDouble());
+    // Sun Position
+    m_sun->ds_position()->set_from_calculator(
+        s.value("ds_from_calculator", true).toBool());
+    m_sun->ds_position()->set_x(s.value("ds_position_x", 1000.0).toDouble());
+    m_sun->ds_position()->set_y(s.value("ds_position_y", 1000.0).toDouble());
+    m_sun->ds_position()->set_z(s.value("ds_position_z", 1000.0).toDouble());
+
+    m_sun->ps_position()->set_from_calculator(
+        s.value("ps_from_calculator", true).toBool());
+    m_sun->ps_position()->set_x(s.value("ps_position_x", 1000.0).toDouble());
+    m_sun->ps_position()->set_y(s.value("ps_position_y", 1000.0).toDouble());
+    m_sun->ps_position()->set_z(s.value("ps_position_z", 1000.0).toDouble());
 
     m_sun->set_type(static_cast<SunModule::Type>(s.value("type", 0).toInt()));
 
@@ -138,7 +148,7 @@ void AppData::save_session() {
     s.setValue("show_left_panel_saved", m_view->left_panel()->saved_visible());
     s.setValue("show_right_panel_saved",
                m_view->right_panel()->saved_visible());
-    s.setValue("show_settings_panel", m_view->settings_panel()->visible());
+    s.setValue("show_settings_panel", m_view->full_panel()->visible());
 
     s.setValue("left_panel_width", m_view->left_panel()->width());
     s.setValue("right_panel_width", m_view->right_panel()->width());
@@ -155,14 +165,17 @@ void AppData::save_session() {
     s.setValue("sun_section", m_view->sun_section());
     s.setValue("right_panel_section", m_view->right_panel_section());
 
-    s.setValue("documentation_section", m_view->documentation_section());
+    s.setValue("full_panel_mode",
+               static_cast<int>(m_view->full_panel()->mode()));
+    s.setValue("settings_section", m_view->full_panel()->settings_section());
+    s.setValue("docs_section", m_view->full_panel()->docs_section());
+    s.setValue("build_section", m_view->full_panel()->build_section());
 
     // Viewport
     auto* sim = m_view->sim();
     s.setValue("sim_camera", static_cast<int>(sim->camera()));
     s.setValue("sim_perspective", static_cast<int>(sim->perspective()));
     s.setValue("sim_sun_viz", sim->sun_viz());
-    s.setValue("sim_blueprint_mode", sim->blueprint_mode());
     s.setValue("sim_sun_viz_scale", sim->sun_viz_scale());
     s.setValue("sim_sun_color", sim->sun_color());
     s.setValue("sim_geometry_color", sim->geometry_color());
@@ -170,12 +183,18 @@ void AppData::save_session() {
     s.endGroup();
 
     s.beginGroup("Sun");
-    // Position
-    s.setValue("position_from_calculator",
-               m_sun->position()->from_calculator());
-    s.setValue("position_x", m_sun->position()->x());
-    s.setValue("position_y", m_sun->position()->y());
-    s.setValue("position_z", m_sun->position()->z());
+
+    // Sun Position
+
+    s.setValue("ds_from_calculator", m_sun->ds_position()->from_calculator());
+    s.setValue("ds_position_x", m_sun->ds_position()->x());
+    s.setValue("ds_position_y", m_sun->ds_position()->y());
+    s.setValue("ds_position_z", m_sun->ds_position()->z());
+
+    s.setValue("ps_from_calculator", m_sun->ps_position()->from_calculator());
+    s.setValue("ps_position_x", m_sun->ps_position()->x());
+    s.setValue("ps_position_y", m_sun->ps_position()->y());
+    s.setValue("ps_position_z", m_sun->ps_position()->z());
 
     s.setValue("type", static_cast<int>(m_sun->type()));
 
@@ -245,10 +264,8 @@ AppData::AppData(QObject*       parent,
     connect(
         m_file_source, &DatabaseModule::notify, this, &AppData::notification);
 
-    connect(m_simulation,
-            &SimulationModule::notify,
-            this,
-            &AppData::notification);
+    connect(
+        m_simulation, &SimulationModule::notify, this, &AppData::notification);
 
     connect(m_layout, &LayoutModule::notify, this, &AppData::notification);
 
@@ -256,15 +273,9 @@ AppData::AppData(QObject*       parent,
 
     connect(m_flux, &FluxModule::notify, this, &AppData::notification);
 
-    connect(m_exporter,
-            &ExportModule::notify,
-            this,
-            &AppData::notification);
+    connect(m_exporter, &ExportModule::notify, this, &AppData::notification);
 
-    connect(m_script,
-            &Script::Script::notify,
-            this,
-            &AppData::notification);
+    connect(m_script, &Script::Script::notify, this, &AppData::notification);
 
     connect(this,
             &AppData::current_database_value_changed,
@@ -306,10 +317,8 @@ AppData::AppData(QObject*       parent,
 
     connect(this, &AppData::new_results, m_flux, &FluxModule::set_results);
 
-    connect(this,
-            &AppData::new_results,
-            m_exporter,
-            &ExportModule::set_results);
+    connect(
+        this, &AppData::new_results, m_exporter, &ExportModule::set_results);
 
     connect(m_flux->pending_flux_maps(),
             &db::PendingFluxMapModel::ready,
@@ -322,7 +331,7 @@ AppData::AppData(QObject*       parent,
             [this](db::SimulationResultPtr result) {
                 if (!m_file_source->append_clone(result)) return;
 
-                m_view->set_workflow_phase(1);
+                m_view->set_workflow_phase(ViewModule::WorkflowPhase::Simulate);
                 m_view->set_simulation_content_view(false);
             });
 

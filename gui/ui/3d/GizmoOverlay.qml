@@ -30,5 +30,6 @@ View3D {
         visible: root.enabled
         activeAxis: root.activeAxis
         gizmoMode: root.gizmoMode
+        scale: Qt.vector3d(0.5, 0.5, 0.5)
     }
 }

@@ -48,12 +48,14 @@ RunningJob::RunningJob(SimDataPtr data,
 
     auto future = QtConcurrent::run(f_ptr, data, config);
 
-    auto watcher = new QFutureWatcher<SimResult>();
+    auto watcher = new QFutureWatcher<SimResult>(this);
 
     m_watcher = watcher;
 
     connect(watcher, &QFutureWatcher<SimResult>::finished, this, [this]() {
         auto watcher = ((QFutureWatcher<SimResult>*)(this->m_watcher));
+
+        if (watcher->isCanceled()) { return; }
 
         auto res = std::move(watcher->result());
 

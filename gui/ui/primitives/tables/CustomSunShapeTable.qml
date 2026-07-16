@@ -10,6 +10,8 @@ ListView {
     height: 400
     clip: true
 
+    ScrollBar.vertical: STScrollBar { }
+
     model: App.sun.shape.custom_distribution
 
     function nextAngle() {
@@ -85,7 +87,7 @@ ListView {
 
             Layout.preferredWidth: implicitWidth
             Layout.preferredHeight: implicitWidth
-            text: "\uf00d"
+            icon: "\uf00d"
             onClicked: if (App.sun.shape.custom_distribution.count() > 3) App.sun.shape.custom_distribution.remove(index)
             iconSize: 10
         }

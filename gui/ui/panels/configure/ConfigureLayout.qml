@@ -50,13 +50,13 @@ ElementListEditor {
         }
 
         STIconButton {
-            text: "\uf05b"
+            icon: "\uf05b"
             toolTip: "Select Element From View"
             onClicked: App.view.mouse_mode = ViewModule.SelectElement
         }
 
         STIconButton {
-            text: "\uf0b0"
+            icon: "\uf0b0"
 
             onClicked: filter_popup.open()
 
@@ -94,7 +94,7 @@ ElementListEditor {
                     }
 
                     STIconButton {
-                        text: "\uf0e2"
+                        icon: "\uf0e2"
                         onClicked: root.model.clear_material()
                     }
 
@@ -119,7 +119,7 @@ ElementListEditor {
                     }
 
                     STIconButton {
-                        text: "\uf0e2"
+                        icon: "\uf0e2"
                         onClicked: root.model.clear_geometry()
                     }
 
@@ -138,7 +138,7 @@ ElementListEditor {
 
             visible: root.model.has_filter
 
-            text: "\ue17b"
+            icon: "\ue17b"
 
             onClicked: root.model.clear_all_filters()
         }
@@ -147,7 +147,7 @@ ElementListEditor {
     listFooter: RowLayout {
         CreateNewItemButton {
             title: "New Element"
-            text: "\uf055"
+            icon: "\uf055"
 
             onCreateRequested: function(name) {
                 var new_name = AppData.current_database.sanitize_element_name(name)
@@ -159,7 +159,8 @@ ElementListEditor {
 
         CreateNewItemButton {
             title: "New Child Element"
-            text: "\uf0fe"
+            icon: "\uf0fe"
+            label: "New Child"
             enabled: root.has_viewed_entity
             opacity: enabled ? 1.0 : 0.4
 
@@ -179,7 +180,7 @@ ElementListEditor {
 
         RowLayout {
             STIconButton {
-                text: "\uf053"
+                icon: "\uf053"
                 visible: !root.wideMode
                 onClicked: {
                     root.module.clear_edited_element()
@@ -219,7 +220,8 @@ ElementListEditor {
 
 
             STIconButton {
-                text: "\uf2ed"
+                icon: "\uf2ed"
+                label: "Delete"
                 onClicked: delete_element_dialog.open()
 
                 STDialog {
@@ -265,7 +267,7 @@ ElementListEditor {
             }
 
             STIconButton {
-                text: "\uf140"
+                icon: "\uf140"
                 toolTip: "Orient Camera to Element"
                 enabled: root.module.instance_edit
                 onClicked: simulation_scene.orient_camera_to_database_position(

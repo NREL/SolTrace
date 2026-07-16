@@ -16,8 +16,16 @@ STPropertyPanel {
             property string name
             property string role
             spacing: 5
-            SubHeader { text: name }
-            Label { text: role }
+            SubHeader {
+                Layout.fillWidth: true
+                text: name
+                wrapMode: Text.WordWrap
+            }
+            Label {
+                Layout.fillWidth: true
+                text: role
+                wrapMode: Text.WordWrap
+            }
         }
 
         preview: ColumnLayout {
@@ -28,8 +36,16 @@ STPropertyPanel {
             property string email
 
             spacing: 8
-            SubHeader { text: name }
-            Label { text: role }
+            SubHeader {
+                Layout.fillWidth: true
+                text: name
+                wrapMode: Text.WordWrap
+            }
+            Label {
+                Layout.fillWidth: true
+                text: role
+                wrapMode: Text.WordWrap
+            }
             Label {
                 Layout.fillWidth: true
                 text: description
@@ -38,7 +54,7 @@ STPropertyPanel {
             RowLayout {
                 STButton {
                     text: "Website"
-                    text_icon: "\uf0c1"
+                    left_text_icon: "\uf0c1"
                     onClicked: Qt.openUrlExternally(website)
                 }
             }

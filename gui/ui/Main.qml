@@ -16,7 +16,7 @@ ApplicationWindow {
     height: 720
     visible: true
 
-    minimumWidth: 600
+    minimumWidth: 700
     minimumHeight: 600
 
     Material.theme: Material.Dark

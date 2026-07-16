@@ -15,24 +15,29 @@ ColumnLayout {
         value: App.view.configure_section
     }
 
-    STComboBar {
+    Label {
+        Layout.fillWidth: true
+        Layout.leftMargin: 10
+        Layout.rightMargin: 10
+        Layout.bottomMargin: 8
+
+        text: "Configure the ray source, materials, and geometry. Then bind the material and geometry to an element, and stage the elements in the scene."
+        wrapMode: Text.WordWrap
+    }
+
+    STPipelineBar {
         id: bar
         currentIndex: App.view.configure_section
         onCurrentIndexChanged: App.view.configure_section = currentIndex
 
         Layout.fillWidth: true
 
-        collapseLabels: App.view.left_panel.size === PanelData.Small
+        collapseLabels: App.view.left_panel.size === SplitPanelData.Small
 
-        iconModel: ["\uf185", "\uf53f", "\uf1b2", "\ue4e6"]
-        model: ["Sun", "Materials", "Geometries", "Scene"]
+        prefixModel: ["2a", "2b", "2c", "2d"]
+        iconModel: ["\uf185", "\uf042", "\uf1b2", "\uf5ee"]
+        model: ["Ray Source", "Materials", "Geometries", "Staging"]
         
-    }
-
-    Rectangle {
-        Layout.fillWidth: true
-        Layout.preferredHeight: 1
-        color: App.theme.dividerColor
     }
     
     StackLayout {
@@ -50,5 +55,17 @@ ColumnLayout {
         ConfigureLayout {
         }
     }
+
+    Rectangle {
+        Layout.fillWidth: true
+        height: 1
+        color: Material.dividerColor
+    }
     
+    WorkflowStepper {
+        Layout.fillWidth: true
+        previous: "Load Scene"
+        next: "Run Tracer"
+        currentIndex: ViewModule.Configure
+    }
 }

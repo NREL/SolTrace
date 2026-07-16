@@ -32,7 +32,7 @@ void InstancedElements::on_geometry_group_change(entt::entity group) {
             continue;
         }
 
-        QColor color = m_database->is_selected(member) ? Qt::red
+        QColor color = m_database->is_selected(member) ? Qt::yellow
                        : m_database->color.get(member)
                            ? m_database->color.get(member)->color
                            : Qt::white;
@@ -77,6 +77,14 @@ void InstancedElements::on_instance_changed(entt::entity e) {
     if (iter == m_rev_cache.end()) { return; }
 
     // TODO update only a single instance on change
+
+    on_geometry_group_change(m_target_group);
+}
+
+void InstancedElements::on_selection_changed(entt::entity e) {
+    auto iter = m_rev_cache.find(e);
+
+    if (iter == m_rev_cache.end()) { return; }
 
     on_geometry_group_change(m_target_group);
 }
@@ -169,12 +177,12 @@ InstancedElements::InstancedElements(Database*       db,
     connect(db->selected.self(),
             &ComponentAPIBase::changed,
             this,
-            &InstancedElements::on_geometry_group_change);
+            &InstancedElements::on_selection_changed);
 
     connect(db->selected.self(),
             &ComponentAPIBase::removed,
             this,
-            &InstancedElements::on_geometry_group_change);
+            &InstancedElements::on_selection_changed);
 
     on_geometry_group_change(group);
 }

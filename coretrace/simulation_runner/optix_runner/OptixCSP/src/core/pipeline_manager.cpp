@@ -1,7 +1,12 @@
 #include "pipeline_manager.h"
 
+#include <cstdlib>
+#include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <map>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -16,6 +21,15 @@
 
 #include "data_manager.h"
 #include "soltrace_state.h"
+
+#if defined(_WIN32)
+#include <windows.h>
+#elif defined(__APPLE__)
+#include <mach-o/dyld.h>
+#else
+#include <limits.h>
+#include <unistd.h>
+#endif
 
 using namespace OptixCSP;
 
@@ -54,10 +68,87 @@ const std::map<OpticalEntityType, std::string> IntersectionKernelMap = {
 
 pipelineManager::pipelineManager(SoltraceState &state) : m_state(state) {}
 
-pipelineManager::~pipelineManager()
+pipelineManager::~pipelineManager() noexcept
 {
-    // cleanup();
+    try
+    {
+        cleanup();
+    }
+    catch (const std::exception &error)
+    {
+        std::cerr << "[OptixRunner] Pipeline cleanup failed during destruction: "
+                  << error.what() << '\n';
+    }
+    catch (...)
+    {
+        std::cerr << "[OptixRunner] Pipeline cleanup failed during destruction with an unknown error.\n";
+    }
 }
+
+namespace
+{
+
+std::filesystem::path executableDirectory()
+{
+#if defined(_WIN32)
+    std::vector<char> buffer(MAX_PATH);
+    DWORD length = 0;
+    while (true)
+    {
+        length = GetModuleFileNameA(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+        if (length == 0)
+            return {};
+        if (length < buffer.size())
+            break;
+        buffer.resize(buffer.size() * 2);
+    }
+    return std::filesystem::path(buffer.data()).parent_path();
+#elif defined(__APPLE__)
+    uint32_t size = 0;
+    _NSGetExecutablePath(nullptr, &size);
+    std::vector<char> buffer(size);
+    if (_NSGetExecutablePath(buffer.data(), &size) != 0)
+        return {};
+    return std::filesystem::weakly_canonical(buffer.data()).parent_path();
+#else
+    std::vector<char> buffer(PATH_MAX);
+    ssize_t length = readlink("/proc/self/exe", buffer.data(), buffer.size() - 1);
+    if (length <= 0)
+        return {};
+    buffer[length] = '\0';
+    return std::filesystem::path(buffer.data()).parent_path();
+#endif
+}
+
+std::vector<std::filesystem::path> ptxSearchDirectories()
+{
+    std::vector<std::filesystem::path> directories;
+
+    if (const char *env_path = std::getenv("SOLTRACE_PTX_DIR"))
+    {
+        if (*env_path != '\0')
+            directories.emplace_back(env_path);
+    }
+
+    directories.emplace_back(SAMPLES_PTX_DIR);
+
+    const auto cwd = std::filesystem::current_path();
+    directories.emplace_back(cwd / "ptx");
+    directories.emplace_back(cwd / "lib" / "ptx");
+
+    const auto exe_dir = executableDirectory();
+    if (!exe_dir.empty())
+    {
+        directories.emplace_back(exe_dir / "ptx");
+        directories.emplace_back(exe_dir / "lib" / "ptx");
+        directories.emplace_back(exe_dir / ".." / "lib" / "ptx");
+        directories.emplace_back(exe_dir / ".." / "share" / "SolTrace" / "ptx");
+    }
+
+    return directories;
+}
+
+} // namespace
 
 void pipelineManager::cleanup()
 {
@@ -103,13 +194,25 @@ void pipelineManager::cleanup()
 
 std::string pipelineManager::loadPtxFromFile(const std::string &kernelName)
 {
-    std::string ptxFile = std::string(SAMPLES_PTX_DIR) + "/" + kernelName + ".ptx";
-    std::ifstream file(ptxFile);
-    if (!file.good())
-        throw std::runtime_error("PTX file not found: " + ptxFile);
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-    return buffer.str();
+    const auto filename = kernelName + ".ptx";
+    std::stringstream attempted_paths;
+
+    for (const auto &directory : ptxSearchDirectories())
+    {
+        const auto ptx_file = directory / filename;
+        std::ifstream file(ptx_file);
+        if (!file.good())
+        {
+            attempted_paths << "\n  " << ptx_file.string();
+            continue;
+        }
+
+        std::stringstream buffer;
+        buffer << file.rdbuf();
+        return buffer.str();
+    }
+
+    throw std::runtime_error("PTX file not found. Tried:" + attempted_paths.str());
 }
 
 void pipelineManager::loadModules()

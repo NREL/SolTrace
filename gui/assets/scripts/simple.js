@@ -59,6 +59,8 @@ db.set_material_properties(mirror_material, {
     },
 })
 
+console.log("Created materials...")
+
 const absorber_geometry = db.create_geometry()
 db.set_identity(absorber_geometry, "Cylindrical absorber geometry")
 db.set_geometry_properties(absorber_geometry, {
@@ -89,6 +91,8 @@ db.set_geometry_properties(mirror_geometry, {
         surface_type: "FLAT",
     },
 })
+
+console.log("Created geometry...")
 
 const absorber = db.create()
 db.set_identity(absorber, "Cylindrical absorber")
@@ -124,3 +128,5 @@ for (let i = 0; i < mirror_count; ++i) {
 
     mirrors.push(mirror)
 }
+
+console.log("Done!")

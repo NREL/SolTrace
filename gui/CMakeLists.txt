@@ -18,35 +18,35 @@ set(SOLTRACE_IS_PRERELEASE ON)
 if(Git_FOUND)
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-parse --short=12 HEAD
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         OUTPUT_VARIABLE SOLTRACE_GIT_COMMIT
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
     execute_process(
         COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         OUTPUT_VARIABLE SOLTRACE_GIT_BRANCH
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
     execute_process(
         COMMAND ${GIT_EXECUTABLE} describe --tags --exact-match HEAD
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         OUTPUT_VARIABLE SOLTRACE_GIT_TAG
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
     execute_process(
         COMMAND ${GIT_EXECUTABLE} describe --tags --always --dirty
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         OUTPUT_VARIABLE SOLTRACE_GIT_DESCRIBE
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
     )
     execute_process(
         COMMAND ${GIT_EXECUTABLE} status --porcelain
-        WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
         OUTPUT_VARIABLE SOLTRACE_GIT_STATUS
         OUTPUT_STRIP_TRAILING_WHITESPACE
         ERROR_QUIET
@@ -166,6 +166,22 @@ qt_add_qml_module(SolTrace
         QtQuick3D
 )
 
+# Add examples folder
+if(APPLE)
+    # Copies into .app/Contents/Resources/examples
+    file(GLOB EXAMPLE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/assets/examples/*")
+    list(FILTER EXAMPLE_FILES EXCLUDE REGEX "/\\.DS_Store$")
+    set_source_files_properties(${EXAMPLE_FILES} PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources/examples")
+    target_sources(SolTrace PRIVATE ${EXAMPLE_FILES})
+else()
+    # Copies alongside the binary
+    add_custom_command(TARGET SolTrace POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/examples"
+        "$<TARGET_FILE_DIR:SolTrace>/examples")
+endif()
+
 CPMAddPackage(
     NAME EnTT
     VERSION 3.16.0
@@ -193,6 +209,7 @@ endif()
 
 if(TARGET optix_runner)
     target_compile_definitions(SolTrace PRIVATE SOLTRACE_HAS_OPTIX_RUNNER)
+    target_link_libraries(SolTrace PRIVATE optix_runner)
 endif()
 
 target_include_directories(SolTrace PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
@@ -244,7 +261,6 @@ install(TARGETS SolTrace
 )
 
 install(DIRECTORY
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/examples"
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/scripts"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/SolTrace/assets"
     PATTERN ".DS_Store" EXCLUDE

@@ -13,7 +13,7 @@ RowLayout {
 
     STIconButton {
         enabled: !!AppData.file_source.current_database
-        text: "\uf2ed"
+        icon: "\uf2ed"
         toolTip: "Delete Scene"
         onClicked: AppData.file_source.delete_current()
     }
@@ -23,15 +23,29 @@ RowLayout {
     }
 
     STIconButton {
-        enabled: !AppData.file_source.is_loading
-        text: "\uf56f"
-        toolTip: "Import Scene"
-
-        onClicked: file_controller.open_file()
+        enabled: !!AppData.file_source.current_database
+        icon: "\ue52f"
+        label: "Example"
+        toolTip: "Load Example"
+        onClicked: file_controller.open_example()
     }
 
     STIconButton {
-        text: "\uf055"
+        enabled: !AppData.file_source.is_loading
+        icon: "\uf56f"
+        label: "Import"
+        toolTip: "Import Scene"
+
+        onClicked: file_menu.open()
+
+        WorkflowFileMenu {
+            id: file_menu
+        }
+    }
+
+    STIconButton {
+        icon: "\uf055"
+        label: "Blank"
         toolTip: "Create Blank Scene"
 
         onClicked: new_name_pop.open()

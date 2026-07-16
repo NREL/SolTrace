@@ -8,14 +8,6 @@ DoubleSpinBox {
 
     property string suffix
 
-    textFromValue: function(value, locale) {
-        return Number(value).toLocaleString(locale, 'f', control.decimals)
-    }
-
-    valueFromText: function(text, locale) {
-        return Number.fromLocaleString(locale, String(text).trim())
-    }
-
     contentItem: TextInput {
         id: input
         readonly property int suffixRightMargin: 5

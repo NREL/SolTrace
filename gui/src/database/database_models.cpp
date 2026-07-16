@@ -118,7 +118,11 @@ void BreadcrumbModel::reset(Database* database) {
 
 EntityNamePair EntityNamePair::record_for_entity(Database&  db,
                                                  db::Entity entity) {
-    return EntityNamePair { .name = db.name_of(entity), .entity = entity };
+    return EntityNamePair {
+        .name         = db.name_of(entity),
+        .entity       = entity,
+        .has_children = !db.children_of(entity).empty(),
+    };
 }
 
 QVector<EntityNamePair> ChildModel::rebuild_lists() {
@@ -151,7 +155,7 @@ void ChildModel::recompute() {
     this->store_reset(r);
 }
 
-void ChildModel::ident_changed(db::Entity e) {
+void ChildModel::record_changed(db::Entity e) {
     if (!m_host) return;
 
     if (auto iter = m_reverse.find(e); iter != m_reverse.end()) {
@@ -179,20 +183,24 @@ void ChildModel::reset(Database* database) {
                 &ComponentAPIBase::changed,
                 this,
                 [this](entt::entity e) {
-                    if ((entt::entity)node() == e) { recompute(); }
+                    if ((entt::entity)node() == e) recompute();
+                    else
+                        record_changed(db::Entity(e));
                 });
 
         connect(database->children.self(),
                 &ComponentAPIBase::removed,
                 this,
                 [this](entt::entity e) {
-                    if ((entt::entity)node() == e) { recompute(); }
+                    if ((entt::entity)node() == e) recompute();
+                    else
+                        record_changed(db::Entity(e));
                 });
 
         connect(database->identity.self(),
                 &ComponentAPIBase::changed,
                 this,
-                &ChildModel::ident_changed);
+                &ChildModel::record_changed);
     }
 }
 

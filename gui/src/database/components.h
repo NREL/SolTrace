@@ -77,8 +77,11 @@ struct GlobalTransformComponent {
 };
 
 /// A Global describing the ray source.
+enum class RaySourceType { Directional, PointSource };
+
 struct RaySourceResource {
     SD::ray_source_ptr source;
+    RaySourceType      type = RaySourceType::Directional;
 
     RaySourceResource clone() const;
 };

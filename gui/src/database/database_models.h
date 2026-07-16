@@ -19,8 +19,12 @@ namespace db {
 struct EntityNamePair {
     QString name;
     Entity  entity;
+    bool    has_children = false;
 
-    RECORD_META(db::EntityNamePair, SM_EXPOSE_RW(name), SM_EXPOSE_RO(entity), );
+    RECORD_META(db::EntityNamePair,
+                SM_EXPOSE_RW(name),
+                SM_EXPOSE_RO(entity),
+                SM_EXPOSE_RO(has_children), );
 
     static EntityNamePair record_for_entity(Database& db, db::Entity entity);
 };
@@ -88,7 +92,7 @@ class ChildModel : public StructModelAdapter<EntityNamePair> {
 
 private slots:
     void recompute();
-    void ident_changed(db::Entity);
+    void record_changed(db::Entity);
 
 public:
     explicit ChildModel(QObject* parent = nullptr);

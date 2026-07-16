@@ -71,15 +71,15 @@ Item {
 
             WorkflowLargeItem {
                 icon: "\uf56f"
-                title: "1. Data"
+                title: "1. Load"
                 value: "Load"
-                active: App.view.workflow_phase === 0
+                active: App.view.workflow_phase === ViewModule.Load
 
-                description: "Load content"
+                description: "Load scene"
 
                 onActivated: {
                     App.view.simulation_content_view = false
-                    App.view.workflow_phase = 0
+                    App.view.workflow_phase = ViewModule.Load
                 }
 
                 onValueClicked: file_menu.open()
@@ -93,21 +93,21 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 font.family: "Font Awesome 7 Free"
                 text: "\uf101"
-                opacity: App.view.workflow_phase === 0
-                         || App.view.workflow_phase === 1 ? 1.0 : 0.5
+                opacity: App.view.workflow_phase === ViewModule.Load
+                         || App.view.workflow_phase === ViewModule.Configure ? 1.0 : 0.5
             }
 
             WorkflowLargeItem {
                 icon: "\uf7d9"
                 title: "2. Configure"
                 value: root.active_name
-                active: App.view.workflow_phase === 1
+                active: App.view.workflow_phase === ViewModule.Configure
 
                 description: "Arrange and define the trace scenario"
 
                 onActivated: {
                     App.view.simulation_content_view = false
-                    App.view.workflow_phase = 1
+                    App.view.workflow_phase = ViewModule.Configure
                 }
 
                 onValueClicked: data_pop.open()
@@ -117,21 +117,21 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 font.family: "Font Awesome 7 Free"
                 text: "\uf101"
-                opacity: App.view.workflow_phase === 1
-                         || App.view.workflow_phase === 2 ? 1.0 : 0.5
+                opacity: App.view.workflow_phase === ViewModule.Configure
+                         || App.view.workflow_phase === ViewModule.Simulate ? 1.0 : 0.5
             }
 
             WorkflowLargeItem {
                 icon: "\uf04b"
                 title: "3. Trace"
                 value: root.active_name
-                active: App.view.workflow_phase === 2
+                active: App.view.workflow_phase === ViewModule.Simulate
 
                 description: "Execute a ray trace of a scene"
 
                 onActivated: {
                     App.view.simulation_content_view = false
-                    App.view.workflow_phase = 2
+                    App.view.workflow_phase = ViewModule.Simulate
                 }
 
                 onValueClicked: data_pop.open()
@@ -141,21 +141,21 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 font.family: "Font Awesome 7 Free"
                 text: "\uf101"
-                opacity: App.view.workflow_phase === 2
-                         || App.view.workflow_phase === 3 ? 1.0 : 0.5
+                opacity: App.view.workflow_phase === ViewModule.Simulate
+                         || App.view.workflow_phase === ViewModule.Analyze ? 1.0 : 0.5
             }
 
             WorkflowLargeItem {
                 icon: "\uf1fe"
                 title: "4. Analyze"
                 value: root.active_result_name
-                active: App.view.workflow_phase === 3
+                active: App.view.workflow_phase === ViewModule.Analyze
 
                 description: "Analyze traced rays"
 
                 onActivated: {
                     App.view.simulation_content_view = true
-                    App.view.workflow_phase = 3
+                    App.view.workflow_phase = ViewModule.Analyze
                 }
 
                 onValueClicked: results_pop.open()

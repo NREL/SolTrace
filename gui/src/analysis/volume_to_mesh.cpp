@@ -205,9 +205,9 @@ void polygonize_tetrahedron(db::Mesh&                        mesh,
 
 } // namespace
 
-void volume_to_mesh(QPromise<db::Mesh>& output,
-                    SparseGrid3D<float> input_volume,
-                    float               isoval) {
+Result<db::Mesh, QString> volume_to_mesh(TaskControl&        output,
+                                         SparseGrid3D<float> input_volume,
+                                         float               isoval) {
 
 
     qDebug() << Q_FUNC_INFO << "generating isosurf @" << isoval;
@@ -221,8 +221,7 @@ void volume_to_mesh(QPromise<db::Mesh>& output,
         grid_scale.x == 0.0f || grid_scale.y == 0.0f ||
         grid_scale.z == 0.0f) {
         qDebug() << Q_FUNC_INFO << "invalid volume dimensions";
-        output.emplaceResult(db::Mesh {});
-        return;
+        return QStringLiteral("Invalid volume dimensions");
     }
 
     auto to_world_position = [&](glm::vec3 const& grid_position) {
@@ -250,7 +249,7 @@ void volume_to_mesh(QPromise<db::Mesh>& output,
     for (int z = active_min.z; z + 1 < active_max.z; ++z) {
         for (int y = active_min.y; y + 1 < active_max.y; ++y) {
             // dont want to check too often
-            if (output.isCanceled()) { return; }
+            ASYNC_TASK_SYNC_POINT(output);
 
             for (int x = active_min.x; x + 1 < active_max.x; ++x) {
                 std::array<glm::ivec3, 8> const corner_coords = { {
@@ -308,7 +307,7 @@ void volume_to_mesh(QPromise<db::Mesh>& output,
         qDebug() << Q_FUNC_INFO << "no triangles generated";
     }
 
-    output.emplaceResult(std::move(mesh));
+    return std::move(mesh);
 }
 
 } // namespace analysis

@@ -48,6 +48,25 @@ void SimulationModule::update_result_world(db::SimulationResultPtr results) {
     auto* database =
         results ? const_cast<db::Database*>(results->database.get()) : nullptr;
     m_world_geometry_model->reset(database);
+
+    QVector3D sun_position(0.0f, 0.0f, 1.0f);
+    bool      is_point_source = false;
+
+    if (database) {
+        auto const* resource = database->ray_source_resource.get();
+        if (resource) {
+            is_point_source =
+                resource->type == db::RaySourceType::PointSource;
+
+            if (resource->source) {
+                auto const& position = resource->source->get_position();
+                sun_position = QVector3D(position.x, position.y, position.z);
+            }
+        }
+    }
+
+    set_result_sun_position(sun_position);
+    set_result_sun_is_point_source(is_point_source);
 }
 
 void SimulationModule::job_done() {
@@ -142,7 +161,7 @@ void SimulationModule::run() {
     qDebug() << Q_FUNC_INFO;
     if (!m_current_database) {
         emit notify(ANotification::warning(
-            "Create or load a scene before running a simulation."));
+            "Create or Load Scene before running a simulation."));
         return;
     }
 
@@ -177,6 +196,9 @@ void SimulationModule::run() {
     auto backend = ThreadRunnerBackend::Native;
 #ifdef SOLTRACE_HAS_EMBREE_RUNNER
     if (m_runner == Runner::Embree) { backend = ThreadRunnerBackend::Embree; }
+#endif
+#ifdef SOLTRACE_HAS_OPTIX_RUNNER
+    if (m_runner == Runner::GPU) { backend = ThreadRunnerBackend::Optix; }
 #endif
 
     qDebug() << Q_FUNC_INFO << magic_enum::enum_name(backend);

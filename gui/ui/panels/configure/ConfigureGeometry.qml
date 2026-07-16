@@ -50,7 +50,7 @@ AdaptiveFilteredEditor {
         }
 
         STIconButton {
-            text: "\uf05b"
+            icon: "\uf05b"
             toolTip: "Select Geometry From View"
             onClicked: App.view.mouse_mode = ViewModule.SelectGeometry
         }
@@ -76,7 +76,7 @@ AdaptiveFilteredEditor {
 
         RowLayout {
             STIconButton {
-                text: "\uf053"
+                icon: "\uf053"
                 visible: !root.wideMode
                 onClicked: root.goBack()
             }
@@ -113,7 +113,7 @@ AdaptiveFilteredEditor {
                 anchors.top: parent.top
                 anchors.left: parent.left
 
-                text: "\uf424"
+                icon: "\uf424"
 
                 onClicked: preview_scene.show_expand = !preview_scene.show_expand
             }

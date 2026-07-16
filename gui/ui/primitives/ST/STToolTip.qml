@@ -4,7 +4,7 @@ import SolTrace
 
 ToolTip {
     id: root
-    delay: 500
+    delay: 1000
     contentItem: Label {
         text: root.text
         color: App.theme.fontColor

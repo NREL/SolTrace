@@ -11,7 +11,9 @@ Column {
     property int decimals: 0
     property string suffix: ""
     property real value: 0
+    property bool enableSpinBox: true
     signal valueModified()
+    width: 200
     spacing: 5
 
     STDoubleSpinBox {
@@ -22,6 +24,7 @@ Column {
         decimals: root.decimals
         stepSize: root.stepSize
         suffix: root.suffix
+        enabled: root.enableSpinBox
         onValueModified: {
             root.value = value
             root.valueModified()

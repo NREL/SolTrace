@@ -21,7 +21,7 @@ ColumnLayout {
 
         STButton {
             text: "Open Log Directory"
-            text_icon: "\uf07c"
+            left_text_icon: "\uf07c"
 
             onClicked: AppData.log_list.open_log_directory()
         }
@@ -40,6 +40,8 @@ ColumnLayout {
         model: AppData.log_list
         clip: true
         spacing: 5
+
+        ScrollBar.vertical: STScrollBar { }
 
         onCountChanged: log_list_view.positionViewAtEnd()
 

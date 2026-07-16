@@ -9,6 +9,10 @@
 #include "embree_runner/embree_runner.hpp"
 #endif
 
+#ifdef SOLTRACE_HAS_OPTIX_RUNNER
+#include "optix_runner/optix_runner.hpp"
+#endif
+
 #include <QtConcurrentRun>
 
 #include <memory>
@@ -50,8 +54,12 @@ make_runner(ThreadRunnerBackend backend) {
     if (backend == ThreadRunnerBackend::Embree) {
         return std::make_unique<SolTrace::EmbreeRunner::EmbreeRunner>();
     }
-#else
-    Q_UNUSED(backend);
+#endif
+
+#ifdef SOLTRACE_HAS_OPTIX_RUNNER
+    if (backend == ThreadRunnerBackend::Optix) {
+        return std::make_unique<OptixRunner>();
+    }
 #endif
 
     return std::make_unique<SolTrace::NativeRunner::NativeRunner>();
@@ -96,6 +104,9 @@ void execute_thread_runner(QPromise<SimResult>&      promise,
         SolTrace::Runner::RunnerStatus result;
 
         size_t thread_count = config.thread_count;
+
+        qDebug() << "Starting count" << thread_count;
+
         if (thread_count == 0) {
             thread_count = std::thread::hardware_concurrency();
         }
@@ -104,7 +115,9 @@ void execute_thread_runner(QPromise<SimResult>&      promise,
                 current_runner.get());
             ptr) {
             ptr->set_number_of_threads(thread_count);
-            ptr->disable_stages();
+            // ptr->disable_stages();
+
+            qDebug() << "Native parameters" << thread_count;
         }
 
 
@@ -215,6 +228,11 @@ void execute_thread_runner(QPromise<SimResult>&      promise,
 
         SOLTRACE_SECTION(
             report_simulation(&soltrace_result, 100), 90, "Report simulation");
+
+        qDebug() << Q_FUNC_INFO
+                 << "Launched:" << current_runner->get_number_rays_launched();
+        qDebug() << Q_FUNC_INFO
+                 << "Traced:" << current_runner->get_number_rays_traced();
 
         return construct_result(promise, data, soltrace_result);
 

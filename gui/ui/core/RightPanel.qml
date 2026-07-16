@@ -42,7 +42,7 @@ ShadowedGlassRectangle {
                 font.bold: true
 
                 elide: Label.ElideRight
-                // horizontalAlignment: App.view.right_panel.size == PanelData.Small ? Label.AlignLeft : Label.AlignHCenter
+                // horizontalAlignment: App.view.right_panel.size == SplitPanelData.Small ? Label.AlignLeft : Label.AlignHCenter
                 verticalAlignment: Label.AlignVCenter
             }
 

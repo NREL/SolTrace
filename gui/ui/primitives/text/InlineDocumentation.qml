@@ -8,7 +8,7 @@ ColumnLayout {
     id: root
     required property string key
 
-    property PanelData target
+    property SplitPanelData target
     property string titlePrefix: ""
     property string title: ""
     property string body: ""
@@ -30,6 +30,8 @@ ColumnLayout {
         id: body
 
         Layout.fillWidth: true
+
+        textFormat: Label.MarkdownText
 
         text: {
             App.docs.locale

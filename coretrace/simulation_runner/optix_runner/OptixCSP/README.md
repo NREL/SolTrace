@@ -15,7 +15,8 @@ OptixCSP focuses on accuracy, performance, and extensibility so you can:
 
 ### Hardware & Drivers
 
-* NVIDIA GPU, preferrably with RT cores, has been tested on RTX3050, RTX4070Ti and H100.
+* NVIDIA Turing-class or newer GPU with compute capability 7.5 or higher.
+  RTX3050, RTX4070Ti, and H100 have been tested.
 * NVIDIA driver, compatible with your target OptiX & CUDA toolkit.
 
 ### Software
@@ -96,6 +97,11 @@ cmake --build . -j
 ### Windows
 * In CMake GUI, set `OptiX_INCLUDE` to the Optix SDK's `include/` folder (e.g., `C:/ProgramData/NVIDIA Corporation/OptiX SDK 8.1.0/include`).
 * Generate for Visual Studio 2022, then build the `Release` and `Debug` configuration.
+
+The build targets CUDA compute capability 7.5 by default, independent of the
+GPU installed on the build host. Set
+`SOLTRACE_OPTIX_COMPUTE_CAPABILITY` to a numeric architecture such as `86` only
+when intentionally producing a specialized build with a higher minimum.
 
 
 ## Running the demos

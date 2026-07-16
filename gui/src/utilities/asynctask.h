@@ -1,14 +1,16 @@
 #pragma once
 
+#include "utilities/result.h"
+
 #include <QFutureWatcherBase>
 #include <QObject>
 #include <QtConcurrent/qtconcurrentrun.h>
+
 #include <functional>
+#include <type_traits>
 
 class AsyncTaskBase : public QObject {
     Q_OBJECT
-protected:
-    bool m_failed = false;
 
 signals:
     void internal_cancel(QPrivateSignal);
@@ -33,6 +35,43 @@ signals:
     void progress_status(QString);
 };
 
+struct TaskControl {
+    TaskControl();
+
+    TaskControl(TaskControl const&) = delete;
+    TaskControl(TaskControl&&)      = delete;
+
+    TaskControl& operator=(TaskControl const&) = delete;
+    TaskControl& operator=(TaskControl&&)      = delete;
+
+    virtual void suspendIfRequested() const = 0;
+    virtual bool cancelRequested() const    = 0;
+
+    virtual void setProgressValue(int) const                 = 0;
+    virtual void setProgressValueAndText(int, QString) const = 0;
+};
+
+template <class SuccessType, class FailureType>
+struct TaskControlDerived : public TaskControl {
+    QPromise<Result<SuccessType, FailureType>>& promise;
+
+    TaskControlDerived(QPromise<Result<SuccessType, FailureType>>& _promise)
+        : promise(_promise) { }
+
+    void suspendIfRequested() const override {
+        return promise.suspendIfRequested();
+    }
+    bool cancelRequested() const override { return promise.isCanceled(); }
+
+    virtual void setProgressValue(int value) const override {
+        promise.setProgressValue(value);
+    }
+    virtual void setProgressValueAndText(int     value,
+                                         QString text) const override {
+        promise.setProgressValueAndText(value, text);
+    }
+};
+
 /// An ephemeral async task. Use this class to launch Qt Concurrent Run capable
 /// functions. Results will be collected and when the task is complete,
 /// delivered to a task host.
@@ -40,117 +79,105 @@ signals:
 /// Upon completion (either success or failure), this
 /// object will delete itself.
 ///
-/// When finished, calls sink->callback(identity, QVector<T>);
-///  or calls sink->callback(identity, T);
-/// When failed or cancelled, calls sink->callback(identity, QString);
-template <class I, class T>
+/// When finished, calls sink->callback(identity, SuccessType);
+/// When failed or cancelled, calls sink->callback(identity, FailureType);
+///
+/// The failure type should have a conversion from a QString to record
+/// exceptions.
+template <class IdentityType, class SuccessType, class FailureType>
 class AsyncTask : public AsyncTaskBase {
-    QVector<T> m_ready;
+    // QVector<Result<SuccessType, FailureType>> m_ready;
 
 public:
-    template <class U,
-              class Finished,
-              class Failed,
-              class Function,
+    template <class SinkType,
+              class FinishedFunc,
+              class FailedFunc,
+              class TaskFunction,
               class... Args>
-    AsyncTask(I          identity,
-              U*         sink,
-              Finished&& finished_func,
-              Failed&&   failed_func,
-              Function&& f,
+    AsyncTask(IdentityType   identity,
+              SinkType*      sink,
+              FinishedFunc&& finished_func,
+              FailedFunc&&   failed_func,
+              TaskFunction&& f,
               Args&&... args)
         : AsyncTaskBase(sink) {
 
-        auto fail_once =
-            [this, sink, identity, failed_func = std::move(failed_func)](
-                QString message) {
-                qDebug() << Q_FUNC_INFO << "Failure handler" << message;
-                if (this->m_failed) return;
+        using ResultType = Result<SuccessType, FailureType>;
 
-                this->m_failed = true;
-                std::invoke(failed_func, sink, identity, message);
-                emit this->failed();
-            };
+        auto task_function = [f, identity](QPromise<ResultType>& promise,
+                                           std::decay_t<Args>... args) {
+            try {
+                auto control =
+                    TaskControlDerived<SuccessType, FailureType> { promise };
 
-        auto future = QtConcurrent::run(f, std::forward<Args>(args)...)
-                          .onFailed(sink,
-                                    [fail_once](std::exception const& e) {
-                                        fail_once(QString(e.what()));
-                                        return T();
-                                    })
-                          .onFailed(sink,
-                                    [fail_once](QException const& e) {
-                                        fail_once(QString(e.what()));
-                                        return T();
-                                    })
-                          .onFailed(sink, [fail_once] {
-                              fail_once("unknown exception");
-                              return T();
-                          });
+                // hide details...
+                TaskControl& dispatch = control;
 
-        using FW = QFutureWatcher<T>;
+                promise.setProgressRange(0, 100);
+                ResultType result = f(dispatch, std::move(args)...);
+                promise.emplaceResult(std::move(result));
+                qDebug() << Q_FUNC_INFO << identity << "Success";
+
+            } catch (std::exception const& e) {
+                qDebug() << Q_FUNC_INFO << "Failure handler" << e.what();
+                promise.emplaceResult(FailureType(QString::fromUtf8(e.what())));
+            } catch (...) {
+                qDebug() << Q_FUNC_INFO << "Failure handler: unknown exception";
+                promise.emplaceResult(
+                    FailureType(QStringLiteral("unknown exception")));
+            }
+        };
+
+        auto future =
+            QtConcurrent::run(task_function, std::forward<Args>(args)...);
+
+        using FW = QFutureWatcher<ResultType>;
 
         auto watcher = new FW(this);
 
         // We use self-owning tasks
         connect(watcher, &FW::finished, this, &AsyncTask::deleteLater);
 
-        connect(watcher,
-                &FW::finished,
-                sink,
-                [this,
-                 watcher,
-                 finished_func = std::move(finished_func),
-                 sink,
-                 identity]() {
-                    qDebug() << Q_FUNC_INFO << watcher << this;
+        auto on_completion = [this,
+                              watcher,
+                              finished_func = std::move(finished_func),
+                              failed_func   = std::move(failed_func),
+                              sink,
+                              identity]() {
+            qDebug() << Q_FUNC_INFO << watcher << this;
 
-                    if (watcher->isCanceled() or this->m_failed) { return; }
+            if (watcher->isCanceled()) {
+                std::invoke(failed_func,
+                            sink,
+                            identity,
+                            FailureType(QStringLiteral("Canceled")));
+                emit this->failed();
+                return;
+            }
 
-                    if constexpr (std::invocable<decltype(finished_func),
-                                                 U*,
-                                                 I,
-                                                 QVector<T>>) {
+            // we _should_ have a result here, and only one
+            auto result = watcher->future().takeResult();
 
-                        std::invoke(
-                            finished_func, sink, identity, std::move(m_ready));
+            if (result.is_failure()) {
+                std::invoke(failed_func,
+                            sink,
+                            identity,
+                            std::move(result.get_failure()));
+                emit this->failed();
+                return;
+            }
 
-                    } else if constexpr (std::invocable<decltype(finished_func),
-                                                        U*,
-                                                        I,
-                                                        T>) {
+            // we _should_ be success here
 
-                        if (m_ready.size()) {
-                            std::invoke(finished_func,
-                                        sink,
-                                        identity,
-                                        std::move(m_ready[0]));
-                        } else {
-                            std::invoke(finished_func, sink, identity, T());
-                        }
+            std::invoke(
+                finished_func, sink, identity, std::move(result.get_success()));
 
+            qDebug() << Q_FUNC_INFO << "Finished";
 
-                    } else {
-                        []<bool flag = false>() {
-                            static_assert(flag, "no match");
-                        }();
-                    }
+            emit this->finished();
+        };
 
-                    qDebug() << Q_FUNC_INFO << "Finished";
-
-                    emit this->finished();
-                });
-
-        connect(watcher, &FW::canceled, sink, [fail_once]() {
-            fail_once("cancelled");
-        });
-
-
-        connect(watcher, &FW::resultReadyAt, this, [this, watcher](int index) {
-            auto result = watcher->resultAt(index);
-
-            m_ready << result;
-        });
+        connect(watcher, &FW::finished, sink, on_completion);
 
         // Permit progress watching
         connect(watcher, &FW::progressValueChanged, this, [this](int value) {
@@ -168,45 +195,48 @@ public:
     }
 
     ~AsyncTask() override { }
-
-    bool has_results() const { return !m_ready.empty(); }
-
-    /// Obtain all results collected at this point
-    QVector<T> all_results() const { return m_ready; }
-
-    /// Obtain the first result collected. If no results have been collected
-    /// (check has_results), returns a default constructed value.
-    T result() const { return m_ready.value(0); }
 };
 
 
 /// Launch a task in another thread.
 ///
-/// Most standalone functions are supported; special support remains for
-/// QPromise as the first argument.
+/// When finished, calls sink->callback(identity, SuccessType);
+/// When failed or cancelled, calls sink->callback(identity, FailureType);
 ///
-/// When finished, calls sink->callback(identity, QVector<T>);
-///  or calls sink->callback(identity, T);
-/// When failed or cancelled, calls sink->callback(identity, QString);
+/// The failure type should have a conversion from a QString to record
+/// exceptions.
 ///
-/// NOTE! for proper handling, please make sure to always emplace a result.
-template <class T,
-          class I,
-          class U,
-          class Finished,
-          class Failed,
-          class Function,
+/// By default the first argument must be TaskControl &, which you can use to
+/// check for cancellation or suspension.
+template <class SuccessType,
+          class FailureType,
+          class IdentityType,
+          class SinkType,
+          class FinishedFunc,
+          class FailedFunc,
+          class TaskFunction,
           class... Args>
-AsyncTask<I, T>* launch_async_task(I          identity,
-                                   U*         sink,
-                                   Finished&& finished_func,
-                                   Failed&&   failed_func,
-                                   Function&& f,
-                                   Args&&... args) {
-    return new AsyncTask<I, T>(identity,
-                               sink,
-                               std::forward<Finished>(finished_func),
-                               std::forward<Failed>(failed_func),
-                               f,
-                               std::forward<Args>(args)...);
+AsyncTask<IdentityType, SuccessType, FailureType>*
+launch_async_task(IdentityType   identity,
+                  SinkType*      sink,
+                  FinishedFunc&& finished_func,
+                  FailedFunc&&   failed_func,
+                  TaskFunction&& f,
+                  Args&&... args) {
+    return new AsyncTask<IdentityType, SuccessType, FailureType>(
+        identity,
+        sink,
+        std::forward<FinishedFunc>(finished_func),
+        std::forward<FailedFunc>(failed_func),
+        f,
+        std::forward<Args>(args)...);
 }
+
+/// Helper macro
+#define ASYNC_TASK_SYNC_POINT(CONTROL)                                         \
+    {                                                                          \
+        CONTROL.suspendIfRequested();                                          \
+        if (CONTROL.cancelRequested()) {                                       \
+            return return_failure(QStringLiteral("Cancelled"));                \
+        }                                                                      \
+    }

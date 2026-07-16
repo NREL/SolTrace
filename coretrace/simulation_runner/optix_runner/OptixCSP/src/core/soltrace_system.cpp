@@ -90,9 +90,21 @@ SolTraceSystem::SolTraceSystem()
     m_state.d_gas_output_buffer = 0;
 }
 
-SolTraceSystem::~SolTraceSystem()
+SolTraceSystem::~SolTraceSystem() noexcept
 {
-    clean_up();
+    try
+    {
+        clean_up();
+    }
+    catch (const std::exception &error)
+    {
+        std::cerr << "[OptixRunner] Cleanup failed during destruction: "
+                  << error.what() << '\n';
+    }
+    catch (...)
+    {
+        std::cerr << "[OptixRunner] Cleanup failed during destruction with an unknown error.\n";
+    }
 }
 
 void SolTraceSystem::set_max_ray_depth(uint64_t depth)

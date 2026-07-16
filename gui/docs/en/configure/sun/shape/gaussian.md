@@ -2,4 +2,6 @@
 title: "Gaussian Emission Profile"
 ---
 
-The Gaussian sun shape is a Gaussian (standard normal) distribution centered on the centroid of the solar disc with standard deviation (typically equal to the radius of the solar disc). This model is an approximation with limited accuracy, but is useful for parametrically considering the impact of sun shape on designs of interest.
+[Gaussian Emission Profile EN] Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi accumsan sed lectus id lacinia. Donec dui massa, eleifend non ipsum in, venenatis pulvinar arcu. Integer rutrum malesuada dictum. Sed tempor, arcu ac sodales pretium, nunc tellus vulputate purus, ut venenatis sapien arcu id turpis. Maecenas ornare tortor nibh, a porttitor dui finibus non.
+
+Proin lobortis felis ipsum. Mauris et sodales orci. Fusce iaculis rutrum dui in sodales. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris gravida odio sed volutpat efficitur. Cras rutrum, felis eu vehicula mollis, nisl diam viverra nunc, vel suscipit nulla tellus quis justo. Sed scelerisque nulla quis enim ullamcorper porta. Fusce aliquet ante non erat lacinia, feugiat eleifend lorem pulvinar.

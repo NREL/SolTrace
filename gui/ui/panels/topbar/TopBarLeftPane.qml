@@ -12,8 +12,19 @@ RowLayout {
     required property int available_width
     required property bool show_logos
 
-    readonly property bool analyzing: App.view.workflow_phase === 3
-    readonly property string current_context_title: analyzing ? "Analyze" : "Configure"
+    function getTitle() {
+        switch (App.view.workflow_phase) {
+            case ViewModule.Start: return "Get Started"
+            case ViewModule.Load: return "Load Scene"
+            case ViewModule.Configure: return "Configure Scene"
+            case ViewModule.Simulate: return "Trace Scene"
+            case ViewModule.Analyze: return "Analyze Results"
+            default: return "Other"
+        }
+    }
+
+    readonly property bool analyzing: App.view.workflow_phase === ViewModule.Analyze
+    readonly property string current_context_title: getTitle()
     readonly property string current_context_name: analyzing
                                                    ? (App.simulation.current_simulation_result_name.length ?
                                                           App.simulation.current_simulation_result_name
@@ -31,19 +42,11 @@ RowLayout {
         //Layout.leftMargin: 20
         //Layout.rightMargin: 10
 
-        text: "\uf0c9"
+        icon: "\uf0c9"
         toolTip: (App.view.left_panel.visible ? "Close": "Open") + " Left Panel"
 
-        label.font.pointSize: 20
-        onClicked: {
-            if (App.view.settings_panel.visible) {
-                App.view.settings_panel.visible = false
-                return
-            }
-
-            App.view.left_panel.visible = !App.view.left_panel.visible && !App.view.settings_panel.visible
-            App.view.fit_panels(root.available_width)
-        }
+        iconSize: 20
+        onClicked: App.view.toggle_left_panel(root.available_width);
     }
 
     Item {
@@ -117,12 +120,13 @@ RowLayout {
                     //anchors.bottom: parent.bottom
                     //anchors.left: parent.left
 
-                    text: "\uf071"
-                    font.pointSize: 24
+                    text: " \uf071"
                     font.family: "Font Awesome 7 Free"
 
                     style: Label.Outline
                     styleColor: "black"
+
+                    font.pointSize: App.theme.labelSize
 
                     color: Material.color(Material.Yellow)
                 }

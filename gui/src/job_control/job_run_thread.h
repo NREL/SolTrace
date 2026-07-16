@@ -7,6 +7,7 @@
 enum class ThreadRunnerBackend {
     Native,
     Embree,
+    Optix,
 };
 
 struct ThreadRunnerConfig {

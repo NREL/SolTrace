@@ -31,6 +31,9 @@ private slots:
     // When other things about an instance (parent, tf) change
     void on_instance_changed(entt::entity);
 
+    // When an instance selection marker changes
+    void on_selection_changed(entt::entity);
+
     // Retrieve entity using instance index
     entt::entity entity_at(int index);
 

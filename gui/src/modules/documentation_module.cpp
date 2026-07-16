@@ -14,7 +14,7 @@ namespace SolTrace::GUI::App {
 DocumentationModule::DocumentationModule(QObject* parent)
     : QObject(parent),
       m_directory_path(":/docs"),
-      m_status(new StatusComponent()) {
+      m_status(new StatusComponent(this)) {
     connect(this,
             &DocumentationModule::locale_changed,
             this,

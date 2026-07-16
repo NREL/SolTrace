@@ -2,6 +2,8 @@
 #  src/CMakeLists.txt   – builds the OptixCSP core library
 # ──────────────────────────────────────────────────────────────
 
+include(GNUInstallDirs)
+
 # ---------------------------------------------------------------------------
 # core target
 # ---------------------------------------------------------------------------
@@ -23,26 +25,35 @@ if(NOT OptiX_INCLUDE AND OptiX_INCLUDE_DIR)
 endif()
 message(STATUS "OptiX include directory: ${OptiX_INCLUDE}")
 
-# detect compute capabilities
-execute_process(
-    COMMAND nvidia-smi --query-gpu=compute_cap --format=csv,noheader
-    OUTPUT_VARIABLE DETECTED_COMPUTE_CAP
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-    RESULT_VARIABLE nvidia_smi_result
+# Build for a declared minimum GPU rather than the build host. Release builders
+# are often headless, and host detection would make artifacts depend on whatever
+# GPU happened to be installed on the build machine.
+set(
+    SOLTRACE_OPTIX_COMPUTE_CAPABILITY "75"
+    CACHE STRING
+    "Minimum CUDA compute capability for the OptiX runner, without a decimal point"
 )
-if(nvidia_smi_result EQUAL 0 AND DETECTED_COMPUTE_CAP)
-    string(REPLACE "." "" DETECTED_COMPUTE_CAP ${DETECTED_COMPUTE_CAP})
-    message(STATUS "Detected gpu compute capability: ${DETECTED_COMPUTE_CAP}")
-else()
-    set(DETECTED_COMPUTE_CAP "80")
-    message(STATUS "Could not detect GPU compute capability, defaulting to: ${DETECTED_COMPUTE_CAP}")
+if(NOT SOLTRACE_OPTIX_COMPUTE_CAPABILITY MATCHES "^[0-9]+$")
+    message(FATAL_ERROR
+        "SOLTRACE_OPTIX_COMPUTE_CAPABILITY must be numeric, for example 75"
+    )
 endif()
+message(STATUS
+    "OptiX minimum CUDA compute capability: ${SOLTRACE_OPTIX_COMPUTE_CAPABILITY}"
+)
 
 
 file(GLOB_RECURSE CORE_SRC  CONFIGURE_DEPENDS  core/*.cpp core/*.cu)
 file(GLOB_RECURSE CORE_HDR  CONFIGURE_DEPENDS  core/*.hpp core/*.h utils/*.hpp utils/*.h shaders/*.h)
 
 target_sources(OptixCSP_core PRIVATE ${CORE_SRC} ${CORE_HDR})
+
+# A numeric CMake CUDA architecture emits both native code for the minimum GPU
+# and virtual PTX that NVIDIA drivers can JIT for newer GPU architectures.
+set_property(
+    TARGET OptixCSP_core
+    PROPERTY CUDA_ARCHITECTURES "${SOLTRACE_OPTIX_COMPUTE_CAPABILITY}"
+)
 
 target_include_directories(OptixCSP_core
    PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}
@@ -89,8 +100,7 @@ foreach(shader ${SHADERS})
             --use_fast_math
             -lineinfo
             -std=c++17
-            -arch=sm_${DETECTED_COMPUTE_CAP}
-            #-arch=sm_75
+            -arch=compute_${SOLTRACE_OPTIX_COMPUTE_CAPABILITY}
             -I"${OptiX_INCLUDE}"
             -I${CMAKE_CURRENT_SOURCE_DIR}/core
             -DOPTIX_INCLUDE_INTERNAL_FUNCTIONS
@@ -98,7 +108,9 @@ foreach(shader ${SHADERS})
             -o ${SHADER_PTX}
             ${SHADER_SRC}
         DEPENDS ${SHADER_SRC}
-        COMMENT "Generating PTX: ${shader}.ptx"
+        COMMENT
+            "Generating PTX for compute_${SOLTRACE_OPTIX_COMPUTE_CAPABILITY}: ${shader}.ptx"
+        VERBATIM
     )
 
     list(APPEND PTX_OUTPUTS ${SHADER_PTX})
@@ -109,6 +121,11 @@ endforeach()
 add_custom_target(OptixCSP_shaders DEPENDS ${PTX_OUTPUTS} ${SHADER_FILES}
                                    SOURCES ${SHADER_FILES}
 )
+
+install(FILES ${PTX_OUTPUTS}
+    DESTINATION ${CMAKE_INSTALL_BINDIR}/ptx
+)
+
 # ---------------------------------------------------------------------------
 # core depends on shaders target
 # ---------------------------------------------------------------------------

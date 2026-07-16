@@ -11,7 +11,8 @@ Button {
 
     padding: 0
 
-    property string text_icon
+    property string left_text_icon
+    property string right_text_icon
 
     property color down_color: Material.rippleColor
     property color idle_color: App.theme.glassColor
@@ -29,8 +30,8 @@ Button {
         }
 
         Label {
-            visible: control.text_icon.length > 0
-            text: control.text_icon
+            visible: control.left_text_icon.length > 0
+            text: control.left_text_icon
             horizontalAlignment: Text.AlignHCenter
             verticalAlignment: Text.AlignVCenter
 
@@ -48,6 +49,18 @@ Button {
 
 
             
+
+            //Layout.fillWidth: true
+            Layout.fillHeight: true
+        }
+
+        Label {
+            visible: control.right_text_icon.length > 0
+            text: control.right_text_icon
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+
+            font.family: "Font Awesome 7 Free"
 
             //Layout.fillWidth: true
             Layout.fillHeight: true
@@ -71,7 +84,7 @@ Button {
             offset.x: 0
             offset.y: 0
             radius: background.radius
-            blur: 30
+            blur: 15
             spread: 3
             color: Material.dropShadowColor
         }

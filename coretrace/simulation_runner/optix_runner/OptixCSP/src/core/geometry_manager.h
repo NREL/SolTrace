@@ -20,7 +20,7 @@ namespace OptixCSP {
 		GeometryManager(SoltraceState& state, bool verbose) : 
 			m_state(state), m_obj_counts(0), m_verbose(verbose)
 		{}
-		~GeometryManager() {}
+		~GeometryManager() noexcept;
 
 		/// go through the list of elements and collect the geometry info on the host: 
 		/// - AABBs

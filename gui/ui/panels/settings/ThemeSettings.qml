@@ -12,12 +12,50 @@ ScrollView {
     contentWidth: availableWidth
     clip: true
 
+    function resetGlass() {
+        App.theme.glassColor = App.theme.defaultGlassColor
+        App.theme.fontColor = App.theme.defaultFontColor
+        glassColorPicker.color = App.theme.glassColor
+        glassAlphaSlider.value = App.theme.glassColor.a * 100
+        fontColorPicker.color = App.theme.fontColor
+    }
+
+    function resetFont() {
+        App.theme.fontColor = App.theme.defaultFontColor
+        App.theme._headerSize = App.theme.defaultHeaderSize
+        App.theme._subHeaderSize = App.theme.defaultSubHeaderSize
+        App.theme._labelSize = App.theme.defaultLabelSize
+        App.theme._normalSize = App.theme.defaultNormalSize
+        App.theme.zoomLevel = 1
+
+        fontColorPicker.color = App.theme.fontColor
+        headerSizeField.value = App.theme._headerSize
+        subHeaderSizeField.value = App.theme._subHeaderSize
+        labelSizeField.value = App.theme._labelSize
+        normalSizeField.value = App.theme._normalSize
+        zoomLevelField.value = App.theme.zoomLevel * 100
+    }
+
+    function reset() {
+        resetGlass()
+        resetFont()
+    }
+
     ColumnLayout {
         width: root.availableWidth
         spacing: 12
 
         Header {
             text: "Theme"
+        }
+
+        STDangerousButton {
+            Layout.preferredWidth: 100
+
+            text: "Reset"
+            down_color: App.theme.defaultGlassColor
+
+            onClicked: root.reset()
         }
 
         STPropertyPanel {
@@ -39,12 +77,16 @@ ScrollView {
                 }
 
                 SliderField {
+                    id: glassAlphaSlider
+
                     Layout.preferredWidth: 250
                     Layout.maximumWidth: 350
 
                     from: 0
                     to: 100
+
                     value: App.theme.glassColor.a * 100
+
                     onModified: {
                         App.theme.glassColor.a = value / 100
                     }
@@ -53,15 +95,12 @@ ScrollView {
                 }
 
                 STDangerousButton {
-                    Layout.preferredWidth: 250
+                    Layout.preferredWidth: 100
                     text: "Reset"
 
-                    onClicked: {
-                        App.theme.glassColor.r = 0
-                        App.theme.glassColor.g = 0
-                        App.theme.glassColor.b = 0
-                        App.theme.glassColor.a = 0.15
-                    }
+                    down_color: App.theme.defaultGlassColor
+
+                    onClicked: root.resetGlass()
                 }
             }
         }
@@ -75,7 +114,7 @@ ScrollView {
             ColumnLayout {
                 ColorPickerField {
                     id: fontColorPicker
-
+                    color: App.theme.fontColor
                     label: "Font Color"
                     onUpdated: {
                         App.theme.fontColor.r = fontColorPicker.color.r
@@ -85,6 +124,7 @@ ScrollView {
                 }
 
                 STSpinBoxField {
+                    id: headerSizeField
                     label: "Header Size"
                     from: 1
                     to: 100
@@ -96,6 +136,7 @@ ScrollView {
                 }
 
                 STSpinBoxField {
+                    id: subHeaderSizeField
                     label: "Subheader Size"
                     from: 1
                     to: 100
@@ -107,6 +148,7 @@ ScrollView {
                 }
 
                 STSpinBoxField {
+                    id: labelSizeField
                     label: "Label Size"
                     from: 1
                     to: 100
@@ -118,6 +160,7 @@ ScrollView {
                 }
 
                 STSpinBoxField {
+                    id: normalSizeField
                     label: "Normal Font Size"
                     from: 1
                     to: 100
@@ -129,6 +172,7 @@ ScrollView {
                 }
 
                 SliderField {
+                    id: zoomLevelField
                     Layout.preferredWidth: 250
                     Layout.maximumWidth: 350
 
@@ -143,19 +187,11 @@ ScrollView {
                 }
 
                 STDangerousButton {
-                    Layout.preferredWidth: 250
+                    Layout.preferredWidth: 100
                     text: "Reset"
 
-                    onClicked: {
-                        App.theme.fontColor.r = 1
-                        App.theme.fontColor.g = 1
-                        App.theme.fontColor.b = 1
-                        App.theme._headerSize = 17
-                        App.theme._subHeaderSize = 16
-                        App.theme._labelSize = 13
-                        App.theme._normalSize = 15
-                        App.theme.zoomLevel = 1
-                    }
+                    down_color: App.theme.defaultGlassColor
+                    onClicked: root.resetFont()
                 }
             }
         }

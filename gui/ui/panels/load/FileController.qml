@@ -18,6 +18,8 @@ Item {
     }
 
     function open_file() {
+        if (file_settings.last_selected_file.toString() !== "")
+            openFileDialog.selectedFile = file_settings.last_selected_file
         openFileDialog.open()
     }
 
@@ -34,6 +36,10 @@ Item {
     function file_name(file_path) {
         var file_url = file_url_text(file_path)
         return decodeURIComponent(file_url.split('/').pop())
+    }
+
+    function open_example() {
+        exampleFileDialog.open()
     }
 
     function recent_files_array() {
@@ -100,7 +106,23 @@ Item {
         id: openFileDialog
 
         currentFolder: file_settings.last_selected_folder
-        selectedFile: file_settings.last_selected_file
+
+        onAccepted: {
+            var str_file = String(selectedFile)
+
+            file_settings.last_selected_file = selectedFile
+            file_settings.last_selected_folder = str_file.substring(
+                        0, str_file.lastIndexOf("/"))
+            root.add_files(selectedFile.toString())
+            App.file_source.load_url(selectedFile)
+        }
+    }
+
+
+    FileDialog {
+        id: exampleFileDialog
+
+        currentFolder: App.file_source.examples_folder
 
         onAccepted: {
             var str_file = String(selectedFile)

@@ -66,6 +66,8 @@ STPopup {
 
             model: notification_model
 
+            ScrollBar.vertical: STScrollBar { }
+
             spacing: 8
 
             delegate: GridLayout {

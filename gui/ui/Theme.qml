@@ -7,19 +7,29 @@ import QtQuick3D.AssetUtils
 QtObject {
     id: theme
 
-    property color glassColor: Qt.rgba(0, 0, 0, 0.15)
+    property color defaultGlassColor: Qt.rgba(0, 0, 0, 0.15)
+    property color defaultFontColor: "white"
+
+    property color glassColor: defaultGlassColor
     readonly property color destructiveGlassColor: Qt.rgba(glassColor.r + 0.1, glassColor.g, glassColor.b, glassColor.a)
     readonly property color shadedGlassColor: theme.glassColorA(glassColor.a + 0.05)
     readonly property color dividerColor: Qt.rgba(1, 1, 1, 0.2)
 
-    property color fontColor: Qt.rgba(1, 1, 1)
+    property color fontColor: defaultFontColor
 
-    property int _headerSize: 17
-    property int _subHeaderSize: 16
-    property int _labelSize: 13
-    property int _comboBarTextSize: 14
-    property int _propertyPanelHeaderSize: 14
-    property int _normalSize: 15
+    readonly property int defaultHeaderSize: 17
+    readonly property int defaultSubHeaderSize: 16
+    readonly property int defaultLabelSize: 13
+    readonly property int defaultComboBarTextSize: 13
+    readonly property int defaultPropertyPanelHeaderSize: 14
+    readonly property int defaultNormalSize: 15
+
+    property int _headerSize: defaultHeaderSize
+    property int _subHeaderSize: defaultSubHeaderSize
+    property int _labelSize: defaultLabelSize
+    property int _comboBarTextSize: defaultComboBarTextSize
+    property int _propertyPanelHeaderSize: defaultPropertyPanelHeaderSize
+    property int _normalSize: defaultNormalSize
 
     property real zoomLevel: 1
 

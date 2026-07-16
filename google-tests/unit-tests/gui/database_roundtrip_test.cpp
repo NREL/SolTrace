@@ -20,7 +20,6 @@
 #include <iomanip>
 #include <map>
 #include <memory>
-#include <optional>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -95,28 +94,11 @@ std::string vec_to_string(glm::dvec3 const& vector) {
     return out.str();
 }
 
-std::optional<double> cylinder_radius(SD::Element const& element) {
-    auto cylinder =
-        std::dynamic_pointer_cast<SD::Cylinder const>(element.get_surface());
-    if (!cylinder) return std::nullopt;
-    if (!(cylinder->radius > 0.0) || !std::isfinite(cylinder->radius)) {
-        return std::nullopt;
-    }
-    return cylinder->radius;
-}
-
-ElementSnapshot snapshot_element(SD::Element const& element,
-                                 bool legacy_stinput_cylinder_origin = false) {
+ElementSnapshot snapshot_element(SD::Element const& element) {
     auto local_to_global = element.get_local_to_global();
     auto origin          = element.get_origin_global();
     auto z_axis =
         normalized_or_zero(local_to_global * glm::dvec3 { 0.0, 0.0, 1.0 });
-
-    if (legacy_stinput_cylinder_origin) {
-        if (auto radius = cylinder_radius(element); radius) {
-            origin += z_axis * *radius;
-        }
-    }
 
     return ElementSnapshot {
         .name    = element.get_name(),
@@ -148,8 +130,7 @@ auto sort_key(ElementSnapshot const& item) {
 }
 
 std::vector<ElementSnapshot>
-collect_single_element_snapshots(SD::SimulationData const& data,
-                                 bool legacy_stinput_cylinder_origin = false) {
+collect_single_element_snapshots(SD::SimulationData const& data) {
     std::vector<ElementSnapshot> snapshots;
     snapshots.reserve(data.get_number_of_elements());
 
@@ -157,8 +138,7 @@ collect_single_element_snapshots(SD::SimulationData const& data,
         auto const& element = *iter->second;
         if (!element.is_single()) continue;
 
-        snapshots.push_back(
-            snapshot_element(element, legacy_stinput_cylinder_origin));
+        snapshots.push_back(snapshot_element(element));
     }
 
     std::sort(
@@ -473,13 +453,42 @@ void expect_sun_box_near(SolTrace::Result::SimulationResult& actual,
 
 } // namespace
 
+TEST(RaySourceResource, ClonePreservesGuiSourceType) {
+    auto sun = SD::make_ray_source<SD::Sun>();
+    sun->set_position(0.0, 0.0, 1.0);
+    sun->set_shape(SD::SunShape::GAUSSIAN, 4.65, 4.65, 0.1);
+
+    db::RaySourceResource original {
+        .source = sun,
+        .type   = db::RaySourceType::PointSource,
+    };
+
+    auto clone = original.clone();
+
+    EXPECT_EQ(clone.type, db::RaySourceType::PointSource);
+    ASSERT_NE(clone.source, nullptr);
+    EXPECT_NE(clone.source, original.source);
+}
+
+TEST(RaySourceResource, CloneWithoutSourcePreservesGuiSourceType) {
+    db::RaySourceResource original {
+        .source = {},
+        .type   = db::RaySourceType::PointSource,
+    };
+
+    auto clone = original.clone();
+
+    EXPECT_EQ(clone.type, db::RaySourceType::PointSource);
+    EXPECT_EQ(clone.source, nullptr);
+}
+
 TEST(DatabaseRoundTrip, PowerTowerSurroundExportsEquivalentGlobalSimData) {
     SD::SimulationData original;
     ASSERT_TRUE(
         original.import_from_file(power_tower_surround_path().string()));
 
     db::Database database("round-trip");
-    database.import(original, true /* legacy_stinput_cylinder_origins */);
+    database.import(original);
 
     auto exported_result = database.export_to_simdata();
     ASSERT_TRUE(export_succeeded(exported_result));
@@ -496,8 +505,7 @@ TEST(DatabaseRoundTrip, PowerTowerSurroundExportsEquivalentGlobalSimData) {
                     *original.get_ray_source());
 
     auto actual_snapshots   = collect_single_element_snapshots(*exported->data);
-    auto expected_snapshots = collect_single_element_snapshots(
-        original, true /* legacy_stinput_cylinder_origin */);
+    auto expected_snapshots = collect_single_element_snapshots(original);
 
     ASSERT_EQ(actual_snapshots.size(), expected_snapshots.size());
 
@@ -519,8 +527,7 @@ TEST(DatabaseRoundTrip, PowerTowerSurroundNativeTraceMatchesOriginalSimData) {
         power_tower_surround_path().string()));
 
     db::Database database("round-trip-trace");
-    database.import(source_for_database,
-                    true /* legacy_stinput_cylinder_origins */);
+    database.import(source_for_database);
 
     auto exported_result = database.export_to_simdata();
     ASSERT_TRUE(export_succeeded(exported_result));
@@ -536,8 +543,7 @@ TEST(DatabaseRoundTrip, PowerTowerSurroundNativeTraceMatchesOriginalSimData) {
         power_tower_surround_path().string()));
 
     db::Database expected_database("round-trip-trace-expected");
-    expected_database.import(source_for_expected,
-                             true /* legacy_stinput_cylinder_origins */);
+    expected_database.import(source_for_expected);
 
     auto expected_exported_result = expected_database.export_to_simdata();
     ASSERT_TRUE(export_succeeded(expected_exported_result));

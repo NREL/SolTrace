@@ -14,7 +14,6 @@ QtObject {
     readonly property var layout: AppData.layout
     readonly property var view: AppData.view
     readonly property var materials: AppData.materials
-    readonly property var tracing: AppData.tracing
     readonly property var simulation: AppData.simulation
     readonly property var docs: AppData.docs
 

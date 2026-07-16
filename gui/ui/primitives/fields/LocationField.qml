@@ -36,8 +36,8 @@ STPropertyPanel {
 
         STSpinBoxField {
             id: lonField
-            Layout.row: App.view.left_panel.size == PanelData.Small ? 1 : 0
-            Layout.column: App.view.left_panel.size == PanelData.Small ? 0 : 1
+            Layout.row: App.view.left_panel.size == SplitPanelData.Small ? 1 : 0
+            Layout.column: App.view.left_panel.size == SplitPanelData.Small ? 0 : 1
             Layout.fillWidth: true
             Layout.maximumWidth: 200
             label: "Longitude"

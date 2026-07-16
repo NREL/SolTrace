@@ -28,6 +28,18 @@ STPopup {
             iconModel: ["\uf03d", "\uf135"]
         }
 
+        SliderField {
+            value: AppData.view.sim.fps_walk_speed
+            from: 10
+            to: 100
+            text: "FPS Camera Speed"
+            visible: AppData.view.sim.camera == 0
+
+            onValueChanged: {
+                App.view.sim.fps_walk_speed = value
+            }
+        }
+
         InlineDocumentation {
             key: "placeholder_small"
             title: "Camera Perspectives"
@@ -90,17 +102,6 @@ STPopup {
             STButton {
                 text: "Z"
                 onClicked: simulation_scene.align_to_axis(CameraController.Axis.Z, false)
-            }
-        }
-
-        STSwitch {
-            Layout.fillWidth: true
-
-            text: "Blueprint Mode"
-            checked: App.view.sim.blueprint_mode
-
-            onToggled: {
-                App.view.sim.blueprint_mode = !App.view.sim.blueprint_mode
             }
         }
     }

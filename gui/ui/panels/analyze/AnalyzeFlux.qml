@@ -65,7 +65,7 @@ Flickable {
                 mipmap: true
 
                 STIconButton {
-                    text: "\uf019"
+                    icon: "\uf019"
 
                     anchors.bottom: parent.bottom
                     anchors.right: parent.right
@@ -77,7 +77,7 @@ Flickable {
                 id: map_selector
                 Layout.columnSpan: 2
                 Layout.fillWidth: true
-                collapseLabels: AppData.view.left_panel.size === PanelData.Small
+                collapseLabels: AppData.view.left_panel.size === SplitPanelData.Small
                 iconModel: ["\uf00a", "\uf141"]
                 model: ["Bins", "Points"]
             }
@@ -189,7 +189,7 @@ Flickable {
 
                 text: AppData.flux.current_entity_name.length ?
                           AppData.flux.current_entity_name : "Select Element"
-                text_icon: "\uf05b"
+                left_text_icon: "\uf05b"
 
                 onClicked: entity_pop.open()
 
@@ -208,7 +208,7 @@ Flickable {
                 Layout.columnSpan: 2
 
                 text: "Compute Map"
-                text_icon: "\uf0da"
+                left_text_icon: "\uf0da"
 
                 onClicked: {
                     AppData.flux.start_generate()
@@ -231,7 +231,7 @@ Flickable {
 
                 model: AppData.flux.computed_maps_model
 
-                ScrollIndicator.vertical: ScrollIndicator { }
+                ScrollBar.vertical: STScrollBar { }
 
                 delegate: STItemDelegate {
                     id: delegate
@@ -272,7 +272,7 @@ Flickable {
                 Layout.columnSpan: 2
 
                 text: "Start Raster"
-                text_icon: "\uf0da"
+                left_text_icon: "\uf0da"
 
                 onClicked: {
                     AppData.flux.start_generate_volume_flux(resolution_spin.value)
@@ -303,7 +303,7 @@ Flickable {
                 Layout.columnSpan: 2
 
                 text: "Generate Surface"
-                text_icon: "\uf0da"
+                left_text_icon: "\uf0da"
 
                 onClicked: {
                     AppData.flux.start_generate_isosurface(iso_spin.value)

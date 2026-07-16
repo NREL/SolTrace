@@ -40,15 +40,17 @@ Flow {
                 Loader {
                     Layout.fillWidth: true
                     sourceComponent: root.delegate
-                    onLoaded: root.injectProperties(item, wrapper.index)
-                }
+                    onLoaded: {
+                        item.width = Qt.binding(() => width)
+                        root.injectProperties(item, wrapper.index)
+                    }                }
             }
 
             STIconButton {
                 anchors.top: parent.top
                 anchors.right: parent.right
                 anchors.margins: 8
-                text: "\uf08e"
+                icon: "\uf08e"
                 onClicked: popup.open()
                 visible: root.preview !== null
             }
@@ -68,7 +70,10 @@ Flow {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     sourceComponent: root.preview
-                    onLoaded: root.injectProperties(item, wrapper.index)
+                    onLoaded: {
+                        item.width = Qt.binding(() => width)
+                        root.injectProperties(item, wrapper.index)
+                    }
                 }
             }
         }

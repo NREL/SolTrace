@@ -1,0 +1,31 @@
+# Standalone CPack configuration for the pre-staged Windows runtime tree.
+# This intentionally does not include the project's CPackConfig.cmake or invoke
+# its install rules. See scripts/release/README.md for the packaging rationale.
+
+set(CPACK_GENERATOR "WIX")
+set(CPACK_WIX_VERSION "4")
+set(CPACK_WIX_ARCHITECTURE "x64")
+set(CPACK_WIX_SIZEOF_VOID_P "8")
+set(CPACK_SYSTEM_NAME "win64")
+set(CPACK_WIX_INSTALL_SCOPE "perMachine")
+
+set(CPACK_PACKAGE_NAME "@PACKAGE_NAME@")
+set(CPACK_PACKAGE_VENDOR "National Laboratory of the Rockies")
+set(CPACK_PACKAGE_DESCRIPTION "Optical simulation for concentrating solar power systems")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Optical simulation for concentrating solar power systems")
+set(CPACK_PACKAGE_HOMEPAGE_URL "https://github.com/NLR-SolTrace/SolTrace")
+set(CPACK_PACKAGE_VERSION "@PACKAGE_VERSION@")
+set(CPACK_PACKAGE_FILE_NAME "@PACKAGE_FILE_NAME@")
+set(CPACK_PACKAGE_DIRECTORY "@PACKAGE_DIRECTORY@")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "@INSTALL_DIRECTORY@")
+set(CPACK_RESOURCE_FILE_LICENSE "@LICENSE_FILE@")
+
+# Each installable flavor has a stable UpgradeCode so Windows Installer upgrades
+# it independently. ProductCodes remain package-version-specific.
+set(CPACK_WIX_UPGRADE_GUID "@UPGRADE_GUID@")
+set(CPACK_WIX_PROGRAM_MENU_FOLDER "@PACKAGE_NAME@")
+set(CPACK_WIX_UI_REF "WixUI_InstallDir")
+set(CPACK_PACKAGE_EXECUTABLES "@APP_NAME@" "@PACKAGE_NAME@")
+
+set(CPACK_MONOLITHIC_INSTALL ON)
+set(CPACK_INSTALLED_DIRECTORIES "@INSTALLER_ROOT@;/")

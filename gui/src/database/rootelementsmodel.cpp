@@ -29,7 +29,7 @@ void RootElementsModel::recompute() {
     store_reset(rebuild_lists());
 }
 
-void RootElementsModel::ident_changed(entt::entity entity) {
+void RootElementsModel::record_changed(entt::entity entity) {
     if (!m_host) return;
 
     if (auto iter = m_reverse.find(entity); iter != m_reverse.end()) {
@@ -47,6 +47,7 @@ void RootElementsModel::reset(Database* database) {
         disconnect(m_host->identity.self(), nullptr, this, nullptr);
         disconnect(m_host->parent.self(), nullptr, this, nullptr);
         disconnect(m_host->element_tag.self(), nullptr, this, nullptr);
+        disconnect(m_host->children.self(), nullptr, this, nullptr);
     }
 
     m_host = database;
@@ -57,7 +58,17 @@ void RootElementsModel::reset(Database* database) {
     connect(database->identity.self(),
             &ComponentAPIBase::changed,
             this,
-            &RootElementsModel::ident_changed);
+            &RootElementsModel::record_changed);
+
+    connect(database->children.self(),
+            &ComponentAPIBase::changed,
+            this,
+            &RootElementsModel::record_changed);
+
+    connect(database->children.self(),
+            &ComponentAPIBase::removed,
+            this,
+            &RootElementsModel::record_changed);
 
     // Root membership is determined by the presence of ChildOfComponent.
     connect(database->parent.self(),
@@ -107,7 +118,7 @@ void AllElementsModel::recompute() {
     store_reset(rebuild_lists());
 }
 
-void AllElementsModel::ident_changed(entt::entity entity) {
+void AllElementsModel::record_changed(entt::entity entity) {
     if (!m_host) return;
 
     if (auto iter = m_reverse.find(entity); iter != m_reverse.end()) {
@@ -124,6 +135,7 @@ void AllElementsModel::reset(Database* database) {
     if (m_host) {
         disconnect(m_host->identity.self(), nullptr, this, nullptr);
         disconnect(m_host->element_tag.self(), nullptr, this, nullptr);
+        disconnect(m_host->children.self(), nullptr, this, nullptr);
     }
 
     m_host = database;
@@ -134,7 +146,17 @@ void AllElementsModel::reset(Database* database) {
     connect(database->identity.self(),
             &ComponentAPIBase::changed,
             this,
-            &AllElementsModel::ident_changed);
+            &AllElementsModel::record_changed);
+
+    connect(database->children.self(),
+            &ComponentAPIBase::changed,
+            this,
+            &AllElementsModel::record_changed);
+
+    connect(database->children.self(),
+            &ComponentAPIBase::removed,
+            this,
+            &AllElementsModel::record_changed);
 
     connect(database->element_tag.self(),
             &ComponentAPIBase::changed,

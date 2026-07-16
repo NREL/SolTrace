@@ -17,11 +17,6 @@ OptixRunner::OptixRunner() : SimulationRunner(),
                              m_simdata(nullptr),
                              m_sys() {}
 
-OptixRunner::~OptixRunner()
-{
-    this->m_sys.clean_up();
-}
-
 void OptixRunner::set_verbose(bool verbose)
 {
     m_sys.set_verbose(verbose);

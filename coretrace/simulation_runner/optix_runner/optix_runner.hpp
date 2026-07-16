@@ -12,7 +12,7 @@ class OptixRunner : public SolTrace::Runner::SimulationRunner
 {
 public:
     OptixRunner();
-    ~OptixRunner();
+    ~OptixRunner() override = default;
 
     virtual SolTrace::Runner::RunnerStatus initialize() override;
     virtual SolTrace::Runner::RunnerStatus setup_simulation(

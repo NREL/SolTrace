@@ -7,6 +7,7 @@
 
 #include <QObject>
 #include <QQmlEngine>
+#include <QJSValue>
 #include <QStringList>
 
 namespace SolTrace::GUI::Script {
@@ -51,6 +52,46 @@ class ScriptPropertyModel : public StructTableModel<ScriptProperty> {
 
 public:
     explicit ScriptPropertyModel(QObject* parent = nullptr);
+};
+
+enum class ScriptLogLevel { Log, Warn, Error };
+
+class ScriptConsole : public QObject {
+    Q_OBJECT
+
+public:
+    explicit ScriptConsole(QObject*);
+
+public slots:
+    void log(QJSValue a = {},
+             QJSValue b = {},
+             QJSValue c = {},
+             QJSValue d = {},
+             QJSValue e = {},
+             QJSValue f = {},
+             QJSValue g = {},
+             QJSValue h = {});
+
+    void warn(QJSValue a = {},
+              QJSValue b = {},
+              QJSValue c = {},
+              QJSValue d = {},
+              QJSValue e = {},
+              QJSValue f = {},
+              QJSValue g = {},
+              QJSValue h = {});
+
+    void error(QJSValue a = {},
+               QJSValue b = {},
+               QJSValue c = {},
+               QJSValue d = {},
+               QJSValue e = {},
+               QJSValue f = {},
+               QJSValue g = {},
+               QJSValue h = {});
+
+signals:
+    void logged(int, QString);
 };
 
 /// User-authored script plus parsed metadata and execution state.
@@ -121,8 +162,11 @@ class Script : public QObject {
     Q_READONLY_PROPERTY(QString, description);
     Q_READONLY_PROPERTY(bool, valid);
     Q_READONLY_PROPERTY(QStringList, parse_errors);
-    Q_READONLY_PROPERTY(QStringList, run_errors);
     QOBJECT_READONLY_PROPERTY(ScriptPropertyModel, properties);
+
+
+    // Directory where scripts can pull additional content from
+    Q_WRITABLE_PROPERTY(QString, working_directory, {});
 
     Q_READONLY_PROPERTY(QStringList, builtin_scripts);
 
@@ -136,9 +180,12 @@ public slots:
 
     void run();
     void notify_error(QString message);
+    QString api_markdown();
 
 signals:
     void notify(ANotification);
+
+    void logged(int, QString);
 };
 
 } // namespace SolTrace::GUI::Script

@@ -9,7 +9,7 @@ import SolTrace
 Flickable {
     id: root
 
-    property bool singleColumn: App.view.left_panel.size === PanelData.Small
+    property bool singleColumn: App.view.left_panel.size === SplitPanelData.Small
     property int labelAlignment: (singleColumn ? Qt.AlignLeft : Qt.AlignRight) | Qt.AlignVCenter
 
     function displayPath(urlValue) {
@@ -54,7 +54,7 @@ Flickable {
             STButton {
                 Layout.fillWidth: true
                 text: root.displayPath(AppData.exporter.export_directory)
-                text_icon: "\uf07c"
+                left_text_icon: "\uf07c"
                 onClicked: folderDialog.open()
 
                 FolderDialog {
@@ -154,7 +154,7 @@ Flickable {
         STButton {
             Layout.fillWidth: true
             text: "Export"
-            text_icon: "\uf019"
+            left_text_icon: "\uf019"
             enabled: AppData.exporter.can_export
             onClicked: AppData.exporter.export_current()
         }

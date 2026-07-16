@@ -1,6 +1,9 @@
 #include "script_db_interface.h"
 
 #include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonValue>
@@ -9,7 +12,11 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/constants.hpp>
 
+#include "sun.hpp"
+
+#include <cmath>
 #include <exception>
+#include <optional>
 #include <utility>
 
 namespace SolTrace::GUI::Script {
@@ -89,6 +96,190 @@ bool read_quat(QJsonValue const& value, glm::dquat& out) {
     }
 
     return false;
+}
+
+QString normalize_key(QString key) {
+    return key.trimmed().toLower().replace('-', "_").replace(' ', "_");
+}
+
+QString shape_to_string(SD::SunShape shape) {
+    switch (shape) {
+    case SD::SunShape::NONE: return QStringLiteral("none");
+    case SD::SunShape::GAUSSIAN: return QStringLiteral("gaussian");
+    case SD::SunShape::PILLBOX: return QStringLiteral("pillbox");
+    case SD::SunShape::LIMBDARKENED: return QStringLiteral("limb_darkened");
+    case SD::SunShape::BUIE_CSR: return QStringLiteral("buie_csr");
+    case SD::SunShape::USER_DEFINED: return QStringLiteral("user_defined");
+    case SD::SunShape::UNKNOWN: return QStringLiteral("unknown");
+    }
+    return QStringLiteral("unknown");
+}
+
+std::optional<SD::SunShape> shape_from_string(QString key) {
+    key = normalize_key(key);
+    if (key == QStringLiteral("none")) return SD::SunShape::NONE;
+    if (key == QStringLiteral("gaussian")) return SD::SunShape::GAUSSIAN;
+    if (key == QStringLiteral("pillbox")) return SD::SunShape::PILLBOX;
+    if (key == QStringLiteral("limb_darkened") ||
+        key == QStringLiteral("limbdarkened")) {
+        return SD::SunShape::LIMBDARKENED;
+    }
+    if (key == QStringLiteral("buie_csr") || key == QStringLiteral("buie")) {
+        return SD::SunShape::BUIE_CSR;
+    }
+    if (key == QStringLiteral("user_defined") ||
+        key == QStringLiteral("custom")) {
+        return SD::SunShape::USER_DEFINED;
+    }
+    return std::nullopt;
+}
+
+QString gen_type_to_string(SD::GenType gen_type) {
+    switch (gen_type) {
+    case SD::GenType::RANDOM: return QStringLiteral("random");
+    case SD::GenType::HALTON: return QStringLiteral("halton");
+    case SD::GenType::UNKNOWN: return QStringLiteral("unknown");
+    }
+    return QStringLiteral("unknown");
+}
+
+std::optional<SD::GenType> gen_type_from_string(QString key) {
+    key = normalize_key(key);
+    if (key == QStringLiteral("random")) return SD::GenType::RANDOM;
+    if (key == QStringLiteral("halton")) return SD::GenType::HALTON;
+    return std::nullopt;
+}
+
+QJsonArray user_distribution_to_json(SD::ray_source_ptr const& source) {
+    std::vector<double> angles;
+    std::vector<double> intensities;
+    source->get_user_data(angles, intensities);
+
+    QJsonArray ret;
+    const auto n = std::min(angles.size(), intensities.size());
+    for (std::size_t i = 0; i < n; ++i) {
+        ret.push_back(QJsonObject {
+            { QStringLiteral("angle"), angles[i] },
+            { QStringLiteral("intensity"), intensities[i] },
+        });
+    }
+    return ret;
+}
+
+bool read_user_distribution(QJsonValue const& value,
+                            std::vector<double>& angles,
+                            std::vector<double>& intensities) {
+    if (!value.isArray()) return false;
+
+    auto array = value.toArray();
+    angles.clear();
+    intensities.clear();
+    angles.reserve(array.size());
+    intensities.reserve(array.size());
+
+    for (auto const& item : array) {
+        if (item.isObject()) {
+            auto point = item.toObject();
+            if (!point.contains(QStringLiteral("angle")) ||
+                !point.contains(QStringLiteral("intensity"))) {
+                return false;
+            }
+            angles.push_back(point.value(QStringLiteral("angle")).toDouble());
+            intensities.push_back(
+                point.value(QStringLiteral("intensity")).toDouble());
+            continue;
+        }
+
+        if (item.isArray()) {
+            auto point = item.toArray();
+            if (point.size() != 2) return false;
+            angles.push_back(point.at(0).toDouble());
+            intensities.push_back(point.at(1).toDouble());
+            continue;
+        }
+
+        return false;
+    }
+
+    return !angles.empty() && angles.size() == intensities.size();
+}
+
+void ensure_sun(db::RaySourceResource& resource) {
+    if (!resource.source) {
+        resource.source = SD::make_ray_source<SD::Sun>();
+        resource.source->set_position(0.0, 0.0, 1.0);
+        resource.source->set_shape(
+            SD::SunShape::GAUSSIAN, 4.65, 4.65, 0.1, {}, {});
+        resource.source->set_gen_type(SD::GenType::RANDOM);
+    }
+}
+
+void patch_sun_shape(SD::ray_source_ptr const& source,
+                     QJsonObject const& object) {
+    auto shape = source->get_shape();
+    if (object.contains(QStringLiteral("shape"))) {
+        if (auto parsed =
+                shape_from_string(object.value(QStringLiteral("shape"))
+                                      .toString())) {
+            shape = *parsed;
+        }
+    }
+
+    auto sigma     = source->get_sigma();
+    auto half_width = source->get_half_width();
+    auto csr       = source->get_circumsolar_ratio();
+
+    if (std::isnan(sigma)) { sigma = 4.65; }
+    if (std::isnan(half_width)) { half_width = 4.65; }
+    if (std::isnan(csr)) { csr = 0.1; }
+
+    if (object.contains(QStringLiteral("sigma"))) {
+        sigma = object.value(QStringLiteral("sigma")).toDouble();
+    }
+    if (object.contains(QStringLiteral("half_width"))) {
+        half_width = object.value(QStringLiteral("half_width")).toDouble();
+    }
+    if (object.contains(QStringLiteral("halfWidth"))) {
+        half_width = object.value(QStringLiteral("halfWidth")).toDouble();
+    }
+    if (object.contains(QStringLiteral("csr"))) {
+        csr = object.value(QStringLiteral("csr")).toDouble();
+    }
+
+    std::vector<double> angles;
+    std::vector<double> intensities;
+    source->get_user_data(angles, intensities);
+    if (object.contains(QStringLiteral("user_distribution"))) {
+        read_user_distribution(object.value(QStringLiteral("user_distribution")),
+                               angles,
+                               intensities);
+    }
+    if (object.contains(QStringLiteral("userDistribution"))) {
+        read_user_distribution(object.value(QStringLiteral("userDistribution")),
+                               angles,
+                               intensities);
+    }
+
+    source->set_shape(shape, sigma, half_width, csr, angles, intensities);
+}
+
+QString resolve_script_content_path(QString const& working_directory,
+                                    QString const& relative_path) {
+    if (relative_path.isEmpty() || QFileInfo(relative_path).isAbsolute()) {
+        return {};
+    }
+
+    auto base_dir = QDir(working_directory.isEmpty() ? QDir::currentPath()
+                                                     : working_directory);
+    auto base_path = QDir::cleanPath(base_dir.absolutePath());
+    auto file_path = QDir::cleanPath(base_dir.filePath(relative_path));
+
+    if (file_path == base_path ||
+        !file_path.startsWith(base_path + QDir::separator())) {
+        return {};
+    }
+
+    return file_path;
 }
 
 QJsonObject to_qjson(nlohmann::ordered_json const& json) {
@@ -213,6 +404,10 @@ QVector<db::Entity> collect_entities(entt::registry const& registry) {
 ScriptDBInterface::ScriptDBInterface(db::Database* database, QObject* parent)
     : QObject { parent }, m_database { database } { }
 
+void ScriptDBInterface::update_working_directory(QString directory) {
+    m_working_directory = directory;
+}
+
 QJsonArray ScriptDBInterface::vec3(double value) {
     return to_json(glm::dvec3 { value, value, value });
 }
@@ -331,6 +526,114 @@ QJsonArray ScriptDBInterface::quat_rotate_vec3(QJsonValue rotation,
     auto length = glm::length(q);
     if (length <= 0.0) return {};
     return to_json(glm::normalize(q) * vector);
+}
+
+QJsonObject ScriptDBInterface::get_ray_source() {
+    if (!m_database) return {};
+
+    auto source = m_database->get_ray_source();
+    if (!source) return {};
+
+    return QJsonObject {
+        { QStringLiteral("type"), QStringLiteral("directional") },
+        { QStringLiteral("position"), to_json(source->get_position()) },
+        { QStringLiteral("generation"),
+          gen_type_to_string(source->get_gen_type()) },
+        { QStringLiteral("shape"), shape_to_string(source->get_shape()) },
+        { QStringLiteral("sigma"), source->get_sigma() },
+        { QStringLiteral("half_width"), source->get_half_width() },
+        { QStringLiteral("csr"), source->get_circumsolar_ratio() },
+        { QStringLiteral("user_distribution"),
+          user_distribution_to_json(source) },
+    };
+}
+
+void ScriptDBInterface::set_ray_source(QJsonObject object) {
+    if (!m_database) return;
+
+    try {
+        m_database->ray_source_resource.patch(
+            [&](db::RaySourceResource& resource) {
+                ensure_sun(resource);
+
+                glm::dvec3 position;
+                if (object.contains(QStringLiteral("position")) &&
+                    read_vec3(object.value(QStringLiteral("position")),
+                              position)) {
+                    resource.source->set_position(position);
+                }
+
+                auto generation_value = object.value(QStringLiteral("generation"));
+                if (generation_value.isUndefined()) {
+                    generation_value = object.value(QStringLiteral("gen_type"));
+                }
+                if (!generation_value.isUndefined()) {
+                    if (auto gen_type =
+                            gen_type_from_string(generation_value.toString())) {
+                        resource.source->set_gen_type(*gen_type);
+                    }
+                }
+
+                if (object.contains(QStringLiteral("shape")) ||
+                    object.contains(QStringLiteral("sigma")) ||
+                    object.contains(QStringLiteral("half_width")) ||
+                    object.contains(QStringLiteral("halfWidth")) ||
+                    object.contains(QStringLiteral("csr")) ||
+                    object.contains(QStringLiteral("user_distribution")) ||
+                    object.contains(QStringLiteral("userDistribution"))) {
+                    patch_sun_shape(resource.source, object);
+                }
+            });
+    } catch (std::exception const& e) {
+        qWarning() << "Failed to set ray source from script:" << e.what();
+    }
+}
+
+void ScriptDBInterface::set_sun_direction(QJsonValue value) {
+    if (!m_database) return;
+
+    glm::dvec3 direction;
+    if (!read_vec3(value, direction)) return;
+    const auto length = glm::length(direction);
+    if (length <= 0.0) return;
+
+    m_database->ray_source_resource.patch(
+        [&](db::RaySourceResource& resource) {
+            ensure_sun(resource);
+            resource.source->set_position(direction / length);
+        });
+}
+
+void ScriptDBInterface::set_sun_position(QJsonValue value) {
+    if (!m_database) return;
+
+    glm::dvec3 position;
+    if (!read_vec3(value, position)) return;
+
+    m_database->ray_source_resource.patch(
+        [&](db::RaySourceResource& resource) {
+            ensure_sun(resource);
+            resource.source->set_position(position);
+        });
+}
+
+void ScriptDBInterface::set_sun_shape(QJsonObject object) {
+    if (!m_database) return;
+
+    try {
+        m_database->ray_source_resource.patch(
+            [&](db::RaySourceResource& resource) {
+                ensure_sun(resource);
+                patch_sun_shape(resource.source, object);
+            });
+    } catch (std::exception const& e) {
+        qWarning() << "Failed to set sun shape from script:" << e.what();
+    }
+}
+
+QVector<db::Entity> ScriptDBInterface::get_all_elements() {
+    if (!m_database) return {};
+    return collect_entities<db::ElementComponent>(m_database->as_registry());
 }
 
 db::Entity ScriptDBInterface::create() {
@@ -586,6 +889,54 @@ void ScriptDBInterface::set_geometry_of(db::Entity entity,
                                         db::Entity geometry) {
     if (!m_database || !m_database->valid(entity)) return;
     m_database->assign_geometry(entity, geometry);
+}
+
+
+QString ScriptDBInterface::get_text_content(QString relative_path) {
+    auto target_file_path =
+        resolve_script_content_path(m_working_directory, relative_path);
+    if (target_file_path.isEmpty()) {
+        qWarning() << "Invalid script content path:" << relative_path;
+        return {};
+    }
+
+    auto target_file = QFile(target_file_path);
+
+    if (!target_file.open(QFile::ReadOnly)) {
+        qWarning() << "Unable to open requested file:" << target_file_path;
+        return QString();
+    }
+
+    return QString::fromUtf8(target_file.readAll());
+}
+
+QJsonValue ScriptDBInterface::get_json_content(QString relative_path) {
+    auto target_file_path =
+        resolve_script_content_path(m_working_directory, relative_path);
+    if (target_file_path.isEmpty()) {
+        qWarning() << "Invalid script content path:" << relative_path;
+        return {};
+    }
+
+    auto target_file = QFile(target_file_path);
+
+    if (!target_file.open(QFile::ReadOnly)) {
+        qWarning() << "Unable to open requested file:" << target_file_path;
+        return {};
+    }
+
+    QJsonParseError error;
+
+    auto document = QJsonDocument::fromJson(target_file.readAll(), &error);
+
+    if (error.error != QJsonParseError::NoError) {
+        qWarning() << "Requested JSON content parse error:"
+                   << error.errorString();
+        return {};
+    }
+
+    return document.isArray() ? (QJsonValue)document.array()
+                              : (QJsonValue)document.object();
 }
 
 } // namespace SolTrace::GUI::Script

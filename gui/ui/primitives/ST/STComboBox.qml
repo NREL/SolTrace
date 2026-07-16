@@ -10,7 +10,7 @@ ComboBox {
     id: root
     property int lastIndex: currentIndex < 0 ? 0 : currentIndex
 
-    Layout.fillWidth: true
+    Layout.preferredWidth: Math.max(implicitWidth + 50, 200)
     Material.foreground: App.theme.fontColor
     font.pointSize: App.theme.labelSize
 
@@ -52,7 +52,7 @@ ComboBox {
             model: root.popup.visible ? root.delegateModel : null
             currentIndex: root.highlightedIndex
 
-            ScrollIndicator.vertical: ScrollIndicator { }
+            ScrollBar.vertical: STScrollBar { }
 
             delegate: STItemDelegate {
                 id: delegate

@@ -1,7 +1,10 @@
 #include "database_module.h"
 #include "utilities/asynctask.h"
 #include "utilities/math_utility.h"
+#include "utilities/result.h"
 
+#include <QCoreApplication>
+#include <QDir>
 #include <QtConcurrent/qtconcurrentrun.h>
 #include <QtCore/qfileinfo.h>
 #include <QtCore/qfuturewatcher.h>
@@ -11,32 +14,24 @@
 namespace SolTrace::GUI::App {
 
 
-using ResultFuture = QFutureWatcher<LoadResult>;
-
-static void
-load_file(QPromise<LoadResult>& result, QString fname, db::Database* new_db) {
+static ::Result<LoadedFile, LoadFileFailed>
+load_file(TaskControl& control, QString fname, db::Database* new_db) {
 
     // Take control of that free pointer...
     std::unique_ptr<db::Database> destination(new_db);
     QString                       stage = "starting";
 
     try {
-        result.setProgressRange(0, 100);
         qDebug() << Q_FUNC_INFO << fname;
 
         stage = "reading file";
-        result.setProgressValueAndText(0, "Reading file...");
+        control.setProgressValueAndText(0, "Reading file...");
 
         auto file = QFileInfo(fname);
-        auto suffix = file.suffix().toLower();
-        bool legacy_stinput_cylinder_origins =
-            suffix == QStringLiteral("stinput") ||
-            suffix == QStringLiteral("stimport");
 
         if (!(file.isFile() && file.isReadable())) {
-            result.emplaceResult(LoadFileFailed(
-                QString("Could not open the file for reading: %1").arg(fname)));
-            return;
+            return ::return_failure(
+                QString("Could not open the file for reading: %1").arg(fname));
         }
 
         auto new_data = std::make_shared<SD::SimulationData>();
@@ -45,74 +40,70 @@ load_file(QPromise<LoadResult>& result, QString fname, db::Database* new_db) {
 
         stage = "parsing file";
         if (!new_data->import_from_file(str)) {
-            result.emplaceResult(
-                LoadFileFailed(QString("Could not import the file: %1")
-                                   .arg(fname)));
-            return;
+            return return_failure(
+                QString("Could not import the file: %1").arg(fname));
         }
 
-        if (result.isCanceled()) {
-            result.emplaceResult(LoadedFile {});
-            return;
-        }
+        ASYNC_TASK_SYNC_POINT(control);
 
         stage = "importing content";
-        result.setProgressValueAndText(50, "Importing content...");
+        control.setProgressValueAndText(50, "Importing content...");
 
-        destination->import(*new_data, legacy_stinput_cylinder_origins);
+        destination->import(*new_data);
 
         stage = "finalizing";
-        result.setProgressValueAndText(100, "Done");
+        control.setProgressValueAndText(100, "Done");
 
         // We cannot store non-copy types into Qt types, sigh.
 
-        if (result.isCanceled()) {
-            result.emplaceResult(LoadedFile {});
-            return;
-        }
+        ASYNC_TASK_SYNC_POINT(control);
 
-        result.emplaceResult(LoadedFile {
+        return LoadedFile {
             .provenance = fname,
-            .ptr        = destination.release(),
-        });
+            .ptr        = std::move(destination),
+        };
     } catch (std::exception const& e) {
-        result.emplaceResult(LoadFileFailed(
+        return return_failure(
             QString("Could not load %1 while %2: %3")
-                .arg(fname, stage, QString::fromUtf8(e.what()))));
+                .arg(fname, stage, QString::fromUtf8(e.what())));
     } catch (...) {
-        result.emplaceResult(LoadFileFailed(
-            QString("Could not load %1 while %2.")
-                .arg(fname, stage)));
+        return return_failure(
+            QString("Could not load %1 while %2.").arg(fname, stage));
     }
 }
 
-void DatabaseModule::file_ready(QUrl, LoadResult result) {
+QUrl DatabaseModule::examples_folder() const {
+    QDir appDir(QCoreApplication::applicationDirPath());
+#ifdef Q_OS_MACOS
+    appDir.cdUp(); // Contents/
+    appDir.cd("Resources/examples");
+#else
+    appDir.cd("examples"); // Linux/Windows: alongside binary
+#endif
+    return QUrl::fromLocalFile(appDir.absolutePath());
+}
 
-    std::visit(overloaded {
-                   [this](LoadedFile& arg) {
-                       if (!arg.ptr) {
-                           // Cancelled.
-                       } else {
-                           arg.ptr->setParent(this);
-                           this->store_push_append(DatabaseRecord {
-                               .database = arg.ptr,
-                           });
-                           this->notify(ANotification::info(
-                               QString("Loaded scene: %1")
-                                   .arg(arg.ptr->name())));
-                       }
-                   },
-                   [this](LoadFileFailed failure) {
-                       emit this->notify(failure.notification);
-                   },
-               },
-               result);
+void DatabaseModule::file_ready(QUrl, LoadedFile result) {
+    if (!result.ptr) {
+        // Cancelled.
+    } else {
+
+        // Set owner for ptr...
+
+        auto* database = result.ptr.release();
+
+        database->setParent(this);
+        store_push_append({ .database = database });
+
+        notify(ANotification::info(
+            QString("Loaded scene: %1").arg(database->name())));
+    }
 
     set_is_loading(false);
 }
 
-void DatabaseModule::file_failed(QUrl, QString reason) {
-    emit notify(ANotification::error("Could not load the file: " + reason));
+void DatabaseModule::file_failed(QUrl, LoadFileFailed reason) {
+    emit this->notify(reason.notification);
     set_is_loading(false);
 }
 
@@ -163,13 +154,14 @@ void DatabaseModule::load_url(QUrl url, QString name_override) {
     // to the task, which then wraps it.
     auto ptr = new db::Database(fname);
 
-    auto task = launch_async_task<LoadResult>(url,
-                                              this,
-                                              &DatabaseModule::file_ready,
-                                              &DatabaseModule::file_failed,
-                                              load_file,
-                                              new_source.toLocalFile(),
-                                              std::move(ptr));
+    auto task = launch_async_task<LoadedFile, LoadFileFailed>(
+        url,
+        this,
+        &DatabaseModule::file_ready,
+        &DatabaseModule::file_failed,
+        load_file,
+        new_source.toLocalFile(),
+        std::move(ptr));
 
     connect(this,
             &DatabaseModule::cancel_current_load,
@@ -231,7 +223,7 @@ void DatabaseModule::delete_current() {
 }
 
 void DatabaseModule::append_new(QString new_name) {
-    load_url({}, new_name);
+    load_url({ }, new_name);
 }
 
 bool DatabaseModule::append_clone(db::SimulationResultPtr result) {
@@ -256,6 +248,12 @@ bool DatabaseModule::append_clone(db::SimulationResultPtr result) {
         QString("Created editable scene: %1").arg(clone_name)));
 
     return true;
+}
+
+QUrl DatabaseModule::default_example() const {
+    auto path =
+        examples_folder().toLocalFile() + "/" + m_default_example_filename;
+    return QUrl::fromLocalFile(path);
 }
 
 } // namespace SolTrace::GUI::App

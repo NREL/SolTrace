@@ -493,7 +493,7 @@ Item {
     }
 
     STIconButton {
-        text: "\uf013"
+        icon: "\uf013"
 
         onClicked: graphic_pop.open()
 

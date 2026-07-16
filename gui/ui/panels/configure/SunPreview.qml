@@ -9,8 +9,6 @@ import SolTrace
 Item {
     id: root
 
-    opacity: .75
-
     property var model: App.sun.shape.current_distribution
     property real max_angle: 1.0
     property real max_intensity: 0.0
@@ -298,37 +296,56 @@ Item {
             property real centerX: width / 2
             property real centerY: height / 2
 
+            // Point source rays
             Repeater {
-                model: 18
+                model: 8
 
-                Shape {
+                Item {
                     required property int index
 
-                    anchors.fill: sourceGraphic
                     visible: App.sun.type === SunModule.PointSource
-                    preferredRendererType: Shape.CurveRenderer
+                    anchors.fill: sourceGraphic
 
-                    property real theta: 2.0 * Math.PI * index / 18.0
-                    property real innerRadius: sourceGraphic.graphicRadius * 0.34
-                    property real outerRadius: sourceGraphic.graphicRadius * 0.95
+                    property real theta: 2.0 * Math.PI * index / 8.0
+                    property real innerRadius: sourceGraphic.graphicRadius * 0.42
+                    property real outerRadius: sourceGraphic.graphicRadius * 0.78
 
-                    ShapePath {
-                        strokeWidth: 5
-                        strokeColor: Qt.alpha(App.theme.fontColor, 0.78)
-                        fillColor: "transparent"
-                        capStyle: ShapePath.RoundCap
+                    // Ray shaft
+                    Shape {
+                        anchors.fill: parent
+                        preferredRendererType: Shape.CurveRenderer
 
-                        startX: sourceGraphic.centerX + Math.cos(theta) * innerRadius
-                        startY: sourceGraphic.centerY + Math.sin(theta) * innerRadius
+                        ShapePath {
+                            strokeWidth: 4
+                            strokeColor: Qt.alpha(App.theme.fontColor, 0.78)
+                            fillColor: "transparent"
+                            capStyle: ShapePath.RoundCap
 
-                        PathLine {
-                            x: sourceGraphic.centerX + Math.cos(theta) * outerRadius
-                            y: sourceGraphic.centerY + Math.sin(theta) * outerRadius
+                            startX: sourceGraphic.centerX + Math.cos(theta) * innerRadius
+                            startY: sourceGraphic.centerY + Math.sin(theta) * innerRadius
+
+                            PathLine {
+                                x: sourceGraphic.centerX + Math.cos(theta) * outerRadius
+                                y: sourceGraphic.centerY + Math.sin(theta) * outerRadius
+                            }
                         }
+                    }
+
+                    // Arrowhead
+                    Label {
+                        text: "\uf04b"
+                        font.family: "Font Awesome 7 Free"
+                        font.pointSize: Math.max(8, sourceGraphic.graphicRadius * 0.22)
+                        color: Qt.alpha(App.theme.fontColor, 0.78)
+                        rotation: theta * 180.0 / Math.PI
+
+                        x: sourceGraphic.centerX + Math.cos(theta) * sourceGraphic.graphicRadius * 0.88 - width / 2
+                        y: sourceGraphic.centerY + Math.sin(theta) * sourceGraphic.graphicRadius * 0.88 - height / 2
                     }
                 }
             }
 
+            // Point source center circle
             Shape {
                 anchors.fill: parent
                 visible: App.sun.type === SunModule.PointSource
@@ -337,7 +354,7 @@ Item {
                 ShapePath {
                     strokeWidth: 5
                     strokeColor: App.theme.fontColor
-                    fillColor: Qt.alpha(App.theme.fontColor, 0.10)
+                    fillColor: Qt.alpha(App.theme.fontColor, 1)
 
                     startX: sourceGraphic.centerX + sourceGraphic.graphicRadius * 0.34
                     startY: sourceGraphic.centerY
@@ -353,53 +370,44 @@ Item {
                 }
             }
 
-            component DirectionArrow: Shape {
+            // Directional arrows
+            component DirectionArrow: Item {
                 property real yOffset: 0.0
 
                 anchors.fill: sourceGraphic
                 visible: App.sun.type === SunModule.Directional
-                preferredRendererType: Shape.CurveRenderer
 
                 property real startXPos: sourceGraphic.centerX - sourceGraphic.graphicRadius * 0.74
                 property real endXPos: sourceGraphic.centerX + sourceGraphic.graphicRadius * 0.74
                 property real yPos: sourceGraphic.centerY + yOffset
-                property real headSize: Math.max(12, sourceGraphic.graphicRadius * 0.20)
 
-                ShapePath {
-                    strokeWidth: 6
-                    strokeColor: App.theme.fontColor
-                    fillColor: "transparent"
-                    capStyle: ShapePath.RoundCap
-                    joinStyle: ShapePath.RoundJoin
+                Shape {
+                    anchors.fill: parent
+                    preferredRendererType: Shape.CurveRenderer
 
-                    startX: startXPos
-                    startY: yPos
+                    ShapePath {
+                        strokeWidth: 6
+                        strokeColor: App.theme.fontColor
+                        fillColor: "transparent"
+                        capStyle: ShapePath.RoundCap
 
-                    PathLine {
-                        x: endXPos
-                        y: yPos
+                        startX: startXPos
+                        startY: yPos
+
+                        PathLine {
+                            x: endXPos
+                            y: yPos
+                        }
                     }
                 }
 
-                ShapePath {
-                    strokeWidth: 6
-                    strokeColor: App.theme.fontColor
-                    fillColor: "transparent"
-                    capStyle: ShapePath.RoundCap
-                    joinStyle: ShapePath.RoundJoin
-
-                    startX: endXPos - headSize
-                    startY: yPos - headSize * 0.55
-
-                    PathLine {
-                        x: endXPos
-                        y: yPos
-                    }
-
-                    PathLine {
-                        x: endXPos - headSize
-                        y: yPos + headSize * 0.55
-                    }
+                Label {
+                    text: "\uf04b"
+                    font.family: "Font Awesome 7 Free"
+                    font.pointSize: Math.max(8, sourceGraphic.graphicRadius * 0.38)
+                    color: App.theme.fontColor
+                    x: endXPos - width * 0.3
+                    y: yPos - height / 2
                 }
             }
 
@@ -419,6 +427,7 @@ Item {
         Item {
             id: chart
 
+            opacity: .75
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.preferredWidth: 1
@@ -522,7 +531,7 @@ Item {
                     anchors.leftMargin: 6
                     anchors.rightMargin: 6
                     color: App.theme.fontColor
-                    font.pointSize: 10
+                    font.pointSize: 12
                     horizontalAlignment: Text.AlignHCenter
                     verticalAlignment: Text.AlignVCenter
                     elide: Label.ElideRight

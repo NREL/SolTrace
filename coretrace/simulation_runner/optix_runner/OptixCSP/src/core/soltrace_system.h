@@ -40,7 +40,7 @@ namespace OptixCSP
 
     public:
         SolTraceSystem();
-        ~SolTraceSystem();
+        ~SolTraceSystem() noexcept;
 
         /// Call to this function mark the completion of the simulation setup
         void initialize();

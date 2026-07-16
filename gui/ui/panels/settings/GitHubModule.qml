@@ -15,7 +15,7 @@ ScrollView {
         spacing: 12
 
         Header {
-            text: "Documentation"
+            text: "GitHub"
         }
 
         Rectangle {
@@ -54,14 +54,15 @@ ScrollView {
                     }
                 }
 
-                RowLayout {
+                Flow {
                     id: bannerPills
 
-                    Layout.preferredWidth: implicitWidth
+                    Layout.preferredWidth: 0.5 * parent.width
                     Layout.alignment: Qt.AlignHCenter
                     spacing: 6
 
                     Repeater {
+                        id: linkRepeater
                         model: [
                             { emoji: "\uf0a1", label: "Announcements", slug: "announcements" },
                             { emoji: "\uf4ad", label: "General", slug: "general" },
@@ -71,18 +72,19 @@ ScrollView {
                         ]
 
                         Rectangle {
+                            id: linkPill
                             required property var modelData
 
                             radius: height / 2
                             color: pillMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.2) : Qt.rgba(1, 1, 1, 0.1)
                             border.color: Qt.rgba(1, 1, 1, 0.25)
 
-                            width: pill_layout.implicitWidth + 16
+                            width: pill_layout.implicitWidth + 20
                             height: pill_layout.implicitHeight + 8
 
                             RowLayout {
                                 id: pill_layout
-                                anchors.fill: parent
+                                anchors.centerIn: parent
                                 Label {
                                     id: pillLabel
                                     font.family: "Font Awesome 7 Free"
@@ -115,16 +117,16 @@ ScrollView {
         STPropertyPanel {
             Layout.fillWidth: true
 
-            title: "GitHub"
+            title: "Links"
             collapsed: false
 
-            GridLayout {
-                rows: 2
-                columns: 2
+            Flow {
+                Layout.row: 0
+                Layout.fillWidth: true
 
                 STButton {
                     text: "SolTrace"
-                    text_icon: "\uf08e"
+                    left_text_icon: "\uf08e"
 
                     onClicked: {
                         Qt.openUrlExternally("https://github.com/NatLabRockies/SolTrace")
@@ -133,16 +135,21 @@ ScrollView {
 
                 STButton {
                     text: "SolTrace Issue Tracker"
-                    text_icon: "\uf08e"
+                    left_text_icon: "\uf08e"
 
                     onClicked: {
                         Qt.openUrlExternally("https://github.com/NatLabRockies/SolTrace/issues")
                     }
                 }
+            }
+
+            Flow {
+                Layout.row: 1
+                Layout.fillWidth: true
 
                 STButton {
                     text: "SolTrace GUI"
-                    text_icon: "\uf08e"
+                    left_text_icon: "\uf08e"
 
                     onClicked: {
                         Qt.openUrlExternally("https://github.com/nicholasbl/SolTrace")
@@ -151,53 +158,11 @@ ScrollView {
 
                 STButton {
                     text: "SolTrace GUI Issue Tracker"
-                    text_icon: "\uf08e"
+                    left_text_icon: "\uf08e"
 
                     onClicked: {
                         Qt.openUrlExternally("https://github.com/nicholasbl/SolTrace/issues")
                     }
-                }
-            }
-        }
-
-        STPropertyPanel {
-            Layout.fillWidth: true
-
-            title: "Build Info"
-            collapsed: false
-
-            ColumnLayout {
-                spacing: 6
-
-                Label {
-                    Layout.fillWidth: true
-                    text: AppData.current_version_info
-                    font.bold: true
-                    elide: Text.ElideRight
-                }
-
-                STClickableLabel {
-                    Layout.fillWidth: true
-                    text: "Copy build info to clipboard"
-                    color: Material.accentColor
-                    borderWidth: 0
-
-                    onClicked: AppData.copy_build_info_to_clipboard()
-                }
-            }
-        }
-
-        STPropertyPanel {
-            Layout.fillWidth: true
-
-            title: "Inline Documentation"
-            collapsed: false
-
-            ColumnLayout {
-                STComboBox {
-                    currentIndex: App.docs.locale
-                    model: ["English", "Spanish"]
-                    onCurrentIndexChanged: App.docs.locale = currentIndex
                 }
             }
         }

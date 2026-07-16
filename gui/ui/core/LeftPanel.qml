@@ -49,9 +49,26 @@ ShadowedGlassRectangle {
                 visible: App.view.left_panel.is_small()
             }
 
+            ShadowedRectangle {
+                Layout.preferredWidth: 25
+                Layout.preferredHeight: 25
+                Layout.leftMargin: 4
+
+                radius: 100
+                blur_source: root.blur_source
+                glassColor: App.theme.glassColor
+
+                visible: App.view.workflow_phase > 0
+
+                Label {
+                    text: App.view.workflow_phase
+                    anchors.centerIn: parent
+                }
+            }
+
             Label {
-                text: ["Data", "Configure", "Simulate", "Analyze"][
-                          Math.min(App.view.workflow_phase, 3)]
+                text: ["Get Started", "Load Scene", "Configure Scene", "Trace Scene", "Analyze Results"][
+                          Math.min(App.view.workflow_phase, 4)]
                 font.pointSize: 16
                 font.bold: true
                 font.family: "CMU Serif"
@@ -85,7 +102,7 @@ ShadowedGlassRectangle {
                         }
 
                         STToolTip {
-                            visible: parent.containsMouse && App.view.left_panel.size == PanelData.Small
+                            visible: parent.containsMouse && App.view.left_panel.size == SplitPanelData.Small
                             text: labelRow.modelData
                         }
                     }
@@ -159,10 +176,13 @@ ShadowedGlassRectangle {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.margins: 10
+        anchors.leftMargin: 16
+        anchors.rightMargin: 16
 
-        SceneListPane {}
+        StartModule {}
+        LoadModule {}
         ConfigureModule {}
         SimulateModule {}
-        AnalysisModule {}
+        AnalyzeModule {}
     }
 }

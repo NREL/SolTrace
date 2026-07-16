@@ -7,7 +7,8 @@ import SolTrace
 
 STIconButton {
     id: root
-    text: "\uf2ed"
+    icon: "\uf2ed"
+    label: "Delete"
 
     onClicked: delete_item_pop.open()
 

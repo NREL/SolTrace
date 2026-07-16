@@ -163,7 +163,7 @@ MouseArea {
 
     function openLayoutEditorFor(entity) {
         tracePick("select element -> " + entityString(entity))
-        App.view.workflow_phase = 1
+        App.view.workflow_phase = ViewModule.Configure
         App.view.left_panel.visible = true
         App.view.configure_section = 3
         App.view.editing_layout = true
@@ -172,7 +172,7 @@ MouseArea {
 
     function openMaterialEditorFor(entity) {
         tracePick("select material -> " + entityString(entity))
-        App.view.workflow_phase = 1
+        App.view.workflow_phase = ViewModule.Configure
         App.view.left_panel.visible = true
         App.view.configure_section = 1
         App.view.editing_material = true
@@ -181,7 +181,7 @@ MouseArea {
 
     function openGeometryEditorFor(entity) {
         tracePick("select geometry -> " + entityString(entity))
-        App.view.workflow_phase = 1
+        App.view.workflow_phase = ViewModule.Configure
         App.view.left_panel.visible = true
         App.view.configure_section = 2
         App.view.editing_geometry = true

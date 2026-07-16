@@ -65,9 +65,21 @@ dataManager::dataManager()
 	
 }
 
-dataManager::~dataManager()
+dataManager::~dataManager() noexcept
 {
-	cleanup();
+	try
+	{
+		cleanup();
+	}
+	catch (const std::exception &error)
+	{
+		std::cerr << "[OptixRunner] Data cleanup failed during destruction: "
+		          << error.what() << '\n';
+	}
+	catch (...)
+	{
+		std::cerr << "[OptixRunner] Data cleanup failed during destruction with an unknown error.\n";
+	}
 }
 
 OptixCSP::LaunchParams *dataManager::getDeviceLaunchParams() const { return launch_params_D; }

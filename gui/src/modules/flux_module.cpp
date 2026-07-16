@@ -140,7 +140,7 @@ void FluxModule::start_generate_volume_flux(unsigned resolution) {
 
     qDebug() << Q_FUNC_INFO << "Starting volume flux raster";
 
-    launch_async_task<analysis::SparseGrid3D<float>>(
+    launch_async_task<analysis::SparseGrid3D<float>, QString>(
         QUuid::createUuid(),
         this,
         &FluxModule::flux_vol_ready,
@@ -163,13 +163,13 @@ void FluxModule::start_generate_isosurface(float value) {
     }
 
     qDebug() << Q_FUNC_INFO << "launching volume generation" << value;
-    launch_async_task<db::Mesh>(QUuid::createUuid(),
-                                this,
-                                &FluxModule::iso_surf_ready,
-                                &FluxModule::iso_surf_failed,
-                                analysis::volume_to_mesh,
-                                m_results->ray_volume,
-                                value);
+    launch_async_task<db::Mesh, QString>(QUuid::createUuid(),
+                                         this,
+                                         &FluxModule::iso_surf_ready,
+                                         &FluxModule::iso_surf_failed,
+                                         analysis::volume_to_mesh,
+                                         m_results->ray_volume,
+                                         value);
 }
 
 void FluxModule::flux_vol_ready(QUuid const&                  id,

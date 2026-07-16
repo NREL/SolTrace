@@ -18,7 +18,7 @@ class RootElementsModel : public StructModelAdapter<EntityNamePair> {
 
 private slots:
     void recompute();
-    void ident_changed(entt::entity);
+    void record_changed(entt::entity);
 
 public:
     explicit RootElementsModel(QObject* parent = nullptr);
@@ -43,7 +43,7 @@ class AllElementsModel : public StructModelAdapter<EntityNamePair> {
 
 private slots:
     void recompute();
-    void ident_changed(entt::entity);
+    void record_changed(entt::entity);
 
 public:
     explicit AllElementsModel(QObject* parent = nullptr);

@@ -37,7 +37,7 @@ namespace OptixCSP
         size_t sun_user_capacity;
 
         dataManager();
-        ~dataManager();
+        ~dataManager() noexcept;
 
         void cleanup();
 

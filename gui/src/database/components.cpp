@@ -185,7 +185,7 @@ bool MaterialComponent::operator==(db::MaterialComponent const& b) const {
 
 RaySourceResource RaySourceResource::clone() const {
     if (!source) {
-        return {};
+        return { .source = {}, .type = type };
     }
 
     if (auto sun = std::dynamic_pointer_cast<SD::Sun>(source)) {
@@ -202,7 +202,7 @@ RaySourceResource RaySourceResource::clone() const {
                         user_angle,
                         user_intensity);
 
-        return { .source = copy };
+        return { .source = copy, .type = type };
     }
 
     throw std::runtime_error("Unsupported ray source type in clone()");

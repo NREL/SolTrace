@@ -9,6 +9,17 @@ import SolTrace
 ColumnLayout {
     id: root
 
+    Label {
+        Layout.fillWidth: true
+        Layout.leftMargin: 10
+        Layout.rightMargin: 10
+        Layout.bottomMargin: 8
+
+        text: "Explore simulation results, inspect ray intersections, analyze flux distributions, and export data."
+        wrapMode: Text.WordWrap
+    }
+
+
     STComboBar {
         id: bar
 
@@ -17,11 +28,10 @@ ColumnLayout {
 
         Layout.fillWidth: true
 
-        collapseLabels: App.view.left_panel.size === PanelData.Small
+        collapseLabels: App.view.left_panel.size === SplitPanelData.Small
 
-        iconModel: ["\uf03a", "\ue4bc", "\uf201", "\uf019"]
+        iconModel: ["\uf03a", "\ue4bc", "\uf06d", "\uf019"]
         model: ["Results", "Intersections", "Flux", "Export"]
-
     }
 
     Rectangle {
@@ -49,5 +59,16 @@ ColumnLayout {
         AnalyzeExport {
 
         }
+    }
+
+    Rectangle {
+        Layout.fillWidth: true
+        height: 1
+        color: Material.dividerColor
+    }
+
+    WorkflowStepper {
+        previous: "Run Tracer"
+        currentIndex: ViewModule.Analyze
     }
 }

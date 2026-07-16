@@ -9,12 +9,26 @@ SpinBox {
 
     property string suffix
 
-    textFromValue: function(value, locale) {
-        return Number(value).toLocaleString(locale, 'f', 0)
-    }
+    function commitText(restoreInvalid) {
+        const nextValue = Math.max(
+                    control.from,
+                    Math.min(control.to,
+                             control.valueFromText(input.text, control.locale)))
 
-    valueFromText: function(text, locale) {
-        return Math.round(Number.fromLocaleString(locale, String(text).trim()))
+        if (Number.isNaN(nextValue)) {
+            if (restoreInvalid) {
+                input.text = control.textFromValue(control.value, control.locale)
+            }
+            return
+        }
+
+        if (nextValue === control.value) {
+            input.text = control.textFromValue(control.value, control.locale)
+            return
+        }
+
+        control.value = nextValue
+        control.valueModified()
     }
 
     contentItem: TextInput {
@@ -33,6 +47,13 @@ SpinBox {
         readOnly: !control.editable
         validator: control.validator
         inputMethodHints: control.inputMethodHints
+        onTextEdited: {
+            if (control.live && acceptableInput) {
+                control.commitText(false)
+            }
+        }
+        onAccepted: control.commitText(true)
+        onEditingFinished: control.commitText(true)
 
         Label {
             id: suffixLabel

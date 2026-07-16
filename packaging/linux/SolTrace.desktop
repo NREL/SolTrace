@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=SolTrace
+Exec=SolTrace
+Icon=SolTrace
+Categories=Science;Engineering;
+Terminal=false

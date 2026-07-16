@@ -264,7 +264,7 @@ static Grid2D<float>
 raster_triangle_flux(std::vector<TriangleFluxBin> const& triangles,
                      db::Mesh const&                     mesh,
                      QSize const&                        image_size,
-                     QPromise<BakedFluxMapPtr>&          promise,
+                     TaskControl&                        control,
                      int                                 progress_low,
                      int                                 progress_high) {
     Grid2D<float> raster(image_size.width(), image_size.height());
@@ -273,7 +273,7 @@ raster_triangle_flux(std::vector<TriangleFluxBin> const& triangles,
     auto report_progress = [&](int item, int max_item) {
         auto a = max_item > 0 ? float(item) / float(max_item) : 1.0f;
         int  p = glm::mix(float(progress_low), float(progress_high), a);
-        promise.setProgressValue(p);
+        control.setProgressValue(p);
     };
 
     size_t tri_index = 0;
@@ -319,7 +319,8 @@ raster_triangle_flux(std::vector<TriangleFluxBin> const& triangles,
             }
         }
 
-        if (promise.isCanceled()) return raster;
+        if (control.cancelRequested()) return raster;
+
         report_progress(int(tri_index + 1), int(triangles.size()));
     }
 
@@ -485,20 +486,19 @@ compute_flux_map_stats(Grid2D<float> const&                    raster,
 }
 
 /// Main fluxmap compute function
-void execute_map_generation_for(QPromise<BakedFluxMapPtr>& promise,
-                                FluxMapBakeOptions         opts,
-                                entt::entity               entity,
-                                db::SimulationResultPtr    results,
-                                db::Mesh                   mesh) {
+Result<BakedFluxMapPtr, QString>
+execute_map_generation_for(TaskControl&            control,
+                           FluxMapBakeOptions      opts,
+                           entt::entity            entity,
+                           db::SimulationResultPtr results,
+                           db::Mesh                mesh) {
 
     qDebug() << Q_FUNC_INFO << "starting map generation";
 
-    promise.setProgressRange(0, 100);
-
     // Image size makes no sense, bail
     if (!glm::all(glm::lessThan(glm::uvec2(1), opts.image_resolution))) {
-        qDebug() << Q_FUNC_INFO << "starting map generation";
-        return;
+        qDebug() << Q_FUNC_INFO << "image resolution is too small";
+        return QStringLiteral("Image resolution is not sufficient");
     }
 
     // We need to know what rays have hit this entity
@@ -506,7 +506,7 @@ void execute_map_generation_for(QPromise<BakedFluxMapPtr>& promise,
 
     if (iter == results->entity_to_ray_ids.end()) {
         qDebug() << Q_FUNC_INFO << "no rays for this element";
-        return;
+        return QStringLiteral("No rays have interacted with selected element");
     }
 
     // TODO: rescope. might also be good to have a little util for all this
@@ -516,7 +516,7 @@ void execute_map_generation_for(QPromise<BakedFluxMapPtr>& promise,
     constexpr int PROGRESS_COMPLETE   = 100;
 
     // Starting setup
-    promise.setProgressValue(PROGRESS_SETUP);
+    control.setProgressValue(PROGRESS_SETUP);
 
     qDebug() << Q_FUNC_INFO << "setup complete";
 
@@ -540,7 +540,7 @@ void execute_map_generation_for(QPromise<BakedFluxMapPtr>& promise,
         [&](int item, int max_item, int prog_low, int prog_high) {
             auto a = (float)item / (float)max_item;
             int  p = glm::mix((float)prog_low, (float)prog_high, a);
-            promise.setProgressValue(p);
+            control.setProgressValue(p);
         };
 
     size_t ray_count = 0;
@@ -558,7 +558,7 @@ void execute_map_generation_for(QPromise<BakedFluxMapPtr>& promise,
                             PROGRESS_ACCUMULATE);
         }
 
-        if (promise.isCanceled()) { return; }
+        ASYNC_TASK_SYNC_POINT(control);
 
         for (auto const& interaction : results->records.at(ray_index).events) {
             // TODO: we need to double check that this is ok
@@ -591,9 +591,9 @@ void execute_map_generation_for(QPromise<BakedFluxMapPtr>& promise,
 
     qDebug() << Q_FUNC_INFO << "triangle bins filled";
 
-    if (promise.isCanceled()) { return; }
+    ASYNC_TASK_SYNC_POINT(control);
 
-    promise.setProgressValue(PROGRESS_ACCUMULATE);
+    control.setProgressValue(PROGRESS_ACCUMULATE);
 
 
     // Burn triangle bins to raster
@@ -604,17 +604,17 @@ void execute_map_generation_for(QPromise<BakedFluxMapPtr>& promise,
     auto raster = raster_triangle_flux(triangles,
                                        mesh,
                                        img.size(),
-                                       promise,
+                                       control,
                                        PROGRESS_ACCUMULATE,
                                        PROGRESS_RASTER);
 
     qDebug() << Q_FUNC_INFO << "rastered bins";
 
-    if (promise.isCanceled()) { return; }
+    ASYNC_TASK_SYNC_POINT(control);
 
     colorize_raster(img, raster, opts.color_map, max_density);
 
-    promise.setProgressValue(PROGRESS_RASTER);
+    control.setProgressValue(PROGRESS_RASTER);
 
     {
         auto painter = QPainter(&img);
@@ -638,13 +638,14 @@ void execute_map_generation_for(QPromise<BakedFluxMapPtr>& promise,
 
     img = img.convertToFormat(QImage::Format_RGBA8888);
 
-    promise.setProgressValue(PROGRESS_COMPLETE);
-    promise.emplaceResult(std::make_shared<BakedFluxMap>(BakedFluxMap {
+    control.setProgressValue(PROGRESS_COMPLETE);
+
+    return std::make_shared<BakedFluxMap>(BakedFluxMap {
         .counts    = std::move(raster),
         .bin_map   = img,
         .point_map = points_img,
         .stats     = stats,
-    }));
+    });
 }
 
 FluxMapComputer::FluxMapComputer(QObject* parent) : QObject(parent) { }
@@ -681,16 +682,16 @@ bool FluxMapComputer::start_generate_for(db::Entity         e,
     qDebug() << Q_FUNC_INFO << "Loaded colormap" << options.color_map.size()
              << options.color_map.sizeInBytes();
 
-    auto task =
-        launch_async_task<BakedFluxMapPtr>(e,
-                                           this,
-                                           &FluxMapComputer::image_ready,
-                                           &FluxMapComputer::image_failed,
-                                           execute_map_generation_for,
-                                           options,
-                                           e,
-                                           m_database,
-                                           mesh);
+    auto task = launch_async_task<BakedFluxMapPtr, QString>(
+        e,
+        this,
+        &FluxMapComputer::image_ready,
+        &FluxMapComputer::image_failed,
+        execute_map_generation_for,
+        options,
+        e,
+        m_database,
+        mesh);
 
 
     // Set up cancelling

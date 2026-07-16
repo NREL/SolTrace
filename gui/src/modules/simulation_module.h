@@ -13,10 +13,9 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QString>
+#include <QVector3D>
 
 namespace SolTrace::GUI::App {
-
-// TODO: Track added simulation results and allow deletion!
 
 class SimulationRunnerModel;
 
@@ -55,6 +54,8 @@ public:
     QOBJECT_READONLY_PROPERTY(SimulationRunnerModel, runners);
     QOBJECT_READONLY_PROPERTY(db::SimulationResultModel, results);
     QOBJECT_READONLY_PROPERTY(db::WorldGeometryModel, world_geometry_model);
+    Q_READONLY_PROPERTY(QVector3D, result_sun_position)
+    Q_READONLY_PROPERTY(bool, result_sun_is_point_source)
 
     enum Runner { CPU = 0, Embree = 1, GPU = 2 };
 

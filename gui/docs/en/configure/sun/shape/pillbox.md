@@ -2,9 +2,6 @@
 title: "Pillbox Emission Profile"
 ---
 
-The "pillbox" sun shape (also known as the "square wave" sun shape) is a simple binary distribution in which flux is assumed to be equally distributed within a specified disc (defined by the half-width angle). The region outside the disc is modeled with zero flux intensity. This is an idealized case but may be useful for certain analyses.
+[Pillbox Emission Profile EN] Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi accumsan sed lectus id lacinia. Donec dui massa, eleifend non ipsum in, venenatis pulvinar arcu. Integer rutrum malesuada dictum. Sed tempor, arcu ac sodales pretium, nunc tellus vulputate purus, ut venenatis sapien arcu id turpis. Maecenas ornare tortor nibh, a porttitor dui finibus non.
 
----
-Parameters:
-    Half width [mrad]: the maximum angle with the sun shape.
----
+Proin lobortis felis ipsum. Mauris et sodales orci. Fusce iaculis rutrum dui in sodales. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris gravida odio sed volutpat efficitur. Cras rutrum, felis eu vehicula mollis, nisl diam viverra nunc, vel suscipit nulla tellus quis justo. Sed scelerisque nulla quis enim ullamcorper porta. Fusce aliquet ante non erat lacinia, feugiat eleifend lorem pulvinar.

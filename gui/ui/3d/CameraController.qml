@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick3D
+import SolTrace
 
 // CameraController owns the user-facing camera navigation modes used by the
 // 3D views. It intentionally contains both navigation models in one place so
@@ -349,8 +350,8 @@ Item {
         //
         // This mode intentionally ignores rotation_target.
         property real sensitivity: 0.2
-        property real walk_speed: 5.0
-        property real run_speed: 15.0
+        property real walk_speed: App.view.sim.fps_walk_speed
+        property real run_speed: walk_speed + 10
 
         // Multiplicative scroll scale. The constant produces gentle exponential
         // changes from wheel deltas without needing frame-rate dependent input.

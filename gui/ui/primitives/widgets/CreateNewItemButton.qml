@@ -7,7 +7,8 @@ import SolTrace
 
 STIconButton {
     id: root
-    text: "\uf055"
+    icon: "\uf055"
+    label: "New"
 
     onClicked: new_item_pop.open()
 

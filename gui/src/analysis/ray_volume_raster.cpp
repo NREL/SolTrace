@@ -164,16 +164,14 @@ void compute_raster_chunk(QPromise<QVector<glm::ivec3>>& promise,
     promise.emplaceResult(grid);
 }
 
-void compute_ray_volume_raster(QPromise<analysis::SparseGrid3D<float>>& promise,
-                               unsigned                resolution,
-                               db::SimulationResultPtr results) {
-    promise.setProgressRange(0, 100);
-
+Result<analysis::SparseGrid3D<float>, QString>
+compute_ray_volume_raster(TaskControl&            promise,
+                          unsigned                resolution,
+                          db::SimulationResultPtr results) {
     auto const extent = results->bounds_max - results->bounds_min;
 
     if (glm::any(glm::equal(extent, glm::dvec3(0)))) {
-        promise.emplaceResult(analysis::SparseGrid3D<float>());
-        return;
+        return analysis::SparseGrid3D<float>();
     }
 
     // Compute volume
@@ -225,14 +223,13 @@ void compute_ray_volume_raster(QPromise<analysis::SparseGrid3D<float>>& promise,
 
     while (chunks.size()) {
 
-        if (promise.isCanceled()) {
+        if (promise.cancelRequested()) {
 
             for (auto& chunk : chunks) {
                 chunk.cancel();
             }
 
-            promise.emplaceResult(analysis::SparseGrid3D<float>());
-            return;
+            return return_failure(QStringLiteral("Cancelled"));
         }
 
         if (!chunks.back().isFinished()) {
@@ -250,7 +247,7 @@ void compute_ray_volume_raster(QPromise<analysis::SparseGrid3D<float>>& promise,
         // });
 
         qDebug() << "Merging partial...";
-        for (auto p : other) {
+        for (auto p : std::as_const(other)) {
             grid(p) += 1;
         }
 
@@ -280,7 +277,7 @@ void compute_ray_volume_raster(QPromise<analysis::SparseGrid3D<float>>& promise,
 
     qDebug() << Q_FUNC_INFO << "Grid largest value" << largest;
 
-    promise.emplaceResult(grid);
+    return grid;
 }
 
 

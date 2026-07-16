@@ -84,7 +84,7 @@ STDialog {
                 ]
             }
 
-            ScrollIndicator.vertical: ScrollIndicator { }
+            ScrollBar.vertical: STScrollBar { }
 
             delegate: STItemDelegate {
                 id: delegate

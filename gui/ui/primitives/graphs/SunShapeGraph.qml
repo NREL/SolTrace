@@ -100,7 +100,7 @@ Rectangle {
             STIconButton {
                 id: graphButtons
                 anchors.right: parent.right
-                text: "\uf1de"
+                icon: "\uf1de"
                 onClicked: graphSettings.open()
 
                 STPopup {

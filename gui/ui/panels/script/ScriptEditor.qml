@@ -52,7 +52,7 @@ Popup {
 
             visible: text.length
 
-            text: (root.module.parse_errors.concat(root.module.run_errors)).join("\n")
+            text: root.module.parse_errors.join("\n")
         }
     }
 }

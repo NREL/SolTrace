@@ -8,7 +8,7 @@ ColumnLayout {
     id: root
 
     property var group_edit: App.materials.geometry_edit
-    property bool singleColumn: App.view.left_panel.size === PanelData.Small
+    property bool singleColumn: App.view.left_panel.size === SplitPanelData.Small
     property var labelAlignment: (singleColumn ? Qt.AlignLeft : Qt.AlignRight) | Qt.AlignVCenter
 
     spacing: 8

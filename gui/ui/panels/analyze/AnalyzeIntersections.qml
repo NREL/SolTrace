@@ -10,7 +10,7 @@ Flickable {
     id: root
     property var left_panel_size: App.view.left_panel.size
     property var intersections_module : AppData.intersections
-    property bool singleColumn: App.view.left_panel.size === PanelData.Small
+    property bool singleColumn: App.view.left_panel.size === SplitPanelData.Small
     property int labelAlignment: (singleColumn ? Qt.AlignLeft : Qt.AlignRight) | Qt.AlignVCenter
 
     property var ray_geom: AppData.intersections.ray_geometry
@@ -148,7 +148,7 @@ Flickable {
                 }
 
                 STIconButton {
-                    text: "\uf057"
+                    icon: "\uf057"
 
                     onClicked: root.ray_geom.selected_ray_id = -1
                 }
@@ -158,7 +158,7 @@ Flickable {
                 Layout.columnSpan: root.child_column_span
                 Layout.fillWidth: true
                 text: "Pick Ray From View"
-                text_icon: "\uf05b"
+                left_text_icon: "\uf05b"
                 onClicked: App.view.mouse_mode = ViewModule.PickRay
             }
 

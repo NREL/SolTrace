@@ -53,7 +53,7 @@ AdaptiveFilteredEditor {
         }
 
         STIconButton {
-            text: "\uf05b"
+            icon: "\uf05b"
             toolTip: "Select Material From View"
             onClicked: App.view.mouse_mode = ViewModule.SelectMaterial
         }
@@ -80,7 +80,7 @@ AdaptiveFilteredEditor {
 
         RowLayout {
             STIconButton {
-                text: "\uf053"
+                icon: "\uf053"
                 visible: !root.wideMode
                 onClicked: root.goBack()
             }

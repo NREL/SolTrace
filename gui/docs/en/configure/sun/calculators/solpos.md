@@ -1,10 +1,7 @@
 ---
-title: "SOLPOS 2.0 Sun Position"
+title: "Solar Position Calculator (SOLPOS)"
 ---
 
-SOLPOS 2.0 is an NLR-developed solar position calculation library written in C for engineering and renewable energy applications. Compared to Duffie & Beckman, SOLPOS 2.0 includes additional engineering corrections such as atmospheric refraction, equation-of-time handling, extraterrestrial radiation calculations, and pressure-corrected air mass models. This results in more complex calculations but higher accuracy sun position predictions ($~\pm 0.05$ degrees). 
+[Solar Position Calculator (SOLPOS) EN] Lorem ipsum dolor sit amet, consectetur adipiscing elit. Morbi accumsan sed lectus id lacinia. Donec dui massa, eleifend non ipsum in, venenatis pulvinar arcu. Integer rutrum malesuada dictum. Sed tempor, arcu ac sodales pretium, nunc tellus vulputate purus, ut venenatis sapien arcu id turpis. Maecenas ornare tortor nibh, a porttitor dui finibus non.
 
-SOLPOS 2.0 is used within NLR's SolarPILOT which allows users to set-up consistent workflows.
-
-References: 
-    https://www.nlr.gov/grid/solar-resource/solpos
+Proin lobortis felis ipsum. Mauris et sodales orci. Fusce iaculis rutrum dui in sodales. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Mauris gravida odio sed volutpat efficitur. Cras rutrum, felis eu vehicula mollis, nisl diam viverra nunc, vel suscipit nulla tellus quis justo. Sed scelerisque nulla quis enim ullamcorper porta. Fusce aliquet ante non erat lacinia, feugiat eleifend lorem pulvinar.

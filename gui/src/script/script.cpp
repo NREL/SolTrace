@@ -1,5 +1,7 @@
 #include "script.h"
+#include "script/schema_builder.h"
 
+#include <QDebug>
 #include <QDir>
 #include <QDirIterator>
 #include <QRegularExpression>
@@ -187,9 +189,84 @@ bool looks_like_legacy_function_script(QString const& code,
 
 } // namespace
 
+// =============================================================================
+
 ScriptPropertyModel::ScriptPropertyModel(QObject* parent)
     : StructTableModel(parent) { }
 
+
+// =============================================================================
+
+ScriptConsole::ScriptConsole(QObject* p) : QObject(p) { }
+
+namespace {
+
+QString script_value_to_string(QJSValue const& value) {
+    if (value.isUndefined()) return {};
+    if (value.isNull()) return QStringLiteral("null");
+    return value.toString();
+}
+
+QString format_script_log(QJSValue const& a,
+                          QJSValue const& b,
+                          QJSValue const& c,
+                          QJSValue const& d,
+                          QJSValue const& e,
+                          QJSValue const& f,
+                          QJSValue const& g,
+                          QJSValue const& h) {
+    QStringList parts;
+
+    for (auto const& value : { a, b, c, d, e, f, g, h }) {
+        if (!value.isUndefined()) parts << script_value_to_string(value);
+    }
+
+    return parts.join(' ');
+}
+
+} // namespace
+
+void ScriptConsole::log(QJSValue a,
+                        QJSValue b,
+                        QJSValue c,
+                        QJSValue d,
+                        QJSValue e,
+                        QJSValue f,
+                        QJSValue g,
+                        QJSValue h) {
+    auto msg = format_script_log(a, b, c, d, e, f, g, h);
+    qInfo().noquote() << "[Script]" << msg;
+    emit logged((int)ScriptLogLevel::Log, msg);
+}
+
+void ScriptConsole::warn(QJSValue a,
+                         QJSValue b,
+                         QJSValue c,
+                         QJSValue d,
+                         QJSValue e,
+                         QJSValue f,
+                         QJSValue g,
+                         QJSValue h) {
+    auto msg = format_script_log(a, b, c, d, e, f, g, h);
+    qWarning().noquote() << "[Script]" << msg;
+    emit logged((int)ScriptLogLevel::Warn, msg);
+}
+
+void ScriptConsole::error(QJSValue a,
+                          QJSValue b,
+                          QJSValue c,
+                          QJSValue d,
+                          QJSValue e,
+                          QJSValue f,
+                          QJSValue g,
+                          QJSValue h) {
+    auto msg = format_script_log(a, b, c, d, e, f, g, h);
+    qCritical().noquote() << "[Script]" << msg;
+    emit logged((int)ScriptLogLevel::Error, msg);
+}
+
+
+// =============================================================================
 
 static QStringList get_builtin_scripts() {
     QStringList files;
@@ -210,6 +287,7 @@ Script::Script(QObject* parent)
     : QObject { parent }, m_properties { new ScriptPropertyModel(this) } {
     connect(this, &Script::code_changed, this, &Script::parse);
 
+    set_working_directory(QDir::homePath());
     set_builtin_scripts(get_builtin_scripts());
 }
 
@@ -295,10 +373,11 @@ bool Script::parse() {
 
 void Script::run() {
     qDebug() << Q_FUNC_INFO;
-    set_run_errors({});
 
     if (!m_database) {
-        set_run_errors({ "No database available" });
+        auto message = QStringLiteral("No database available.");
+        qCritical().noquote() << "[Script]" << message;
+        emit logged((int)ScriptLogLevel::Error, message);
         qDebug() << Q_FUNC_INFO << "No db.";
         return;
     }
@@ -306,12 +385,18 @@ void Script::run() {
     // sync for now
     auto engine = std::make_unique<QJSEngine>();
     auto api    = std::make_unique<ScriptDBInterface>(m_database);
+    api->update_working_directory(working_directory());
 
     QStringList stack_trace;
-    engine->installExtensions(QJSEngine::AllExtensions);
-    auto js_api_obj = engine->newQObject(api.get());
+    engine->installExtensions(QJSEngine::TranslationExtension |
+                              QJSEngine::GarbageCollectionExtension);
 
+    auto js_api_obj = engine->newQObject(api.get());
     engine->globalObject().setProperty("db", js_api_obj);
+
+    auto console = new ScriptConsole(engine.get());
+    connect(console, &ScriptConsole::logged, this, &Script::logged);
+    engine->globalObject().setProperty("console", engine->newQObject(console));
 
     auto header = first_comment_block(code());
     auto source = looks_like_legacy_function_script(code(), header.body_start)
@@ -323,19 +408,23 @@ void Script::run() {
 
     if (!stack_trace.isEmpty()) {
         qDebug() << Q_FUNC_INFO << object.toString();
-        set_run_errors({
-            QString("Script evaluation exception: %1")
-                .arg(object.property("name").toString()),
-            QString("Line number %1: %2")
-                .arg(object.property("lineNumber").toInt())
-                .arg(object.toString()),
-        });
+        auto exception = QString("Script evaluation exception: %1")
+                             .arg(object.property("name").toString());
+        auto line = QString("Line number %1: %2")
+                        .arg(object.property("lineNumber").toInt())
+                        .arg(object.toString());
+        qCritical().noquote() << "[Script]" << exception;
+        qCritical().noquote() << "[Script]" << line;
+        emit logged((int)ScriptLogLevel::Error, exception);
+        emit logged((int)ScriptLogLevel::Error, line);
         return;
     }
 
     if (!object.isCallable()) {
-        set_run_errors(
-            { QStringLiteral("Script did not produce a callable function") });
+        auto message = QStringLiteral(
+            "Script did not produce a callable function.");
+        qCritical().noquote() << "[Script]" << message;
+        emit logged((int)ScriptLogLevel::Error, message);
         return;
     }
 
@@ -395,8 +484,10 @@ void Script::run() {
 
         if (!ok) {
             qDebug() << Q_FUNC_INFO << "Bad arg";
-            set_run_errors(
-                { QString("Invalid argument value for %1").arg(arg.name) });
+            auto message =
+                QString("Invalid argument value for %1.").arg(arg.name);
+            qCritical().noquote() << "[Script]" << message;
+            emit logged((int)ScriptLogLevel::Error, message);
             return;
         }
     }
@@ -405,18 +496,25 @@ void Script::run() {
 
     if (call_ret.isError()) {
         qDebug() << Q_FUNC_INFO << "Bad call" << call_ret.toString();
-        set_run_errors({
-            QString("Script evaluation exception: %1")
-                .arg(call_ret.property("name").toString()),
-            QString("Line number %1: %2")
-                .arg(call_ret.property("lineNumber").toInt())
-                .arg(call_ret.toString()),
-        });
+        auto exception = QString("Script evaluation exception: %1")
+                             .arg(call_ret.property("name").toString());
+        auto line = QString("Line number %1: %2")
+                        .arg(call_ret.property("lineNumber").toInt())
+                        .arg(call_ret.toString());
+        qCritical().noquote() << "[Script]" << exception;
+        qCritical().noquote() << "[Script]" << line;
+        emit logged((int)ScriptLogLevel::Error, exception);
+        emit logged((int)ScriptLogLevel::Error, line);
     }
 }
 
 void Script::notify_error(QString message) {
     emit notify(ANotification::error(std::move(message)));
+}
+
+QString Script::api_markdown() {
+    ScriptDBInterface api(m_database);
+    return SchemaBuilder::build_markdown(&api);
 }
 
 } // namespace SolTrace::GUI::Script

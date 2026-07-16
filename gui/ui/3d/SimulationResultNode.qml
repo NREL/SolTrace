@@ -11,6 +11,14 @@ Node {
     id: world_node
     rotation: Quaternion.fromEulerAngles(-90, 0, 0)
 
+    readonly property real elevation: sunVisualization.elevation
+
+    SunVisualizationNode {
+        id: sunVisualization
+        sourcePosition: App.simulation.result_sun_position
+        isPointSource: App.simulation.result_sun_is_point_source
+    }
+
     Repeater3D {
         visible: flux_repeater.count === 0
         model: AppData.simulation.world_geometry_model

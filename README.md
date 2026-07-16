@@ -137,7 +137,8 @@ SolTrace includes an OptiX-based runner built for GPU-accelerated ray tracing.
 
 #### Prerequisites
 
-* NVIDIA GPU with a driver compatible with your target CUDA toolkit and OptiX SDK.
+* NVIDIA Turing-class or newer GPU with compute capability 7.5 or higher.
+* NVIDIA driver compatible with your target CUDA toolkit and OptiX SDK.
 * CUDA Toolkit 12.0 or newer.
 * NVIDIA OptiX SDK 8.x or newer.
 * CMake 3.19 or newer.
@@ -209,6 +210,13 @@ cmake --build . --config Release -j
 ```
 
 If CMake cannot find the OptiX SDK automatically, set `OptiX_INSTALL_DIR` to the SDK root containing `include/optix.h`, or add that location to `CMAKE_PREFIX_PATH`.
+
+OptiX builds target compute capability 7.5 by default. This produces native
+code for Turing GPUs and virtual PTX that newer NVIDIA GPUs can compile at run
+time. Build machines do not need an NVIDIA GPU, and their installed hardware
+does not change the resulting artifact. To intentionally raise the minimum for
+a specialized build, configure with, for example,
+`-DSOLTRACE_OPTIX_COMPUTE_CAPABILITY=86`.
 
 ## Contributing
 

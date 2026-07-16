@@ -15,6 +15,16 @@ template <class... Ts>
 overloaded(Ts...) -> overloaded<Ts...>;
 } // namespace result_detail
 
+template <class T>
+struct AutoCastFailType {
+    std::decay_t<T> value;
+};
+
+template <class T>
+inline auto return_failure(T&& t) {
+    return AutoCastFailType<T> { std::forward<T>(t) };
+}
+
 /*!
  * \brief Small success-or-failure value type.
  *
@@ -41,6 +51,10 @@ public:
      * alternative, so the default state is Success.
      */
     Result() = default;
+
+    template <class T>
+    Result(AutoCastFailType<T> ftype)
+        : Result(Failure(std::move(ftype.value))) { }
 
     /// Reuse std::variant constructors for Success and Failure values.
     using Base::Base;

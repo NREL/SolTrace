@@ -25,7 +25,7 @@ namespace OptixCSP
         /**
          * @brief Destroys the pipelineManager and cleans up resources.
          */
-        ~pipelineManager();
+        ~pipelineManager() noexcept;
 
         /**
          * @brief Cleans up all allocated resources including OptiX programs and modules.

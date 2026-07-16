@@ -13,6 +13,7 @@ Flickable {
     property var sun_module : App.sun
     readonly property real radToDeg: 180 / Math.PI
     readonly property real degToRad: Math.PI / 180
+    property bool singleColumn: App.view.left_panel.size === SplitPanelData.Small
 
     function clamp(value, lo, hi) {
         return Math.max(lo, Math.min(hi, value))
@@ -54,68 +55,27 @@ Flickable {
         id: content_column
         width: root.width
 
+        InlineDocumentation {
+            key: "configure.sun"
+            target: App.view.left_panel
+            Layout.margins: 8
+        }
+
         SunPreview {
             id: sun_preview
             Layout.fillWidth: true
             Layout.preferredHeight: 148
-
         }
 
-        InlineDocumentation {
-            key: "configure.sun"
-            target: App.view.left_panel
-
-            Layout.margins: 8
-        }
-
-        STPropertyPanel {
-            Layout.fillWidth: true
-
-            title: "Visualization"
-            collapsible: true
-
-            ColumnLayout {
-                width: parent.width
-
-                STSwitch {
-                    text: "Visible"
-                    checked: App.view.sim.sun_viz
-                    onToggled: App.view.sim.sun_viz = checked
-                }
-
-                ColorPickerField {
-                    id: sunColorPicker
-                    Layout.preferredWidth: 200
-                    color: App.view.sim.sun_color
-                    label: "Sun Color"
-                    onUpdated: {
-                        App.view.sim.sun_color = sunColorPicker.color
-                    }
-                }
-
-                STSpinBoxField {
-                    Layout.preferredWidth: 200
-
-                    label: "Scale Factor"
-                    value: App.view.sim.sun_viz_scale
-                    onValueModified: {
-                        App.view.sim.sun_viz_scale = value
-                    }
-                    from: 0
-                    to: 100
-                }
-            }
-        }
-
-
-        STComboBar {
+        STPipelineBar {
             id: bar
             currentIndex: App.view.sun_section
             onCurrentIndexChanged: App.view.sun_section = currentIndex
             Layout.fillWidth: true
-            collapseLabels: App.view.left_panel.size === PanelData.Small
-            model: ["Type & Position", "Shape"]
-            iconModel: ["\uf0eb", "\uf1fe"]
+            collapseLabels: App.view.left_panel.size === SplitPanelData.Small
+            model: ["Type & Position", "Emission Profile"]
+            prefixModel: ["2a1", "2a2"]
+            iconModel: ["\uf124", "\uf1fe"]
         }
 
         StackLayout {
@@ -129,7 +89,10 @@ Flickable {
                     Layout.fillWidth: true
 
                     Label {
-                        text: "Type:"
+                        id: directionalSunTypeLabel
+                        Layout.rightMargin: 10
+                        Layout.preferredWidth: directionalSunPositionLabel.implicitWidth
+                        text: "Type "
                     }
 
                     STComboBox {
@@ -140,82 +103,123 @@ Flickable {
                     }
                 }
 
+                RowLayout {
+                    Layout.fillWidth: true
+                    visible: App.sun.type === SunModule.Directional
+
+                    Label {
+                        id: directionalSunPositionLabel
+                        Layout.rightMargin: 10
+                        text: "Position"
+                    }
+
+                    STComboBox {
+                        Layout.fillWidth: true
+                        currentIndex: App.sun.ds_position_type
+                        onCurrentIndexChanged: App.sun.ds_position_type = currentIndex
+                        model: ["Solar Calculator", "Manual"]
+                    }
+                }
+
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 1
+                    color: Material.dividerColor
+                }
+
                 InlineDocumentation {
                     Layout.fillWidth: true
                     Layout.margins: 8
-
                     key: "configure.sun.type." + ["directional", "point_source"][App.sun.type]
                     target: App.view.left_panel
                 }
 
-
-                ColumnLayout {
+                StackLayout {
                     Layout.fillWidth: true
+                    currentIndex: App.sun.ds_position_type
                     visible: App.sun.type === SunModule.Directional
 
-                    STPropertyPanel {
-                        Layout.fillWidth: true
+                    ColumnLayout {
 
-                        title: "Directional Angles"
-                        collapsible: false
+                        SolarCalculator {
+                            Layout.fillWidth: true
+                        }
 
-                        ColumnLayout {
-                            width: parent.width
+                        GridLayout {
+                            Layout.fillWidth: true
+                            columns: App.view.left_panel.size === SplitPanelData.Small ? 1 : 2
 
-                            GridLayout {
+                            STSpinBoxField {
+                                enableSpinBox: false
                                 Layout.fillWidth: true
-                                columns: App.view.left_panel.size == PanelData.Small ? 1 : 2
-
-                                STSpinBoxField {
-                                    id: azimuthField
-                                    Layout.fillWidth: true
-                                    Layout.preferredWidth: 100
-                                    label: "Azimuth"
-                                    value: root.directionAzimuth()
-                                    from: 0
-                                    to: 360
-                                    decimals: 3
-                                    suffix: "deg"
-                                    onValueModified: root.setDirectionAngles(
-                                                         value,
-                                                         root.directionElevation())
-                                }
-
-                                STSpinBoxField {
-                                    id: elevationField
-                                    Layout.fillWidth: true
-                                    Layout.preferredWidth: 100
-                                    label: "Elevation"
-                                    value: root.directionElevation()
-                                    from: -90
-                                    to: 90
-                                    decimals: 3
-                                    suffix: "deg"
-                                    onValueModified: root.setDirectionAngles(
-                                                         root.directionAzimuth(),
-                                                         value)
-                                }
+                                Layout.preferredWidth: 100
+                                label: "Azimuth"
+                                value: App.sun.position.azimuth
+                                from: 0
+                                to: 360
+                                decimals: 3
+                                suffix: "deg"
                             }
 
-                            STButton {
-                                Layout.alignment: Qt.AlignRight
-                                text: "Set by Calculator"
-                                onClicked: calculatorDialog.openForCurrent()
+                            STSpinBoxField {
+                                enableSpinBox: false
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 100
+                                label: "Elevation"
+                                value: App.sun.position.elevation
+                                from: -90
+                                to: 90
+                                decimals: 3
+                                suffix: "deg"
                             }
                         }
                     }
 
-                    SunCalculatorDialog {
-                        id: calculatorDialog
+                    ColumnLayout {
+                        GridLayout {
+                            Layout.fillWidth: true
+                            columns: App.view.left_panel.size === SplitPanelData.Small ? 1 : 2
+
+                            STSpinBoxField {
+                                id: azimuthField
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 100
+                                label: "Azimuth"
+                                value: root.directionAzimuth()
+                                from: 0
+                                to: 360
+                                decimals: 3
+                                suffix: "deg"
+                                onValueModified: root.setDirectionAngles(
+                                                     value,
+                                                     root.directionElevation())
+                            }
+
+                            STSpinBoxField {
+                                id: elevationField
+                                Layout.fillWidth: true
+                                Layout.preferredWidth: 100
+                                label: "Elevation"
+                                value: root.directionElevation()
+                                from: -90
+                                to: 90
+                                decimals: 3
+                                suffix: "deg"
+                                onValueModified: root.setDirectionAngles(
+                                                     root.directionAzimuth(),
+                                                     value)
+                            }
+                        }
                     }
                 }
 
                 STPropertyPanel {
                     Layout.fillWidth: true
-
                     title: "Manual Position"
                     collapsible: false
                     visible: App.sun.type === SunModule.PointSource
+                             || (App.sun.type === SunModule.Directional
+                                 && App.sun.ds_position_type === 1)
 
                     GridLayout {
                         width: parent.width
@@ -223,7 +227,6 @@ Flickable {
                         STSpinBoxField {
                             Layout.row: 0
                             Layout.column: 0
-
                             Layout.fillWidth: true
                             Layout.preferredWidth: 100
                             value: App.sun.position.x
@@ -239,7 +242,6 @@ Flickable {
                         STSpinBoxField {
                             Layout.row: App.view.left_panel.size < 1 ? 1 : 0
                             Layout.column: App.view.left_panel.size < 1 ? 0 : 1
-
                             Layout.fillWidth: true
                             Layout.preferredWidth: 100
                             label: "Y"
@@ -255,7 +257,6 @@ Flickable {
                         STSpinBoxField {
                             Layout.row: App.view.left_panel.size < 1 ? 2 : 0
                             Layout.column: App.view.left_panel.size < 1 ? 0 : 2
-
                             Layout.fillWidth: true
                             Layout.preferredWidth: 100
                             label: "Z"
@@ -285,9 +286,7 @@ Flickable {
                         Layout.fillWidth: true
                         currentIndex: App.sun.shape.shape
                         onCurrentIndexChanged: App.sun.shape.shape = currentIndex
-                        //collapseLabels: App.view.left_panel.size === PanelData.Small
                         model: ["Gaussian", "Pillbox", "CSR", "Custom", "Limb Darkened"]
-                        //iconModel: ["\uf1fe", "\uf0c8", "\uf192", "\uf55b"]
                     }
                 }
 
@@ -366,7 +365,5 @@ Flickable {
         }
     }
 
-    ScrollBar.vertical: ScrollBar {
-        id: vbar
-    }
+    ScrollBar.vertical: STScrollBar { }
 }

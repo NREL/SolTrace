@@ -9,7 +9,7 @@ Item {
     id: root
 
     property color color: "white"
-    property string label: "Label"
+    property string label: ""
 
     width: 200
     height: column.implicitHeight
@@ -55,6 +55,7 @@ Item {
             text: root.label
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
+            visible: text.length > 0
         }
     }
 

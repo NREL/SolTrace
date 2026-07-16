@@ -8,7 +8,6 @@
 #include "simulation_data_api.hpp"
 
 #include <algorithm>
-#include <cmath>
 #include <optional>
 #include <unordered_map>
 
@@ -619,45 +618,7 @@ struct StageComponent {
     TransformComponent this_in_stage;
 };
 
-static std::optional<double> cylinder_radius(SD::surface_ptr const& surface) {
-    auto cylinder = std::dynamic_pointer_cast<SD::Cylinder const>(surface);
-    if (!cylinder) return std::nullopt;
-    if (!(cylinder->radius > 0.0) || !std::isfinite(cylinder->radius)) {
-        return std::nullopt;
-    }
-    return cylinder->radius;
-}
-
-static void apply_legacy_stinput_cylinder_origin_shift(
-    entt::registry& registry) {
-
-    auto view =
-        registry.view<ElementComponent, GeometryGroupMemberComponent const>();
-
-    for (auto [entity, geometry_membership] : view.each()) {
-
-        auto const* geometry =
-            registry.try_get<GeometryComponent>(geometry_membership.group);
-        if (!geometry) continue;
-
-        auto radius = cylinder_radius(geometry->surface);
-        if (!radius) continue;
-
-        // Legacy .stinput files use the historical SolTrace cylinder
-        // convention: the element origin is at the cylinder vertex and the
-        // cylinder center is one radius along local +Z. Current native runner
-        // code interprets cylinder origins as centered, so burn that
-        // compatibility shift into the GUI database only while importing
-        // legacy files. Do not apply this to JSON/native database loads.
-        registry.patch<TransformComponent>(entity, [radius](auto& item) {
-            item.position +=
-                item.rotation * glm::dvec3 { 0.0, 0.0, *radius };
-        });
-    }
-}
-
-void Database::import(SD::SimulationData& data,
-                      bool legacy_stinput_cylinder_origins) {
+void Database::import(SD::SimulationData& data) {
 
     // Assuming we are not re-using registries, which we are not for the moment
     auto imported_tag = create_tag("imported");
@@ -794,10 +755,6 @@ void Database::import(SD::SimulationData& data,
         }
 
         m_registry.clear<StageComponent>();
-    }
-
-    if (legacy_stinput_cylinder_origins) {
-        apply_legacy_stinput_cylinder_origin_shift(m_registry);
     }
 
     ray_source_resource.set(RaySourceResource {

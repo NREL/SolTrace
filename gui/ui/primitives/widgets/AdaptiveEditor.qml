@@ -127,7 +127,7 @@ Item {
                 Layout.fillWidth: true
                 clip: true
                 model: internal.model
-                ScrollIndicator.vertical: ScrollIndicator { }
+                ScrollBar.vertical: STScrollBar { }
 
                 delegate: Loader {
                     required property int index
@@ -215,7 +215,7 @@ Item {
                     Layout.fillHeight: true
                     clip: true
                     model: internal.model
-                    ScrollIndicator.vertical: ScrollIndicator { }
+                    ScrollBar.vertical: STScrollBar { }
 
                     delegate: Loader {
                         required property int index

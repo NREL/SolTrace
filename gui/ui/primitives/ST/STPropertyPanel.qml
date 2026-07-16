@@ -23,12 +23,13 @@ Rectangle {
 
     radius: 14
     color: Qt.rgba(1, 1, 1, 0.03)
-    border.width: 1
+    //color: "transparent"
+    //border.width: 1
     //border.color: Theme.lineColor
-    border.color: Material.dividerColor
+    //border.color: Material.dividerColor
     opacity: enabled ? 1.0 : 0.55
-    implicitHeight: form_core.implicitHeight + 20
-    implicitWidth: form_core.implicitWidth + 20
+    implicitHeight: form_core.implicitHeight
+    implicitWidth: form_core.implicitWidth
 
     clip: true
 
@@ -43,35 +44,63 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: 10
+        anchors.bottom: parent.bottom
 
-        spacing: 10
+        spacing: 0
 
-        RowLayout {
+        Item {
+            implicitHeight: header_row.implicitHeight + 12
+            Layout.preferredHeight: implicitHeight
+            //implicitWidth: header_row.implicitWidth + 12
+
+            //topLeftRadius: root.radius
+            //topRightRadius: root.radius
+
+            Layout.fillWidth: true
+            //Layout.bottomMargin: root.collapsed ? 8 : 0
+
             visible: root.title.length > 0
-            Layout.bottomMargin: root.collapsed ? 8 : 0
 
-            Label {
-                visible: root.collapsible
-                text: root.collapsed ? "▼" : "▶"
+            //color: Material.dividerColor
 
-                MouseArea {
-                    anchors.fill: parent
-                    onClicked: root.collapsed = !root.collapsed
+            RowLayout {
+                id: header_row
+
+                anchors.fill: parent
+                anchors.margins: 6
+
+                Label {
+                    font.family: "Font Awesome 7 Free"
+                    visible: root.collapsible
+                    text: root.collapsed ? "\uf105" : "\uf107"
+
+
                 }
+
+                CheckBox {
+                    visible: root.checkable
+                    id: check_box
+                }
+
+                Label {
+                    text: root.title
+                    Layout.fillWidth: true
+
+                    font.pointSize: App.theme.propertyPanelHeaderSize
+
+                }
+
+                // Rectangle {
+                //     Layout.fillWidth: true
+                //     Layout.preferredHeight: 1
+                //     color: Material.dividerColor
+                // }
+
             }
 
-            CheckBox {
-                visible: root.checkable
-                id: check_box
-            }
-
-            Label {
-                text: root.title
-                font.bold: true
-
-                font.pointSize: App.theme.propertyPanelHeaderSize
-                
+            MouseArea {
+                anchors.fill: parent
+                onClicked: root.collapsed = !root.collapsed
             }
         }
 
@@ -86,6 +115,9 @@ Rectangle {
         GridLayout {
             id: layout
             Layout.fillWidth: true
+            Layout.fillHeight: true
+
+            Layout.margins: 6
 
             columns: root.columns
 

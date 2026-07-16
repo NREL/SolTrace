@@ -16,9 +16,9 @@ RowLayout {
     STIconButton {
         Layout.preferredWidth: implicitWidth
         Layout.preferredHeight: implicitHeight
-        label.font.pointSize: 20
+        iconSize: 20
 
-        text: "\uf0f3"
+        icon: "\uf0f3"
         toolTip: "Notifications"
 
         onClicked: notification_settings.open()
@@ -152,30 +152,14 @@ RowLayout {
 
         Layout.preferredWidth: implicitWidth
         Layout.preferredHeight: implicitHeight
-        label.font.pointSize: 20
+        iconSize: 20
 
-        text: "\uf013"
+        icon: "\uf013"
         toolTip: "Settings"
 
-        Connections {
-            target: App.view.settings_panel
-            function onVisible_changed() {
-                if (App.view.settings_panel.visible) {
-                    App.view.left_panel.saved_visible = App.view.left_panel.visible
-                    App.view.left_panel.visible = false
-
-                    App.view.right_panel.saved_visible = App.view.right_panel.visible
-                    App.view.right_panel.visible = false
-                } else {
-                    App.view.left_panel.visible = App.view.left_panel.saved_visible
-                    App.view.right_panel.visible = App.view.right_panel.saved_visible
-                    App.view.fit_panels(root.available_width, false, true)
-                }
-            }
-        }
-
         onClicked: {
-            App.view.settings_panel.visible = !App.view.settings_panel.visible
+            App.view.full_panel.mode = FullPanelData.Settings
+            if (!App.view.full_panel.visible) App.view.toggle_full_panel(root.available_width)
         }
     }
 
@@ -184,17 +168,9 @@ RowLayout {
         Layout.preferredWidth: implicitWidth
         Layout.preferredHeight: implicitHeight
 
-        text: "\uf0c9"
+        icon: "\uf121"
         toolTip: (App.view.right_panel.visible ? "Close": "Open") + " Right Panel"
-        label.font.pointSize: 20
-        onClicked: {
-            if (App.view.settings_panel.visible) {
-                App.view.settings_panel.visible = false
-                return
-            }
-
-            App.view.right_panel.visible = !App.view.right_panel.visible && !App.view.settings_panel.visible
-            App.view.fit_panels(root.available_width, true)
-        }
+        iconSize: 20
+        onClicked: App.view.toggle_right_panel(root.available_width)
     }
 }
