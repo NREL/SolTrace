@@ -252,7 +252,7 @@ if (schema_version == "2025.11.12") {
     }
 }
 
-if (upgrade_log != nullptr) {
+if (upgrade_log != nullptr && !local_upgrade_log.empty()) {
     *upgrade_log = local_upgrade_log;
 }
 
