@@ -26,6 +26,7 @@ file(GLOB SAMPLE_FILES
 	"${SAMPLE_DIR}/*.mon"
 	"${TEST_INPUT_DIR}/*.stinput"
 	"${TEST_INPUT_DIR}/*.mon"
+	"${TEST_INPUT_DIR}/*.json"
 )
 file(GLOB GROUND_FILES ./ground_results/*.csv)
 

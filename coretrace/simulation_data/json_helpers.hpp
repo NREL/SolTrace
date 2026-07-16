@@ -20,8 +20,6 @@
 
 namespace SolTrace::Data {
 
-    const std::string kSchemaVersion = "2025.11.12";
-
     const int kJsonIndentSpaces = 4;
 
     inline double json_get_double(const nlohmann::ordered_json& jnode, std::string key)

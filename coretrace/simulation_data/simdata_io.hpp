@@ -57,10 +57,6 @@ EnumT get_enum_from_string(const std::string& str,
 }
 bool load_stinput_file(SimulationData& sd, std::string filename);
 
-void write_json_file(SimulationData& sd, std::string filename);
-
-void load_json_file(SimulationData& sd, std::string filename);
-
 } // namespace SolTrace::Data
 
 #endif

@@ -23,6 +23,7 @@ set(SIMDATA_SRC
     aperture.cpp
     composite_element.cpp
     element.cpp
+    json_schema.cpp
     matvec.cpp
     optical_properties.cpp
     simdata_io.cpp
@@ -54,6 +55,7 @@ set(SIMDATA_HDRS
     element.hpp
     error_distributions.hpp
     json_helpers.hpp
+    json_schema.hpp
     simulation_data_export.hpp
     matvec.hpp
     optical_properties.hpp
