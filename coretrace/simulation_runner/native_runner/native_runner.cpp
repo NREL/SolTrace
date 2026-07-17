@@ -334,7 +334,6 @@ namespace SolTrace::NativeRunner
         RunnerStatus retval = RunnerStatus::SUCCESS;
 
         const TSystem *sys = this->get_system();
-        // const TRayData ray_data = sys->AllRayData;
         const TRayData& ray_data = sys->RayData;
         std::map<unsigned int, SolTrace::Result::ray_record_ptr> ray_records;
         std::map<unsigned int, SolTrace::Result::ray_record_ptr>::iterator iter;
@@ -407,13 +406,10 @@ namespace SolTrace::NativeRunner
         }
 
         // Attach sun results
-        result->set_sun_ray_count(this->tsys.SunRayCount);
-
         TSun &sun = this->tsys.Sun;
         double sun_width = sun.MaxXSun - sun.MinXSun;
         double sun_height = sun.MaxYSun - sun.MinYSun;
-        result->set_sun_dimensions(sun_width, sun_height);
-        result->set_sun_A_box(sun_width * sun_height);
+        result->set_sun_sampling_stats(sun_width, sun_height, this->tsys.SunRayCount);
 
         return retval;
     }

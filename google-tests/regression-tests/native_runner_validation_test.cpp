@@ -87,7 +87,7 @@ int_fast64_t count_element_event(const SimulationResult &res, element_id el, Ray
 TEST(NativeRunner, ValidationTest1)
 {
     // Pulling in path variable from CMake and creating path to .stinput sample file
-    std::string sample_path = std::string(PROJECT_DIR) + std::string("/High Flux Solar Furnace.stinput");
+    std::string sample_path = std::string(PROJECT_DIR) + std::string("/high_flux_solar_furnace_test.stinput");
 
     // Path to .csv exported from Soltrace as ground truth
     std::string ground_csv_path = PROJECT_DIR + std::string("/hfsf_example_raydata.csv");

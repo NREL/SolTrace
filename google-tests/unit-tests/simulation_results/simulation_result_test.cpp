@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <filesystem>
 #include <sstream>
 
@@ -210,6 +211,57 @@ TEST(SimulationResult, Accessors)
         ++idx;
     }
     EXPECT_EQ(sr.get_number_of_records(), idx);
+}
+
+TEST(SimulationResult, SunSamplingStats)
+{
+    const double TOL = 1e-12;
+
+    // --- Three-argument overload (width, height, sun_ray_count) ---
+    {
+        SimulationResult sr;
+        sr.set_sun_sampling_stats(4.0, 3.0, 12);
+
+        double w, h;
+        sr.get_sun_dimensions(w, h);
+        EXPECT_NEAR(w, 4.0, TOL);
+        EXPECT_NEAR(h, 3.0, TOL);
+        EXPECT_NEAR(sr.get_sun_A_box(), 12.0, TOL);
+        EXPECT_EQ(sr.get_sun_ray_count(), 12u);
+        EXPECT_NEAR(sr.get_ray_area_weight(), 12.0 / 12.0, TOL);
+    }
+
+    // --- Two-argument overload (sun_A_box, sun_ray_count) ---
+    {
+        SimulationResult sr;
+        sr.set_sun_sampling_stats(25.0, 5);
+
+        double w, h;
+        sr.get_sun_dimensions(w, h);
+        EXPECT_TRUE(std::isnan(w));
+        EXPECT_TRUE(std::isnan(h));
+        EXPECT_NEAR(sr.get_sun_A_box(), 25.0, TOL);
+        EXPECT_EQ(sr.get_sun_ray_count(), 5u);
+        EXPECT_NEAR(sr.get_ray_area_weight(), 25.0 / 5.0, TOL);
+    }
+
+    // --- Three-argument overload: invalid inputs ---
+    {
+        SimulationResult sr;
+        EXPECT_THROW(sr.set_sun_sampling_stats(4.0, 3.0, 0),  std::invalid_argument); // zero rays
+        EXPECT_THROW(sr.set_sun_sampling_stats(0.0, 3.0, 10), std::invalid_argument); // zero width
+        EXPECT_THROW(sr.set_sun_sampling_stats(-1.0, 3.0, 10), std::invalid_argument); // negative width
+        EXPECT_THROW(sr.set_sun_sampling_stats(4.0, 0.0, 10), std::invalid_argument); // zero height
+        EXPECT_THROW(sr.set_sun_sampling_stats(4.0, -1.0, 10), std::invalid_argument); // negative height
+    }
+
+    // --- Two-argument overload: invalid inputs ---
+    {
+        SimulationResult sr;
+        EXPECT_THROW(sr.set_sun_sampling_stats(25.0, 0),   std::invalid_argument); // zero rays
+        EXPECT_THROW(sr.set_sun_sampling_stats(0.0, 10),   std::invalid_argument); // zero area
+        EXPECT_THROW(sr.set_sun_sampling_stats(-1.0, 10),  std::invalid_argument); // negative area
+    }
 }
 
 TEST(SimulationResult, OstreamOperator)

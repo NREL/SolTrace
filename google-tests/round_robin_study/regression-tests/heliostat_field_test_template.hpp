@@ -439,7 +439,7 @@ public:
         result.get_sun_dimensions(this->sun_width, this->sun_height);
         nsun_rays = result.get_sun_ray_count();
         A_sun_box = result.get_sun_A_box();
-        power_per_ray = A_sun_box / nsun_rays * dni;
+        power_per_ray = result.get_ray_area_weight() * dni;
 
         if (print_info) {
             std::cout << "Power per ray: " << power_per_ray << std::endl;

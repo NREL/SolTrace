@@ -29,7 +29,7 @@ BraceWrapping:
     BeforeCatch:     false
     BeforeElse:      false
     IndentBraces:    false
-BreakBeforeBraces: Custom
+BreakBeforeBraces: Allman
 BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: BeforeColon

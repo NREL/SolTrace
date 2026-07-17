@@ -525,9 +525,7 @@ RunnerStatus OptixRunner::report_simulation(SimulationResult *result,
     }
 
     // Attach other results
-    result->set_sun_ray_count(this->get_N_sun_rays());
-    result->set_sun_dimensions(std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::quiet_NaN());
-    result->set_sun_A_box(this->get_sun_plane_area());
+    result->set_sun_sampling_stats(this->get_sun_plane_area(), this->get_N_sun_rays());
 
     return RunnerStatus::SUCCESS;
 }
