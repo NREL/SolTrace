@@ -585,7 +585,7 @@ public:
         }
     }
 
-    void simulate(SimulationResult* result, int N_rays = -1) {
+    void simulate(SimulationResult* result, uint_fast64_t N_rays = -1) {
         if (high_accuracy) set_high_accuracy_params();
         else set_default_params();
 
@@ -593,7 +593,7 @@ public:
         {
             auto& params = simData.get_simulation_parameters();
             params.number_of_rays = N_rays;
-            params.max_number_of_rays = static_cast<std::uint_fast64_t>(N_rays) * 1000ULL;
+            params.max_number_of_rays = static_cast<std::uint_fast64_t>(N_rays) * 10000ULL;
         }
 
         RunnerStatus sts = runner.setup_simulation(&simData);
@@ -1182,7 +1182,7 @@ public:
     void update_from_hour(std::string hour){
         // Update simulation geometry based on hour
         if (hour == "8")
-            update_simulation_geometry(74.95, 26.26);  // Solar position at 8 AM
+            update_simulation_geometry(74.975, 26.26);  // Solar position at 8 AM
         else if (hour == "12")
             update_simulation_geometry(0.0, 61.97); // Solar Noon
         else
