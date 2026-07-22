@@ -90,7 +90,7 @@ public:
     double sun_width;
     double sun_height;
     double A_sun_box;
-    int nsun_rays;
+    uint_fast64_t nsun_rays;
     double power_per_ray;
     // Sun Input
     double sun_half_width = 4.65;
@@ -1182,7 +1182,7 @@ public:
     void update_from_hour(std::string hour){
         // Update simulation geometry based on hour
         if (hour == "8")
-            update_simulation_geometry(74.975, 26.26);  // Solar position at 8 AM
+            update_simulation_geometry(74.95, 26.26);  // Solar position at 8 AM
         else if (hour == "12")
             update_simulation_geometry(0.0, 61.97); // Solar Noon
         else

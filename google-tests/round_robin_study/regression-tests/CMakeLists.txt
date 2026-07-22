@@ -27,6 +27,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" OR FULL_FIELD_VALIDATION_TEST)
 			single_heliostat_test_optix.cpp
 			heliostat_field_test_optix.cpp
 			isolated_heliostat_test_optix.cpp
+			isolated_heliostat_test_optix_negative.cpp
 		)
 	endif()
 	if(SOLTRACE_BUILD_EMBREE_SUPPORT)
