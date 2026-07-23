@@ -507,7 +507,7 @@ public:
         top_heat_shield = SolTrace::Data::make_element<SingleElement>();
         SolTrace::Data::OpticalPropertySet top_heat_shield_opt_set(SolTrace::Data::InteractionType::REFLECTION, "TopHeatShieldOptics");
         top_heat_shield_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Front);
-        top_heat_shield_opt_set.set_ideal_reflection(SolTrace::Data::OpticalSide::Back);
+        top_heat_shield_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Back);
         auto top_heat_shield_ref = simData.add_optical_property_set(top_heat_shield_opt_set);
         top_heat_shield->set_optical_property_set(top_heat_shield_ref);
         top_heat_shield->set_aperture(SolTrace::Data::make_aperture<SolTrace::Data::Circle>(rec_radius * 2.0));
@@ -523,7 +523,7 @@ public:
         bottom_heat_shield = SolTrace::Data::make_element<SingleElement>();
         SolTrace::Data::OpticalPropertySet bottom_heat_shield_opt_set(SolTrace::Data::InteractionType::REFLECTION, "BottomHeatShieldOptics");
         bottom_heat_shield_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Front);
-        bottom_heat_shield_opt_set.set_ideal_reflection(SolTrace::Data::OpticalSide::Back);
+        bottom_heat_shield_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Back);
         auto bottom_heat_shield_ref = simData.add_optical_property_set(bottom_heat_shield_opt_set);
         bottom_heat_shield->set_optical_property_set(bottom_heat_shield_ref);
         bottom_heat_shield->set_aperture(SolTrace::Data::make_aperture<SolTrace::Data::Circle>(rec_radius * 2.0));

@@ -235,10 +235,10 @@ TEST(IsolatedHeliostatOptixEmbreeNegativeError, singleFacet8993_4dLongerAimpoint
     sim_embree.setup_simData();
     sim_optix.setup_simData();
 
-    //CompareRunners(sim_embree, sim_optix, 3875e3, "8", "4d_1_8_");
+    CompareRunners(sim_embree, sim_optix, 3750e3, "8", "4d_1_8_");
+	CompareRunners(sim_embree, sim_optix, 3800e3, "8", "4d_1_8_");
 	CompareRunners(sim_embree, sim_optix, 3880e3, "8", "4d_1_8_");
-	//CompareRunners(sim_embree, sim_optix, 3890e3, "8", "4d_1_8_");
-	//CompareRunners(sim_embree, sim_optix, 3895e3, "8", "4d_1_8_");
-	//CompareRunners(sim_embree, sim_optix, 390e4, "8", "4d_1_8_");
+	CompareRunners(sim_embree, sim_optix, 3850e3, "8", "4d_1_8_");
+	CompareRunners(sim_embree, sim_optix, 390e4, "8", "4d_1_8_");
 	
 }
