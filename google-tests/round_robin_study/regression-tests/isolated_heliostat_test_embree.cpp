@@ -57,7 +57,6 @@ TEST_F(IsolatedHeliostatSimulationEmbree, multiFacet8993_BlockingShading4b)
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("4b", "1");
-    //simulate_check_outputs("7b", "1");
 
 }
 
@@ -70,7 +69,8 @@ TEST_F(IsolatedHeliostatSimulationEmbree, multiFacet5473_BlockingShading4c)
     // Centerline aimpoints
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
-    set_flat_facets();
+    //set_flat_facets();
+    //set_slope_error(0.0);
     std::vector<int> active {5473};
     std::vector<int> blocking {5573};
     create_active_heliostats(active);
@@ -79,13 +79,100 @@ TEST_F(IsolatedHeliostatSimulationEmbree, multiFacet5473_BlockingShading4c)
     assign_canted_banded(false);
     assign_canted_banded(true);
 
+    assign_focal_lengths_banded(false);
+    assign_focal_lengths_banded(true);
+
+    //set_no_sunShape();
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("4c", "1");
-    save_flux_map_to_file("embree_test_4c.csv");
-    //simulate_check_outputs("7c", "1");
 
 }
+
+TEST_F(IsolatedHeliostatSimulationEmbree, multiFacet5473_BlockingShading4c_flat)
+{
+    this->runner.set_number_of_threads(N_threads);
+
+    // Centerline aimpoints
+    glm::dvec3 origin = {0,0,171.035};
+    set_rec_origin(origin);
+    set_flat_facets();
+    //set_slope_error(0.0);
+    std::vector<int> active {5473};
+    std::vector<int> blocking {};
+    for(int i = 1350; i<5473; i++){
+        blocking.push_back(i);
+    }
+    for(int i = 5474; i<=6505; i++){
+        blocking.push_back(i);
+    }
+    create_active_heliostats(active);
+    create_blocking_heliostats(blocking);
+
+    assign_canted_banded(false);
+    assign_canted_banded(true);
+
+    //set_no_sunShape();
+    setup_simData();
+    update_from_hour("12");
+    simulate_check_outputs("4c", "1");
+
+}
+
+TEST_F(IsolatedHeliostatSimulationEmbree, multiFacet5473_BlockingShading4c_sunshape)
+{
+    this->runner.set_number_of_threads(N_threads);
+
+    // Centerline aimpoints
+    glm::dvec3 origin = {0,0,171.035};
+    set_rec_origin(origin);
+    //set_flat_facets();
+    //set_slope_error(0.0);
+    std::vector<int> active {5473};
+    std::vector<int> blocking {5573};
+    create_active_heliostats(active);
+    create_blocking_heliostats(blocking);
+
+    assign_canted_banded(false);
+    assign_canted_banded(true);
+
+    assign_focal_lengths_banded(false);
+    assign_focal_lengths_banded(true);
+
+    set_no_sunShape();
+    setup_simData();
+    update_from_hour("12");
+    simulate_check_outputs("4c", "1");
+
+}
+
+TEST_F(IsolatedHeliostatSimulationEmbree, multiFacet5473_BlockingShading4c_slopesunshape)
+{
+    this->runner.set_number_of_threads(N_threads);
+
+    // Centerline aimpoints
+    glm::dvec3 origin = {0,0,171.035};
+    set_rec_origin(origin);
+    //set_flat_facets();
+    set_slope_error(0.0);
+    std::vector<int> active {5473};
+    std::vector<int> blocking {5573};
+    create_active_heliostats(active);
+    create_blocking_heliostats(blocking);
+
+    assign_canted_banded(false);
+    assign_canted_banded(true);
+
+    assign_focal_lengths_banded(false);
+    assign_focal_lengths_banded(true);
+
+    set_no_sunShape();
+    setup_simData();
+    update_from_hour("12");
+    simulate_check_outputs("4c", "1");
+
+}
+
 
 //task 4d: r p 1, facet focusing by slant range
 TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_4dLongerAimpoint8)
@@ -99,11 +186,6 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_4dLongerAimpoint8)
     setup_simData();
     
     simulate_check_outputs("4d", "1", "8");
-    save_flux_map_to_file("embree_test_4d_8.csv");
-
-    // update_from_hour("8");
-    // simulate_check_outputs("7b", "1");
-    
     
 }
 
@@ -119,38 +201,9 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_4dLongerAimpoint12)
     setup_simData();
     
     simulate_check_outputs("4d", "1", "12");
-    // update_from_hour("12");
-    // simulate_check_outputs("7b", "1");
+  
 }
 
-/*TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_4dLongerAimpoint_blocking)
-{
-    this->runner.set_number_of_threads(N_threads);
-    
-    // Centerline aimpoints
-    std::vector<int> active {8993};
-    std::vector<int> blocking {9100, 9102, 9208};
-    create_active_heliostats(active);
-    create_blocking_heliostats(blocking);
-    setup_simData();
-    
-    simulate_check_outputs("4d", "1", "8");
-    simulate_check_outputs("4d", "1", "12");
-}*/
-
-/*TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_4dDoctoredAimpoint)
-{
-    this->runner.set_number_of_threads(N_threads);
-    
-    // Centerline aimpoints
-    set_helio_dim(10,10);
-    std::vector<int> active {8993};
-    create_active_heliostats(active);
-    setup_simData();
-    
-    simulate_check_outputs("4d", "1", "8");
-    simulate_check_outputs("4d", "1", "12");
-}*/
 
 //task 4e: r p 1, facet focusing by slant range
 TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_TargetCoordSystemE4e)
@@ -168,16 +221,9 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_TargetCoordSystemE4e)
 
     set_no_sunShape();
     setup_simData();
-
-    // update_from_hour("8");
-    // simulate_check_outputs("7b", "1");
-    // update_from_hour("12");
-    // simulate_check_outputs("7b", "1");
     
     simulate_check_outputs("4e", "1", "8");
-    save_flux_map_to_file("embree_test_4e_8.csv");
     simulate_check_outputs("4e", "1", "12");
-    save_flux_map_to_file("embree_test_4e_12.csv");
 }
 
 //task 4f: r p 1, facet focusing by slant range
@@ -195,14 +241,8 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_TargetCoordSystemW4f)
     
     set_no_sunShape();
     setup_simData();
-
-    // update_from_hour("8");
-    // simulate_check_outputs("7b", "1");
-    // update_from_hour("12");
-    // simulate_check_outputs("7b", "1");
     
     simulate_check_outputs("4f", "1", "8");
-    save_flux_map_to_file("embree_test_4f_8.csv");
     simulate_check_outputs("4f", "1", "12");
 
 }
@@ -223,13 +263,7 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_TargetCoordSystemU4g)
     set_no_sunShape();
     setup_simData();
 
-    // update_from_hour("8");
-    // simulate_check_outputs("7b", "1");
-    // update_from_hour("12");
-    // simulate_check_outputs("7b", "1");
-
     simulate_check_outputs("4g", "1", "8");
-    save_flux_map_to_file("embree_test_4g_8.csv");
     simulate_check_outputs("4g", "1", "12");
 
 }
@@ -250,13 +284,7 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_TargetCoordSystemD4h)
     set_no_sunShape();
     setup_simData();
 
-    // update_from_hour("8");
-    // simulate_check_outputs("7b", "1");
-    // update_from_hour("12");
-    // simulate_check_outputs("7b", "1");
-
     simulate_check_outputs("4h", "1", "8");
-    save_flux_map_to_file("embree_test_4h_8.csv");
     simulate_check_outputs("4h", "1", "12");
 
 }
@@ -273,12 +301,8 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_4i_8)
     //  TODO: function that shifts aimpoint, no sun shape, no slope error, FLAT??????
     set_no_sunShape();
     setup_simData();
-    
-    // update_from_hour("8");
-    // simulate_check_outputs("7b", "1");
 
     simulate_check_outputs("4i", "1", "8");
-    save_flux_map_to_file("embree_test_4i_8.csv");
 
 }
 
@@ -293,9 +317,6 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet8993_4i_12)
     //  TODO: function that shifts aimpoint, no sun shape, no slope error, FLAT??????
     set_no_sunShape();
     setup_simData();
-
-    // update_from_hour("12");
-    // simulate_check_outputs("7b", "1");
 
     simulate_check_outputs("4i", "1", "12");
 
@@ -324,11 +345,6 @@ TEST_F(IsolatedHeliostatSimulationEmbree, multiFacet1332_BlockingShading5a)
     //update_simulation_geometry(74.95, 26.26);
     update_from_hour("8");
     simulate_check_outputs("5a", "1");
-    save_flux_map_to_file("embree_test_5a.csv");
-
-    //simulate_check_outputs("7b", "1");
-
-    
 
 }
 
@@ -351,7 +367,6 @@ TEST_F(IsolatedHeliostatSimulationEmbree, multiFacet1332_CantingAccuracy6a)
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("6a", "1");
-    //simulate_check_outputs("7b", "1");
 
 }
 
@@ -378,8 +393,6 @@ TEST_F(IsolatedHeliostatSimulationEmbree, multiFacet5473_CantingFocusingAccuracy
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("7a", "1");
-    //simulate_check_outputs("5a", "1");
-    save_flux_map_to_file("embree_test_7a.csv");
 
 }
 
@@ -399,8 +412,6 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet5473_7b) //0 slope error
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("7b", "1");
-    //simulate_check_outputs("5a", "1");
-    save_flux_map_to_file("embree_test_7b_12.csv");
 
 }
 
@@ -413,39 +424,8 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet5473_7bLongerAimpoint_8) //
     create_active_heliostats(active);
     setup_simData();
     simulate_check_outputs("7b", "1", "8");
-    //simulate_check_outputs("5a", "1");
 
 }
-
-/*TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet5473_7bDebug) //0 slope error
-{
-    this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
-    set_slope_error(0.0);
-    glm::dvec3 origin = {-0.2273,7.7217,171.035};
-    set_rec_origin(origin);
-    std::vector<int> active {5473};
-    create_active_heliostats(active);
-    setup_simData();
-    update_from_hour("12");
-    simulate_check_outputs("7b", "1");
-
-}*/
-
-/*TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet5473_7bDebugFartherAimpoint) //0 slope error
-{
-    this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
-    set_slope_error(0.0);
-    glm::dvec3 origin = {0,0,171.035};
-    set_rec_origin(origin);
-    std::vector<int> active {5473};
-    create_active_heliostats(active);
-    setup_simData();
-    update_from_hour("12");
-    simulate_check_outputs("7b", "1");
-
-}*/
 
 //task 7c: r p 1, facet focusing by slant range
 TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet5473_BlockingShading7c) //0 slope error
@@ -466,8 +446,6 @@ TEST_F(IsolatedHeliostatSimulationEmbree, singleFacet5473_BlockingShading7c) //0
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("7c", "1");
-    //simulate_check_outputs("5a", "1");
-    save_flux_map_to_file("embree_test_7c.csv");
 
 }
 

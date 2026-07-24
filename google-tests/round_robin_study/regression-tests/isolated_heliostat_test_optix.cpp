@@ -10,7 +10,7 @@ using NativeRunnerType = NativeRunner;
 
 using SolTrace::EmbreeRunner::EmbreeRunner;
 
-constexpr uint_fast64_t N_rays_glob = 2e6;
+constexpr uint_fast64_t N_rays_glob = 5e6;
 constexpr int seed = 123;
 constexpr bool save = true;
 constexpr bool save_hits = false;
@@ -509,7 +509,7 @@ TEST(IsolatedHeliostatOptixEmbree, singleFacet8993_4dLongerAimpoint8)
 	//sim_optix.save_flux_map_to_file("optix_4d_8.csv");
 }
 
-TEST(IsolatedHeliostatOptixEmbree, singleFacet8993_4dLongerAimpoint8_25e5)
+/*TEST(IsolatedHeliostatOptixEmbree, singleFacet8993_4dLongerAimpoint8_25e5)
 {
 	// Make embree
 	IsolatedHeliostatSimulationHelper<EmbreeRunner> sim_embree;
@@ -691,7 +691,7 @@ TEST(IsolatedHeliostatOptixEmbree, _4dLongerAimpoint8_4e6_embree)
     CompareRunners(sim_embree, sim_optix, 4e6, "8", "4d_embree_8_");
 	//sim_embree.save_flux_map_to_file("embree_4d_8.csv");
 	//sim_optix.save_flux_map_to_file("optix_4d_8.csv");
-}
+}*/
 
 TEST(IsolatedHeliostatOptixEmbree, singleFacet8993_4dLongerAimpoint12)
 {

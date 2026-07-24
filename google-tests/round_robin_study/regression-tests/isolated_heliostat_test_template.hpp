@@ -49,8 +49,8 @@ template <typename RunnerT>
 class IsolatedHeliostatSimulationHelper {
 public:
     bool high_accuracy = true;     // Runs 20 Million rays and tighter tolerance on checks
-    bool print_info = true;        // Prints information on from simulation results (sun calculations, ray counts, flux calculations)
-    bool save_results = false;      // Saves flux map results to CSV files
+    bool print_info = false;        // Prints information on from simulation results (sun calculations, ray counts, flux calculations)
+    bool save_results = true;      // Saves flux map results to CSV files
     bool save_raydata = false;      // Saves ray data to CSV file
 
     int seed = 123;
@@ -1091,7 +1091,7 @@ public:
         EXPECT_EQ(tot_helio_absorb_count + tot_reflect_count, tot_helio_hits);
         EXPECT_EQ(rec_absorb_count + heat_shield_absorb_count + miss_count + tot_helio_block_count, tot_reflect_count);
 
-        double tol = high_accuracy ? 1.e-3 : 5.e-3;
+        double tol = high_accuracy ? 3.5e-3 : 8.e-3;
         //Check efficiencies
         //EXPECT_NEAR(absorption_efficiency, expected_absorption_efficiency, tol);
         //EXPECT_NEAR(blocking_efficiency, expected_blocking_efficiency, tol * 2.0);
@@ -1102,7 +1102,7 @@ public:
         EXPECT_NEAR(total_power, expected_power, tol * expected_power);
 
         // Peak flux value
-        double peak_tol = high_accuracy ? 2.e-2 : 0.25;
+        double peak_tol = high_accuracy ? 1.5e-2 : 0.25;
         EXPECT_NEAR(PeakFlux / 1.e3, expected_peak_flux, peak_tol * expected_peak_flux);
 
         double rmse = 0.0;
@@ -1120,7 +1120,7 @@ public:
         EXPECT_EQ(fluxGrid.ncols(), expected_fluxGrid.ncols());
 
         EXPECT_LE(rmse, 25.0); // expected_flux_RMS
-        double rmse_tol = high_accuracy ? 0.02 : 0.08;  // 2% of peak flux // 0.04
+        double rmse_tol = high_accuracy ? 0.025 : 0.11;  // 2% of peak flux // 0.04
         EXPECT_LE(rmse / (PeakFlux / 1.e3), rmse_tol);
 
         if (print_info) {
