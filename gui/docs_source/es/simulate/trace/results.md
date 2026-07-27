@@ -1,0 +1,5 @@
+---
+title: "Resultados Completados"
+---
+
+Los trazados completados se agregan a Analyze Results. Use View Results para ir a la lista de resultados, seleccionar la nueva ejecucion, inspeccionar intersecciones de rayos, crear mapas de flujo o exportar datos.

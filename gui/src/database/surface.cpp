@@ -832,6 +832,28 @@ generate_cylinder_surface(SD::surface_ptr const&          surface,
 
 } // namespace
 
+SurfaceGenerationOptions
+SurfaceGenerationOptions::from_resolution_and_thickness(unsigned fidelity,
+                                                        float    thickness) {
+    fidelity  = std::clamp<unsigned>(fidelity, 1, 10);
+    thickness = std::clamp(thickness, 0.0f, 1.0f);
+
+    if (thickness < .001) { thickness = 0; }
+
+    uint32_t basic_factor = fidelity * 10;
+    uint32_t boosted      = std::lerp(8.0, 360.0, fidelity / 10.0);
+
+    return {
+        .height_field_resolution       = { basic_factor, basic_factor },
+        .radial_subdivisions           = basic_factor,
+        .perimeter_subdivisions        = boosted,
+        .cylinder_angular_subdivisions = boosted,
+        .cylinder_length_subdivisions  = basic_factor,
+        .add_thickness                 = thickness > 0.0,
+        .thickness                     = thickness,
+    };
+}
+
 std::optional<Mesh> generate_surface(SD::surface_ptr const&          surface,
                                      SD::aperture_ptr const&         aperture,
                                      SurfaceGenerationOptions const& options) {

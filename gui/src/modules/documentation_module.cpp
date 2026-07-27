@@ -71,12 +71,12 @@ void DocumentationModule::doc_walker(const QString& dir_path,
     QString dir_name = dir.dirName();
 
     // Process files in this directory
-    QFileInfoList file_infos = dir.entryInfoList({ "*.md" }, QDir::Files);
+    QFileInfoList file_infos = dir.entryInfoList({ "*.json" }, QDir::Files);
 
     for (const QFileInfo& file_info : file_infos) {
         QFile file(file_info.canonicalFilePath());
 
-        QString name = file_info.fileName().replace(".md", "");
+        QString name = file_info.completeBaseName();
 
         QString new_key;
 
@@ -88,7 +88,7 @@ void DocumentationModule::doc_walker(const QString& dir_path,
             new_key = key_prefix.isEmpty() ? name : key_prefix + "." + name;
         }
 
-        m_docs[m_locale].insert(new_key, parse_markdown_file(file));
+        m_docs[m_locale].insert(new_key, parse_processed_doc_file(file));
     }
 
     QFileInfoList subdirs =
@@ -111,6 +111,14 @@ QString DocumentationModule::get(QString key, QString metadata_key) {
     if (metadata_key.isEmpty()) return result->body();
 
     return result->metadata(metadata_key);
+}
+
+QString DocumentationModule::blocks(QString key) {
+    auto* result = m_docs[m_locale].value(key, nullptr);
+
+    if (result == nullptr) return "[]";
+
+    return result->blocks_json();
 }
 
 QString DocumentationModule::locale_string() {

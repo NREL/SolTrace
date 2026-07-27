@@ -12,12 +12,6 @@
 namespace SD = SolTrace::Data;
 namespace RD = SolTrace::Result;
 
-enum class RunType {
-    Thread,
-    Process,
-};
-
-
 /// Models a running simulation.
 ///
 /// Provides pause and resume (if the simulation supports it)
@@ -35,7 +29,6 @@ class RunningJob : public QObject {
 public:
     explicit RunningJob(
         SimDataPtr          data,
-        RunType             type,
         uint32_t            thread_count,
         ThreadRunnerBackend backend = ThreadRunnerBackend::Native,
         QObject*            parent  = nullptr);

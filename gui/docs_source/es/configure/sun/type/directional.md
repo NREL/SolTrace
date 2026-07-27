@@ -1,0 +1,7 @@
+---
+title: "Sol Direccional"
+---
+
+Un sol direccional trata todos los rayos entrantes como paralelos. Defina la direccion manualmente con azimut y elevacion, o use la calculadora solar cuando la metadata de posicion este disponible.
+
+Es el modelo de fuente usual para luz solar a la escala de la mayoria de los sistemas opticos.

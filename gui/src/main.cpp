@@ -1,7 +1,3 @@
-#include "job_control/job_run_process.h"
-
-#include "app_data.h"
-#include "backend.h"
 #include "logging.h"
 
 #include <QApplication>
@@ -25,9 +21,6 @@ constexpr auto font_list = std::array {
 };
 
 int main(int argc, char* argv[]) {
-    // Check if we are a worker. If so, this function will not return.
-    check_if_process_worker(argc, argv);
-
     qputenv("QT_QUICK_CONTROLS_MATERIAL_VARIANT", "Dense");
     qputenv("QML_XHR_ALLOW_FILE_READ", "1");
 

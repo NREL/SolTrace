@@ -7,14 +7,13 @@ import SolTrace
 ColumnLayout {
     spacing: 8
 
-    Label {
+    InlineDocumentation {
+        key: "workflow.load"
         Layout.fillWidth: true
         Layout.leftMargin: 10
         Layout.rightMargin: 10
         Layout.bottomMargin: 8
-
-        text: "Add a scene to the environment by loading a .stinput file"
-        wrapMode: Text.WordWrap
+        showTitle: false
     }
 
     SceneListPane {

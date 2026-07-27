@@ -57,7 +57,6 @@ Flickable {
 
         InlineDocumentation {
             key: "configure.sun"
-            target: App.view.left_panel
             Layout.margins: 8
         }
 
@@ -74,7 +73,7 @@ Flickable {
             Layout.fillWidth: true
             collapseLabels: App.view.left_panel.size === SplitPanelData.Small
             model: ["Type & Position", "Emission Profile"]
-            prefixModel: ["2a1", "2a2"]
+            prefixModel: ["3a1", "3a2"]
             iconModel: ["\uf124", "\uf1fe"]
         }
 
@@ -131,84 +130,51 @@ Flickable {
                     Layout.fillWidth: true
                     Layout.margins: 8
                     key: "configure.sun.type." + ["directional", "point_source"][App.sun.type]
-                    target: App.view.left_panel
                 }
 
-                StackLayout {
-                    Layout.fillWidth: true
-                    currentIndex: App.sun.ds_position_type
-                    visible: App.sun.type === SunModule.Directional
+                ColumnLayout {
 
-                    ColumnLayout {
+                    SolarCalculator {
+                        Layout.fillWidth: true
 
-                        SolarCalculator {
-                            Layout.fillWidth: true
-                        }
-
-                        GridLayout {
-                            Layout.fillWidth: true
-                            columns: App.view.left_panel.size === SplitPanelData.Small ? 1 : 2
-
-                            STSpinBoxField {
-                                enableSpinBox: false
-                                Layout.fillWidth: true
-                                Layout.preferredWidth: 100
-                                label: "Azimuth"
-                                value: App.sun.position.azimuth
-                                from: 0
-                                to: 360
-                                decimals: 3
-                                suffix: "deg"
-                            }
-
-                            STSpinBoxField {
-                                enableSpinBox: false
-                                Layout.fillWidth: true
-                                Layout.preferredWidth: 100
-                                label: "Elevation"
-                                value: App.sun.position.elevation
-                                from: -90
-                                to: 90
-                                decimals: 3
-                                suffix: "deg"
-                            }
-                        }
+                        visible: (App.sun.type === SunModule.Directional
+                                     && App.sun.ds_position_type === 0)
                     }
 
-                    ColumnLayout {
-                        GridLayout {
+                    GridLayout {
+                        Layout.fillWidth: true
+                        columns: App.view.left_panel.size === SplitPanelData.Small ? 1 : 2
+
+                        STSpinBoxField {
+                            id: azimuthField
                             Layout.fillWidth: true
-                            columns: App.view.left_panel.size === SplitPanelData.Small ? 1 : 2
+                            Layout.preferredWidth: 100
+                            label: "Azimuth"
+                            value: root.directionAzimuth()
+                            from: 0
+                            to: 360
+                            decimals: 3
+                            suffix: "deg"
+                            enabled: App.sun.ds_position_type == SunModule.Angle
+                            onValueModified: root.setDirectionAngles(
+                                                 value,
+                                                 root.directionElevation())
+                        }
 
-                            STSpinBoxField {
-                                id: azimuthField
-                                Layout.fillWidth: true
-                                Layout.preferredWidth: 100
-                                label: "Azimuth"
-                                value: root.directionAzimuth()
-                                from: 0
-                                to: 360
-                                decimals: 3
-                                suffix: "deg"
-                                onValueModified: root.setDirectionAngles(
-                                                     value,
-                                                     root.directionElevation())
-                            }
-
-                            STSpinBoxField {
-                                id: elevationField
-                                Layout.fillWidth: true
-                                Layout.preferredWidth: 100
-                                label: "Elevation"
-                                value: root.directionElevation()
-                                from: -90
-                                to: 90
-                                decimals: 3
-                                suffix: "deg"
-                                onValueModified: root.setDirectionAngles(
-                                                     root.directionAzimuth(),
-                                                     value)
-                            }
+                        STSpinBoxField {
+                            id: elevationField
+                            Layout.fillWidth: true
+                            Layout.preferredWidth: 100
+                            label: "Elevation"
+                            value: root.directionElevation()
+                            from: -90
+                            to: 90
+                            decimals: 3
+                            suffix: "deg"
+                            enabled: App.sun.ds_position_type == SunModule.Angle
+                            onValueModified: root.setDirectionAngles(
+                                                 root.directionAzimuth(),
+                                                 value)
                         }
                     }
                 }
@@ -218,8 +184,6 @@ Flickable {
                     title: "Manual Position"
                     collapsible: false
                     visible: App.sun.type === SunModule.PointSource
-                             || (App.sun.type === SunModule.Directional
-                                 && App.sun.ds_position_type === 1)
 
                     GridLayout {
                         width: parent.width
@@ -294,7 +258,6 @@ Flickable {
                     Layout.fillWidth: true
                     Layout.margins: 8
                     key: "configure.sun.shape." + ["gaussian", "pillbox", "csr", "custom", "limb_darkened"][App.sun.shape.shape]
-                    target: App.view.left_panel
                 }
 
                 GridLayout {

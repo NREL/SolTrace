@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
+#include <functional>
 
 #include <aperture.hpp>
 #include <surface.hpp>
@@ -9,6 +10,7 @@
 #include <simulation_data_export.hpp>
 #include <simulation_result_export.hpp>
 #include <json_helpers.hpp>
+#include <json_schema.hpp>
 
 #include "common.hpp"
 
@@ -764,4 +766,241 @@ TEST(io_json, stage_read_fail)
     // Try to make stage
     EXPECT_THROW(make_stage(jstage, nullptr), std::invalid_argument);
 
+}
+
+TEST(io_json, version_control)
+{
+    namespace fs = std::filesystem;
+
+    const fs::path project_root(PROJECT_DIR);
+    const fs::path sample_path = project_root / "sample_ver_20251112.json";
+
+    SimulationData sd;
+    ASSERT_NO_THROW(sd.import_json_file(sample_path.string()))
+        << "Failed to import JSON";
+
+    // Verify the legacy file's elements survived the upgrade
+    EXPECT_GT(sd.get_number_of_elements(), 0);
+
+    // Round-trip: re-export and confirm it's tagged with current schema
+    const fs::path output_path = project_root / "version_control_roundtrip.json";
+    ASSERT_NO_THROW(sd.export_json_file(output_path.string()));
+
+    nlohmann::ordered_json root;
+    {
+        std::ifstream ifs(output_path);
+        ifs >> root;
+    }
+    EXPECT_EQ(root["schema_version"], SolTrace::Data::kSchemaVersion);
+    ASSERT_TRUE(root.contains("optical_properties"));
+    EXPECT_FALSE(root["optical_properties"].empty());
+
+    std::error_code ec;
+    fs::remove(output_path, ec);
+}
+
+TEST(io_json, upgrade_no_op_for_current_version)
+{
+    namespace fs = std::filesystem;
+
+    // Build paths
+    const fs::path project_root(PROJECT_DIR);
+    const fs::path output_path = project_root / "no_upgrade_needed.json";
+
+    // Make simulation data already at the current schema version
+    SimulationData sd_original;
+    auto sun = SolTrace::Data::make_ray_source<Sun>();
+    sun->set_shape(SunShape::GAUSSIAN, 0.01, 0.0, 0.0);
+    sd_original.add_ray_source(sun);
+
+    ASSERT_NO_THROW(sd_original.export_json_file(output_path.string()));
+
+    // Loading a file already at the current version should not trigger
+    // the upgrade path and should load without error.
+    SimulationData sd_loaded;
+    ASSERT_NO_THROW(sd_loaded.import_json_file(output_path.string()));
+
+    EXPECT_EQ(sd_original.get_number_of_elements(),
+              sd_loaded.get_number_of_elements());
+    EXPECT_EQ(sd_original.get_number_of_ray_sources(),
+              sd_loaded.get_number_of_ray_sources());
+
+    // Conditional cleanup: remove only if test passed so far.
+    if (!::testing::Test::HasFailure()) {
+        std::error_code ec;
+        fs::remove(output_path, ec);
+    }
+}
+
+TEST(io_json, upgrade_rejects_unknown_version)
+{
+    namespace fs = std::filesystem;
+
+    // Build paths
+    const fs::path project_root(PROJECT_DIR);
+    const fs::path output_path = project_root / "unknown_version.json";
+
+    // Make simulation data
+    SimulationData sd;
+    sd.export_json_file(output_path.string());
+
+    // Tamper with schema_version to something that is neither the
+    // current version nor a version with a known upgrade path.
+    nlohmann::ordered_json root;
+    {
+        std::ifstream ifs(output_path);
+        ifs >> root;
+    }
+    root["schema_version"] = "1999.01.01";
+    {
+        std::ofstream ofs(output_path, std::ios::trunc);
+        ofs << root.dump(SolTrace::Data::kJsonIndentSpaces);
+    }
+
+    SimulationData sd2;
+    EXPECT_THROW(sd2.import_json_file(output_path.string()), std::runtime_error);
+
+    // Conditional cleanup: remove only if test passed so far.
+    if (!::testing::Test::HasFailure()) {
+        std::error_code ec;
+        fs::remove(output_path, ec);
+    }
+}
+
+TEST(io_json, upgrade_fails_on_malformed_legacy_optics)
+{
+    namespace fs = std::filesystem;
+
+    // Build paths
+    const fs::path project_root(PROJECT_DIR);
+    const fs::path sample_path = project_root / "sample_ver_20251112.json";
+    const fs::path output_path = project_root / "malformed_legacy_optics.json";
+
+    nlohmann::ordered_json root;
+    {
+        std::ifstream ifs(sample_path);
+        ifs >> root;
+    }
+
+    // Corrupt the first single element's optics_front by removing a
+    // key required by the upgrade function.
+    auto& jelements_top = root["elements"];
+    ASSERT_FALSE(jelements_top.empty());
+    auto& jfirst_top = jelements_top.begin().value();
+    ASSERT_TRUE(jfirst_top.contains("elements"));
+    auto& jfirst_single = jfirst_top["elements"].begin().value();
+    ASSERT_TRUE(jfirst_single.contains("optics_front"));
+    ASSERT_TRUE(jfirst_single["optics_front"].contains("transmissivity"));
+    jfirst_single["optics_front"].erase("transmissivity");
+
+    {
+        std::ofstream ofs(output_path, std::ios::trunc);
+        ofs << root.dump(SolTrace::Data::kJsonIndentSpaces);
+    }
+
+    SimulationData sd;
+    EXPECT_THROW(sd.import_json_file(output_path.string()), std::runtime_error);
+
+    // Conditional cleanup: remove only if test passed so far.
+    if (!::testing::Test::HasFailure()) {
+        std::error_code ec;
+        fs::remove(output_path, ec);
+    }
+}
+
+TEST(io_json, upgrade_fails_on_missing_elements_node)
+{
+    namespace fs = std::filesystem;
+
+    // Build paths
+    const fs::path project_root(PROJECT_DIR);
+    const fs::path sample_path = project_root / "sample_ver_20251112.json";
+    const fs::path output_path = project_root / "missing_elements_node.json";
+
+    nlohmann::ordered_json root;
+    {
+        std::ifstream ifs(sample_path);
+        ifs >> root;
+    }
+
+    // Remove the top-level "elements" node entirely, which the
+    // upgrade function requires in order to walk the element tree.
+    root.erase("elements");
+
+    {
+        std::ofstream ofs(output_path, std::ios::trunc);
+        ofs << root.dump(SolTrace::Data::kJsonIndentSpaces);
+    }
+
+    SimulationData sd;
+    EXPECT_THROW(sd.import_json_file(output_path.string()), std::runtime_error);
+
+    // Conditional cleanup: remove only if test passed so far.
+    if (!::testing::Test::HasFailure()) {
+        std::error_code ec;
+        fs::remove(output_path, ec);
+    }
+}
+
+TEST(io_json, upgrade_deduplicates_shared_optics)
+{
+    namespace fs = std::filesystem;
+    using json = nlohmann::ordered_json;
+
+    // Build paths
+    const fs::path project_root(PROJECT_DIR);
+    const fs::path sample_path = project_root / "sample_ver_20251112.json";
+    const fs::path output_path = project_root / "upgrade_dedup_test.json";
+
+    // Load legacy-format file and re-export to inspect the
+    // consolidated "optical_properties" node.
+    SimulationData sd;
+    ASSERT_NO_THROW(sd.import_json_file(sample_path.string()));
+    ASSERT_NO_THROW(sd.export_json_file(output_path.string()));
+
+    json root;
+    {
+        std::ifstream ifs(output_path);
+        ifs >> root;
+    }
+
+    ASSERT_TRUE(root.contains("optical_properties"));
+
+    // The legacy sample file reuses a small number of optics sets
+    // across many elements; verify the upgrade deduplicated them
+    // into a shared node rather than duplicating one per element.
+    // Note: root["elements"] only contains the top-level stage/composite
+    // entries, so compare against the total single-element count instead.
+    EXPECT_LT(root["optical_properties"].size(), sd.get_number_of_elements());
+    EXPECT_GT(root["optical_properties"].size(), 0);
+
+    // Every single element should now reference its optics via
+    // "opt_id" and should no longer carry inline optics data.
+    std::function<void(const json&)> check_element =
+        [&](const json& jelement) {
+            if (jelement.contains("elements") &&
+                jelement["elements"].is_object()) {
+                for (auto& [key, jchild] : jelement["elements"].items()) {
+                    check_element(jchild);
+                }
+                return;
+            }
+
+            if (jelement.contains("is_single") &&
+                jelement["is_single"] == true) {
+                EXPECT_TRUE(jelement.contains("opt_id"));
+                EXPECT_FALSE(jelement.contains("optics_front"));
+                EXPECT_FALSE(jelement.contains("optics_back"));
+            }
+        };
+
+    for (auto& [key, jelement] : root["elements"].items()) {
+        check_element(jelement);
+    }
+
+    // Conditional cleanup: remove only if test passed so far.
+    if (!::testing::Test::HasFailure()) {
+        std::error_code ec;
+        fs::remove(output_path, ec);
+    }
 }

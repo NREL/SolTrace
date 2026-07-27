@@ -57,6 +57,25 @@ ShadowedGlassRectangle {
         }
 
         STIconButton {
+            icon: "\uf005"
+            toolTip: "Get Started"
+            opacity: App.view.workflow_phase === ViewModule.Start ? 1.0 : 0.5
+
+            onClicked: {
+                App.view.simulation_content_view = false
+                App.view.workflow_phase = ViewModule.Start
+            }
+        }
+
+        Label {
+            Layout.alignment: Qt.AlignVCenter
+            font.family: "Font Awesome 7 Free"
+            text: "\uf178"
+            opacity: App.view.workflow_phase === ViewModule.Start
+                     || App.view.workflow_phase === ViewModule.Load ? 1.0 : 0.5
+        }
+
+        STIconButton {
             icon: "\uf07c"
             toolTip: "Load Scene"
             opacity: App.view.workflow_phase === ViewModule.Load ? 1.0 : 0.5

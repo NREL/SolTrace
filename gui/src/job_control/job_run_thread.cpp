@@ -14,6 +14,7 @@
 #endif
 
 #include <QtConcurrentRun>
+#include <QtGlobal>
 
 #include <memory>
 
@@ -101,14 +102,20 @@ void execute_thread_runner(QPromise<SimResult>&      promise,
 
         auto current_runner = make_runner(config.backend);
 
-        SolTrace::Runner::RunnerStatus result;
 
         size_t thread_count = config.thread_count;
 
         qDebug() << "Starting count" << thread_count;
 
         if (thread_count == 0) {
-            thread_count = std::thread::hardware_concurrency();
+            thread_count =
+                std::max<size_t>(std::thread::hardware_concurrency(), 1);
+        }
+
+        // appears to be something odd in the sim code if the number of threads
+        // is at or above the ray count. clamp.
+        if (thread_count >= data->data->get_number_of_rays()) {
+            thread_count = 1;
         }
 
         if (auto ptr = dynamic_cast<SolTrace::NativeRunner::NativeRunner*>(
@@ -120,6 +127,7 @@ void execute_thread_runner(QPromise<SimResult>&      promise,
             qDebug() << "Native parameters" << thread_count;
         }
 
+        SolTrace::Runner::RunnerStatus result;
 
         qDebug() << "Starting simulation with"
                  << data->data->get_number_of_rays()
@@ -133,6 +141,11 @@ void execute_thread_runner(QPromise<SimResult>&      promise,
 
         qDebug() << Q_FUNC_INFO << "setup complete";
 
+#if defined(Q_OS_WASM) && !defined(__EMSCRIPTEN_PTHREADS__)
+        promise.setProgressValueAndText(10, "Running...");
+        auto run_result = current_runner->run_simulation();
+        promise.setProgressValueAndText(90, "Simulation complete");
+#else
         // run simulation will indeed run, but we need to stuff it into another
         // thread so we can poll status.
 
@@ -189,6 +202,7 @@ void execute_thread_runner(QPromise<SimResult>&      promise,
         }
 
         auto run_result = run_future.result();
+#endif
 
         auto end_instant = std::chrono::high_resolution_clock::now();
 

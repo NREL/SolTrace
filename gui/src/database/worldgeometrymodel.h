@@ -20,6 +20,7 @@ class InstancedElements : public QQuick3DInstancing {
 
     QPointer<Database> m_database;
     Entity             m_target_group;
+    QColor             m_default_color = Qt::white;
 
 private slots:
     // When the geometry information for this group has changed
@@ -43,6 +44,8 @@ public slots:
 
     void set_color(int index, QColor color);
 
+    void set_default_color(QColor color);
+
     db::Entity material_of_group();
     db::Entity geometry_of_group();
 
@@ -50,8 +53,6 @@ public slots:
     db::Entity geometry_of(int index);
 
     db::Entity at(int index);
-
-    void set_all_color(QColor color);
 
 public:
     explicit InstancedElements(Database*       db,
@@ -75,8 +76,12 @@ class WorldGeometryModel : public StructModelAdapter<VisibleGroup> {
     QPointer<Database> m_host;
 
     std::unordered_map<entt::entity, int> m_reverse;
+    double                                m_surface_thickness = 0.05;
+    unsigned                              m_subdivision_scale = 2;
+    QColor                                m_default_color = Qt::white;
 
     QVector<VisibleGroup> rebuild_lists();
+    void                  apply_surface_options(VisibleGroup const& group);
 
 private slots:
     void recompute();
@@ -85,7 +90,9 @@ private slots:
     void group_removed(entt::entity);
 
 public slots:
-    void set_all_color(QColor color);
+    void set_default_color(QColor color);
+    void set_surface_thickness(double thickness);
+    void set_subdivision_scale(unsigned scale);
 
 public:
     explicit WorldGeometryModel(QObject* parent = nullptr);

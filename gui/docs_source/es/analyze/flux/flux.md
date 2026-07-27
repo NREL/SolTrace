@@ -1,0 +1,7 @@
+---
+title: "Flujo"
+---
+
+Los mapas de flujo agrupan los rayos trazados sobre la superficie seleccionada para mostrar la densidad de potencia en el receptor u otro elemento optico.
+
+Use los controles de grafica para elegir la superficie, la division en celdas y el modo de visualizacion. Las celdas pequenas muestran mas detalle local; las celdas grandes reducen el ruido cuando hay pocos rayos.

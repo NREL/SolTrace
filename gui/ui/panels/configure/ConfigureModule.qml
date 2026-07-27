@@ -15,14 +15,13 @@ ColumnLayout {
         value: App.view.configure_section
     }
 
-    Label {
+    InlineDocumentation {
+        key: "workflow.configure"
         Layout.fillWidth: true
         Layout.leftMargin: 10
         Layout.rightMargin: 10
         Layout.bottomMargin: 8
-
-        text: "Configure the ray source, materials, and geometry. Then bind the material and geometry to an element, and stage the elements in the scene."
-        wrapMode: Text.WordWrap
+        showTitle: false
     }
 
     STPipelineBar {
@@ -34,7 +33,7 @@ ColumnLayout {
 
         collapseLabels: App.view.left_panel.size === SplitPanelData.Small
 
-        prefixModel: ["2a", "2b", "2c", "2d"]
+        prefixModel: ["3a", "3b", "3c", "3d"]
         iconModel: ["\uf185", "\uf042", "\uf1b2", "\uf5ee"]
         model: ["Ray Source", "Materials", "Geometries", "Staging"]
         
@@ -65,7 +64,7 @@ ColumnLayout {
     WorkflowStepper {
         Layout.fillWidth: true
         previous: "Load Scene"
-        next: "Run Tracer"
+        next: "Trace Scene"
         currentIndex: ViewModule.Configure
     }
 }

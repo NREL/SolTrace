@@ -98,6 +98,7 @@ public slots:
     void export_result(int index);
     void duplicate_current_result_for_edit();
 
+    void update_max_ray_count(int new_max);
 signals:
     void new_results(db::SimulationResultPtr);
     void edit_result_copy_requested(db::SimulationResultPtr);

@@ -4,6 +4,8 @@ project(SolTraceApp VERSION 4.0.0 LANGUAGES CXX)
 
 include(cmake/CPM.cmake)
 
+option(SOLTRACE_EMSCRIPTEN_PTHREADS "Force the use of pthreads when building for multithreaded WASM" OFF)
+
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Git QUIET)
@@ -76,7 +78,7 @@ configure_file(
 )
 
 find_package(Qt6 6.11 REQUIRED COMPONENTS
-    Core Gui Qml Quick Quick3D Widgets Graphs Concurrent
+    Core Gui Qml Quick Quick3D Widgets Graphs Concurrent LinguistTools
 )
 
 set(QT_QML_GENERATE_QMLLS_INI ON)
@@ -132,9 +134,11 @@ list(SORT SOLTRACE_ASSET_FILES)
 # Add all documents
 file(GLOB_RECURSE SOLTRACE_DOC_FILES
     CONFIGURE_DEPENDS
+    LIST_DIRECTORIES false
     RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
-    "docs/*.md"
+    "docs/*"
 )
+list(FILTER SOLTRACE_DOC_FILES EXCLUDE REGEX "/\\.DS_Store$")
 list(SORT SOLTRACE_DOC_FILES)
 
 set_source_files_properties(ui/App.qml PROPERTIES QT_QML_SINGLETON_TYPE TRUE)
@@ -164,6 +168,26 @@ qt_add_qml_module(SolTrace
     DEPENDENCIES
         QtQuick
         QtQuick3D
+)
+
+set(SOLTRACE_TRANSLATION_FILES
+    translations/soltrace_es.ts
+)
+
+add_custom_target(SolTraceTranslationSources
+    SOURCES
+        ${SOLTRACE_QML_FILES}
+)
+
+qt_add_translations(SolTrace
+    SOURCE_TARGETS
+        SolTraceTranslationSources
+    TS_FILES
+        ${SOLTRACE_TRANSLATION_FILES}
+    RESOURCE_PREFIX "/i18n"
+    LUPDATE_TARGET SolTrace_update_translations
+    LUPDATE_OPTIONS -extensions qml
+    LRELEASE_TARGET SolTrace_release_translations
 )
 
 # Add examples folder
@@ -212,6 +236,27 @@ if(TARGET optix_runner)
     target_link_libraries(SolTrace PRIVATE optix_runner)
 endif()
 
+set(SOLTRACE_WASM_PTHREAD_POOL_SIZE "4"
+    CACHE STRING "Emscripten pthread pool size for the SolTrace GUI")
+
+function(soltrace_enable_wasm_threads target)
+    if(NOT EMSCRIPTEN OR NOT TARGET ${target})
+        return()
+    endif()
+
+    target_compile_options(${target} PRIVATE -pthread)
+
+    get_target_property(target_type ${target} TYPE)
+    if(target_type STREQUAL "EXECUTABLE"
+            OR target_type STREQUAL "SHARED_LIBRARY"
+            OR target_type STREQUAL "MODULE_LIBRARY")
+        target_link_options(${target} PRIVATE
+            -pthread
+            "-sPTHREAD_POOL_SIZE=${SOLTRACE_WASM_PTHREAD_POOL_SIZE}"
+        )
+    endif()
+endfunction()
+
 target_include_directories(SolTrace PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_include_directories(SolTrace PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_include_directories(SolTrace PRIVATE ../coretrace/simulation_data)
@@ -252,6 +297,16 @@ target_link_libraries(SolTrace
         simresult
         native_runner
 )
+
+if(SOLTRACE_EMSCRIPTEN_PTHREADS)
+    # For WASM, demand that pthreads are on
+    soltrace_enable_wasm_threads(simdata)
+    soltrace_enable_wasm_threads(simresult)
+    soltrace_enable_wasm_threads(native_runner)
+    soltrace_enable_wasm_threads(embree_runner)
+    soltrace_enable_wasm_threads(optix_runner)
+    soltrace_enable_wasm_threads(SolTrace)
+endif()
 
 include(GNUInstallDirs)
 install(TARGETS SolTrace

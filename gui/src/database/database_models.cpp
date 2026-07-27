@@ -467,6 +467,7 @@ void AnInstanceEditor::recompute() {
     emit color_changed();
     emit hidden_changed();
     emit disabled_changed();
+    emit virtual_element_changed();
     emit material_group_changed();
     emit current_material_changed();
     emit current_material_name_changed();
@@ -517,6 +518,7 @@ void AnInstanceEditor::reset(Database* database) {
             m_host->global_transform.self(), nullptr, this, nullptr);
         QObject::disconnect(m_host->invisible.self(), nullptr, this, nullptr);
         QObject::disconnect(m_host->disabled.self(), nullptr, this, nullptr);
+        QObject::disconnect(m_host->virtual_tag.self(), nullptr, this, nullptr);
         QObject::disconnect(m_host->color.self(), nullptr, this, nullptr);
         QObject::disconnect(
             m_host->material_group_membership.self(), nullptr, this, nullptr);
@@ -567,6 +569,16 @@ void AnInstanceEditor::reset(Database* database) {
             &AnInstanceEditor::an_entity_changed);
 
     connect(database->disabled.self(),
+            &ComponentAPIBase::removed,
+            this,
+            &AnInstanceEditor::an_entity_changed);
+
+    connect(database->virtual_tag.self(),
+            &ComponentAPIBase::changed,
+            this,
+            &AnInstanceEditor::an_entity_changed);
+
+    connect(database->virtual_tag.self(),
             &ComponentAPIBase::removed,
             this,
             &AnInstanceEditor::an_entity_changed);
@@ -750,6 +762,20 @@ void AnInstanceEditor::set_disabled(bool newDisabled) {
     }
 
     emit disabled_changed();
+}
+
+bool AnInstanceEditor::virtual_element() const {
+    return m_host && m_host->is_virtual_element(m_entity);
+}
+
+void AnInstanceEditor::set_virtual_element(bool newVirtualElement) {
+    if (virtual_element() == newVirtualElement) return;
+    if (!m_host) return;
+    if (!m_host->valid(m_entity)) return;
+
+    m_host->set_virtual_element(m_entity, newVirtualElement);
+
+    emit virtual_element_changed();
 }
 
 db::Entity AnInstanceEditor::material_group() const {

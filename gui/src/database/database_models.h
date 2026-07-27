@@ -230,6 +230,8 @@ class AnInstanceEditor : public QObject {
         bool hidden READ hidden WRITE set_hidden NOTIFY hidden_changed FINAL)
     Q_PROPERTY(bool disabled READ disabled WRITE set_disabled NOTIFY
                    disabled_changed FINAL)
+    Q_PROPERTY(bool virtual_element READ virtual_element WRITE
+                   set_virtual_element NOTIFY virtual_element_changed FINAL)
 
     Q_PROPERTY(Entity material_group READ material_group WRITE
                    set_material_group NOTIFY material_group_changed FINAL)
@@ -288,6 +290,9 @@ public:
     bool disabled() const;
     void set_disabled(bool newDisabled);
 
+    bool virtual_element() const;
+    void set_virtual_element(bool newVirtualElement);
+
     Entity material_group() const;
     void   set_material_group(Entity newGroup);
     Entity geometry_group() const;
@@ -323,6 +328,7 @@ signals:
     void color_changed();
     void hidden_changed();
     void disabled_changed();
+    void virtual_element_changed();
     void material_group_changed();
     void geometry_group_changed();
     void current_material_changed();

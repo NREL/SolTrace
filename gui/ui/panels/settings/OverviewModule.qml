@@ -16,6 +16,12 @@ ScrollView {
         Header {
             text: "Overview"
         }
+
+        InlineDocumentation {
+            key: "settings.overview"
+            alwaysVisible: true
+            showTitle: false
+            Layout.fillWidth: true
+        }
     }
 }
-

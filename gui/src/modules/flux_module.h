@@ -1,6 +1,5 @@
 #pragma once
 
-#include "backend.h"
 #include "database/fluxmapworldmodel.h"
 #include "database/mesh_qml_bridge.h"
 #include "database/rootelementsmodel.h"
@@ -41,6 +40,7 @@ class FluxModule : public QObject {
     Q_READONLY_PROPERTY(analysis::BakedFluxMapStats, current_flux_stats);
 
     Q_WRITABLE_PROPERTY(bool, show_flux_volume, true);
+    Q_WRITABLE_PROPERTY(bool, show_other_geometry, false);
 
     // Hack
     Q_WRITABLE_PROPERTY(QString, current_image, {});

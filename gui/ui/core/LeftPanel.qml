@@ -58,10 +58,8 @@ ShadowedGlassRectangle {
                 blur_source: root.blur_source
                 glassColor: App.theme.glassColor
 
-                visible: App.view.workflow_phase > 0
-
                 Label {
-                    text: App.view.workflow_phase
+                    text: App.view.workflow_phase + 1
                     anchors.centerIn: parent
                 }
             }

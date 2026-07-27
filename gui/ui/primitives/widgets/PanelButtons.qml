@@ -13,18 +13,6 @@ RowLayout {
     spacing: 5
 
     STIconButton {
-        id: inline_docs_button
-
-        Layout.preferredWidth: implicitWidth
-        Layout.preferredHeight: implicitWidth
-
-        icon: "\uf059"
-        toolTip: (root.target.inline_docs ? "Disable" : "Enable") + " Inline Docs"
-        visible: root.target.size >= SplitPanelData.Normal
-        onClicked: root.target.inline_docs = !root.target.inline_docs
-    }
-
-    STIconButton {
         id: popup_opts_button
 
         Layout.preferredWidth: implicitWidth

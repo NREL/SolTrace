@@ -37,8 +37,8 @@ class SplitPanelData : public QObject {
     Q_OBJECT
     QML_ELEMENT
 
-    const inline static QVector<int> m_sizes      = { 420, 550, 750, 9999 };
-    const inline static QVector<int> m_thresholds = { 480, 600, 850 };
+    const inline static QVector<int> m_sizes      = { 450, 550, 750, 9999 };
+    const inline static QVector<int> m_thresholds = { 550, 750, 850 };
 
 public:
     explicit SplitPanelData(QObject* parent = nullptr);
@@ -60,8 +60,6 @@ public:
 
     Q_WRITABLE_PROPERTY(bool, visible, false)
     Q_WRITABLE_PROPERTY(bool, saved_visible, false)
-
-    Q_WRITABLE_PROPERTY(bool, inline_docs, false)
 
     // Q_WRITABLE_PROPERTY(bool, tags, false)
     // Idea: show walkthrough tags just for this section
@@ -88,7 +86,8 @@ public:
 
     enum class Perspective { Normal = 0, Orthographic = 1 };
 
-    enum class SkyType { Day, Blueprint, Adaptive };
+    enum class SkyType { Day, Blueprint, Adaptive, Realistic };
+    enum class RealisticSkyType { Clear, PartlyCloudy, LowSun };
 
     explicit SimulationViewState(QObject* parent = nullptr)
         : QObject(parent) { }
@@ -96,15 +95,23 @@ public:
     Q_ENUM(Camera)
     Q_ENUM(Perspective)
     Q_ENUM(SkyType)
+    Q_ENUM(RealisticSkyType)
 
     Q_WRITABLE_PROPERTY(Camera, camera, Camera::Orbital)
     Q_WRITABLE_PROPERTY(Perspective, perspective, Perspective::Normal)
 
     Q_WRITABLE_PROPERTY(bool, sun_viz, true)
     Q_WRITABLE_PROPERTY(SkyType, sky, SkyType::Adaptive)
+    Q_WRITABLE_PROPERTY(RealisticSkyType,
+                        realistic_sky,
+                        RealisticSkyType::Clear)
+
     Q_WRITABLE_PROPERTY(double, sun_viz_scale, 50)
     Q_WRITABLE_PROPERTY(QColor, sun_color, "yellow")
     Q_WRITABLE_PROPERTY(QColor, geometry_color, "white")
+    Q_WRITABLE_PROPERTY(bool, show_grid, true)
+    Q_WRITABLE_PROPERTY(double, geometry_thickness, 0.05)
+    Q_WRITABLE_PROPERTY(unsigned, geometry_subdivision_scale, 2)
 
     Q_WRITABLE_PROPERTY(int, fps_walk_speed, 10)
 };
@@ -159,6 +166,7 @@ public:
     Q_WRITABLE_PROPERTY(bool, simulation_content_view, false)
     Q_WRITABLE_PROPERTY(bool, show_intersections, true)
     Q_WRITABLE_PROPERTY(MouseMode, mouse_mode, MouseMode::Camera)
+    Q_WRITABLE_PROPERTY(bool, inline_docs, false)
 
     // Viewport State
     QOBJECT_READONLY_PROPERTY(SimulationViewState, sim)

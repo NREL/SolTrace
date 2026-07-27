@@ -24,6 +24,10 @@ SurfaceGeometry::SurfaceGeometry() {
             &SurfaceGeometry::thickness_changed,
             this,
             &SurfaceGeometry::rebuild_geometry);
+    connect(this,
+            &SurfaceGeometry::subdivision_scale_changed,
+            this,
+            &SurfaceGeometry::rebuild_geometry);
 
     rebuild_geometry();
 }
@@ -51,7 +55,9 @@ void SurfaceGeometry::parameters_changed(entt::entity group) {
 }
 
 SurfaceGenerationOptions SurfaceGeometry::surface_generation_options() const {
-    SurfaceGenerationOptions options;
+    auto thickness_value = add_thickness() ? thickness() : 0.0;
+    auto options = SurfaceGenerationOptions::from_resolution_and_thickness(
+        subdivision_scale(), thickness_value);
 
     auto scale = [this](uint32_t value) {
         switch (quality()) {
@@ -74,8 +80,6 @@ SurfaceGenerationOptions SurfaceGeometry::surface_generation_options() const {
     options.perimeter_subdivisions        = scale(options.perimeter_subdivisions);
     options.cylinder_angular_subdivisions = scale(options.cylinder_angular_subdivisions);
     options.cylinder_length_subdivisions  = scale(options.cylinder_length_subdivisions);
-    options.add_thickness                 = add_thickness();
-    options.thickness                     = thickness();
 
     return options;
 }

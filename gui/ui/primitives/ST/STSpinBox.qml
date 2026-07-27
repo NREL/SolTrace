@@ -8,20 +8,25 @@ SpinBox {
     live: true
 
     property string suffix
+    signal clamped_to_min
+    signal clamped_to_max
 
     function commitText(restoreInvalid) {
-        const nextValue = Math.max(
-                    control.from,
-                    Math.min(control.to,
-                             control.valueFromText(input.text, control.locale)))
-
-        if (Number.isNaN(nextValue)) {
+        const parsed = control.valueFromText(input.text, control.locale)
+        if (Number.isNaN(parsed)) {
             if (restoreInvalid) {
                 input.text = control.textFromValue(control.value, control.locale)
             }
             return
         }
 
+        if (parsed > control.to) {
+            control.clamped_to_max()
+        } else if (parsed < control.from) {
+            control.clamped_to_min()
+        }
+
+        const nextValue = Math.max(control.from, Math.min(control.to, parsed))
         if (nextValue === control.value) {
             input.text = control.textFromValue(control.value, control.locale)
             return
@@ -38,7 +43,6 @@ SpinBox {
 
         z: 2
         color: App.theme.fontColor
-        text: control.textFromValue(control.value, control.locale)
         font.family: control.font.family
         font.pointSize: App.theme.labelSize
         horizontalAlignment: Qt.AlignHCenter
@@ -54,6 +58,13 @@ SpinBox {
         }
         onAccepted: control.commitText(true)
         onEditingFinished: control.commitText(true)
+
+        Binding {
+            target: input
+            property: "text"
+            value: control.textFromValue(control.value, control.locale)
+            restoreMode: Binding.RestoreBinding
+        }
 
         Label {
             id: suffixLabel

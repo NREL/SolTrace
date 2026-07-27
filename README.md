@@ -4,15 +4,9 @@
 
 The SolTrace Open Source Project repository contains the source code, tools, and instructions to build a desktop version of the National Renewable Energy Laboratory's SolTrace. SolTrace is a software tool developed at NREL to model concentrating solar power (CSP) systems and analyze their optical performance. Although ideally suited for solar applications, the code can also be used to model and characterize many general optical systems. The creation of the code evolved out of a need to model more complex solar optical systems than could be modeled with existing tools. For more details about SolTrace's capabilities, see the [SolTrace website](https://www.nrel.gov/csp/soltrace.html). For details on integration with SAM, see the [SAM website](https://sam.nrel.gov).
 
-The desktop version of SolTrace for Windows or Linux builds from the following open source projects:
+## SolTrace Qt GUI
 
-* [LK](https://github.com/nrel/lk) is a scripting language that is integrated into SAM and allows users to add functionality to the program.
-
-* [wxWidgets](https://www.wxwidgets.org/) is a cross-platform graphical user interface platform used for SAM's user interface, and for the development tools included with SSC (SDKtool) and LK (LKscript). The current version of SAM uses wxWidgets 3.1.0.
-
-* [WEX](https://github.com/nrel/wex) is a set of extensions to wxWidgets for custom user-interface elements used by SAM, and by LKscript and DView, which are integrated into SAM.
-
-* This repository, **SolTrace**, provides the user interface to assign values to inputs of the computational modules, run the modules in the correct order, and display calculation results. It also includes tools for editing LK scripts and viewing ray intersection and flux map data.
+SolTrace includes a Qt-based graphical interface in [`gui/`](gui/). The legacy wxWidgets/LK/WEX user-interface build instructions have been retired from this README. For current GUI requirements, Qt Creator workflow, command-line build instructions, deployment notes, and translation guidance, see the [SolTrace Qt GUI README](gui/README.md).
 
 ## SolTrace Python API
 
@@ -20,70 +14,11 @@ Users can also run simulations via the [`pysoltrace`](https://github.com/NREL/So
 
 The `pysoltrace` API is capable of running multi-threaded simulations, generating flux maps, creating 3D interactive trace plots, and provides other capabilities that are found in the SolTrace graphical interface. The functionality and flexibility of the API generally exceeds that of the graphical interface. 
 
-The API requires the compiled coretrace library. Project files for building this library are generated using CMake as outlined in the steps below. It is possible to build only coretrace and not build the graphical interface by following the steps 1-7, but only building the `coretrace_api` project in step 7.vii.
+The API requires the compiled coretrace library. Project files for building this library are generated using CMake as outlined in the core build steps below. To work without the graphical interface, leave the GUI build option disabled and build the coretrace API target from the generated project.
 
-## Steps for Building SolTrace (Legacy)
+## Steps for Building SolTrace Core
 
-These are the general steps you need to follow to set up your computer for developing SolTrace:
-
-1. Set up your development tools:
-
-    * Windows: Visual Studio 2022 Community or other editions available at [https://www.visualstudio.com/](https://www.visualstudio.com/).
-    * Linux: g++ compiler available at [http://www.cprogramming.com/g++.html](http://www.cprogramming.com/g++.html) or as part of the Linux distribution.
-
-2. Download and install CMake 3.28 or higher from [https://cmake.org/download/](https://cmake.org/download/) with the ```Add CMake to the System Path for ...``` option selected.
-
-3. Download the wxWidgets 3.2.4 source code for your operating system from [https://www.wxwidgets.org/downloads/](https://www.wxwidgets.org/downloads/).
-
-4. Build wxWidgets.
-
-5. In Windows, create the WXMSW3 environment variable on your computer to point to the wxWidgets installation folder, or Linux, create the dynamic link `/usr/<USERNAME>/local/bin/wx-config-3` to point to `/path/to/wxWidgets/bin/wx-config`.
-
-6. As you did for wxWidgets, clone (download) the LK and WEX repositories and then (Windows only) create an environment variable pointing to the project folder. 
-
-    <table>
-    <tr><th>Project</th><th>Repository URL</th><th>Windows Environment Variable</th><th>Environment Variable Path</th></tr>
-    <tr><td>LK</td><td>https://github.com/NREL/lk</td><td>LKDIR</td><td>/path/to/lk</td></tr>
-    <tr><td>WEX</td><td>https://github.com/NREL/wex</td><td>WEXDIR</td><td>/path/to/wex</td></tr>
-    </table>
-
-    Open a Git Bash window and navigate to the WEX directory. Check out the following tag:
-
-    ```
-    cd wex
-    git checkout tags/2021.12.02.r2.ssc.274
-    ```
-
-
-7. Run CMake to create the project build files
-    1. Copy the file ```parent-dir-CMakeLists.txt``` into the parent directory also containing ```soltrace/ lk/ wex/``` and ```wxwidgets-3.x.x/``` folders.
-    
-    2. Rename this file to ```CMakeLists.txt``` before running cmake. You may need to temporarily rename any other file in this directory with the same name. 
-    
-        E.g., the file should be at ```C:/stdev/CMakeLists.txt```
-
-    3. Create a directory in the main parent folder to store the build files. 
-    E.g., ```C:/stdev/build-soltrace/```
-    
-    4. Open a shell or command window, and navigate to the build folder you just created. 
-
-    5. Copy the following cmake command to the shell and run. Replace the cmake target with a [supported generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#manual:cmake-generators(7))
-    
-        ```
-        cmake -G "Visual Studio 17 2022" -DCMAKE_CONFIGURATION_TYPES="Debug;Release" -DCMAKE_SYSTEM_VERSION=10.0 -DSAM_SKIP_TOOLS=1 .. 
-        ```
-
-    6. Confirm the project files built. If running visual studio, you should see a ```soltrace_ui.sln``` file in the build-soltrace/ directory.
-    
-    7. Build all files. The output is stored in the soltrace repository folder, e.g., ```C:/stdev/soltrace/app/deploy/soltrace.exe```. 
-
-        Note that output is NOT stored in the ```build-soltrace/``` directory!
-
-## Steps for Building SolTrace (work in progress)
-
-SolTrace has been updated to use multiple ray tracing engines in addition to the prior implementation. Currently, there is no graphical user interface (it is under development).
-
-Building SolTrace (develop branch) requires a C++-17 capable compiler and cmake 3.19 or greater.  Once these are available, building can be done in the normal pattern of configure and build:
+Building SolTrace core libraries and command-line targets requires a C++17-capable compiler and CMake 3.19 or greater. Once these are available, building can be done in the normal pattern of configure and build:
 
 ```sh
 git clone https://github.com/NatLabRockies/SolTrace.git

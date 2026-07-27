@@ -14,6 +14,18 @@ RowLayout {
     Layout.preferredWidth: implicitWidth
 
     STIconButton {
+        id: inline_docs_button
+
+        Layout.preferredWidth: implicitWidth
+        Layout.preferredHeight: implicitHeight
+        iconSize: 20
+
+        icon: App.view.inline_docs ? "T" : "\uf87d"
+        toolTip: (App.view.inline_docs ? "Disable" : "Enable") + " Inline Docs"
+        onClicked: App.view.inline_docs = !App.view.inline_docs
+    }
+
+    STIconButton {
         Layout.preferredWidth: implicitWidth
         Layout.preferredHeight: implicitHeight
         iconSize: 20

@@ -37,7 +37,6 @@ Flickable {
 
         InlineDocumentation {
             key: "analyze.export"
-            target: App.view.left_panel
         }
 
         STPropertyPanel {

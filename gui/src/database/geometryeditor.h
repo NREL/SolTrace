@@ -60,6 +60,7 @@ public:
     Q_WRITABLE_PROPERTY(Quality, quality, Quality::Normal)
     Q_WRITABLE_PROPERTY(bool, add_thickness, false)
     Q_WRITABLE_PROPERTY(double, thickness, 0.01)
+    Q_WRITABLE_PROPERTY(unsigned, subdivision_scale, 2)
     Q_READONLY_PROPERTY(BoundingBox, bounding_box)
 
     void set(Database const*, entt::entity group);

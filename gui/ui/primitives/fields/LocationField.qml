@@ -11,7 +11,7 @@ STPropertyPanel {
 
     Layout.fillWidth: true
 
-    title: "Location"
+    title: qsTr("Location")
     collapsible: false
 
     GridLayout {
@@ -25,7 +25,7 @@ STPropertyPanel {
             Layout.column: 0
             Layout.fillWidth: true
             Layout.maximumWidth: 200
-            label: "Latitude"
+            label: qsTr("Latitude")
             from: -90
             to: 90
             decimals: 4
@@ -40,7 +40,7 @@ STPropertyPanel {
             Layout.column: App.view.left_panel.size == SplitPanelData.Small ? 0 : 1
             Layout.fillWidth: true
             Layout.maximumWidth: 200
-            label: "Longitude"
+            label: qsTr("Longitude")
             from: -180
             to: 180
             decimals: 4

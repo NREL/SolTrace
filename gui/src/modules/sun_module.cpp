@@ -280,10 +280,8 @@ constexpr double DEFAULT_CSR       = 0.1;
 SD::Sun make_default_ray_source() {
     SD::Sun sun;
     sun.set_position(0.0, 0.0, 1.0);
-    sun.set_shape(SD::SunShape::GAUSSIAN,
-                  DEFAULT_SIGMA,
-                  DEFAULT_HALFWIDTH,
-                  DEFAULT_CSR);
+    sun.set_shape(
+        SD::SunShape::GAUSSIAN, DEFAULT_SIGMA, DEFAULT_HALFWIDTH, DEFAULT_CSR);
     sun.set_gen_type(SD::GenType::RANDOM);
     return sun;
 }
@@ -303,8 +301,8 @@ void SunModule::load_from_database() {
     if (!m_current_database) return;
 
     auto const* resource = m_current_database->ray_source_resource.get();
-    auto const  source_type = resource ? resource->type
-                                       : db::RaySourceType::Directional;
+    auto const  source_type =
+        resource ? resource->type : db::RaySourceType::Directional;
 
     if (!resource || !resource->source) {
         qDebug() << Q_FUNC_INFO << "No ray source in this database";
@@ -315,7 +313,7 @@ void SunModule::load_from_database() {
     load_from_ray_source(*resource->source, source_type);
 }
 
-void SunModule::load_from_ray_source(SD::RaySource& ray_source,
+void SunModule::load_from_ray_source(SD::RaySource&    ray_source,
                                      db::RaySourceType source_type) {
     qDebug() << Q_FUNC_INFO;
     // We always need a shape to work with here
@@ -324,9 +322,8 @@ void SunModule::load_from_ray_source(SD::RaySource& ray_source,
 
     QScopedValueRollback<bool> guard(m_loading_from_database, true);
 
-    set_type(source_type == db::RaySourceType::PointSource
-                 ? Type::PointSource
-                 : Type::Directional);
+    set_type(source_type == db::RaySourceType::PointSource ? Type::PointSource
+                                                           : Type::Directional);
 
     // A core Sun stores only the parameter used by its active shape and leaves
     // the other getters as NaN, so apply the complete GUI baseline explicitly.
@@ -357,9 +354,9 @@ void SunModule::load_from_ray_source(SD::RaySource& ray_source,
     m_shape->set_shape(gui_shape);
 
     const auto& position = ray_source.get_position();
-    const auto  length = std::sqrt(position.x * position.x +
-                                  position.y * position.y +
-                                  position.z * position.z);
+    const auto  length =
+        std::sqrt(position.x * position.x + position.y * position.y +
+                  position.z * position.z);
 
     double azimuth   = 0.0;
     double elevation = 0.0;
@@ -770,7 +767,13 @@ void SolarCalculatorData::set_winter() {
     set_day(21);
 }
 
-void SolarCalculatorData::set_morning() {
+void SolarCalculatorData::set_dawn() {
+    set_hour(6);
+    set_minute(0);
+    set_second(0);
+}
+
+void SolarCalculatorData::set_mid_morning() {
     set_hour(9);
     set_minute(0);
     set_second(0);
@@ -782,11 +785,24 @@ void SolarCalculatorData::set_noon() {
     set_second(0);
 }
 
-void SolarCalculatorData::set_afternoon() {
+void SolarCalculatorData::set_mid_afternoon() {
     set_hour(15);
     set_minute(0);
     set_second(0);
 }
+
+void SolarCalculatorData::set_golden_hour() {
+    set_hour(17);
+    set_minute(0);
+    set_second(0);
+}
+
+void SolarCalculatorData::set_dusk() {
+    set_hour(19);
+    set_minute(0);
+    set_second(0);
+}
+
 
 SunShapeModel::SunShapeModel(QObject* parent) : StructTableModel(parent) {
     connect(this, &SunShapeModel::dataChanged, this, &SunShapeModel::changed);

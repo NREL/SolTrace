@@ -24,6 +24,10 @@ struct SurfaceGenerationOptions {
     uint32_t   cylinder_length_subdivisions  = 24;
     bool       add_thickness                 = false;
     double     thickness                     = 0.01;
+
+    // Fidelity goes from 1 to 10
+    static SurfaceGenerationOptions from_resolution_and_thickness(unsigned,
+                                                                  float);
 };
 
 std::optional<Mesh>

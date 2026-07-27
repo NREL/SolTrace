@@ -56,6 +56,9 @@ Item {
 
     property real min_camera_distance: 0.01
     property real max_camera_distance: 1000000.0
+    property real min_orthographic_magnification: 0.001
+    property real max_orthographic_magnification: 1000000.0
+    property real default_orthographic_magnification: 100.0
 
     function clamp_value(value, min_value, max_value) {
         return Math.max(min_value, Math.min(max_value, value))
@@ -73,6 +76,12 @@ Item {
 
     function clamp_orbit_distance(distance) {
         return clamp_value(distance, min_camera_distance, max_camera_distance)
+    }
+
+    function clamp_orthographic_magnification(value) {
+        return clamp_value(value,
+                           min_orthographic_magnification,
+                           max_orthographic_magnification)
     }
 
     // Public entry point used by axis buttons/gizmos. The active navigation
@@ -96,6 +105,10 @@ Item {
             orthographic_camera.position = clamp_camera_position(
                         default_orthographic_position)
             orthographic_camera.rotation = default_camera_rotation
+            orthographic_camera.horizontalMagnification =
+                    default_orthographic_magnification
+            orthographic_camera.verticalMagnification =
+                    default_orthographic_magnification
         }
 
         internal.current_controller.reset()
@@ -111,10 +124,10 @@ Item {
             axis_setup = Qt.vector3d(1,0,0)
             break;
         case CameraController.Y:
-            axis_setup = Qt.vector3d(0,1,0)
+            axis_setup = Qt.vector3d(0,0,1)
             break;
         case CameraController.Z:
-            axis_setup = Qt.vector3d(0,0,1)
+            axis_setup = Qt.vector3d(0,1,0)
             break;
         default:
             return
@@ -769,10 +782,14 @@ Item {
 
             var view_size = Math.max(1, Math.min(root.width, root.height))
 
-            // Scale by distance so panning feels similar regardless of zoom.
-            // Near the target, small pixel moves become fine world-space moves;
-            // far away, the same gesture covers more world space.
-            var world_units_per_pixel = distance / view_size * pan_sensitivity
+            var visible_size = root.use_orthographic && root.orthographic_camera
+                    ? Math.max(root.orthographic_camera.horizontalMagnification,
+                               root.orthographic_camera.verticalMagnification)
+                    : distance
+
+            // Scale by visible size so panning feels similar regardless of
+            // perspective distance or orthographic zoom.
+            var world_units_per_pixel = visible_size / view_size * pan_sensitivity
 
             // Dragging right should move the scene right on screen, which means
             // the camera/target move left in world camera-right space. Dragging
@@ -796,6 +813,19 @@ Item {
         function apply_wheel_delta(delta_y) {
             var cam = root.active_camera
             var target = rotation_point
+
+            if (root.use_orthographic && root.orthographic_camera) {
+                var zoom_scale = Math.exp(-delta_y * zoom_factor)
+                var next_magnification = root.clamp_orthographic_magnification(
+                            root.orthographic_camera.horizontalMagnification
+                            * zoom_scale)
+
+                root.orthographic_camera.horizontalMagnification =
+                        next_magnification
+                root.orthographic_camera.verticalMagnification =
+                        next_magnification
+                return
+            }
 
             // Refresh yaw/pitch before zooming so wheel input after external
             // camera movement keeps orbit state synchronized.

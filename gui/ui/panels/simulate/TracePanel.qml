@@ -18,13 +18,32 @@ ScrollView {
     property var labelAlignment: (singleColumn ? Qt.AlignLeft : Qt.AlignRight) | Qt.AlignVCenter
 
     property int columnSpan: singleColumn ? 1 : 2
+    property bool showProgressStatus: false
+    property bool simulationRunning: AppData.simulation.is_running
+
+    onSimulationRunningChanged: {
+        if (simulationRunning) {
+            hideIdleStatusTimer.stop()
+            showProgressStatus = true
+        } else if (showProgressStatus) {
+            hideIdleStatusTimer.restart()
+        }
+    }
+
+    Timer {
+        id: hideIdleStatusTimer
+        interval: 3000
+        repeat: false
+        onTriggered: root.showProgressStatus = AppData.simulation.is_running
+    }
+
+    Component.onCompleted: showProgressStatus = simulationRunning
 
     ColumnLayout {
         width: root.availableWidth
 
         InlineDocumentation {
-            key: "placeholder_small"
-            target: AppData.view.left_panel
+            key: "simulate.trace"
             title: "Simulation Runner"
         }
 
@@ -48,17 +67,30 @@ ScrollView {
                 }
             }
 
+            InlineDocumentation {
+                key: "simulate.trace.rays"
+                Layout.columnSpan: root.columnSpan
+                Layout.fillWidth: true
+            }
+
             STPropertyLabel {
                 text: "# of Rays"
                 Layout.alignment: root.labelAlignment
             }
 
             STSpinBox {
+                id: rayCountField
                 Layout.fillWidth: true
                 from: 1
-                value: AppData.simulation.ray_count
-                to: 1000000000
+                to: AppData.simulation.max_ray_count
                 onValueModified: AppData.simulation.ray_count = value
+
+                Binding {
+                    target: rayCountField
+                    property: "value"
+                    value: AppData.simulation.ray_count
+                    restoreMode: Binding.RestoreBinding
+                }
             }
 
             STPropertyLabel {
@@ -71,7 +103,7 @@ ScrollView {
                 from: 1
                 value: AppData.simulation.max_ray_count
                 to: 1000000000
-                onValueModified: AppData.simulation.max_ray_count = value
+                onValueModified: AppData.simulation.update_max_ray_count(value)
             }
 
             STPropertyLabel {
@@ -100,6 +132,12 @@ ScrollView {
                 value: AppData.simulation.seed_value
                 to: 10000000
                 onValueModified: AppData.simulation.seed_value = value
+            }
+
+            InlineDocumentation {
+                key: "simulate.trace.options"
+                Layout.columnSpan: root.columnSpan
+                Layout.fillWidth: true
             }
 
             STPropertyLabel {
@@ -136,6 +174,7 @@ ScrollView {
 
             STPropertyLabel {
                 text: "Progress"
+                visible: root.showProgressStatus
             }
 
             ProgressBar {
@@ -145,26 +184,35 @@ ScrollView {
                 value: AppData.simulation.progress
 
                 enabled: AppData.simulation.is_running
+                visible: root.showProgressStatus
             }
 
             STPropertyLabel {
                 text: "Stage"
+                visible: root.showProgressStatus
             }
 
             Label {
                 Layout.fillWidth: true
                 text: AppData.simulation.is_running ?
                           AppData.simulation.current_stage : "Idle"
+                visible: root.showProgressStatus
             }
 
             STButton {
-                Layout.columnSpan: 2
+                Layout.columnSpan: root.columnSpan
                 Layout.fillWidth: true
                 text: "Start Trace"
                 left_text_icon: "\uf0da"
                 onClicked: {
                     AppData.simulation.run()
                 }
+            }
+
+            InlineDocumentation {
+                key: "simulate.trace.results"
+                Layout.columnSpan: root.columnSpan
+                Layout.fillWidth: true
             }
 
             STIconButton {

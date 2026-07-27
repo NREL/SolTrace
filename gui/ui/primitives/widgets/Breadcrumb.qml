@@ -14,7 +14,7 @@ RowLayout {
     signal itemDeselected()
 
     STClickableLabel {
-        text: "All"
+        text: qsTr("All")
         font.bold: true
         onClicked: {
             AppData.layout.clear_viewed_element()

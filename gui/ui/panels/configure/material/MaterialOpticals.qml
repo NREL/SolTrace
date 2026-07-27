@@ -8,7 +8,7 @@ STPropertyPanel {
     property bool has_selection : false
     property var material_editor : App.materials.group_edit
     property var side_editor
-    property bool singleColumn: App.view.left_panel.size === SplitPanelData.Small
+    property bool singleColumn: App.view.left_panel.size <= SplitPanelData.Wide
     property var labelAlignment: (root.singleColumn ? Qt.AlignLeft : Qt.AlignRight) | Qt.AlignVCenter
 
     columns: root.singleColumn ? 1 : 2
@@ -16,12 +16,12 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "Preset"
+        text: qsTr("Preset")
         Layout.alignment: root.labelAlignment
     }
 
     STButton {
-        text: "Load"
+        text: qsTr("Load")
 
         Layout.fillWidth: true
 
@@ -37,7 +37,7 @@ STPropertyPanel {
 
                 STButton {
                     Layout.fillWidth: true
-                    text: "Absorber"
+                    text: qsTr("Absorber")
                     onClicked: {
                         if (root.side_editor) {
                             root.side_editor.set_ideal_absorption()
@@ -48,7 +48,7 @@ STPropertyPanel {
 
                 STButton {
                     Layout.fillWidth: true
-                    text: "Reflector"
+                    text: qsTr("Reflector")
                     onClicked: {
                         if (root.side_editor) {
                             root.side_editor.set_ideal_reflection()
@@ -59,7 +59,7 @@ STPropertyPanel {
 
                 STButton {
                     Layout.fillWidth: true
-                    text: "Transmitter"
+                    text: qsTr("Transmitter")
                     onClicked: {
                         if (root.side_editor) {
                             root.side_editor.set_ideal_transmission()
@@ -74,7 +74,7 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "Interaction"
+        text: qsTr("Interaction")
         Layout.alignment: root.labelAlignment
     }
 
@@ -101,7 +101,7 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "Distribution"
+        text: qsTr("Distribution")
         Layout.alignment: root.labelAlignment
     }
 
@@ -127,7 +127,7 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "Reflectance (ρ)"
+        text: qsTr("Reflectance (ρ)")
         Layout.alignment: root.labelAlignment
     }
 
@@ -148,7 +148,7 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "Transmittance (τ)"
+        text: qsTr("Transmittance (τ)")
         Layout.alignment: root.labelAlignment
     }
 
@@ -169,7 +169,7 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "<em>n</em> Front"
+        text: qsTr("<em>n</em> Front")
         textFormat: Label.RichText
         Layout.alignment: root.labelAlignment
     }
@@ -191,7 +191,7 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "<em>n</em> Back"
+        text: qsTr("<em>n</em> Back")
         textFormat: Label.RichText
         Layout.alignment: root.labelAlignment
     }
@@ -213,7 +213,7 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "Slope Error (σ<sub>slope</sub>)"
+        text: qsTr("Slope Error (σ<sub>slope</sub>)")
         textFormat: Label.RichText
         Layout.alignment: root.labelAlignment
     }
@@ -236,7 +236,7 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "Specularity Error (σ<sub>spec</sub>)"
+        text: qsTr("Specularity Error (σ<sub>spec</sub>)")
         textFormat: Label.RichText
         Layout.alignment: root.labelAlignment
     }
@@ -259,7 +259,7 @@ STPropertyPanel {
     // =========================================================================
 
     STPropertyLabel {
-        text: "Error Type"
+        text: qsTr("Error Type")
         visible: false
         Layout.alignment: root.labelAlignment
     }

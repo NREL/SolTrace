@@ -67,7 +67,7 @@ Item {
         height: 3
 
         Label {
-            text: "Surface"
+            text: qsTr("Surface")
             anchors.bottom: parent.top
             anchors.right: parent.right
             opacity: .5
@@ -163,7 +163,7 @@ Item {
     Ray {
         id: incident_ray
 
-        title: "Incident"
+        title: qsTr("Incident")
 
         color: Material.color(Material.Orange)
 
@@ -454,7 +454,7 @@ Item {
 
     Label {
         color: Material.color(Material.Grey)
-        text: "<em>n</em> Front = " + root.nFront
+        text: qsTr("<em>n</em> Front = %1").arg(root.nFront)
         textFormat: Label.RichText
 
         x: parent.width * .05
@@ -464,7 +464,7 @@ Item {
 
     Label {
         color: Material.color(Material.Grey)
-        text: "<em>n</em> Back = " + root.nBack
+        text: qsTr("<em>n</em> Back = %1").arg(root.nBack)
         textFormat: Label.RichText
 
         x: parent.width * .05
@@ -509,7 +509,7 @@ Item {
                 anchors.fill: parent
                 STSwitch {
                     id: ex_angles
-                    text: "Exaggerate angles"
+                    text: qsTr("Exaggerate angles")
                     checked: root.exaggerateAngle
 
                     onToggled: {

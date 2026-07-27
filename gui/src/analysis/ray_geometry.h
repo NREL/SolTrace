@@ -4,6 +4,7 @@
 #include "job_control/job_run_common.h"
 #include "utilities/qt_helpers.h"
 
+#include <QQmlEngine>
 #include <QtQuick3D/qquick3dgeometry.h>
 
 
@@ -24,13 +25,20 @@ struct EventTypeContainer {
 // TODO move to tubes and instancing?
 class RayGeometry : public QQuick3DGeometry {
     Q_OBJECT
+    QML_ELEMENT
 
     db::SimulationResultPtr m_database;
 
     EventTypeContainer m_include_events;
 
+public:
+    enum class TextureMode { Length, Segment };
+    Q_ENUM(TextureMode)
+
+private:
     Q_WRITABLE_PROPERTY(QStringList, event_include, {});
     Q_WRITABLE_PROPERTY(float, show_percent, 100);
+    Q_WRITABLE_PROPERTY(TextureMode, texture_mode, TextureMode::Length);
     Q_READONLY_PROPERTY(quint64, available_rays);
     Q_WRITABLE_PROPERTY(qint64, selected_ray_id, -1);
 

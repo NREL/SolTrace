@@ -22,6 +22,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <vector>
 
@@ -124,9 +125,43 @@ std::int64_t quantize(double value) {
 auto sort_key(ElementSnapshot const& item) {
     return std::tuple {
         quantize(item.origin.x), quantize(item.origin.y),
-        quantize(item.origin.z), item.aperture_json,
-        item.surface_json,       item.name,
+        quantize(item.origin.z), quantize(item.aim_axis.x),
+        quantize(item.aim_axis.y), quantize(item.aim_axis.z),
+        quantize(item.x_axis.x), quantize(item.x_axis.y),
+        quantize(item.x_axis.z), item.aperture_json,
+        item.surface_json,
     };
+}
+
+bool is_legacy_numeric_name(std::string const& name) {
+    return !name.empty() && std::all_of(name.begin(), name.end(), [](char c) {
+               return c >= '0' && c <= '9';
+           });
+}
+
+bool is_import_normalized_element_name(std::string const& name) {
+    constexpr std::string_view prefix = "Element ";
+
+    return name.size() > prefix.size() &&
+           name.compare(0, prefix.size(), prefix) == 0 &&
+           is_legacy_numeric_name(name.substr(prefix.size()));
+}
+
+void expect_names_equal(std::string const& actual,
+                        std::string const& expected) {
+    EXPECT_EQ(actual, expected);
+}
+
+void expect_legacy_names_compatible(std::string const& actual,
+                                    std::string const& expected) {
+    if (!is_legacy_numeric_name(expected)) {
+        EXPECT_EQ(actual, expected);
+        return;
+    }
+
+    EXPECT_TRUE(is_import_normalized_element_name(actual))
+        << "actual name: " << actual << ", expected legacy name: "
+        << expected;
 }
 
 std::vector<ElementSnapshot>
@@ -294,7 +329,7 @@ void expect_snapshots_near(ElementSnapshot const& actual,
     {
         SCOPED_TRACE("single element snapshot " + std::to_string(index));
 
-        EXPECT_EQ(actual.name, expected.name);
+        expect_names_equal(actual.name, expected.name);
         EXPECT_EQ(actual.enabled, expected.enabled);
         EXPECT_EQ(actual.aperture_json, expected.aperture_json);
         EXPECT_EQ(actual.surface_json, expected.surface_json);
@@ -514,6 +549,39 @@ TEST(DatabaseRoundTrip, PowerTowerSurroundExportsEquivalentGlobalSimData) {
     for (size_t i = 0; i < expected_snapshots.size(); ++i) {
         expect_snapshots_near(actual_snapshots[i], expected_snapshots[i], i);
     }
+}
+
+TEST(DatabaseRoundTrip, LegacyImportNormalizesNumericElementNames) {
+    SD::SimulationData original;
+    ASSERT_TRUE(
+        original.import_from_file(power_tower_surround_path().string()));
+
+    db::Database database("legacy-round-trip");
+    database.import(original, true);
+
+    auto exported_result = database.export_to_simdata();
+    ASSERT_TRUE(export_succeeded(exported_result));
+
+    auto exported = exported_result.get_success();
+    ASSERT_NE(exported, nullptr);
+    ASSERT_NE(exported->data, nullptr);
+
+    auto actual_snapshots   = collect_single_element_snapshots(*exported->data);
+    auto expected_snapshots = collect_single_element_snapshots(original);
+
+    ASSERT_EQ(actual_snapshots.size(), expected_snapshots.size());
+
+    bool saw_numeric_legacy_name = false;
+    for (size_t i = 0; i < expected_snapshots.size(); ++i) {
+        if (!is_legacy_numeric_name(expected_snapshots[i].name)) continue;
+
+        saw_numeric_legacy_name = true;
+        expect_legacy_names_compatible(actual_snapshots[i].name,
+                                       expected_snapshots[i].name);
+        break;
+    }
+
+    EXPECT_TRUE(saw_numeric_legacy_name);
 }
 
 TEST(DatabaseRoundTrip, PowerTowerSurroundNativeTraceMatchesOriginalSimData) {

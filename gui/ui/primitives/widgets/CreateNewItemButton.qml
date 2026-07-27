@@ -8,7 +8,7 @@ import SolTrace
 STIconButton {
     id: root
     icon: "\uf055"
-    label: "New"
+    label: qsTr("New")
 
     onClicked: new_item_pop.open()
 
@@ -32,7 +32,7 @@ STIconButton {
             columns: 2
 
             Label {
-                text: "Name:"
+                text: qsTr("Name:")
             }
 
             STTextField {

@@ -58,7 +58,6 @@ ScrollView {
 
     STPopup {
         id: api_popup
-
         parent: Overlay.overlay
         modal: true
         focus: true
@@ -117,6 +116,11 @@ ScrollView {
 
     ColumnLayout {
         width: root.availableWidth
+
+        InlineDocumentation {
+            key: "script.interface"
+            Layout.fillWidth: true
+        }
 
         STPropertyPanel {
             Layout.fillWidth: true

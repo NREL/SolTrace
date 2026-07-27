@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QGuiApplication>
+#include <QLocale>
 #include <QSettings>
 
 namespace SolTrace::GUI::App {
@@ -32,8 +33,22 @@ static QString build_info_string() {
                                       : QStringLiteral("false"));
 }
 
+static DocumentationModule::Locale locale_from_setting(QVariant const& value) {
+    auto const locale = value.toInt();
+    if (locale == static_cast<int>(DocumentationModule::Locale::ES)) {
+        return DocumentationModule::Locale::ES;
+    }
+
+    return DocumentationModule::Locale::EN;
+}
+
 void AppData::load_session() {
     QSettings s;
+
+    s.beginGroup("Language");
+    m_docs->set_locale(locale_from_setting(
+        s.value("locale", static_cast<int>(DocumentationModule::Locale::EN))));
+    s.endGroup();
 
     s.beginGroup("View");
     m_view->left_panel()->set_visible(
@@ -53,10 +68,11 @@ void AppData::load_session() {
     m_view->right_panel()->set_width(
         s.value("right_panel_width", 100).toUInt());
 
-    m_view->left_panel()->set_inline_docs(
-        s.value("left_panel_inline_docs", false).toBool());
-    m_view->right_panel()->set_inline_docs(
-        s.value("right_panel_inline_docs", false).toBool());
+    m_view->set_inline_docs(
+        s.value("inline_docs",
+                s.value("left_panel_inline_docs", false).toBool() ||
+                    s.value("right_panel_inline_docs", false).toBool())
+            .toBool());
 
     m_view->set_workflow_phase(static_cast<ViewModule::WorkflowPhase>(
         s.value("workflow_phase", 0).toUInt()));
@@ -88,7 +104,7 @@ void AppData::load_session() {
         s.value("sim_sun_color", QColor("yellow")).value<QColor>());
     sim->set_geometry_color(
         s.value("sim_geometry_color", QColor("white")).value<QColor>());
-
+    sim->set_show_grid(s.value("sim_show_grid", true).toBool());
     s.endGroup();
 
     s.beginGroup("Sun");
@@ -142,6 +158,10 @@ void AppData::load_session() {
 
 void AppData::save_session() {
     QSettings s;
+    s.beginGroup("Language");
+    s.setValue("locale", static_cast<int>(m_docs->locale()));
+    s.endGroup();
+
     s.beginGroup("View");
     s.setValue("show_left_panel", m_view->left_panel()->visible());
     s.setValue("show_right_panel", m_view->right_panel()->visible());
@@ -153,8 +173,7 @@ void AppData::save_session() {
     s.setValue("left_panel_width", m_view->left_panel()->width());
     s.setValue("right_panel_width", m_view->right_panel()->width());
 
-    s.setValue("left_panel_inline_docs", m_view->left_panel()->inline_docs());
-    s.setValue("right_panel_inline_docs", m_view->right_panel()->inline_docs());
+    s.setValue("inline_docs", m_view->inline_docs());
 
     s.setValue("workflow_phase", m_view->workflow_phase());
 
@@ -179,6 +198,7 @@ void AppData::save_session() {
     s.setValue("sim_sun_viz_scale", sim->sun_viz_scale());
     s.setValue("sim_sun_color", sim->sun_color());
     s.setValue("sim_geometry_color", sim->geometry_color());
+    s.setValue("sim_show_grid", sim->show_grid());
 
     s.endGroup();
 
@@ -230,6 +250,31 @@ void AppData::clear_session() {
     s.clear();
 }
 
+void AppData::apply_ui_locale(DocumentationModule::Locale locale) {
+    if (m_ui_translator_installed) {
+        qApp->removeTranslator(&m_ui_translator);
+        m_ui_translator_installed = false;
+    }
+
+    switch (locale) {
+    case DocumentationModule::Locale::EN:
+        QLocale::setDefault(QLocale(QLocale::English));
+        break;
+    case DocumentationModule::Locale::ES:
+        QLocale::setDefault(QLocale(QLocale::Spanish));
+        if (m_ui_translator.load(QStringLiteral(":/i18n/soltrace_es.qm"))) {
+            m_ui_translator_installed =
+                qApp->installTranslator(&m_ui_translator);
+        } else {
+            qWarning() << "Unable to load UI translation"
+                       << QStringLiteral(":/i18n/soltrace_es.qm");
+        }
+        break;
+    }
+
+    if (m_engine) { m_engine->retranslate(); }
+}
+
 AppData* AppData::create(QQmlEngine* qmlEngine, QJSEngine*) {
     return new AppData(nullptr, qmlEngine, "");
 }
@@ -248,7 +293,8 @@ AppData::AppData(QObject*       parent,
       m_intersections(new IntersectionsModule(this)),
       m_flux(new FluxModule(engine, this)),
       m_exporter(new ExportModule(this)),
-      m_script(new Script::Script(this)) {
+      m_script(new Script::Script(this)),
+      m_engine(engine) {
 
     set_current_version_info(
         QString("%1 %2").arg(BuildInfo::version).arg(BuildInfo::git_commit));
@@ -276,6 +322,10 @@ AppData::AppData(QObject*       parent,
     connect(m_exporter, &ExportModule::notify, this, &AppData::notification);
 
     connect(m_script, &Script::Script::notify, this, &AppData::notification);
+
+    connect(m_docs, &DocumentationModule::locale_changed, this, [this] {
+        apply_ui_locale(m_docs->locale());
+    });
 
     connect(this,
             &AppData::current_database_value_changed,
@@ -336,6 +386,7 @@ AppData::AppData(QObject*       parent,
             });
 
     load_session();
+    apply_ui_locale(m_docs->locale());
 
     m_file_source->load_new();
 }

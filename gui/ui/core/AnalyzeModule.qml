@@ -9,14 +9,13 @@ import SolTrace
 ColumnLayout {
     id: root
 
-    Label {
+    InlineDocumentation {
+        key: "workflow.analyze"
         Layout.fillWidth: true
         Layout.leftMargin: 10
         Layout.rightMargin: 10
         Layout.bottomMargin: 8
-
-        text: "Explore simulation results, inspect ray intersections, analyze flux distributions, and export data."
-        wrapMode: Text.WordWrap
+        showTitle: false
     }
 
 
@@ -68,7 +67,7 @@ ColumnLayout {
     }
 
     WorkflowStepper {
-        previous: "Run Tracer"
+        previous: "Trace Scene"
         currentIndex: ViewModule.Analyze
     }
 }

@@ -5,6 +5,7 @@
 
 #include "composite_element.hpp"
 #include "simdata_io.hpp"
+#include "json_schema.hpp"
 
 namespace SolTrace::Data {
 
@@ -317,9 +318,9 @@ bool SimulationData::import_from_file(const std::string file_name)
     return this->import_from_file(file_name.c_str());
 }
 
-void SimulationData::import_json_file(const std::string file_name)
+void SimulationData::import_json_file(const std::string file_name, std::string* upgrade_log)
 {
-    load_json_file(*this, file_name);
+    load_json_file(*this, file_name, upgrade_log);
 }
 
 void SimulationData::export_json_file(const std::string file_name)

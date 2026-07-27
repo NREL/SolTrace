@@ -1,0 +1,7 @@
+---
+title: "Point Source"
+---
+
+A point source emits rays from a finite X, Y, Z position in the scene. Use it for lamps, calibration sources, or non-solar test cases where the origin is part of the optical model.
+
+The emission profile still controls the angular spread of the rays leaving the source.

@@ -9,5 +9,5 @@ STTextField {
     id: root
 
     leftIcon: "\uf002"
-    placeholderText: "Search..."
+    placeholderText: qsTr("Search...")
 }

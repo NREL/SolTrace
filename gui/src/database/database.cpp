@@ -291,6 +291,7 @@ Database::Database(QString database_name, QObject* p)
       global_transform(m_registry),
       invisible(m_registry),
       disabled(m_registry),
+      virtual_tag(m_registry),
       parent(m_registry),
       tag_root(m_registry),
       element_tag(m_registry),
@@ -397,6 +398,9 @@ clone_database_with_entity_map(Database const& from,
         from_registry, mapper, to_registry);
 
     copy_marker_component<DisabledComponent>(
+        from_registry, mapper, to_registry);
+
+    copy_marker_component<VirtualTagComponent>(
         from_registry, mapper, to_registry);
 
     copy_plain_component<IdentityComponent>(
@@ -569,11 +573,13 @@ static void import_optics(
 
         registry.emplace<MaterialGroupComponent>(group_entity, new_group);
         registry.emplace<MaterialComponent>(group_entity, new_group_params);
+        auto material_name = QString::fromStdString(property_sptr->get_name());
+        if (material_name.isEmpty()) {
+            material_name = QString("Material %1").arg(group_counter);
+        }
+
         registry.emplace<IdentityComponent>(
-            group_entity,
-            IdentityComponent {
-                .name = QString("Material %1").arg(group_counter),
-            });
+            group_entity, IdentityComponent { .name = material_name });
 
         group_counter++;
 
@@ -618,7 +624,7 @@ struct StageComponent {
     TransformComponent this_in_stage;
 };
 
-void Database::import(SD::SimulationData& data) {
+void Database::import(SD::SimulationData& data, bool legacy_import) {
 
     // Assuming we are not re-using registries, which we are not for the moment
     auto imported_tag = create_tag("imported");
@@ -695,12 +701,33 @@ void Database::import(SD::SimulationData& data) {
         m_registry.emplace<TransformComponent>(ent, extract_tf(element));
 
         if (!element.get_name().empty()) {
-            m_registry.emplace<IdentityComponent>(
-                ent, QString::fromStdString(element.get_name()));
+
+            // for legacy, sometimes the name is just a number
+
+            auto name = QString::fromStdString(element.get_name());
+
+            bool ok = false;
+
+            name.toLong(&ok);
+
+            if (legacy_import && ok) {
+                // these are not super useful. imbue with extra, if possible
+
+                auto id = element.get_id();
+
+                name = QStringLiteral("Element %1").arg(id);
+            }
+
+            m_registry.emplace<IdentityComponent>(ent, name);
         }
 
         if (!element.is_enabled()) {
             m_registry.emplace<DisabledComponent>(ent);
+        }
+
+        if (element.is_virtual()) {
+            qDebug() << "Adding virtual tag to " << ent;
+            m_registry.emplace<VirtualTagComponent>(ent);
         }
 
         if (element.is_composite()) {
@@ -818,6 +845,14 @@ static void install_group(SD::element_ptr                 ptr,
     ptr->set_optical_property_set(param);
 }
 
+static SD::OpticalPropertySet
+with_optical_name(SD::OpticalPropertySet const& optics, QString const& name) {
+    nlohmann::ordered_json node;
+    optics.write_json(node);
+    node["my_name"] = name.toStdString();
+    return SD::OpticalPropertySet(node);
+}
+
 Result<std::shared_ptr<DatabaseExport>, QString> Database::export_to_simdata() {
     SD::SimulationData ret;
 
@@ -854,6 +889,9 @@ Result<std::shared_ptr<DatabaseExport>, QString> Database::export_to_simdata() {
 
             if (children_of(e).size()) {
                 auto n = std::make_shared<SD::CompositeElement>();
+                ptr    = n;
+            } else if (m_registry.all_of<VirtualTagComponent>(e)) {
+                auto n = std::make_shared<SD::VirtualElement>();
                 ptr    = n;
             } else {
                 auto n = std::make_shared<SD::SingleElement>();
@@ -894,11 +932,12 @@ Result<std::shared_ptr<DatabaseExport>, QString> Database::export_to_simdata() {
     std::unordered_map<entt::entity, SD::OpticalPropertySetReference> prop_map;
 
     {
-        auto view =
-            m_registry
-                .view<const MaterialGroupComponent, const MaterialComponent>();
+        auto view = m_registry.view<const MaterialGroupComponent,
+                                    const MaterialComponent>();
         for (auto const& [e, mat_members, mat_data] : view.each()) {
-            auto ref = ret.find_or_add_optical_property_set(mat_data.optics);
+            auto named_optics =
+                with_optical_name(mat_data.optics, name_of(e));
+            auto ref = ret.find_or_add_optical_property_set(named_optics);
 
             prop_map.try_emplace(e, ref);
         }
@@ -1426,6 +1465,22 @@ void Database::delete_element(db::Entity to_delete) {
     }
 
     m_registry.destroy(to_delete);
+}
+
+bool Database::is_virtual_element(db::Entity element) const {
+    return valid(element) && m_registry.all_of<VirtualTagComponent>(element);
+}
+
+void Database::set_virtual_element(db::Entity element, bool is_virtual) {
+    if (!valid(element)) return;
+    if (!m_registry.all_of<ElementComponent>(element)) return;
+    if (is_virtual_element(element) == is_virtual) return;
+
+    if (is_virtual) {
+        virtual_tag.set(element, VirtualTagComponent {});
+    } else {
+        virtual_tag.remove(element);
+    }
 }
 
 QString Database::sanitize_material_name(QString name) {

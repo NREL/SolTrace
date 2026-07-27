@@ -11,6 +11,18 @@ Node {
     rotation: Quaternion.fromEulerAngles(-90, 0, 0)
 
     readonly property real elevation: sunVisualization.elevation
+    readonly property bool blueprintMode: App.view.sim.sky === SimulationViewState.Blueprint
+
+    function applyPerformanceSettings() {
+        App.layout.world_geometry_model.set_surface_thickness(
+                    App.view.sim.geometry_thickness)
+        App.layout.world_geometry_model.set_subdivision_scale(
+                    App.view.sim.geometry_subdivision_scale)
+        App.layout.world_geometry_model.set_default_color(
+                    App.view.sim.geometry_color)
+    }
+
+    Component.onCompleted: applyPerformanceSettings()
 
     Repeater3D {
         model: App.layout.world_geometry_model
@@ -28,11 +40,11 @@ Node {
 
             materials: [
                 PrincipledMaterial {
-                    metalness: App.view.sim.blueprint_mode ? 0 : 1
-                    roughness: App.view.sim.blueprint_mode ? 1 : 0
-                    baseColor: App.view.sim.geometry_color
+                    metalness: world_node.blueprintMode ? 0 : 1
+                    roughness: world_node.blueprintMode ? 1 : 0
+                    baseColor: "white"
 
-                    lighting: App.view.sim.blueprint_mode ? PrincipledMaterial.NoLighting : PrincipledMaterial.FragmentLighting
+                    lighting: world_node.blueprintMode ? PrincipledMaterial.NoLighting : PrincipledMaterial.FragmentLighting
                 }
             ]
         }
@@ -41,7 +53,13 @@ Node {
     Connections {
         target: App.view.sim
         function onGeometry_color_changed() {
-            App.layout.world_geometry_model.set_all_color(App.view.sim.geometry_color)
+            App.layout.world_geometry_model.set_default_color(App.view.sim.geometry_color)
+        }
+        function onGeometry_thickness_changed() {
+            world_node.applyPerformanceSettings()
+        }
+        function onGeometry_subdivision_scale_changed() {
+            world_node.applyPerformanceSettings()
         }
     }
 

@@ -55,7 +55,8 @@ RowLayout {
 
         Layout.alignment: Qt.AlignVCenter
 
-        Layout.rightMargin: 10
+        Layout.leftMargin: 8
+        Layout.rightMargin: 15
 
         implicitWidth: logo_content.implicitWidth
         implicitHeight: logo_content.implicitHeight
@@ -75,69 +76,54 @@ RowLayout {
             }
         }
 
-        Column {
+        RowLayout {
             id: logo_content
-            spacing: -2
+            spacing: 4
 
-            RowLayout {
-                id: logo_row
-                spacing: 4
+            Image {
+                id: logo_icon
+                source: "qrc:/assets/images/logo.png"
+                Layout.preferredHeight: 22
+                Layout.preferredWidth: Layout.preferredHeight
+                Layout.alignment: Qt.AlignCenter
+                mipmap: true
+                fillMode: Image.PreserveAspectFit
 
-                Item { Layout.preferredWidth: 2 }
-
-                Image {
-                    id: logo_icon
-                    source: "qrc:/assets/images/logo.svg"
-                    Layout.preferredHeight: 27
-                    Layout.preferredWidth: Layout.preferredHeight
-                    Layout.alignment: Qt.AlignBottom
-                    mipmap: true
-                    fillMode: Image.PreserveAspectFit
-
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        colorization: 1.0
-                        colorizationColor: App.theme.fontColor
-                    }
+                layer.enabled: true
+                layer.effect: MultiEffect {
+                    colorization: 1.0
+                    colorizationColor: App.theme.fontColor
                 }
-
-                Label {
-                    id: logo_text
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignBottom
-                    font.pointSize: 18
-                    font.family: "CMU Serif"
-                    text: "SolTrace"
-                    font.bold: true
-                    font.capitalization: Font.SmallCaps
-                }
-
-                STClickableLabel {
-                    id: prerel_logo
-
-                    visible: AppData.is_prerelease
-
-                    //anchors.bottom: parent.bottom
-                    //anchors.left: parent.left
-
-                    text: " \uf071"
-                    font.family: "Font Awesome 7 Free"
-
-                    style: Label.Outline
-                    styleColor: "black"
-
-                    font.pointSize: App.theme.labelSize
-
-                    color: Material.color(Material.Yellow)
-                }
-
-                Item { Layout.preferredWidth: 2 }
             }
 
-            Rectangle {
-                color: App.theme.fontColor
-                width: logo_row.width
-                height: 1
+            Label {
+                id: logo_text
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignCenter
+                font.pointSize: 18
+                font.family: "CMU Serif"
+                text: "SolTrace"
+                font.bold: true
+                font.capitalization: Font.SmallCaps
+            }
+
+            STClickableLabel {
+                id: prerel_logo
+
+                visible: AppData.is_prerelease
+
+                //anchors.bottom: parent.bottom
+                //anchors.left: parent.left
+
+                text: " \uf071"
+                font.family: "Font Awesome 7 Free"
+
+                style: Label.Outline
+                styleColor: "black"
+
+                font.pointSize: App.theme.labelSize
+
+                color: Material.color(Material.Yellow)
             }
         }
 

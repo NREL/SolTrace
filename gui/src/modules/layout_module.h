@@ -1,10 +1,11 @@
 #pragma once
 
-#include "backend.h"
 #include "database/rootelementsmodel.h"
+#include "database/worldgeometrymodel.h"
 #include "module_common.h"
 #include "utilities/notification.h"
 #include "utilities/qt_helpers.h"
+
 #include <QObject>
 
 namespace SolTrace::GUI::App {

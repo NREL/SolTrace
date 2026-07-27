@@ -1,0 +1,7 @@
+---
+title: "Intersecciones"
+---
+
+La vista de intersecciones sirve para inspeccionar los rayos trazados y sus trayectorias en la escena. Usela para explorar donde los rayos intersectan elementos, aislar rayos de interes y entender por que un trazado produjo cierto resultado.
+
+Seleccione o filtre rayos aqui cuando necesite investigar trayectorias opticas inesperadas antes de volver a la vista de escena o al analisis de flujo.

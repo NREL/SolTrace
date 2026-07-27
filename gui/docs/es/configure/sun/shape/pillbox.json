@@ -1,0 +1,1 @@
+{"metadata": {"title": "Perfil Pillbox"}, "blocks": [{"type": "text", "content": "El perfil pillbox muestrea rayos de forma uniforme dentro de un radio angular fijo. El valor de semi-ancho define ese radio en milirradianes.\n\nEs una forma simple de aproximar un disco solar con borde definido."}]}

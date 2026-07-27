@@ -84,6 +84,7 @@ public slots:
 
     void    load();
     QString get(QString key, QString metadata_key = "");
+    QString blocks(QString key);
 
 signals:
     void loaded();

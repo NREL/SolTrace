@@ -13,7 +13,7 @@ AdaptiveFilteredEditor {
 
     wideThreshold: 500
     listWidth: 250
-    emptyListText: "Materials define optical properties. Create one below to assign it to elements."
+    emptyListText: qsTr("Materials define optical properties. Create one below to assign it to elements.")
 
     onEditingChanged: {
         App.view.editing_material = editing
@@ -54,14 +54,14 @@ AdaptiveFilteredEditor {
 
         STIconButton {
             icon: "\uf05b"
-            toolTip: "Select Material From View"
+            toolTip: qsTr("Select Material From View")
             onClicked: App.view.mouse_mode = ViewModule.SelectMaterial
         }
     }
 
     listFooter: RowLayout {
         CreateNewItemButton {
-            title: "New Material"
+            title: qsTr("New Material")
 
             onCreateRequested: function(name) {
                 var new_name = AppData.current_database.sanitize_material_name(name)
@@ -71,7 +71,7 @@ AdaptiveFilteredEditor {
     }
 
     listDelegate: STItemDelegate {
-        text: itemModel ? itemModel.name : "No name"
+        text: itemModel ? itemModel.name : qsTr("No name")
         highlighted: isCurrent
     }
 
@@ -102,51 +102,59 @@ AdaptiveFilteredEditor {
             }
         }
 
-        SurfacePropertyGraphic {
-            Layout.fillWidth: true
-            Layout.preferredHeight: 148
-
-            property var face: bar.currentIndex == 0
-                               ? App.materials.material_edit.front_editor
-                               : App.materials.material_edit.back_editor
-
-            reflectance: face.reflectivity
-            transmittance: face.transmissivity
-            nFront: face.refraction_index_front
-            nBack: face.refraction_index_back
-            slopeErrorMrad: face.slope_error
-            specularityErrorMrad: face.specularity_error
-        }
-
-        STComboBar {
-            id: bar
-            Layout.fillWidth: true
-            model: ["Front", "Back"]
-        }
-
         ScrollView {
             id: mat_scroll
             Layout.fillHeight: true
             Layout.fillWidth: true
             contentWidth: availableWidth
 
-            SwipeView {
+            ColumnLayout {
                 width: mat_scroll.availableWidth
-                height: currentItem ? currentItem.implicitHeight : 0
-                interactive: false
-                clip: true
-                currentIndex: bar.currentIndex
 
-                MaterialOpticals {
-                    collapsed: false
-                    Layout.fillWidth: true
-                    side_editor: App.materials.material_edit.front_editor
+                InlineDocumentation {
+                    key: "configure.materials"
                 }
 
-                MaterialOpticals {
-                    collapsed: false
+                SurfacePropertyGraphic {
                     Layout.fillWidth: true
-                    side_editor: App.materials.material_edit.back_editor
+                    Layout.preferredHeight: 148
+
+                    property var face: bar.currentIndex == 0
+                                       ? App.materials.material_edit.front_editor
+                                       : App.materials.material_edit.back_editor
+
+                    reflectance: face.reflectivity
+                    transmittance: face.transmissivity
+                    nFront: face.refraction_index_front
+                    nBack: face.refraction_index_back
+                    slopeErrorMrad: face.slope_error
+                    specularityErrorMrad: face.specularity_error
+                }
+
+                STComboBar {
+                    id: bar
+                    Layout.fillWidth: true
+                    model: [qsTr("Front"), qsTr("Back")]
+                }
+
+                SwipeView {
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: currentItem ? currentItem.implicitHeight : 0
+                    interactive: false
+                    clip: true
+                    currentIndex: bar.currentIndex
+
+                    MaterialOpticals {
+                        collapsed: false
+                        Layout.fillWidth: true
+                        side_editor: App.materials.material_edit.front_editor
+                    }
+
+                    MaterialOpticals {
+                        collapsed: false
+                        Layout.fillWidth: true
+                        side_editor: App.materials.material_edit.back_editor
+                    }
                 }
             }
         }
@@ -155,8 +163,8 @@ AdaptiveFilteredEditor {
             DeleteItemButton {
                 id: delete_button
 
-                title: "Delete Material"
-                itemType: "material"
+                title: qsTr("Delete Material")
+                itemType: qsTr("material")
                 replacementModel: root.source_model
 
                 toDelete: AppData.materials.current_material
@@ -188,7 +196,7 @@ AdaptiveFilteredEditor {
     placeholder: Item {
         Label {
             anchors.centerIn: parent
-            text: "Select a material"
+            text: qsTr("Select a material")
             font.pointSize: 16
             opacity: 0.5
         }

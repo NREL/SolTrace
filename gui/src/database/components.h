@@ -29,7 +29,11 @@ struct IdentityComponent {
     QString name;
 };
 
+/// The entity represents an element in the world
 struct ElementComponent { };
+
+/// The entity is virtual, or a non-interacting probe element
+struct VirtualTagComponent { };
 
 /// Describes the parent of this entity, if it has one. DO NOT modify this
 /// component directly!

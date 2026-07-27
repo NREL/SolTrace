@@ -1,0 +1,7 @@
+---
+title: "Sun"
+---
+
+The sun settings define where rays originate and how their angular distribution is sampled. The source type controls the ray origin and direction, while the emission profile controls angular spread.
+
+Use a directional source for distant sunlight and a point source when rays should originate from a finite location in the scene.

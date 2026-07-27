@@ -1,0 +1,7 @@
+---
+title: "Perfil Personalizado"
+---
+
+El perfil personalizado permite definir directamente la distribucion angular de intensidad. Ingrese pares de angulo e intensidad que describan la forma de fuente que quiere muestrear durante el trazado.
+
+Mantenga la tabla ordenada por angulo para que el perfil graficado sea facil de revisar antes de ejecutar un trazado.

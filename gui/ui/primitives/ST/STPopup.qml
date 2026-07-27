@@ -26,6 +26,10 @@ Popup {
         }
     }
 
+    Overlay.modal: Rectangle {
+        color: Qt.rgba(0, 0, 0, 0.5)
+    }
+
     margins: 1
     padding: 8
 }

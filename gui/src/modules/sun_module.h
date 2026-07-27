@@ -1,14 +1,20 @@
 #pragma once
-#include "backend.h"
+
+
+#include "database/components.h"
+#include "database/database.h"
 #include "module_common.h"
+#include "ray_source.hpp"
 #include "utilities/notification.h"
 #include "utilities/qt_helpers.h"
 #include "utilities/structmodel.h"
+
 #include <QDateTime>
 #include <QMetaObject>
 #include <QObject>
 #include <QTimeZone>
 #include <QVector>
+#include <qqmlintegration.h>
 
 namespace SolTrace::GUI::App {
 
@@ -36,7 +42,7 @@ public:
     void         set_variant_data(QVariantList data);
 
 public slots:
-    void reset(QVector<SunShapePoint> points = {});
+    void reset(QVector<SunShapePoint> points = { });
     void append(double angle = 0.0, double intensity = 0.0);
     void remove(int index);
     void clear();
@@ -152,9 +158,12 @@ public slots:
     void set_fall();
     void set_winter();
 
-    void set_morning();
+    void set_dawn();
+    void set_mid_morning();
     void set_noon();
-    void set_afternoon();
+    void set_mid_afternoon();
+    void set_golden_hour();
+    void set_dusk();
 };
 
 class SolarPositionData : public QObject {
@@ -184,7 +193,7 @@ private:
     void load_from_database();
 
     // This should be const, but the library has non-const getters
-    void load_from_ray_source(SD::RaySource& ray_source,
+    void load_from_ray_source(SD::RaySource&    ray_source,
                               db::RaySourceType source_type);
 
     void                                 write_shape_to_database();

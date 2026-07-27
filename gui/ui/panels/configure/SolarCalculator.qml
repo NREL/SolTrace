@@ -184,7 +184,7 @@ ColumnLayout {
         STComboBox {
             Layout.fillWidth: true
             currentIndex: -1
-            model: ["Sprint", "Summer", "Fall", "Winter"]
+            model: ["Spring (March 20)", "Summer (June 21)", "Fall (September 22)", "Winter (December 21)"]
             onCurrentIndexChanged: {
                 if (currentIndex >= 0) {
                     [
@@ -208,13 +208,16 @@ ColumnLayout {
         STComboBox {
             Layout.fillWidth: true
             currentIndex: -1
-            model: ["Morning", "Noon", "Afternoon"]
+            model: ["Dawn (6am)", "Mid-Morning (9am)", "Noon (12pm)", "Mid-Afternoon (3pm)", "Golden Hour (5pm)", "Dusk (7pm)"]
             onCurrentIndexChanged: {
                 if (currentIndex >= 0) {
                     [
-                        App.sun.calc_data.set_morning,
+                        App.sun.calc_data.set_dawn,
+                        App.sun.calc_data.set_mid_morning,
                         App.sun.calc_data.set_noon,
-                        App.sun.calc_data.set_afternoon,
+                        App.sun.calc_data.set_mid_afternoon,
+                        App.sun.calc_data.set_golden_hour,
+                        App.sun.calc_data.set_dusk,
                     ][currentIndex]()
                 }
             }

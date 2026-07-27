@@ -36,16 +36,6 @@ RowLayout {
             anchors.horizontalCenter: parent.horizontalCenter
 
             STIconButton {
-                icon: "\uf005"
-                toolTip: "Get Started"
-
-                onClicked: {
-                    App.view.workflow_phase = ViewModule.Start
-                    App.view.open_left_panel(bottom_bar.width)
-                }
-            }
-
-            STIconButton {
                 icon: "\uf02d"
                 toolTip: "Docs"
 
@@ -178,7 +168,7 @@ RowLayout {
             anchors.horizontalCenter: parent.horizontalCenter
 
             STIconButton {
-                icon: AppData.view.sim.camera == SimulationViewState.WASD ? "\uf047" : "\ue4bb"
+                icon: AppData.view.sim.camera === SimulationViewState.WASD ? "\uf047" : "\ue4bb"
                 toolTip: "Camera Mode"
 
                 onClicked: camera_popup.open()
@@ -194,9 +184,8 @@ RowLayout {
                         width: parent.width
 
                         InlineDocumentation {
-                            key: "placeholder_small"
+                            key: "view.camera"
                             title: "Cameras"
-                            target: AppData.view.left_panel
                         }
 
                         STComboBar {
@@ -239,9 +228,8 @@ RowLayout {
                         width: parent.width
 
                         InlineDocumentation {
-                            key: "placeholder_small"
+                            key: "view.perspective"
                             title: "Camera Perspectives"
-                            target: AppData.view.left_panel
                         }
 
                         STComboBar {
@@ -310,6 +298,62 @@ RowLayout {
                         STButton {
                             text: "Z"
                             onClicked: simulation_scene.align_to_axis(CameraController.Axis.Z, false)
+                        }
+                    }
+                }
+            }
+
+            STIconButton {
+                icon: "\uf625"
+                toolTip: "Performance"
+
+                onClicked: performance_popup.open()
+
+                STPopup {
+                    id: performance_popup
+                    width: 260
+                    y: -height - 16
+                    x: (parent.width - width) / 2
+
+                    GridLayout {
+                        width: parent.width
+                        columns: 2
+
+                        STPropertySeparator {
+                            title: "Performance"
+                        }
+
+                        STPropertyLabel {
+                            text: "Surface Width"
+                        }
+
+                        STDoubleSpinBox {
+                            Layout.fillWidth: true
+                            from: 0
+                            to: 10
+                            stepSize: 0.01
+                            value: App.view.sim.geometry_thickness
+                            onValueModified: App.view.sim.geometry_thickness = value
+                        }
+
+                        STPropertyLabel {
+                            text: "Subdivision Scale"
+                        }
+
+                        STSpinBox {
+                            Layout.fillWidth: true
+                            from: 1
+                            to: 10
+                            value: App.view.sim.geometry_subdivision_scale
+                            onValueModified: App.view.sim.geometry_subdivision_scale = value
+                        }
+
+                        STSwitch {
+                            Layout.fillWidth: true
+                            Layout.columnSpan: 2
+                            text: "Show Grid"
+                            checked: App.view.sim.show_grid
+                            onToggled: App.view.sim.show_grid = checked
                         }
                     }
                 }

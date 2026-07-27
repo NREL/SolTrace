@@ -95,8 +95,8 @@ ColumnLayout {
     }
 
     PropertySection {
-        title: "Surface Properties"
-        typeLabel: "Surface Type"
+        title: qsTr("Surface Properties")
+        typeLabel: qsTr("Surface Type")
         parameterModel: root.group_edit.surface_parameter_model
         typeModel: root.group_edit.surface_parameter_model.surface_type_model
         currentKind: root.group_edit.surface_parameter_model.surface_kind
@@ -104,8 +104,8 @@ ColumnLayout {
     }
 
     PropertySection {
-        title: "Aperture Properties"
-        typeLabel: "Aperture Type"
+        title: qsTr("Aperture Properties")
+        typeLabel: qsTr("Aperture Type")
         parameterModel: root.group_edit.aperture_parameter_model
         typeModel: root.group_edit.aperture_parameter_model.aperture_type_model
         currentKind: root.group_edit.aperture_parameter_model.aperture_kind

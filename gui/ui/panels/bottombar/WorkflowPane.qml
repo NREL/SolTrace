@@ -136,6 +136,58 @@ Item {
         }
 
         STClickableLabel {
+            id: start_label
+
+            Layout.fillHeight: true
+            Layout.rightMargin: 4
+
+            borderWidth: 0
+
+            property bool is_active: App.view.workflow_phase === ViewModule.Start
+
+            text: App.view.workflow_phase === ViewModule.Start ? "Get Started" : "Start"
+            font.pointSize: 16
+            horizontalAlignment: Qt.AlignHCenter
+            verticalAlignment: Qt.AlignVCenter
+            opacity: is_active ? 1.0 : .50
+
+            onClicked: {
+                App.view.simulation_content_view = false
+                App.view.workflow_phase = ViewModule.Start
+            }
+        }
+
+        Label {
+            id: start_separator
+
+            Layout.leftMargin: 4
+            Layout.rightMargin: 8
+            Layout.alignment: Qt.AlignVCenter
+
+            font.family: "Font Awesome 7 Free"
+            text: "\uf178"
+
+            property bool highlight: start_label.is_active || data_label.is_active
+
+            opacity: highlight ? 1.0 : .50
+        }
+
+        ShadowedRectangle {
+            Layout.preferredWidth: 25
+            Layout.preferredHeight: 25
+            Layout.leftMargin: 4
+
+            radius: 100
+            blur_source: root.blur_source
+            glassColor: App.theme.glassColor
+
+            Label {
+                text: "2"
+                anchors.centerIn: parent
+            }
+        }
+
+        STClickableLabel {
             id: data_label
 
             Layout.fillHeight: true
@@ -198,7 +250,7 @@ Item {
             glassColor: App.theme.glassColor
 
             Label {
-                text: "2"
+                text: "3"
                 anchors.centerIn: parent
             }
         }
@@ -273,7 +325,7 @@ Item {
             glassColor: App.theme.glassColor
 
             Label {
-                text: "3"
+                text: "4"
                 anchors.centerIn: parent
             }
         }
@@ -341,7 +393,7 @@ Item {
             glassColor: App.theme.glassColor
 
             Label {
-                text: "4"
+                text: "5"
                 anchors.centerIn: parent
             }
         }

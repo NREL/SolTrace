@@ -99,6 +99,12 @@ ColumnLayout {
                                                       : ViewModule.Camera
         }
 
+        InlineDocumentation {
+            key: "configure.layout.coordinates"
+            Layout.columnSpan: 2
+            Layout.fillWidth: true
+        }
+
         STPropertyLabel {
             text: "Coordinates"
             Layout.alignment: root.labelAlignment
@@ -248,45 +254,41 @@ ColumnLayout {
             property vector3d angles: root.module.orientation.toEulerAngles()
 
             function update_from_angles() {
-                if (!(x_euler.acceptableInput && y_euler.acceptableInput && z_euler.acceptableInput)) {
-                    return
-                }
-
                 root.module.set_from_angles(
-                            Qt.vector3d(Number(x_euler.text),
-                                        Number(y_euler.text),
-                                        Number(z_euler.text)))
+                            Qt.vector3d(x_euler.value,
+                                        y_euler.value,
+                                        z_euler.value))
             }
         }
 
             STPropertyLabel { text: "X Angle (deg)" }
-            STTextField {
+            STSpinBox {
                 id: x_euler
                 Layout.fillWidth: true
-                text: rotPanel.angles.x
-                validator: DoubleValidator {}
-                onAccepted: rotPanel.update_from_angles()
-                onTextEdited: rotPanel.update_from_angles()
+                value: rotPanel.angles.x
+                onValueModified: rotPanel.update_from_angles()
+                from: -180
+                to: 180
             }
 
             STPropertyLabel { text: "Y Angle (deg)" }
-            STTextField {
+            STSpinBox {
                 id: y_euler
                 Layout.fillWidth: true
-                text: rotPanel.angles.y
-                validator: DoubleValidator {}
-                onAccepted: rotPanel.update_from_angles()
-                onTextEdited: rotPanel.update_from_angles()
+                value: rotPanel.angles.y
+                onValueModified: rotPanel.update_from_angles()
+                from: -90
+                to: 90
             }
 
             STPropertyLabel { text: "Z Angle (deg)" }
-            STTextField {
+            STSpinBox {
                 id: z_euler
                 Layout.fillWidth: true
-                text: rotPanel.angles.z
-                validator: DoubleValidator {}
-                onAccepted: rotPanel.update_from_angles()
-                onTextEdited: rotPanel.update_from_angles()
+                value: rotPanel.angles.z
+                onValueModified: rotPanel.update_from_angles()
+                from: -180
+                to: 180
             }
 
             STButton {
@@ -294,9 +296,9 @@ ColumnLayout {
                 Layout.columnSpan: 2
                 text: "Reset"
                 onClicked: {
-                    x_euler.text = 0
-                    y_euler.text = 0
-                    z_euler.text = 0
+                    x_euler.value = 0
+                    y_euler.value = 0
+                    z_euler.value = 0
                     rotPanel.update_from_angles()
                 }
             }
@@ -312,10 +314,9 @@ ColumnLayout {
 
                     function accept_position() {
                         root.module.look_at_world_position(
-                                    Qt.vector3d(Number(look_at_x.text),
-                                                Number(look_at_y.text),
-                                                Number(look_at_z.text)))
-                        close()
+                                    Qt.vector3d(look_at_x.value,
+                                                look_at_y.value,
+                                                look_at_z.value))
                     }
 
                     ColumnLayout {
@@ -334,30 +335,27 @@ ColumnLayout {
                             columns: 2
 
                             STPropertyLabel { text: "X" }
-                            STTextField {
+                            STSpinBox {
                                 id: look_at_x
                                 Layout.fillWidth: true
-                                text: "0"
-                                validator: DoubleValidator {}
-                                onAccepted: look_at_pop.accept_position()
+                                value: 0
+                                onValueModified: look_at_pop.accept_position()
                             }
 
                             STPropertyLabel { text: "Y" }
-                            STTextField {
+                            STSpinBox {
                                 id: look_at_y
                                 Layout.fillWidth: true
-                                text: "0"
-                                validator: DoubleValidator {}
-                                onAccepted: look_at_pop.accept_position()
+                                value: 0
+                                onValueModified: look_at_pop.accept_position()
                             }
 
                             STPropertyLabel { text: "Z" }
-                            STTextField {
+                            STSpinBox {
                                 id: look_at_z
                                 Layout.fillWidth: true
-                                text: "0"
-                                validator: DoubleValidator {}
-                                onAccepted: look_at_pop.accept_position()
+                                value: 0
+                                onValueModified: look_at_pop.accept_position()
                             }
                         }
 
@@ -365,7 +363,10 @@ ColumnLayout {
                             visible: look_at_mode.currentIndex === 0
                             Layout.fillWidth: true
                             text: "Point at Position"
-                            onClicked: look_at_pop.accept_position()
+                            onClicked: {
+                                look_at_pop.accept_position()
+                                look_at_pop.close()
+                            }
                         }
 
                         STButton {
@@ -414,6 +415,13 @@ ColumnLayout {
             text: "Disabled"
             checked: root.module.disabled
             onToggled: root.module.disabled = checked
+        }
+
+        STSwitch {
+            Layout.columnSpan: 2
+            text: "Virtual"
+            checked: root.module.virtual_element
+            onToggled: root.module.virtual_element = checked
         }
     }
 }

@@ -59,22 +59,42 @@ Item {
 
             probeExposure: 1.2
 
+            clearColor: "#0041BA"
+
             tonemapMode: SceneEnvironment.TonemapModeAces
 
-            backgroundMode: SceneEnvironment.SkyBox
-
-            lightProbe: Texture {
-                textureData: {
-                    if (App.view.sim.sky === SimulationViewState.Day) return daySky
-                    if (App.view.sim.sky === SimulationViewState.Blueprint) return blueprintSky
-                    let elevation = App.view.simulation_content_view
-                                  ? result_node.elevation
-                                  : edit_node.elevation
-                    if (elevation > 30) return daySky
-                    if (elevation > 10) return lateAfternoonSky
-                    if (elevation > -10) return sunsetSky
-                    return nightSky
+            backgroundMode: {
+                if (App.view.sim.sky === SimulationViewState.Blueprint) {
+                    return SceneEnvironment.Color
                 }
+
+                return SceneEnvironment.SkyBox
+            }
+
+            lightProbe: App.view.sim.sky === SimulationViewState.Realistic
+                        ? hdriSky
+                        : proceduralSky
+
+            Texture {
+                id: proceduralSky
+                textureData: {
+                   if (App.view.sim.sky === SimulationViewState.Day) return daySky
+                   if (App.view.sim.sky === SimulationViewState.Blueprint) return blueprintSky
+
+                   let elevation = App.view.simulation_content_view
+                                 ? result_node.elevation
+                                 : edit_node.elevation
+                   if (elevation > 30) return daySky
+                   if (elevation > 10) return lateAfternoonSky
+                   if (elevation > -10) return sunsetSky
+                   return nightSky
+               }
+               mappingMode: Texture.LightProbe
+            }
+
+            Texture {
+                id: hdriSky
+                source: "qrc:/assets/skyboxes/" + ["clear_puresky", "partly_cloudy", "sunset_puresky"][App.view.sim.realistic_sky] + "_1k_sand.hdr"
                 mappingMode: Texture.LightProbe
             }
 
@@ -125,7 +145,7 @@ Item {
 
             InfiniteGrid {
                 id: infiniteGrid
-                visible: true
+                visible: App.view.sim.show_grid
                 gridInterval: 50
             }
         }
@@ -139,8 +159,10 @@ Item {
 
         OrthographicCamera {
             id: mainOrthoCamera
-            z: 500
+            z: 1000
             clipNear: 0.01
+            horizontalMagnification: 100
+            verticalMagnification: 100
         }
 
         DirectionalLight {
@@ -187,6 +209,7 @@ Item {
 
         use_wasd: App.view.sim.camera === SimulationViewState.WASD
         use_orthographic: App.view.sim.perspective === SimulationViewState.Orthographic
+        input_enabled: !App.view.full_panel.visible
 
         anchors.fill: parent
 

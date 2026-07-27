@@ -1,0 +1,1 @@
+{"metadata": {"title": "Custom Emission Profile"}, "blocks": [{"type": "text", "content": "The custom profile lets you provide the angular intensity distribution directly. Enter angle and intensity pairs that describe the source shape you want sampled during tracing.\n\nKeep the table ordered by angle so the plotted profile is easy to check before running a trace."}]}

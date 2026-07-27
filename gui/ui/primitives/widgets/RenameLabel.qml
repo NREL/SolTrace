@@ -18,7 +18,7 @@ STClickableLabel {
 
         STTextField {
             id: text_input
-            placeholderText: "New name..."
+            placeholderText: qsTr("New name...")
 
             onAccepted: rename_pop.accept()
         }

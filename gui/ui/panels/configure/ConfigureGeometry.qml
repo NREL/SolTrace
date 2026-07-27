@@ -12,7 +12,7 @@ AdaptiveFilteredEditor {
     source_model: App.materials.geometry_list
     wideThreshold: 500
     listWidth: 250
-    emptyListText: "Geometries define reusable element shapes. Create one below to assign it to elements."
+    emptyListText: qsTr("Geometries define reusable element shapes. Create one below to assign it to elements.")
 
     onEditingChanged: {
         App.view.editing_geometry = editing
@@ -51,14 +51,14 @@ AdaptiveFilteredEditor {
 
         STIconButton {
             icon: "\uf05b"
-            toolTip: "Select Geometry From View"
+            toolTip: qsTr("Select Geometry From View")
             onClicked: App.view.mouse_mode = ViewModule.SelectGeometry
         }
     }
 
     listFooter: RowLayout {
         CreateNewItemButton {
-            title: "New Geometry"
+            title: qsTr("New Geometry")
 
             onCreateRequested: function(name) {
                 var new_name = AppData.current_database.sanitize_geometry_name(name)
@@ -68,7 +68,7 @@ AdaptiveFilteredEditor {
     }
 
     listDelegate: STItemDelegate {
-        text: itemModel ? itemModel.name : "No name"
+        text: itemModel ? itemModel.name : qsTr("No name")
         highlighted: isCurrent
     }
 
@@ -98,73 +98,68 @@ AdaptiveFilteredEditor {
             }
         }
 
-        SurfacePreviewScene {
-            id: preview_scene
-            Layout.fillWidth: true
-
-            property bool show_expand: false
-
-            Layout.preferredHeight: show_expand ? 300 : 148
-
-            property bool no_geometry: App.materials.geometry_edit.surface_geometry.vertex_count === 0
-
-
-            STIconButton {
-                anchors.top: parent.top
-                anchors.left: parent.left
-
-                icon: "\uf424"
-
-                onClicked: preview_scene.show_expand = !preview_scene.show_expand
-            }
-
-            // STIconButton {
-            //     anchors.top: parent.top
-            //     anchors.right: parent.right
-
-            //     text: "\ue80b"
-
-            //     onClicked: {
-
-            //     }
-            // }
-
-            RowLayout {
-                visible: parent.no_geometry
-
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.margins: 3
-
-                Label {
-                    text: "\uf071"
-
-                    font.family: "Font Awesome 7 Free"
-
-                    color: Material.color(Material.Yellow)
-                }
-
-                Label {
-                    Layout.fillWidth: true
-                    text: "No geometry for this configuration."
-
-                    elide: Label.ElideRight
-
-                    color: Material.color(Material.Yellow)
-                }
-            }
-        }
-
         ScrollView {
             id: geometry_scroll
             Layout.fillHeight: true
             Layout.fillWidth: true
             contentWidth: availableWidth
 
-            GeometryProperties {
+            ColumnLayout {
                 width: geometry_scroll.availableWidth
-                height: implicitHeight
+
+                InlineDocumentation {
+                    key: "configure.geometry"
+                }
+
+                SurfacePreviewScene {
+                    id: preview_scene
+                    Layout.fillWidth: true
+
+                    property bool show_expand: false
+
+                    Layout.preferredHeight: show_expand ? 300 : 148
+
+                    property bool no_geometry: App.materials.geometry_edit.surface_geometry.vertex_count === 0
+
+                    STIconButton {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+
+                        icon: "\uf424"
+
+                        onClicked: preview_scene.show_expand = !preview_scene.show_expand
+                    }
+
+                    RowLayout {
+                        visible: parent.no_geometry
+
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.bottom: parent.bottom
+                        anchors.margins: 3
+
+                        Label {
+                            text: "\uf071"
+
+                            font.family: "Font Awesome 7 Free"
+
+                            color: Material.color(Material.Yellow)
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: qsTr("No geometry for this configuration.")
+
+                            elide: Label.ElideRight
+
+                            color: Material.color(Material.Yellow)
+                        }
+                    }
+                }
+
+                GeometryProperties {
+                    Layout.fillWidth: true
+                }
             }
         }
 
@@ -172,8 +167,8 @@ AdaptiveFilteredEditor {
             DeleteItemButton {
                 id: delete_button
 
-                title: "Delete Geometry"
-                itemType: "geometry"
+                title: qsTr("Delete Geometry")
+                itemType: qsTr("geometry")
                 replacementModel: root.source_model
 
                 toDelete: AppData.materials.current_geometry
@@ -205,7 +200,7 @@ AdaptiveFilteredEditor {
     placeholder: Item {
         Label {
             anchors.centerIn: parent
-            text: "Select a geometry"
+            text: qsTr("Select a geometry")
             font.pointSize: 16
             opacity: 0.5
             

@@ -1,0 +1,40 @@
+{
+  "fill" : {
+    "automatic-gradient" : "display-p3:0.24615,0.28865,0.31814,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill" : {
+            "solid" : "display-p3:0.97553,0.93487,0.89152,1.00000"
+          },
+          "glass" : false,
+          "image-name" : "CSP-SolTrace Logo-FY26-DB-Final_SolTrace_Logo_Icon_White.png",
+          "name" : "CSP-SolTrace Logo-FY26-DB-Final_SolTrace_Logo_Icon_White",
+          "position" : {
+            "scale" : 0.5,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

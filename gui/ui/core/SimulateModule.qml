@@ -10,14 +10,13 @@ ColumnLayout {
     id: root
     Layout.fillWidth: true
 
-    Label {
+    InlineDocumentation {
+        key: "workflow.trace"
         Layout.fillWidth: true
         Layout.leftMargin: 10
         Layout.rightMargin: 10
         Layout.bottomMargin: 8
-
-        text: "Configure ray tracing parameters, run the simulation, and review diagnostic output."
-        wrapMode: Text.WordWrap
+        showTitle: false
     }
 
     Rectangle {

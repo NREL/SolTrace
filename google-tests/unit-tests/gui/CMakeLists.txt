@@ -10,7 +10,12 @@ set(GUI_UNIT_TEST_SRC
     ../../../gui/src/database/conversion.cpp
     ../../../gui/src/database/database.cpp
     ../../../gui/src/database/database_notification.cpp
+    ../../../gui/src/modules/database_module.cpp
+    ../../../gui/src/utilities/asynctask.cpp
+    ../../../gui/src/utilities/notification.h
+    ../../../gui/src/utilities/structmodel.h
     conversion_test.cpp
+    database_module_test.cpp
     database_roundtrip_test.cpp
 )
 
@@ -30,7 +35,9 @@ target_include_directories(GUIUnitTests
 target_link_libraries(GUIUnitTests
     PRIVATE
         Qt6::Core
+        Qt6::Concurrent
         Qt6::Gui
+        Qt6::Qml
         Qt6::Quick
         EnTT
         magic_enum

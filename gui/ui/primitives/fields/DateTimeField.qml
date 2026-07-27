@@ -15,7 +15,7 @@ ColumnLayout {
         id: date
         Layout.fillWidth: true
 
-        title: "Date"
+        title: qsTr("Date")
         collapsible: false
 
         GridLayout {
@@ -29,7 +29,7 @@ ColumnLayout {
                 Layout.column: 0
                 Layout.fillWidth: true
                 Layout.maximumWidth: 200
-                label: "Month"
+                label: qsTr("Month")
                 from: 1
                 to: 12
                 stepSize: 1
@@ -42,7 +42,7 @@ ColumnLayout {
                 Layout.row: App.view.left_panel.size == SplitPanelData.Small ? 1 : 0
                 Layout.column: App.view.left_panel.size == SplitPanelData.Small ? 0 : 1
                 Layout.preferredWidth: 200
-                label: "Day"
+                label: qsTr("Day")
                 from: 1
                 to: 31
                 stepSize: 1
@@ -56,7 +56,7 @@ ColumnLayout {
         id: time
         Layout.fillWidth: true
 
-        title: "Time"
+        title: qsTr("Time")
         collapsible: false
 
         GridLayout {
@@ -70,7 +70,7 @@ ColumnLayout {
                 Layout.column: 0
                 Layout.fillWidth: true
                 Layout.maximumWidth: 200
-                label: "Hour"
+                label: qsTr("Hour")
                 from: 0
                 to: 23
                 stepSize: 1
@@ -84,7 +84,7 @@ ColumnLayout {
                 Layout.column: App.view.left_panel.size == SplitPanelData.Small ? 0 : 1
                 Layout.fillWidth: true
                 Layout.maximumWidth: 200
-                label: "Minute"
+                label: qsTr("Minute")
                 from: 0
                 to: 59
                 stepSize: 1

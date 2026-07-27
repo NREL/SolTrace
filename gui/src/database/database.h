@@ -77,7 +77,7 @@ public:
     /// the database constructor. We have this split here so that we can
     /// allocate a database on one thread and fill it in another.
     /// Thus: DO NOT DO QObject THINGS IN THIS FUNCTION, only fill the reg.
-    void import(SD::SimulationData&);
+    void import(SD::SimulationData&, bool legacy_import = false);
 
     /// Convert a database back into a Soltrace dataset
     Result<std::shared_ptr<DatabaseExport>, QString> export_to_simdata();
@@ -98,6 +98,7 @@ public:
     ComponentAPI<GlobalTransformComponent> global_transform;
     ComponentAPIUpdate<InvisibleComponent> invisible;
     ComponentAPIUpdate<DisabledComponent>  disabled;
+    ComponentAPIUpdate<VirtualTagComponent> virtual_tag;
     ComponentAPI<ChildOfComponent>         parent;
     ComponentAPI<TagComponent>             tag_root;
 
@@ -203,6 +204,9 @@ public slots:
     db::Entity add_element(QString new_name, db::Entity parent = {});
 
     void delete_element(db::Entity to_delete);
+
+    bool is_virtual_element(db::Entity element) const;
+    void set_virtual_element(db::Entity element, bool is_virtual);
 
     /// Materials
     QString sanitize_material_name(QString);

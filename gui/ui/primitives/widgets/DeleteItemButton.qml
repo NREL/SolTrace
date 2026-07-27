@@ -8,7 +8,7 @@ import SolTrace
 STIconButton {
     id: root
     icon: "\uf2ed"
-    label: "Delete"
+    label: qsTr("Delete")
 
     onClicked: delete_item_pop.open()
 
@@ -41,16 +41,14 @@ STIconButton {
             Label {
                 visible: root.isDangerous
                 Layout.fillWidth: true
-                text: `This %1 is assigned to active users, how should these be handled?
-                Delete and Unset will remove their %1 membership.
-                Alternatively, you can delete this %1 and reassign those users to another %1.`
-                .arg(root.itemType)
+                text: qsTr("This %1 is assigned to active users, how should these be handled?\nDelete and Unset will remove their %1 membership.\nAlternatively, you can delete this %1 and reassign those users to another %1.")
+                    .arg(root.itemType)
             }
 
             Label {
                 visible: !root.isDangerous
                 Layout.fillWidth: true
-                text: "Confirm?"
+                text: qsTr("Confirm?")
             }
         }
 

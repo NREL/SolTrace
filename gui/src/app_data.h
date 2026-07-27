@@ -5,12 +5,11 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QSharedPointer>
+#include <QTranslator>
 
 #include "logging.h"
 #include "utilities/notification.h"
 #include "utilities/qt_helpers.h"
-
-#include <backend.h>
 
 #include <modules/database_module.h>
 #include <modules/documentation_module.h>
@@ -78,6 +77,7 @@ class AppData : public QObject {
     void load_session();
     void save_session();
     void clear_session();
+    void apply_ui_locale(DocumentationModule::Locale locale);
 
 public:
     Q_READONLY_PROPERTY(QString, current_version_info);
@@ -119,6 +119,11 @@ public:
     QOBJECT_READONLY_PROPERTY(ExportModule, exporter)
 
     QOBJECT_READONLY_PROPERTY(Script::Script, script)
+
+private:
+    QPointer<QQmlEngine> m_engine;
+    QTranslator          m_ui_translator;
+    bool                 m_ui_translator_installed = false;
 
 signals:
     void notification(ANotification);

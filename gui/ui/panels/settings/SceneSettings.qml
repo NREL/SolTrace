@@ -47,17 +47,24 @@ ScrollView {
             title: "Sky"
             collapsed: false
 
-            RowLayout {
+            GridLayout {
                 Layout.fillWidth: true
 
 
                 STComboBox {
-                    model: ["Day", "Blueprint", "Adaptive"]
+                    Layout.row: 0
+                    Layout.column: 0
+
+                    model: ["Day", "Blueprint", "Adaptive", "Realistic"]
                     currentIndex: App.view.sim.sky
                     onCurrentIndexChanged: App.view.sim.sky = currentIndex
                 }
 
                 STIconButton {
+                    Layout.row: 0
+                    Layout.column: 1
+                    Layout.alignment: Qt.AlignLeft
+
                     icon: "\uf059"
                     onClicked: skyInfo.open()
 
@@ -76,14 +83,45 @@ ScrollView {
                             text: "**Set the environment sky to one of the following options:**\n" +
                                   "- **Adaptive**: adapts to ray source elevation \n" +
                                   "- **Blueprint**: neutral gray gradient\n" +
-                                  "- **Day**: bright blue sky"
+                                  "- **Day**: bright blue sky\n" +
+                                  "- **Realistic**: decorative, realistic skies"
                         }
 
                     }
                 }
+
+                Item {
+                    Layout.row: 0
+                    Layout.column: 2
+                    Layout.fillWidth: true
+                }
+
+                Label {
+                    id: realisticSkyDisclaimer
+
+                    Layout.row: 1
+                    Layout.columnSpan: 3
+                    Layout.fillWidth: true
+                    visible: App.view.sim.sky == SimulationViewState.Realistic
+
+                    textFormat: Text.MarkdownText
+                    wrapMode: Text.WordWrap
+                    text: "**Realistic skies are purely decorative and do not affect SolTrace's ray-trace results.**\n" +
+                          "Recommended for presentation-quality renders of optical systems and their ray-trace results.\n\n" +
+                          "**The sun embedded in the realistic sky does not affect Soltrace's ray source.**"
+                }
+
+                STComboBox {
+                    Layout.row: 2
+                    Layout.column: 0
+                    visible: App.view.sim.sky == SimulationViewState.Realistic
+
+                    model: ["Clear", "Partly Cloudy", "Low Sun"]
+                    currentIndex: App.view.sim.realistic_sky
+                    onCurrentIndexChanged: App.view.sim.realistic_sky = currentIndex
+                }
             }
         }
-
 
         STPropertyPanel {
             Layout.fillWidth: true
@@ -115,6 +153,19 @@ ScrollView {
                     checked: App.view.sim.sun_viz
                     onToggled: App.view.sim.sun_viz = checked
                 }
+            }
+        }
+
+        STPropertyPanel {
+            Layout.fillWidth: true
+
+            title: "Other"
+            collapsed: false
+
+            STSwitch {
+                text: "Show Infinite Grid"
+                checked: App.view.sim.show_grid
+                onToggled: App.view.sim.show_grid = checked
             }
         }
 

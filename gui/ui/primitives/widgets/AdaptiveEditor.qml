@@ -13,10 +13,10 @@ Item {
     property bool editing: false
 
     // Width threshold for switching between stacked and side-by-side
-    property int wideThreshold: 500
+    property int wideThreshold: 650
 
     // List side preferred width in wide modes
-    property int listWidth: 250
+    property int listWidth: 200
 
     // The delegate used for each row in the list
     property Component listDelegate: null

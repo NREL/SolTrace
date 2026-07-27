@@ -28,7 +28,7 @@ ListView {
         width: root.width
 
         Label {
-            text: "Angle (mrad)"
+            text: qsTr("Angle (mrad)")
             Layout.fillWidth: true
             font.bold: true
 
@@ -36,7 +36,7 @@ ListView {
         }
 
         Label {
-            text: "Intensity"
+            text: qsTr("Intensity")
             Layout.fillWidth: true
             font.bold: true
         }
@@ -96,7 +96,7 @@ ListView {
     footer: STButton {
         width: root.width
 
-        text: "+ Add row"
+        text: qsTr("+ Add row")
         onClicked: App.sun.shape.custom_distribution.append(root.nextAngle(), 0)
     }
 }

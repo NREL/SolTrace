@@ -40,7 +40,6 @@ Flickable {
 
         InlineDocumentation {
             key: "analyze.flux"
-            target: App.view.left_panel
         }
 
         STPropertyPanel {
@@ -80,6 +79,13 @@ Flickable {
                 collapseLabels: AppData.view.left_panel.size === SplitPanelData.Small
                 iconModel: ["\uf00a", "\uf141"]
                 model: ["Bins", "Points"]
+            }
+
+            STSwitch {
+                Layout.columnSpan: 2
+                text: "Show Whole Scene"
+                checked: AppData.flux.show_other_geometry
+                onToggled: AppData.flux.show_other_geometry = checked
             }
 
             STPropertyLabel {
@@ -249,6 +255,9 @@ Flickable {
 
         STPropertyPanel {
             Layout.fillWidth: true
+
+            // Disable for now until this is a working feature
+            visible: false
 
             collapsible: true
             title: "Flux Volume"

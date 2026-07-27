@@ -1,10 +1,12 @@
 #pragma once
 
+#include "analysis/ray_geometry.h"
+#include "database/simulationresult.h"
+#include "module_common.h"
+#include "utilities/qt_helpers.h"
+
 #include <QObject>
 #include <QVector3D>
-#include "utilities/qt_helpers.h"
-#include "backend.h"
-#include "module_common.h"
 
 namespace SolTrace::GUI::App {
 

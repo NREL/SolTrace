@@ -7,7 +7,11 @@ ViewModule::ViewModule(QObject* parent)
       m_left_panel(new SplitPanelData(this)),
       m_right_panel(new SplitPanelData(this)),
       m_full_panel(new FullPanelData(this)),
-      m_sim(new SimulationViewState(this)) { }
+      m_sim(new SimulationViewState(this)) {
+    connect(this, &ViewModule::workflow_phase_changed, this, [this] {
+        set_simulation_content_view(m_workflow_phase == WorkflowPhase::Analyze);
+    });
+}
 
 void SplitPanelData::update_size() {
     PanelSize new_size;

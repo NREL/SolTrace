@@ -18,6 +18,10 @@ Item {
     }
 
     function open_file() {
+        if (App.file_source.open_file_dialog()) {
+            return
+        }
+
         if (file_settings.last_selected_file.toString() !== "")
             openFileDialog.selectedFile = file_settings.last_selected_file
         openFileDialog.open()

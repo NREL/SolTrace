@@ -15,9 +15,8 @@ STPopup {
     ColumnLayout {
         anchors.fill: parent
         InlineDocumentation {
-            key: "placeholder_small"
+            key: "view.camera"
             title: "Cameras"
-            target: AppData.view.left_panel
         }
 
         STComboBar {
@@ -41,9 +40,8 @@ STPopup {
         }
 
         InlineDocumentation {
-            key: "placeholder_small"
+            key: "view.perspective"
             title: "Camera Perspectives"
-            target: AppData.view.left_panel
         }
 
         STComboBar {

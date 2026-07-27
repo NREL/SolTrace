@@ -6,6 +6,9 @@
 #include <QFileInfo>
 #include <QFileInfoList>
 #include <QMap>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QStringList>
 #include <QTextStream>
 
@@ -36,7 +39,12 @@ QStringList inline get_subfolders(const QDir &dir) {
 class MarkdownDocument {
 public:
   MarkdownDocument(const QStringList &metadata, const QString &body)
-      : m_metadata(metadata), m_body(body) {}
+      : m_metadata(metadata), m_body(body), m_blocks_json("[]") {}
+
+  MarkdownDocument(const QStringList &metadata,
+                   const QString &body,
+                   const QString &blocks_json)
+      : m_metadata(metadata), m_body(body), m_blocks_json(blocks_json) {}
 
   QString metadata(QString key) {
     int index = m_metadata.indexOf(key.toLower());
@@ -48,6 +56,8 @@ public:
 
   QString body() { return m_body; }
 
+  QString blocks_json() { return m_blocks_json; }
+
   void set_metadata(const QString &key, const QString &value) {
     m_metadata.append(key);
     m_metadata.append(value);
@@ -56,6 +66,7 @@ public:
 private:
   QStringList m_metadata;
   const QString m_body;
+  const QString m_blocks_json;
 };
 
 inline MarkdownDocument  *parse_markdown_file(QFile &file) {
@@ -94,6 +105,40 @@ inline MarkdownDocument  *parse_markdown_file(QFile &file) {
   body = raw.mid(end + 3).trimmed();
 
   return new MarkdownDocument(metadata, body);
+};
+
+inline MarkdownDocument *parse_processed_doc_file(QFile &file) {
+  QFileInfo info(file);
+  QString raw = read_file(file);
+
+  QJsonParseError error;
+  auto document = QJsonDocument::fromJson(raw.toUtf8(), &error);
+  if (error.error != QJsonParseError::NoError || !document.isObject()) {
+    qDebug() << "Cannot parse processed docs:" << info.canonicalFilePath()
+             << error.errorString();
+    return new MarkdownDocument({}, "ERROR: invalid processed documentation");
+  }
+
+  auto object = document.object();
+  auto metadata_object = object.value("metadata").toObject();
+  QStringList metadata;
+
+  for (auto iter = metadata_object.begin(); iter != metadata_object.end(); ++iter) {
+    metadata.append(iter.key());
+    metadata.append(iter.value().toString());
+  }
+
+  auto blocks = object.value("blocks").toArray();
+  QStringList body_parts;
+  for (auto const &value : blocks) {
+    auto block = value.toObject();
+    if (block.value("type").toString() == "text") {
+      body_parts.append(block.value("content").toString());
+    }
+  }
+
+  auto blocks_json = QString::fromUtf8(QJsonDocument(blocks).toJson(QJsonDocument::Compact));
+  return new MarkdownDocument(metadata, body_parts.join(""), blocks_json);
 };
 
 } // namespace SolTrace::GUI::App

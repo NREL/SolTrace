@@ -48,7 +48,6 @@ Flickable {
 
         InlineDocumentation {
             key: "analyze.intersections"
-            target: App.view.left_panel
         }
 
         Label {
@@ -98,6 +97,24 @@ Flickable {
                     onModified: function(filter) {
                         root.ray_geom.event_include = filter
                     }
+                }
+            }
+
+            STPropertyLabel {
+                text: "Color mode"
+                Layout.alignment: root.labelAlignment
+            }
+
+            STComboBar {
+                Layout.fillWidth: true
+                currentIndex: root.ray_geom.texture_mode === RayGeometry.Segment
+                              ? 1 : 0
+                model: ["Length", "Segments"]
+
+                onCurrentIndexChanged: {
+                    root.ray_geom.texture_mode = currentIndex === 0
+                            ? RayGeometry.Length
+                            : RayGeometry.Segment
                 }
             }
 

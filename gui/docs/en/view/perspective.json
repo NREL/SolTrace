@@ -1,0 +1,1 @@
+{"metadata": {"title": "Perspective"}, "blocks": [{"type": "text", "content": "Perspective controls switch between projection modes for the 3D view. Perspective projection gives depth cues, while orthographic projection keeps parallel edges visually parallel.\n\nChoose the mode that makes the current alignment or inspection task easiest to read."}]}
