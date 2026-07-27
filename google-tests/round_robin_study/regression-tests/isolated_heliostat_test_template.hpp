@@ -178,7 +178,7 @@ public:
         mirror_opt_set.set_reflectivity(SolTrace::Data::OpticalSide::Front, 0.9);
         mirror_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Back);
         mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Front, SolTrace::Data::DistributionType::GAUSSIAN, mirror_slope_error, 0.0);
-        mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Back, SolTrace::Data::DistributionType::GAUSSIAN, 0.95, 0.2);
+        mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Back, SolTrace::Data::DistributionType::NONE, 0.0, 0.0);
         auto active_mirror_ref = simData.add_optical_property_set(mirror_opt_set);
 
         // Reading in field layout and aimpoints
@@ -267,8 +267,8 @@ public:
         SolTrace::Data::OpticalPropertySet mirror_opt_set(SolTrace::Data::InteractionType::REFLECTION, "BlockingHeliostatMirrorOptics");
         mirror_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Front);
         mirror_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Back);
-        mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Front, SolTrace::Data::DistributionType::GAUSSIAN, 0.95, 0.0);
-        mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Back, SolTrace::Data::DistributionType::GAUSSIAN, 0.95, 0.2);
+        mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Front, SolTrace::Data::DistributionType::NONE, 0.0, 0.0);
+        mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Back, SolTrace::Data::DistributionType::NONE, 0.0, 0.0);
         auto blocking_mirror_ref = simData.add_optical_property_set(mirror_opt_set);
 
 
@@ -473,6 +473,10 @@ public:
         mirror_slope_error = err;
     }
 
+    void set_no_optical_error(){
+        use_optical_errors = false;
+    }
+
     void shift_aimpoint(glm::dvec3 shift){
         aimpoint_shift = shift;
     }
@@ -490,8 +494,7 @@ public:
         // Initial setup of receiver
         receiver = SolTrace::Data::make_element<SingleElement>();
         SolTrace::Data::OpticalPropertySet receiver_opt_set(SolTrace::Data::InteractionType::REFLECTION, "ReceiverOptics");
-        receiver_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Front);
-        receiver_opt_set.set_ideal_reflection(SolTrace::Data::OpticalSide::Back);
+        receiver_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Both);
         auto receiver_ref = simData.add_optical_property_set(receiver_opt_set);
         receiver->set_optical_property_set(receiver_ref);
         receiver->set_aperture(SolTrace::Data::make_aperture<SolTrace::Data::Rectangle>(rec_radius * 2.0, rec_height));

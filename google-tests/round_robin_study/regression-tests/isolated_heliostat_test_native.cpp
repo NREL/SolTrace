@@ -8,9 +8,15 @@ using IsolatedHeliostatSimulationNative = IsolatedHeliostatSimulation<NativeRunn
 
 static const int N_threads = static_cast<int>(std::max(1u, std::min(std::thread::hardware_concurrency(), 10u)));
 
-//DEFAULT IS FACET FOCUS TO SLANT RANGE
+/*
+DEFAULT IS FACET FOCUS TO SLANT RANGE
+Tests were based off of Phase III of the round robin paper. 
+Some stinput files provided had differences from the paper, and some tests needed further adjustments to match the result fluxmaps.
+Edits are noted by each test.
+*/
 
-//task 4a: r f 6x5, canting by band, facet focusing by band
+//task 4a: ommited because it is missing fluxmap file for result comparison
+//stinput differences: receiver origin at {0,0,171.035}, flat facets
 
 /*TEST_F(IsolatedHeliostatSimulationNative, multiFacet1332_BlockingShading4a)
 {
@@ -31,10 +37,11 @@ static const int N_threads = static_cast<int>(std::max(1u, std::min(std::thread:
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("4a", "1");
-    //simulate_check_outputs("7b", "1");
 }*/
 
-//task 4b: r p 6x5, canting by band, facet focusing by band
+//task 4b: 
+//stinput differences: receiver origin {0,0,171.035}
+//edits: no slope error
 TEST_F(IsolatedHeliostatSimulationNative, multiFacet8993_BlockingShading4b)
 {
     this->runner.set_number_of_threads(N_threads);
@@ -60,16 +67,19 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet8993_BlockingShading4b)
 
 }
 
-//task 4c: r f 6x5, canting by band, facet focusing by band
+//task 4c: 
+// omitted due to significant differences in blocking heliostats between paper and stinput file. 
+// Running with input file scenario would require a large amount of rays
 
-TEST_F(IsolatedHeliostatSimulationNative, multiFacet5473_BlockingShading4c)
+/*TEST_F(IsolatedHeliostatSimulationNative, multiFacet5473_BlockingShading4c)
 {
     this->runner.set_number_of_threads(N_threads);
 
     // Centerline aimpoints
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
-    set_flat_facets();
+    //set_flat_facets();
+    //set_slope_error(0.0);
     std::vector<int> active {5473};
     std::vector<int> blocking {5573};
     create_active_heliostats(active);
@@ -78,14 +88,20 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet5473_BlockingShading4c)
     assign_canted_banded(false);
     assign_canted_banded(true);
 
+    assign_focal_lengths_banded(false);
+    assign_focal_lengths_banded(true);
+
+    //set_no_sunShape();
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("4c", "1");
 
-}
+}*/
 
-//task 4d: r p 1, facet focusing by slant range
-TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_4dLongerAimpoint8)
+
+//task 4d_8: 
+//edits: no slope error
+TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_AimingAccuracy4d_8)
 {
     this->runner.set_number_of_threads(N_threads);
     
@@ -95,11 +111,13 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_4dLongerAimpoint8)
     create_active_heliostats(active);
     setup_simData();
     
-    simulate_check_outputs("4d", "1", "8"); 
+    simulate_check_outputs("4d", "1", "8");
     
 }
 
-TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_4dLongerAimpoint12)
+//task 4d_12
+//edits: no slope error, no sunshape
+TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_AimingAccuracy4d_12)
 {
     this->runner.set_number_of_threads(N_threads);
     
@@ -111,11 +129,10 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_4dLongerAimpoint12)
     setup_simData();
     
     simulate_check_outputs("4d", "1", "12");
-
+  
 }
 
-
-//task 4e: r p 1, facet focusing by slant range
+//task 4e:
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemE4e)
 {
     this->runner.set_number_of_threads(N_threads);
@@ -126,17 +143,15 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemE4e)
     set_slope_error(0.0);
     std::vector<int> active {8993};
     create_active_heliostats(active);
-    
-    //  TODO: function that shifts aimpoint, no sun shape, no slope error
 
     set_no_sunShape();
     setup_simData();
-
+    
     simulate_check_outputs("4e", "1", "8");
     simulate_check_outputs("4e", "1", "12");
 }
 
-//task 4f: r p 1, facet focusing by slant range
+//task 4f: 
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemW4f)
 {
     this->runner.set_number_of_threads(N_threads);
@@ -147,8 +162,6 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemW4f)
     std::vector<int> active {8993};
     create_active_heliostats(active);
     
-    //  TODO: function that shifts aimpoint, no sun shape, no slope error
-    
     set_no_sunShape();
     setup_simData();
     
@@ -157,7 +170,7 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemW4f)
 
 }
 
-//task 4g: r p 1, facet focusing by slant range
+//task 4g:
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemU4g)
 {
     this->runner.set_number_of_threads(N_threads);
@@ -168,8 +181,6 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemU4g)
     std::vector<int> active {8993};
     create_active_heliostats(active);
     
-    //  TODO: function that shifts aimpoint, no sun shape, no slope error
-    
     set_no_sunShape();
     setup_simData();
 
@@ -178,7 +189,7 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemU4g)
 
 }
 
-//task 4h: r p 1, facet focusing by slant rangeTEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemD)
+//task 4h:
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemD4h)
 {
     this->runner.set_number_of_threads(N_threads);
@@ -189,8 +200,6 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemD4h)
     std::vector<int> active {8993};
     create_active_heliostats(active);
     
-    //  TODO: function that shifts aimpoint, no sun shape, no slope error
-    
     set_no_sunShape();
     setup_simData();
 
@@ -199,8 +208,9 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemD4h)
 
 }
 
-//task 4i: r f 1, facet focusing by slant range
-TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_4i_8)
+//task 4i:
+//stinput differences: flat facets 
+TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystem4i)
 {
     this->runner.set_number_of_threads(N_threads);
     set_slope_error(0.0);
@@ -208,30 +218,16 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_4i_8)
     std::vector<int> active {8993};
     create_active_heliostats(active);
     
-    //  TODO: function that shifts aimpoint, no sun shape, no slope error, FLAT??????
     set_no_sunShape();
     setup_simData();
 
     simulate_check_outputs("4i", "1", "8");
-
-}
-
-TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_4i_12)
-{
-    this->runner.set_number_of_threads(N_threads);
-    set_slope_error(0.0);
-    set_flat_facets();
-    std::vector<int> active {8993};
-    create_active_heliostats(active);
-    
-    //  TODO: function that shifts aimpoint, no sun shape, no slope error, FLAT??????
-    set_no_sunShape();
-    setup_simData();
-
     simulate_check_outputs("4i", "1", "12");
 
 }
-//task 5a: r p 6x5, canting by band, facet focusing by band
+
+//task 5a: 
+//stinput differences: additional blocking heliostat 5321, receiver origin {0,0,171.035}
 TEST_F(IsolatedHeliostatSimulationNative, multiFacet1332_BlockingShading5a)
 {
     this->runner.set_number_of_threads(N_threads);
@@ -251,16 +247,16 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet1332_BlockingShading5a)
     assign_focal_lengths_banded(true);
 
     setup_simData();
-    
-    //update_simulation_geometry(74.95, 26.26);
+
     update_from_hour("8");
-    simulate_check_outputs("5a", "1"); 
+    simulate_check_outputs("5a", "1");
 
 }
 
-//task 5b: NO FILE r  1, 
+//task 5b: NO FILE
 
-//task 6a: r f 6x5, canting by band, flat
+//task 6a:
+//stinput differences: receiver origin {0,0,171.035}
 TEST_F(IsolatedHeliostatSimulationNative, multiFacet1332_CantingAccuracy6a)
 {
     this->runner.set_number_of_threads(N_threads);
@@ -280,12 +276,14 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet1332_CantingAccuracy6a)
 
 }
 
-//task 6b: NO FILE r  1, facet focusing by slant range
+//task 6b: NO FILE
 
-//task 6c: NO FILE r  1
+//task 6c: NO FILE
 
-//task 7a: r p 6x5, canting by slant range, facet focusing by slant range
-TEST_F(IsolatedHeliostatSimulationNative, multiFacet5473_CantingFocusingAccuracy7a) //0 slope error
+//task 7a:
+//stinput differences: reveiver origin {0,0,171.035}
+//edits: shift in aimpoint due to truncation error in legacy when round robin study generated fluxmaps
+TEST_F(IsolatedHeliostatSimulationNative, multiFacet5473_CantingFocusingAccuracy7a) 
 {
     this->runner.set_number_of_threads(N_threads);
     // Centerline aimpoints
@@ -306,8 +304,10 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet5473_CantingFocusingAccuracy
 
 }
 
-//task 7b: r p 1, facet focusing by slant range
-TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_7b) //0 slope error
+//task 7b:
+//stinput differences: reveiver origin {0,0,171.035}
+//edits: shift in aimpoint due to truncation error in legacy when round robin study generated fluxmaps
+TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_AimingAccuracy7b)
 {
     this->runner.set_number_of_threads(N_threads);
     // Centerline aimpoints
@@ -325,20 +325,10 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_7b) //0 slope error
 
 }
 
-TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_7bLongerAimpoint_8) //0 slope error
-{
-    this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
-    set_slope_error(0.0);
-    std::vector<int> active {5473};
-    create_active_heliostats(active);
-    setup_simData();
-    simulate_check_outputs("7b", "1", "8");
-
-}
-
-//task 7c: r p 1, facet focusing by slant range
-TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_BlockingShading7c) //0 slope error
+//task 7c:
+//stinput differences: reveiver origin {0,0,171.035}
+//edits: shift in aimpoint due to truncation error in legacy when round robin study generated fluxmaps
+TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_BlockingShading7c) 
 {
     this->runner.set_number_of_threads(N_threads);
     // Centerline aimpoints
@@ -358,5 +348,16 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_BlockingShading7c) //0
     simulate_check_outputs("7c", "1");
 
 }
+//7d: named 7b_8 in round robin files but matches 7d case
+//stinput differences: reveiver origin {0,0,171.035}
+TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_AimingAccuracy7d)
+{
+    this->runner.set_number_of_threads(N_threads);
+    // Centerline aimpoints
+    set_slope_error(0.0);
+    std::vector<int> active {5473};
+    create_active_heliostats(active);
+    setup_simData();
+    simulate_check_outputs("7b", "1", "8");
 
-//task 7d: NO FILE r p 1 (guess)
+}
