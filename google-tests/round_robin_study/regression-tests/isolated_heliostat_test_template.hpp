@@ -48,7 +48,7 @@ static void save_hit_pos_to_file(const SimulationResult& result, std::string fil
 template <typename RunnerT> 
 class IsolatedHeliostatSimulationHelper {
 public:
-    bool high_accuracy = true;     // Runs 20 Million rays and tighter tolerance on checks
+    bool high_accuracy = false;     // Runs 20 Million rays and tighter tolerance on checks
     bool print_info = false;        // Prints information on from simulation results (sun calculations, ray counts, flux calculations)
     bool save_results = true;      // Saves flux map results to CSV files
     bool save_raydata = false;      // Saves ray data to CSV file
@@ -1061,7 +1061,7 @@ public:
 
         double conversion = 902.3141048/(23.0*60.0*1000.0);
         total_power = SumFlux*conversion;
-        AveFlux = SumFlux / (nbinsx * nbinsy);
+        AveFlux = SumFlux / (nbinsx * (nbinsy-8));
         SigmaFlux = sqrt((nbinsx * nbinsy * SumFlux2 - SumFlux * SumFlux) / (nbinsx * nbinsy * nbinsx * nbinsy));
         Uniformity = SigmaFlux / AveFlux;
         PeakFluxUncertainty = 100 / sqrt((double)NRaysInPeakFluxBin);

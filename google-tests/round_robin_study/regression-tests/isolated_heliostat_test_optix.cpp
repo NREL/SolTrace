@@ -100,6 +100,9 @@ static void CompareRunners(IsolatedHeliostatSimulationHelper<EmbreeRunner>& sim_
 	EXPECT_EQ(sim_embree.tot_rec_hits, sim_embree.rec_direct_count + sim_embree.rec_via_helio_count + sim_embree.rec_via_rec_count);
 	EXPECT_EQ(sim_optix.tot_rec_hits, sim_optix.rec_direct_count + sim_optix.rec_via_helio_count + sim_optix.rec_via_rec_count);
 
+	double refl_embree = (double)sim_embree.tot_reflect_count / (double)sim_embree.tot_helio_hits;
+	double refl_optix = (double)sim_optix.tot_reflect_count / (double)sim_optix.tot_helio_hits;
+
 	write_to_dict("09_reflectivity", refl_embree, refl_optix, dict_embree, dict_optix);
 
 	// Sun Count
