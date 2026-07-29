@@ -25,6 +25,7 @@ set(OPTIX_RUNNER_TEST_SRC
     batch_size_test.cpp
     max_ray_depth_test.cpp
     blocking_dist_test.cpp
+    blocking_dist_err_test.cpp
 )
 
 add_executable(OptixRunnerUnitTests
