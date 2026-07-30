@@ -2,17 +2,12 @@
 
 #include <embree_runner.hpp>
 #include <optix_runner.hpp>
-#include <native_runner.hpp>
-
-using SolTrace::NativeRunner::NativeRunner;
-using OptixRunnerType = OptixRunner;
-using NativeRunnerType = NativeRunner;
 
 using SolTrace::EmbreeRunner::EmbreeRunner;
 
 constexpr uint_fast64_t N_rays_glob = 2e6;
 constexpr int seed = 123;
-constexpr bool save = true;
+constexpr bool save = false;
 constexpr bool save_hits = false;
 constexpr bool ignore_direct = true;
 
@@ -70,7 +65,6 @@ static void CompareRunners(IsolatedHeliostatSimulationHelper<EmbreeRunner>& sim_
 	EXPECT_NEAR(sim_embree.tot_reflect_count, sim_optix.tot_reflect_count, err_abs);
 	EXPECT_NEAR(sim_embree.rec_absorb_count, sim_optix.rec_absorb_count, err_abs);
 	EXPECT_NEAR(sim_embree.tot_helio_block_count, sim_optix.tot_helio_block_count, err_abs);
-	//EXPECT_NEAR(sim_embree.heat_shield_absorb_count, sim_optix.heat_shield_absorb_count, err_abs);
 	
 	EXPECT_NEAR(sim_embree.rec_direct_count, sim_optix.rec_direct_count, err_abs);
 	EXPECT_NEAR(sim_embree.rec_via_helio_count, sim_optix.rec_via_helio_count, err_abs);
@@ -87,10 +81,9 @@ static void CompareRunners(IsolatedHeliostatSimulationHelper<EmbreeRunner>& sim_
 	write_to_dict("02_tot_reflect_count", sim_embree.tot_reflect_count, sim_optix.tot_reflect_count, dict_embree, dict_optix);
 	write_to_dict("03_rec_absorb_count", sim_embree.rec_absorb_count, sim_optix.rec_absorb_count, dict_embree, dict_optix);
 	write_to_dict("04_tot_helio_block_count", sim_embree.tot_helio_block_count, sim_optix.tot_helio_block_count, dict_embree, dict_optix);
-	//write_to_dict("05_heat_shield_absorb_count", sim_embree.heat_shield_absorb_count, sim_optix.heat_shield_absorb_count, dict_embree, dict_optix);
-	write_to_dict("06_tot_rec_hits", sim_embree.tot_rec_hits, sim_optix.tot_rec_hits, dict_embree, dict_optix);
-	write_to_dict("07_rec_direct_count", sim_embree.rec_direct_count, sim_optix.rec_direct_count, dict_embree, dict_optix);
-	write_to_dict("08_rec_via_helio_count", sim_embree.rec_via_helio_count, sim_optix.rec_via_helio_count, dict_embree, dict_optix);
+	write_to_dict("05_tot_rec_hits", sim_embree.tot_rec_hits, sim_optix.tot_rec_hits, dict_embree, dict_optix);
+	write_to_dict("06_rec_direct_count", sim_embree.rec_direct_count, sim_optix.rec_direct_count, dict_embree, dict_optix);
+	write_to_dict("07_rec_via_helio_count", sim_embree.rec_via_helio_count, sim_optix.rec_via_helio_count, dict_embree, dict_optix);
 
 	// Helio hits add up
 	EXPECT_EQ(sim_embree.tot_helio_hits, sim_embree.tot_helio_absorb_count + sim_embree.tot_reflect_count);
@@ -103,26 +96,26 @@ static void CompareRunners(IsolatedHeliostatSimulationHelper<EmbreeRunner>& sim_
 	double refl_embree = (double)sim_embree.tot_reflect_count / (double)sim_embree.tot_helio_hits;
 	double refl_optix = (double)sim_optix.tot_reflect_count / (double)sim_optix.tot_helio_hits;
 
-	write_to_dict("09_reflectivity", refl_embree, refl_optix, dict_embree, dict_optix);
+	write_to_dict("08_reflectivity", refl_embree, refl_optix, dict_embree, dict_optix);
 
 	// Sun Count
-	write_to_dict("10_sun_count", sim_embree.nsun_rays, sim_optix.nsun_rays, dict_embree, dict_optix);
+	write_to_dict("09_sun_count", sim_embree.nsun_rays, sim_optix.nsun_rays, dict_embree, dict_optix);
 
 	// Fraction reflected hits that hit receiver
 	double frac_via_helio_a = ((double)sim_embree.rec_absorb_count - (double)sim_embree.rec_direct_count) / (double)sim_embree.tot_reflect_count;
 	double frac_via_helio_b = ((double)sim_optix.rec_absorb_count - (double)sim_optix.rec_direct_count) / (double)sim_optix.tot_reflect_count;
 	EXPECT_NEAR(frac_via_helio_a, frac_via_helio_b, err_frac);
 
-	write_to_dict("11_frac_via_helio", frac_via_helio_a, frac_via_helio_b, dict_embree, dict_optix);
+	write_to_dict("10_frac_via_helio", frac_via_helio_a, frac_via_helio_b, dict_embree, dict_optix);
 
 	// Compare power per ray
-	write_to_dict("12_power_per_ray", sim_embree.power_per_ray, sim_optix.power_per_ray, dict_embree, dict_optix);
+	write_to_dict("11_power_per_ray", sim_embree.power_per_ray, sim_optix.power_per_ray, dict_embree, dict_optix);
 
 	// Total power absorbed
 	double tol = 8.e-3;
 	EXPECT_NEAR(sim_embree.total_power, sim_optix.total_power, tol * sim_embree.total_power);
 
-	write_to_dict("13_total_power", sim_embree.total_power, sim_optix.total_power, dict_embree, dict_optix);
+	write_to_dict("12_total_power", sim_embree.total_power, sim_optix.total_power, dict_embree, dict_optix);
 
 	// Peak flux
 	double peak_tol = 0.25;
@@ -130,7 +123,7 @@ static void CompareRunners(IsolatedHeliostatSimulationHelper<EmbreeRunner>& sim_
 	double peak_flux_optix = sim_optix.PeakFlux / 1.e3;
 	EXPECT_NEAR(peak_flux_embree, peak_flux_optix, peak_tol * peak_flux_embree);
 
-	write_to_dict("14_peak_flux", peak_flux_embree, peak_flux_optix, dict_embree, dict_optix);
+	write_to_dict("13_peak_flux", peak_flux_embree, peak_flux_optix, dict_embree, dict_optix);
 
 	// RMS of flux values
 	EXPECT_EQ(sim_embree.fluxGrid.nrows(), sim_optix.fluxGrid.nrows());
@@ -151,22 +144,22 @@ static void CompareRunners(IsolatedHeliostatSimulationHelper<EmbreeRunner>& sim_
 	// Average flux
 	//EXPECT_NEAR(sim_embree.AveFlux / 1000.0, sim_optix.AveFlux / 1000.0, rmse_tol);
 
-	write_to_dict("15_average_flux", sim_embree.AveFlux / 1000.0, sim_optix.AveFlux / 1000.0, dict_embree, dict_optix);
+	write_to_dict("14_average_flux", sim_embree.AveFlux / 1000.0, sim_optix.AveFlux / 1000.0, dict_embree, dict_optix);
 
 	// Binning
 	//EXPECT_EQ(sim_embree.NotBinned, sim_optix.NotBinned);
 
-	write_to_dict("16_not_binned", sim_embree.NotBinned, sim_optix.NotBinned, dict_embree, dict_optix);
-	write_to_dict("17_neg_x_bin_err", sim_embree.max_neg_x_flux_err, sim_optix.max_neg_x_flux_err, dict_embree, dict_optix);
-	write_to_dict("18_pos_x_bin_err", sim_embree.max_pos_x_flux_err, sim_optix.max_pos_x_flux_err, dict_embree, dict_optix);
+	write_to_dict("15_not_binned", sim_embree.NotBinned, sim_optix.NotBinned, dict_embree, dict_optix);
+	write_to_dict("16_neg_x_bin_err", sim_embree.max_neg_x_flux_err, sim_optix.max_neg_x_flux_err, dict_embree, dict_optix);
+	write_to_dict("17_pos_x_bin_err", sim_embree.max_pos_x_flux_err, sim_optix.max_pos_x_flux_err, dict_embree, dict_optix);
 
-	write_to_dict("20_sigmaflux", sim_embree.SigmaFlux, sim_optix.SigmaFlux, dict_embree, dict_optix);
-	write_to_dict("21_uniformity", sim_embree.Uniformity, sim_optix.Uniformity, dict_embree, dict_optix);
-	write_to_dict("22_rmse", rmse, rmse, dict_embree, dict_optix);
+	write_to_dict("18_sigmaflux", sim_embree.SigmaFlux, sim_optix.SigmaFlux, dict_embree, dict_optix);
+	write_to_dict("19_uniformity", sim_embree.Uniformity, sim_optix.Uniformity, dict_embree, dict_optix);
+	write_to_dict("20_rmse", rmse, rmse, dict_embree, dict_optix);
 	double rmse_over_peak = rmse / (peak_flux_embree);
-	write_to_dict("23_rmse_over_peak", rmse_over_peak, rmse_over_peak, dict_embree, dict_optix);
+	write_to_dict("21_rmse_over_peak", rmse_over_peak, rmse_over_peak, dict_embree, dict_optix);
 
-	write_to_dict("24_rec_via_rec_count", sim_embree.rec_via_rec_count, sim_optix.rec_via_rec_count, dict_embree, dict_optix);
+	write_to_dict("22_rec_via_rec_count", sim_embree.rec_via_rec_count, sim_optix.rec_via_rec_count, dict_embree, dict_optix);
 
 	if (save)
 	{
@@ -227,10 +220,8 @@ TEST(IsolatedHeliostatOptixEmbree, multiFacet1332_BlockingShading4a)
     sim_optix.create_active_heliostats(active);
     sim_optix.create_blocking_heliostats(blocking);
 
-    sim_embree.assign_canted_banded(false);
-    sim_embree.assign_canted_banded(true);
-    sim_optix.assign_canted_banded(false);
-    sim_optix.assign_canted_banded(true);
+    sim_embree.assign_canted_banded();
+    sim_optix.assign_canted_banded();
 
     sim_embree.setup_simData();
     sim_optix.setup_simData();
@@ -271,15 +262,11 @@ TEST(IsolatedHeliostatOptixEmbree, multiFacet8993_BlockingShading4b)
     sim_optix.create_active_heliostats(active);
     sim_optix.create_blocking_heliostats(blocking);
 
-    sim_embree.assign_canted_banded(false);
-    sim_embree.assign_canted_banded(true);
-    sim_optix.assign_canted_banded(false);
-    sim_optix.assign_canted_banded(true);
+    sim_embree.assign_canted_banded();
+    sim_optix.assign_canted_banded();
 
-    sim_embree.assign_focal_lengths_banded(false);
-    sim_embree.assign_focal_lengths_banded(true);
-    sim_optix.assign_focal_lengths_banded(false);
-    sim_optix.assign_focal_lengths_banded(true);
+    sim_embree.assign_focal_lengths_banded();
+    sim_optix.assign_focal_lengths_banded();
 
     sim_embree.setup_simData();
     sim_optix.setup_simData();
@@ -513,7 +500,7 @@ TEST(IsolatedHeliostatOptixEmbree,  singleFacet8993_TargetCoordSystemD4h)
 
 //task 4i:
 //stinput differences: flat facets 
-TEST(IsolatedHeliostatOptixEmbree,  singleFacet8993_4i_8)
+TEST(IsolatedHeliostatOptixEmbree,  singleFacet8993_4i)
 {
 	// Make embree
 	IsolatedHeliostatSimulationHelper<EmbreeRunner> sim_embree;
@@ -579,15 +566,11 @@ TEST(IsolatedHeliostatOptixEmbree, multiFacet1332_BlockingShading5a)
     sim_optix.create_active_heliostats(active);
     sim_optix.create_blocking_heliostats(blocking);
 
-    sim_embree.assign_canted_banded(false);
-    sim_embree.assign_canted_banded(true);
-    sim_optix.assign_canted_banded(false);
-    sim_optix.assign_canted_banded(true);
+    sim_embree.assign_canted_banded();
+    sim_optix.assign_canted_banded();
 
-    sim_embree.assign_focal_lengths_banded(false);
-    sim_embree.assign_focal_lengths_banded(true);
-    sim_optix.assign_focal_lengths_banded(false);
-    sim_optix.assign_focal_lengths_banded(true);
+    sim_embree.assign_focal_lengths_banded();
+    sim_optix.assign_focal_lengths_banded();
 
     sim_embree.setup_simData();
     sim_optix.setup_simData();
@@ -624,8 +607,8 @@ TEST(IsolatedHeliostatOptixEmbree, multiFacet1332_CantingAccuracy6a)
     sim_embree.create_active_heliostats(active);
     sim_optix.create_active_heliostats(active);
 
-    sim_embree.assign_canted_banded(true);
-    sim_optix.assign_canted_banded(true);
+    sim_embree.assign_canted_banded();
+    sim_optix.assign_canted_banded();
 
     sim_embree.setup_simData();
     sim_optix.setup_simData();
@@ -668,8 +651,8 @@ TEST(IsolatedHeliostatOptixEmbree, multiFacet5473_CantingFocusingAccuracy7a)
     sim_embree.create_active_heliostats(active);
     sim_optix.create_active_heliostats(active);
 
-    sim_embree.assign_canted_slant(true);
-    sim_optix.assign_canted_slant(true);
+    sim_embree.assign_canted_slant();
+    sim_optix.assign_canted_slant();
 
     sim_embree.setup_simData();
     sim_optix.setup_simData();

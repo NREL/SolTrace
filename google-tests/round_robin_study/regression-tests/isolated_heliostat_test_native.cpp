@@ -22,17 +22,17 @@ Edits are noted by each test.
 {
     this->runner.set_number_of_threads(N_threads);
 
-    // Centerline aimpoints
     set_flat_facets();
+
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
+    
     std::vector<int> active {1332};
     std::vector<int> blocking {1266, 1304, 1306};
     create_active_heliostats(active);
     create_blocking_heliostats(blocking);
 
-    assign_canted_banded(false);
-    assign_canted_banded(true);
+    assign_canted_banded();
 
     setup_simData();
     update_from_hour("12");
@@ -46,20 +46,18 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet8993_BlockingShading4b)
 {
     this->runner.set_number_of_threads(N_threads);
 
-    // Centerline aimpoints
     set_slope_error(0.0);
+
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
+
     std::vector<int> active {8993};
     std::vector<int> blocking {9100, 9102, 9208};
     create_active_heliostats(active);
     create_blocking_heliostats(blocking);
 
-    assign_canted_banded(false);
-    assign_canted_banded(true);
-    
-    assign_focal_lengths_banded(false);
-    assign_focal_lengths_banded(true);
+    assign_canted_banded(); 
+    assign_focal_lengths_banded();
 
     setup_simData();
     update_from_hour("12");
@@ -75,23 +73,17 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet8993_BlockingShading4b)
 {
     this->runner.set_number_of_threads(N_threads);
 
-    // Centerline aimpoints
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
-    //set_flat_facets();
-    //set_slope_error(0.0);
+    
     std::vector<int> active {5473};
     std::vector<int> blocking {5573};
     create_active_heliostats(active);
     create_blocking_heliostats(blocking);
 
-    assign_canted_banded(false);
-    assign_canted_banded(true);
+    assign_canted_banded();
+    assign_focal_lengths_banded();
 
-    assign_focal_lengths_banded(false);
-    assign_focal_lengths_banded(true);
-
-    //set_no_sunShape();
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("4c", "1");
@@ -105,12 +97,12 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_AimingAccuracy4d_8)
 {
     this->runner.set_number_of_threads(N_threads);
     
-    // Centerline aimpoint
     set_slope_error(0.0);
+
     std::vector<int> active {8993};
     create_active_heliostats(active);
+
     setup_simData();
-    
     simulate_check_outputs("4d", "1", "8");
     
 }
@@ -121,13 +113,13 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_AimingAccuracy4d_12)
 {
     this->runner.set_number_of_threads(N_threads);
     
-    // Centerline aimpoint
     set_slope_error(0.0);
+    
     std::vector<int> active {8993};
     create_active_heliostats(active);
+
     set_no_sunShape();
     setup_simData();
-    
     simulate_check_outputs("4d", "1", "12");
   
 }
@@ -137,16 +129,17 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemE4e)
 {
     this->runner.set_number_of_threads(N_threads);
 
-    // Centerline aimpoints
     glm::dvec3 shift = {-1,0,0};
     shift_aimpoint(shift);
+
     set_slope_error(0.0);
+
     std::vector<int> active {8993};
     create_active_heliostats(active);
 
     set_no_sunShape();
     setup_simData();
-    
+
     simulate_check_outputs("4e", "1", "8");
     simulate_check_outputs("4e", "1", "12");
 }
@@ -155,10 +148,12 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemE4e)
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemW4f)
 {
     this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
+    
     glm::dvec3 shift = {1,0,0};
     shift_aimpoint(shift);
+
     set_slope_error(0.0);
+
     std::vector<int> active {8993};
     create_active_heliostats(active);
     
@@ -174,10 +169,12 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemW4f)
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemU4g)
 {
     this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
+    
     glm::dvec3 shift = {0,0,1};
     shift_aimpoint(shift);
+
     set_slope_error(0.0);
+
     std::vector<int> active {8993};
     create_active_heliostats(active);
     
@@ -193,10 +190,12 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemU4g)
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemD4h)
 {
     this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
+    
     glm::dvec3 shift = {0,0,-1};
     shift_aimpoint(shift);
+
     set_slope_error(0.0);
+
     std::vector<int> active {8993};
     create_active_heliostats(active);
     
@@ -213,8 +212,10 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystemD4h)
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet8993_TargetCoordSystem4i)
 {
     this->runner.set_number_of_threads(N_threads);
+
     set_slope_error(0.0);
     set_flat_facets();
+
     std::vector<int> active {8993};
     create_active_heliostats(active);
     
@@ -232,19 +233,16 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet1332_BlockingShading5a)
 {
     this->runner.set_number_of_threads(N_threads);
 
-    // Centerline aimpoints
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
+
     std::vector<int> active {1332};
     std::vector<int> blocking {1266, 1304, 1306, 1334, 5321};
     create_active_heliostats(active);
     create_blocking_heliostats(blocking);
 
-    assign_canted_banded(false);
-    assign_canted_banded(true);
-    
-    assign_focal_lengths_banded(false);
-    assign_focal_lengths_banded(true);
+    assign_canted_banded();
+    assign_focal_lengths_banded();
 
     setup_simData();
 
@@ -261,14 +259,15 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet1332_CantingAccuracy6a)
 {
     this->runner.set_number_of_threads(N_threads);
 
-    // Centerline aimpoints
     set_flat_facets();
+
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
+
     std::vector<int> active {1332};
     create_active_heliostats(active);
 
-    assign_canted_banded(true);
+    assign_canted_banded();
 
     setup_simData();
     update_from_hour("12");
@@ -286,17 +285,19 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet1332_CantingAccuracy6a)
 TEST_F(IsolatedHeliostatSimulationNative, multiFacet5473_CantingFocusingAccuracy7a) 
 {
     this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
+    
     glm::dvec3 shift = {0,0,0.825};//due to truncation error in legacy
     shift_aimpoint(shift);
 
     set_slope_error(0.0);
+
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
+
     std::vector<int> active {5473};
     create_active_heliostats(active);
 
-    assign_canted_slant(true);
+    assign_canted_slant();
 
     setup_simData();
     update_from_hour("12");
@@ -310,15 +311,18 @@ TEST_F(IsolatedHeliostatSimulationNative, multiFacet5473_CantingFocusingAccuracy
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_AimingAccuracy7b)
 {
     this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
+    
     glm::dvec3 shift = {0,0,0.825};//due to truncation error in legacy
     shift_aimpoint(shift);
 
     set_slope_error(0.0);
+
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
+    
     std::vector<int> active {5473};
     create_active_heliostats(active);
+
     setup_simData();
     update_from_hour("12");
     simulate_check_outputs("7b", "1");
@@ -331,13 +335,15 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_AimingAccuracy7b)
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_BlockingShading7c) 
 {
     this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
+    
     glm::dvec3 shift = {0,0,0.825};//due to truncation error in legacy
     shift_aimpoint(shift);
 
     set_slope_error(0.0);
+
     glm::dvec3 origin = {0,0,171.035};
     set_rec_origin(origin);
+
     std::vector<int> active {5473};
     std::vector<int> blocking {5573};
     create_active_heliostats(active);
@@ -353,10 +359,12 @@ TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_BlockingShading7c)
 TEST_F(IsolatedHeliostatSimulationNative, singleFacet5473_AimingAccuracy7d)
 {
     this->runner.set_number_of_threads(N_threads);
-    // Centerline aimpoints
+    
     set_slope_error(0.0);
+
     std::vector<int> active {5473};
     create_active_heliostats(active);
+
     setup_simData();
     simulate_check_outputs("7b", "1", "8");
 

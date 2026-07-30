@@ -50,7 +50,7 @@ class IsolatedHeliostatSimulationHelper {
 public:
     bool high_accuracy = false;     // Runs 20 Million rays and tighter tolerance on checks
     bool print_info = false;        // Prints information on from simulation results (sun calculations, ray counts, flux calculations)
-    bool save_results = true;      // Saves flux map results to CSV files
+    bool save_results = false;      // Saves flux map results to CSV files
     bool save_raydata = false;      // Saves ray data to CSV file
 
     int seed = 123;
@@ -123,26 +123,15 @@ public:
     double max_pos_x_flux_err = 0;
 
     // Results
-    //double absorption_efficiency;
-    //double blocking_efficiency;
-    //double spillage_efficiency;
-    //double cosine_efficiency;
     double total_power;
 
     // Expected results
     double expected_power;
     double expected_peak_flux;
-    //double expected_flux_RMS;
-    //double expected_max_flux_RMS;
-
-    //double expected_cosine_efficiency;
-    //double expected_absorption_efficiency;
-    //double expected_blocking_efficiency;
-    //double expected_spillage_efficiency;
 
     HPM2D expected_fluxGrid;
 
-    // Helper initialization (what used to be in SetUp)
+    // Helper initialization
     void initialize() {
         // Set parameters
         set_default_params();
@@ -265,10 +254,8 @@ public:
     void create_blocking_heliostats(std::vector<int> blocking_indices) { //default is single facet 
         // Define mirror optical properties
         SolTrace::Data::OpticalPropertySet mirror_opt_set(SolTrace::Data::InteractionType::REFLECTION, "BlockingHeliostatMirrorOptics");
-        mirror_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Front);
-        mirror_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Back);
-        mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Front, SolTrace::Data::DistributionType::NONE, 0.0, 0.0);
-        mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Back, SolTrace::Data::DistributionType::NONE, 0.0, 0.0);
+        mirror_opt_set.set_ideal_absorption(SolTrace::Data::OpticalSide::Both);
+        mirror_opt_set.set_errors(SolTrace::Data::OpticalSide::Both, SolTrace::Data::DistributionType::NONE, 0.0, 0.0);
         auto blocking_mirror_ref = simData.add_optical_property_set(mirror_opt_set);
 
 
@@ -352,41 +339,28 @@ public:
             }
         }
     }
-    
-    void set_scatter_aimpoints() {
-        int helio_idx = 0;
+
+    void assign_focal_lengths_banded() {
+        
         for (const auto& heliostat : active_heliostats) {
             glm::dvec3 heliostat_origin = heliostat->get_origin_global();
             double distance = sqrt(pow(heliostat_origin.x, 2) + pow(heliostat_origin.y, 2));
-            glm::dvec3 aim_point = {rec_radius * (heliostat_origin.x / distance),
-                                    rec_radius * (heliostat_origin.y / distance),
-                                    rec_origin.z + scatter_aim_elevation[helio_idx]};
-            heliostat->set_target_position(aim_point);
+            double focal_length = 0.0;
+            if (distance <= 502.5)
+                focal_length = 353.8;
+            else if (distance > 502.5 && distance <= 878.0)
+                focal_length = 704.8;
+            else if (distance > 878.0 && distance <= 1253.5)
+                focal_length = 1072.5;
+            else if (distance > 1253.5 && distance <= 1650.0)
+                focal_length = 1444.3;
+            else
+                throw std::runtime_error("Heliostat distance out of range for banded focal lengths.");
+            heliostat->set_focal_length(focal_length);
             heliostat->create_geometry();
-            helio_idx++;
         }
-        for (const auto& heliostat : blocking_heliostats) {
-            glm::dvec3 heliostat_origin = heliostat->get_origin_global();
-            double distance = sqrt(pow(heliostat_origin.x, 2) + pow(heliostat_origin.y, 2));
-            glm::dvec3 aim_point = {rec_radius * (heliostat_origin.x / distance),
-                                    rec_radius * (heliostat_origin.y / distance),
-                                    rec_origin.z + scatter_aim_elevation[helio_idx]};
-            heliostat->set_target_position(aim_point);
-            heliostat->create_geometry();
-            helio_idx++;
-        }
-    }
 
-    void assign_focal_lengths_banded(bool active) {
-        //3b facet focal focused by band, canted by band, canted, r p 6x5
-        //
-        std::vector<std::shared_ptr<Heliostat>> heliostat_field;
-        if(active){
-            heliostat_field = active_heliostats;
-        }else{
-            heliostat_field = blocking_heliostats;
-        }
-        for (const auto& heliostat : heliostat_field) {
+        for (const auto& heliostat : blocking_heliostats) {
             glm::dvec3 heliostat_origin = heliostat->get_origin_global();
             double distance = sqrt(pow(heliostat_origin.x, 2) + pow(heliostat_origin.y, 2));
             double focal_length = 0.0;
@@ -405,39 +379,30 @@ public:
         }
     }
 
-    void assign_canted_slant(bool active) {
-        //2a canted to slant range, canted, r f 6x5
-        //3a facet focal slant range, canted to slant range, canted, r p 6x5
-        std::vector<std::shared_ptr<Heliostat>> heliostat_field;
-        if(active){
-            heliostat_field = active_heliostats;
-        }else{
-            heliostat_field = blocking_heliostats;
-        }
-        for (const auto& heliostat : heliostat_field) {
+    void assign_canted_slant() {
+        
+        for (const auto& heliostat : active_heliostats) {
             glm::dvec3 slant = -rec_origin + heliostat->get_origin_global();
             double slant_distance = glm::length(slant);
             heliostat->set_number_panels(6, 5);
             heliostat->set_gaps(0.02, 0.02);
             heliostat->set_canting(Heliostat::CantingType::ON_AXIS, slant_distance, 0.0);
+            heliostat->create_geometry();
+        }
 
-            //if (flat_facets) heliostat->set_focal_length(0.0);   // Flat facets
-
+        for (const auto& heliostat : blocking_heliostats) {
+            glm::dvec3 slant = -rec_origin + heliostat->get_origin_global();
+            double slant_distance = glm::length(slant);
+            heliostat->set_number_panels(6, 5);
+            heliostat->set_gaps(0.02, 0.02);
+            heliostat->set_canting(Heliostat::CantingType::ON_AXIS, slant_distance, 0.0);
             heliostat->create_geometry();
         }
     }
 
-    void assign_canted_banded(bool active) {
-        // Modify heliostat canting to bands - to center of receiver
-        //2b canted by band, canted, r f 6x5
-        //3b facet focal focused by band, canted by band, canted, r p 6x5
-        std::vector<std::shared_ptr<Heliostat>> heliostat_field;
-        if(active){
-            heliostat_field = active_heliostats;
-        }else{
-            heliostat_field = blocking_heliostats;
-        }
-        for (const auto& heliostat : heliostat_field) {
+    void assign_canted_banded() {
+       
+        for (const auto& heliostat : active_heliostats) {
             glm::dvec3 heliostat_origin = heliostat->get_origin_global();
             double distance = sqrt(pow(heliostat_origin.x, 2) + pow(heliostat_origin.y, 2));
             double cant_distance = 0.0;
@@ -455,13 +420,32 @@ public:
             heliostat->set_number_panels(6, 5);
             heliostat->set_gaps(0.02, 0.02);
             heliostat->set_canting(Heliostat::CantingType::ON_AXIS, cant_distance, 0.0);
-            //if (flat_facets) heliostat->set_focal_length(0.0);   // Flat facets
+            heliostat->create_geometry();
+        }
+
+        for (const auto& heliostat : blocking_heliostats) {
+            glm::dvec3 heliostat_origin = heliostat->get_origin_global();
+            double distance = sqrt(pow(heliostat_origin.x, 2) + pow(heliostat_origin.y, 2));
+            double cant_distance = 0.0;
+            if (distance <= 502.0)
+                cant_distance = 516;
+            else if (distance > 502.0 && distance <= 885.0)
+                cant_distance = 668.0;
+            else if (distance > 885.0 && distance <= 1267.0)
+                cant_distance = 959.0;
+            else if (distance > 1267.0 && distance <= 1650.0)
+                cant_distance = 1500.0;
+            else
+                throw std::runtime_error("Heliostat distance out of range for banded canting lengths.");
+
+            heliostat->set_number_panels(6, 5);
+            heliostat->set_gaps(0.02, 0.02);
+            heliostat->set_canting(Heliostat::CantingType::ON_AXIS, cant_distance, 0.0);
             heliostat->create_geometry();
         }
     }
     void set_no_sunShape() {
         use_sunshape_errors = false;
-        //use_optical_errors = false;
     }
 
     void set_helio_dim(double w, double h){
@@ -703,23 +687,19 @@ public:
     }
 
     void calculate_outputs(const SimulationResult& result, bool ignore_direct = false) {
-        //absorption_efficiency = (double)tot_reflect_count / (double)tot_helio_hits;
-        //blocking_efficiency = 1.0 - (double)tot_helio_block_count / (double)tot_reflect_count;
-        //spillage_efficiency = (double)rec_absorb_count / (double)(tot_reflect_count - tot_helio_block_count);
-        /*
-        double field_area = 0.0;
-        for (const auto& heliostat : active_heliostats) {
-            field_area += heliostat->get_area();
-        }
-        if(blocking_heliostats.size()>0){
-            for (const auto& heliostat : blocking_heliostats) { //is this necessary?? We'll see
-                field_area += heliostat->get_area();
-            }
-        }
-        */
-        //cosine_efficiency = ((double)tot_helio_hits / (double)nsun_rays) * (A_sun_box / field_area);
 
-        //total_power = (double)rec_absorb_count * power_per_ray / 1.e3;   // W to kW
+        // double field_area = 0.0; //commented code is for alternate power calculation
+        // for (const auto& heliostat : active_heliostats) {
+        //     field_area += heliostat->get_area();
+        // }
+        // 
+        // for (const auto& heliostat : blocking_heliostats) { 
+        //     field_area += heliostat->get_area();
+        // }
+        // 
+        
+
+        // total_power = (double)rec_absorb_count * power_per_ray / 1.e3;   // W to kW
 
         calculate_receiver_flux_map(result, 60, 31, true, ignore_direct);
     }
@@ -746,43 +726,10 @@ public:
                 expected_power = std::stod(tokens[1]);
             if (line_number == 3)
                 expected_peak_flux = std::stod(tokens[1]);
-            //if (line_number == 6)
-            //    expected_flux_RMS = std::stod(tokens[1]); // TODO: Maybe not required
-            //if (line_number == 8)
-                //expected_max_flux_RMS = std::stod(tokens[1]);
+        
             line_number++;
         }
     }
-
-    /*void read_expected_efficiency_results(std::string filepath) {
-        // Reading in fluxData summary
-        std::ifstream file(filepath);
-        if (!file.is_open()) {
-            std::cout << "Could not open expected results file." << std::endl;
-            std::cout << "Filepath:" << filepath << std::endl;
-            return;
-        }
-
-        int line_number = 1;
-        std::string line;
-        while (std::getline(file, line)) {
-            std::stringstream ss(line);
-            std::string item;
-            std::vector<std::string> tokens;
-            while (std::getline(ss, item, ',')) {
-                tokens.push_back(item);
-            }
-            if (line_number > 2) {
-                double avg_eff = (std::stod(tokens[2]) + std::stod(tokens[4]) + std::stod(tokens[6]))
-                                 / 3.0;
-                if (line_number == 3) expected_cosine_efficiency = avg_eff;
-                if (line_number == 4) expected_absorption_efficiency = avg_eff;
-                if (line_number == 5) expected_blocking_efficiency = avg_eff;
-                if (line_number == 6) expected_spillage_efficiency = avg_eff;
-            }
-            line_number++;
-        }
-    }*/
 
     void read_expected_flux_map(std::string filepath) {
         // Reading in fluxData summary
@@ -824,7 +771,7 @@ public:
             row_number++;
         }
         expected_peak_flux = max;
-        double conversion = 902.3141048/(23.0*60.0);
+        double conversion = (3.14*2.0*rec_radius*rec_height)/(23.0*60.0); //area of receiver unrolled / nbins_rec_y*nbins_rec_x
         expected_power = sum*conversion;
    
 
@@ -834,8 +781,6 @@ public:
         std::string round_robin_base = "/round_robin_study/results/phase_III/";
         std::string summary_file = "fluxDataSummary_Task_" + task_number + "_AimStrat_" + aim_strategy + "_Hour_" + hour + ".csv";
         read_expected_summary_results(std::string(PROJECT_DIR) + round_robin_base + summary_file);
-        //std::string efficiency_file = "efficiency_Task_" + task_number + "_AimStrat_" + aim_strategy + "_Hour_" + hour + ".csv";
-        //read_expected_efficiency_results(std::string(PROJECT_DIR) + round_robin_base + efficiency_file);
         std::string fluxmap_file = "soltrace_Task_" + task_number + "_AimStrat_" + aim_strategy + "_" + hour + "_fluxmap_further_aimpoint.csv";
         read_expected_flux_map(std::string(PROJECT_DIR) + round_robin_base + fluxmap_file);
 
@@ -844,8 +789,6 @@ public:
         std::string round_robin_base = "/round_robin_study/results/phase_III/";
         std::string summary_file = "fluxDataSummary_Task_" + task_number + "_AimStrat_" + aim_strategy + ".csv";
         read_expected_summary_results(std::string(PROJECT_DIR) + round_robin_base + summary_file);
-        //std::string efficiency_file = "efficiency_Task_" + task_number + "_AimStrat_" + aim_strategy + "_Hour_" + hour + ".csv";
-        //read_expected_efficiency_results(std::string(PROJECT_DIR) + round_robin_base + efficiency_file);
         std::string fluxmap_file = "soltrace_Task_" + task_number + "_AimStrat_" + aim_strategy +"_fluxmap.csv";
         read_expected_flux_map(std::string(PROJECT_DIR) + round_robin_base + fluxmap_file);
 
@@ -1059,14 +1002,13 @@ public:
             }
         }
 
-        double conversion = 902.3141048/(23.0*60.0*1000.0);
-        total_power = SumFlux*conversion;
+        double conversion = (3.14*2.0*rec_radius*rec_height)/(23.0*60.0); //area of receiver unrolled / nbins_rec_y*nbins_rec_x
+        total_power = (SumFlux/1000.0)*conversion;
         AveFlux = SumFlux / (nbinsx * (nbinsy-8));
         SigmaFlux = sqrt((nbinsx * nbinsy * SumFlux2 - SumFlux * SumFlux) / (nbinsx * nbinsy * nbinsx * nbinsy));
         Uniformity = SigmaFlux / AveFlux;
         PeakFluxUncertainty = 100 / sqrt((double)NRaysInPeakFluxBin);
         AveFluxUncertainty = 100 / sqrt((double)result.get_number_of_records());
-        // TODO: Should the be number of rays hitting the surface, not total rays traced?
 
         if (print_info) {
             std::cout << "Receiver auto bounds:" << std::endl;
@@ -1095,11 +1037,6 @@ public:
         EXPECT_EQ(rec_absorb_count + heat_shield_absorb_count + miss_count + tot_helio_block_count, tot_reflect_count);
 
         double tol = high_accuracy ? 3.5e-3 : 8.e-3;
-        //Check efficiencies
-        //EXPECT_NEAR(absorption_efficiency, expected_absorption_efficiency, tol);
-        //EXPECT_NEAR(blocking_efficiency, expected_blocking_efficiency, tol * 2.0);
-        //EXPECT_NEAR(spillage_efficiency, expected_spillage_efficiency, tol);
-        //EXPECT_NEAR(cosine_efficiency, expected_cosine_efficiency, tol);
 
         // Total power absorbed
         EXPECT_NEAR(total_power, expected_power, tol * expected_power);
@@ -1127,10 +1064,6 @@ public:
         EXPECT_LE(rmse / (PeakFlux / 1.e3), rmse_tol);
 
         if (print_info) {
-            //std::cout << "Cosine efficiency: " << cosine_efficiency * 100.0 << " %" << std::endl;
-            //std::cout << "Absorption efficiency: " << absorption_efficiency * 100.0 << " %" << std::endl;
-            //std::cout << "Blocking efficiency: " << blocking_efficiency * 100.0 << " %" << std::endl;
-            //std::cout << "Spillage efficiency: " << spillage_efficiency * 100.0 << " %" << std::endl;
             std::cout << "Total power: " << total_power << " kW" << std::endl;
             std::cout << "Flux map RMS error: " << rmse << " kW/m2" << std::endl;
             std::cout << "Peak flux: " << PeakFlux / 1.e3 << " kW/m2" << std::endl;
