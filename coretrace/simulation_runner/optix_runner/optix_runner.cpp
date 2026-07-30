@@ -280,6 +280,18 @@ RunnerStatus OptixRunner::setup_elements(const SimulationData *data)
 
                 break;
             }
+            case SurfaceType::SPHERE:
+            {
+                auto el_surface = std::dynamic_pointer_cast<Sphere>(el->get_surface());
+                assert(el_surface != nullptr);
+                double c = el_surface->vertex_curv;
+
+                auto optix_surface = std::make_shared<OptixCSP::SurfaceSpherical>();
+                optix_surface->set_curvature(c);
+                optix_el->set_surface(optix_surface);
+
+                break;
+            }
             default:
                 // std::cerr << "Unsupported surface type in OptixCSP" << std::endl;
                 throw std::runtime_error("Unsupported surface type in OptixCSP");

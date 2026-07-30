@@ -64,7 +64,13 @@ const std::map<OpticalEntityType, std::string> IntersectionKernelMap = {
     {OpticalEntityType::HEXAGON_PARABOLIC, "__intersection__hexagon_parabolic"},
     {OpticalEntityType::TRIANGLE_PARABOLIC, "__intersection__triangle_parabolic"},
     {OpticalEntityType::ANNULUS_PARABOLIC, "__intersection__annulus_parabolic"},
-    {OpticalEntityType::QUADRILATERAL_PARABOLIC, "__intersection__quadrilateral_parabolic"}};
+    {OpticalEntityType::QUADRILATERAL_PARABOLIC, "__intersection__quadrilateral_parabolic"},
+    {OpticalEntityType::RECTANGLE_SPHERICAL, "__intersection__rectangle_spherical"},
+    {OpticalEntityType::CIRCLE_SPHERICAL, "__intersection__circle_spherical"},
+    {OpticalEntityType::HEXAGON_SPHERICAL, "__intersection__hexagon_spherical"},
+    {OpticalEntityType::ANNULUS_SPHERICAL, "__intersection__annulus_spherical"},
+    {OpticalEntityType::TRIANGLE_SPHERICAL, "__intersection__triangle_spherical"},
+    {OpticalEntityType::QUADRILATERAL_SPHERICAL, "__intersection__quadrilateral_spherical"}};
 
 pipelineManager::pipelineManager(SoltraceState &state) : m_state(state) {}
 

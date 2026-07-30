@@ -49,6 +49,12 @@ namespace OptixCSP{
         TRIANGLE_PARABOLIC      = 10,
         ANNULUS_PARABOLIC       = 11,
         QUADRILATERAL_PARABOLIC = 12,
+        RECTANGLE_SPHERICAL     = 13,
+        CIRCLE_SPHERICAL        = 14,
+        HEXAGON_SPHERICAL       = 15,
+        ANNULUS_SPHERICAL       = 16,
+        TRIANGLE_SPHERICAL      = 17,
+        QUADRILATERAL_SPHERICAL = 18,
 	    NUM_OPTICAL_ENTITY_TYPES
     };
 

@@ -21,7 +21,8 @@ namespace OptixCSP
 		FLAT,
 		PARABOLIC,
 		MESH,
-		CYLINDER
+		CYLINDER,
+		SPHERICAL
 	};
 
 	// mapping of the surface type combined with the aperture type
