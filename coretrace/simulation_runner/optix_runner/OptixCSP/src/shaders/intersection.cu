@@ -1085,8 +1085,6 @@ extern "C" __global__ void __intersection__rectangle_spherical()
                                    rs.c, ray_tmin, ray_tmax,
                                    ts, lxs, lys);
 
-    const float half_w = 0.5f * rs.width;
-    const float half_h = 0.5f * rs.height;
     const float xlo = rs.x_coord;
     const float ylo = rs.y_coord;
 
@@ -1095,7 +1093,6 @@ extern "C" __global__ void __intersection__rectangle_spherical()
         if (lxs[i] >= xlo && lxs[i] <= xlo + rs.width &&
             lys[i] >= ylo && lys[i] <= ylo + rs.height)
         {
-            (void)half_w; (void)half_h;
             const float3 wn = spherical_world_normal(lxs[i], lys[i], rs.c,
                                                      rs.x_axis, rs.y_axis, n);
             optixReportIntersection(ts[i], 0,
