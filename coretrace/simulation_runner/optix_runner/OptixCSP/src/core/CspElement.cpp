@@ -259,8 +259,8 @@ GeometryDataST CspElement::toDeviceGeometryData() const
             float3 vx = OptixCSP::toFloat3(v1);
             float3 vy = OptixCSP::toFloat3(v2);
             float3 o  = OptixCSP::toFloat3(m_origin);
-            float c   = (float)m_surface->get_curvature_1();
-            GeometryDataST::Rectangle_Spherical rs(o, vx, vy, c,
+            float R = 1.0f / (float)m_surface->get_curvature_1();
+            GeometryDataST::Rectangle_Spherical rs(o, vx, vy, R,
                                                    (float)width, (float)height,
                                                    (float)x_coord, (float)y_coord);
             geometry_data.setRectangle_Spherical(rs);
@@ -317,14 +317,14 @@ GeometryDataST CspElement::toDeviceGeometryData() const
             Matrix33d rotation_matrix = get_rotation_matrix();
             float3 vx = OptixCSP::toFloat3(rotation_matrix.get_x_basis());
             float3 vy = OptixCSP::toFloat3(rotation_matrix.get_y_basis());
-            float c   = (float)(m_surface->get_curvature_1());
+            float R   = 1.0f / (float)(m_surface->get_curvature_1());
             float3 o  = OptixCSP::toFloat3(m_origin);
 
             float2 lv0 = make_float2((float)v1[0], (float)v1[1]);
             float2 lv1 = make_float2((float)v2[0], (float)v2[1]);
             float2 lv2 = make_float2((float)v3[0], (float)v3[1]);
 
-            GeometryDataST::Triangle_Spherical tris(o, vx, vy, c, lv0, lv1, lv2);
+            GeometryDataST::Triangle_Spherical tris(o, vx, vy, R, lv0, lv1, lv2);
             geometry_data.setTriangle_Spherical(tris);
         }
     }
@@ -378,11 +378,11 @@ GeometryDataST CspElement::toDeviceGeometryData() const
             Matrix33d rotation_matrix = get_rotation_matrix();
             float3 vx = OptixCSP::toFloat3(rotation_matrix.get_x_basis());
             float3 vy = OptixCSP::toFloat3(rotation_matrix.get_y_basis());
-            float c   = (float)(m_surface->get_curvature_1());
+            float R   = 1.0f / (float)(m_surface->get_curvature_1());
             float3 o  = OptixCSP::toFloat3(m_origin);
 
             GeometryDataST::Quadrilateral_Spherical qus(
-                o, vx, vy, c,
+                o, vx, vy, R,
                 make_float2(p1[0], p1[1]), make_float2(p2[0], p2[1]),
                 make_float2(p3[0], p3[1]), make_float2(p4[0], p4[1]));
             geometry_data.setQuadrilateral_Spherical(qus);
@@ -418,8 +418,8 @@ GeometryDataST CspElement::toDeviceGeometryData() const
             Matrix33d rotation_matrix = get_rotation_matrix();
             float3 vx = OptixCSP::toFloat3(rotation_matrix.get_x_basis());
             float3 vy = OptixCSP::toFloat3(rotation_matrix.get_y_basis());
-            float c   = (float)(m_surface->get_curvature_1());
-            GeometryDataST::Circle_Spherical cs(o, vx, vy, c, r);
+            float R   = 1.0f / (float)(m_surface->get_curvature_1());
+            GeometryDataST::Circle_Spherical cs(o, vx, vy, R, r);
             geometry_data.setCircle_Spherical(cs);
         }
     }
@@ -451,8 +451,8 @@ GeometryDataST CspElement::toDeviceGeometryData() const
 
         if (surface_type == SurfaceType::SPHERICAL)
         {
-            float c = (float)(m_surface->get_curvature_1());
-            GeometryDataST::Hexagon_Spherical hs(o, vx, vy, c, s);
+            float R = 1.0f / (float)(m_surface->get_curvature_1());
+            GeometryDataST::Hexagon_Spherical hs(o, vx, vy, R, s);
             geometry_data.setHexagon_Spherical(hs);
         }
     }
@@ -488,8 +488,8 @@ GeometryDataST CspElement::toDeviceGeometryData() const
 
         if (surface_type == SurfaceType::SPHERICAL)
         {
-            float c = (float)(m_surface->get_curvature_1());
-            GeometryDataST::Annulus_Spherical as(o, vx, vy, c,
+            float R = 1.0f / (float)(m_surface->get_curvature_1());
+            GeometryDataST::Annulus_Spherical as(o, vx, vy, R,
                                                  radius_in, radius_out, arc);
             geometry_data.setAnnulus_Spherical(as);
         }

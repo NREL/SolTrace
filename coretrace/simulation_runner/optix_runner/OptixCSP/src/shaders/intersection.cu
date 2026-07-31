@@ -138,48 +138,31 @@ extern "C" __device__ __inline__ float3 parabolic_world_normal(
 // Shared helpers for spherical surface intersections.
 //
 // The spherical surface equation in the local element frame is:
-//   z(x, y) = c*(x^2 + y^2) / [1 + sqrt(1 - c^2*(x^2 + y^2))]
-// which is equivalent to a sphere with radius R = 1/c centred at (0, 0, R):
+//   z(x, y) = (x^2 + y^2) / [(R + sqrt(R^2 - (x^2 + y^2)))]
+// which is the lower cap of a sphere with radius R centred at (0, 0, R):
 //   x^2 + y^2 + (z - R)^2 = R^2
 // -----------------------------------------------------------------------
 
 // Solve the sphere-ray intersection in local element coordinates.
-// The sphere has vertex curvature c (= 1/R) and is centred at (0, 0, 1/c).
+// The sphere has radius R and is centred at (0, 0, R).
+// Only hits on the lower cap (local z <= R) are returned — this is the
+// concave surface that rays hit from above.
 // Returns the number of valid hits (0, 1, or 2) and fills t_out, lx_out, ly_out.
 extern "C" __device__ __inline__ int spherical_solve(
     float ox, float oy, float oz,
     float dx, float dy, float dz,
-    float c,
+    float R,
     float ray_tmin, float ray_tmax,
     float t_out[2], float lx_out[2], float ly_out[2])
 {
-    // Sphere: x^2 + y^2 + z^2 - 2*R*z = 0, with R = 1/c
+    // Sphere: x^2 + y^2 + z^2 - 2*R*z = 0
     // Substituting ray P = O + t*D gives:
     //   A*t^2 + B*t + C = 0
     //   A = dx^2 + dy^2 + dz^2  (= 1 for a unit direction)
     //   B = 2*(ox*dx + oy*dy + (oz - R)*dz)
     //   C = ox^2 + oy^2 + oz*(oz - 2*R)
-    const float eps = 1e-12f;
     int count = 0;
 
-    if (fabsf(c) < eps)
-    {
-        // Degenerate case: infinite radius (flat surface), z = 0 plane.
-        if (fabsf(dz) > eps)
-        {
-            const float t = -oz / dz;
-            if (t >= ray_tmin && t <= ray_tmax)
-            {
-                t_out[0] = t;
-                lx_out[0] = ox + t * dx;
-                ly_out[0] = oy + t * dy;
-                count = 1;
-            }
-        }
-        return count;
-    }
-
-    const float R = 1.0f / c;
     const float A = dx * dx + dy * dy + dz * dz;
     const float B = 2.0f * (ox * dx + oy * dy + (oz - R) * dz);
     const float C = ox * ox + oy * oy + oz * (oz - 2.0f * R);
@@ -192,15 +175,18 @@ extern "C" __device__ __inline__ int spherical_solve(
     const float inv2A = 0.5f / A;
     const float ta = (-B - sq) * inv2A;
     const float tb = (-B + sq) * inv2A;
+    float lz = oz + ta * dz;
 
-    if (ta >= ray_tmin && ta <= ray_tmax)
+    if (ta >= ray_tmin && ta <= ray_tmax && lz <= R)
     {
         t_out[count] = ta;
         lx_out[count] = ox + ta * dx;
         ly_out[count] = oy + ta * dy;
         ++count;
     }
-    if (tb >= ray_tmin && tb <= ray_tmax)
+
+    lz = oz + tb * dz;
+    if (tb >= ray_tmin && tb <= ray_tmax && lz <= R)
     {
         t_out[count] = tb;
         lx_out[count] = ox + tb * dx;
@@ -212,17 +198,18 @@ extern "C" __device__ __inline__ int spherical_solve(
 
 // Compute the world-space unit normal at a spherical surface hit.
 // x_hit, y_hit : local (x, y) coordinates of the hit point
-// c            : vertex curvature (1/R)
+// R            : sphere radius
 // x_ax, y_ax   : local frame unit vectors
 // n            : normalize(cross(x_ax, y_ax))
 //
 // The local normal pointing away from the surface (outward, toward incoming rays)
-// is: N_local = normalize(-c*x, -c*y, sqrt(1 - c^2*(x^2 + y^2)))
+// is: N_local = (-c*x, -c*y, sqrt(1 - c^2*(x^2 + y^2))),  where c = 1/R
 extern "C" __device__ __inline__ float3 spherical_world_normal(
     float x_hit, float y_hit,
-    float c,
+    float R,
     const float3 &x_ax, const float3 &y_ax, const float3 &n)
 {
+    const float c = 1.0f / R;
     const float r2 = x_hit * x_hit + y_hit * y_hit;
     const float arg = fmaxf(0.0f, 1.0f - c * c * r2);
     const float3 N_local = make_float3(-c * x_hit, -c * y_hit, sqrtf(arg));
@@ -1082,7 +1069,7 @@ extern "C" __global__ void __intersection__rectangle_spherical()
 
     float ts[2], lxs[2], lys[2];
     const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
-                                   rs.c, ray_tmin, ray_tmax,
+                                   rs.R, ray_tmin, ray_tmax,
                                    ts, lxs, lys);
 
     const float xlo = rs.x_coord;
@@ -1093,7 +1080,7 @@ extern "C" __global__ void __intersection__rectangle_spherical()
         if (lxs[i] >= xlo && lxs[i] <= xlo + rs.width &&
             lys[i] >= ylo && lys[i] <= ylo + rs.height)
         {
-            const float3 wn = spherical_world_normal(lxs[i], lys[i], rs.c,
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], rs.R,
                                                      rs.x_axis, rs.y_axis, n);
             optixReportIntersection(ts[i], 0,
                                     __float_as_uint(wn.x),
@@ -1122,14 +1109,14 @@ extern "C" __global__ void __intersection__circle_spherical()
 
     float ts[2], lxs[2], lys[2];
     const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
-                                   cs.c, ray_tmin, ray_tmax,
+                                   cs.R, ray_tmin, ray_tmax,
                                    ts, lxs, lys);
 
     for (int i = 0; i < nc; ++i)
     {
         if (lxs[i] * lxs[i] + lys[i] * lys[i] <= cs.radius * cs.radius)
         {
-            const float3 wn = spherical_world_normal(lxs[i], lys[i], cs.c,
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], cs.R,
                                                      cs.x_axis, cs.y_axis, n);
             optixReportIntersection(ts[i], 0,
                                     __float_as_uint(wn.x),
@@ -1158,14 +1145,14 @@ extern "C" __global__ void __intersection__hexagon_spherical()
 
     float ts[2], lxs[2], lys[2];
     const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
-                                   hs.c, ray_tmin, ray_tmax,
+                                   hs.R, ray_tmin, ray_tmax,
                                    ts, lxs, lys);
 
     for (int i = 0; i < nc; ++i)
     {
         if (hexagon_contains(lxs[i], lys[i], hs.s))
         {
-            const float3 wn = spherical_world_normal(lxs[i], lys[i], hs.c,
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], hs.R,
                                                      hs.x_axis, hs.y_axis, n);
             optixReportIntersection(ts[i], 0,
                                     __float_as_uint(wn.x),
@@ -1194,14 +1181,14 @@ extern "C" __global__ void __intersection__annulus_spherical()
 
     float ts[2], lxs[2], lys[2];
     const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
-                                   as.c, ray_tmin, ray_tmax,
+                                   as.R, ray_tmin, ray_tmax,
                                    ts, lxs, lys);
 
     for (int i = 0; i < nc; ++i)
     {
         if (annulus_contains(lxs[i], lys[i], as.ri, as.ro, as.arc))
         {
-            const float3 wn = spherical_world_normal(lxs[i], lys[i], as.c,
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], as.R,
                                                      as.x_axis, as.y_axis, n);
             optixReportIntersection(ts[i], 0,
                                     __float_as_uint(wn.x),
@@ -1230,14 +1217,14 @@ extern "C" __global__ void __intersection__triangle_spherical()
 
     float ts[2], lxs[2], lys[2];
     const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
-                                   tris.c, ray_tmin, ray_tmax,
+                                   tris.R, ray_tmin, ray_tmax,
                                    ts, lxs, lys);
 
     for (int i = 0; i < nc; ++i)
     {
         if (triangle_contains(lxs[i], lys[i], tris.utest, tris.vtest))
         {
-            const float3 wn = spherical_world_normal(lxs[i], lys[i], tris.c,
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], tris.R,
                                                      tris.x_axis, tris.y_axis, n);
             optixReportIntersection(ts[i], 0,
                                     __float_as_uint(wn.x),
@@ -1266,7 +1253,7 @@ extern "C" __global__ void __intersection__quadrilateral_spherical()
 
     float ts[2], lxs[2], lys[2];
     const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
-                                   qus.c, ray_tmin, ray_tmax,
+                                   qus.R, ray_tmin, ray_tmax,
                                    ts, lxs, lys);
 
     for (int i = 0; i < nc; ++i)
@@ -1274,7 +1261,7 @@ extern "C" __global__ void __intersection__quadrilateral_spherical()
         if (triangle_contains(lxs[i], lys[i], qus.u1test, qus.v1test) ||
             triangle_contains(lxs[i], lys[i], qus.u2test, qus.v2test))
         {
-            const float3 wn = spherical_world_normal(lxs[i], lys[i], qus.c,
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], qus.R,
                                                      qus.x_axis, qus.y_axis, n);
             optixReportIntersection(ts[i], 0,
                                     __float_as_uint(wn.x),

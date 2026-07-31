@@ -320,11 +320,10 @@ namespace OptixCSP
 
         // -----------------------------------------------------------------------
         // Spherical surface data structures.
-        // All spherical aperture structs share the same curvature parameter c
-        // (= 1/R, the vertex curvature of the sphere).  The surface equation in
-        // the local element frame is:
-        //   z(x, y) = c*(x^2 + y^2) / [1 + sqrt(1 - c^2*(x^2 + y^2))]
-        // which is the lower cap of a sphere with radius R = 1/c centred at
+        // All spherical aperture structs share the sphere radius R.
+        // The surface equation in the local element frame is:
+        //   z(x, y) = (x^2 + y^2) / [(R + sqrt(R^2 - (x^2 + y^2)))]
+        // which is the lower cap of a sphere with radius R centred at
         // (0, 0, R) in element-local coordinates.
         // -----------------------------------------------------------------------
 
@@ -332,15 +331,15 @@ namespace OptixCSP
         {
             Rectangle_Spherical() = default;
             Rectangle_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
-                                 const float &curv, const float &w, const float &h,
+                                 const float &radius, const float &w, const float &h,
                                  const float &xc, const float &yc)
-                : center(origin), x_axis(x_ax), y_axis(y_ax), c(curv),
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius),
                   width(w), height(h), x_coord(xc), y_coord(yc)
             {}
             float3 center;  // element origin in global coordinates
             float3 x_axis;  // local x axis unit vector
             float3 y_axis;  // local y axis unit vector
-            float c;        // vertex curvature (1/R)
+            float R;        // sphere radius
             float width;    // full width along x
             float height;   // full height along y
             float x_coord;  // aperture x offset
@@ -351,13 +350,13 @@ namespace OptixCSP
         {
             Circle_Spherical() = default;
             Circle_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
-                             const float &curv, const float &r)
-                : center(origin), x_axis(x_ax), y_axis(y_ax), c(curv), radius(r)
+                             const float &sphere_R, const float &r)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(sphere_R), radius(r)
             {}
             float3 center;
             float3 x_axis;
             float3 y_axis;
-            float c;
+            float R;
             float radius;
         };
 
@@ -365,13 +364,13 @@ namespace OptixCSP
         {
             Hexagon_Spherical() = default;
             Hexagon_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
-                              const float &curv, const float &side_len)
-                : center(origin), x_axis(x_ax), y_axis(y_ax), c(curv), s(side_len)
+                              const float &radius, const float &side_len)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius), s(side_len)
             {}
             float3 center;
             float3 x_axis;
             float3 y_axis;
-            float c;
+            float R;
             float s;  // circumradius (vertex-to-center distance)
         };
 
@@ -379,15 +378,15 @@ namespace OptixCSP
         {
             Annulus_Spherical() = default;
             Annulus_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
-                              const float &curv,
+                              const float &radius,
                               const float &r_inner, const float &r_outer, const float &arc_ang)
-                : center(origin), x_axis(x_ax), y_axis(y_ax), c(curv),
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius),
                   ri(r_inner), ro(r_outer), arc(arc_ang)
             {}
             float3 center;
             float3 x_axis;
             float3 y_axis;
-            float c;
+            float R;
             float ri;
             float ro;
             float arc;  // in radians
@@ -397,9 +396,9 @@ namespace OptixCSP
         {
             Triangle_Spherical() = default;
             Triangle_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
-                               const float &curv,
+                               const float &radius,
                                const float2 &v0, const float2 &v1, const float2 &v2)
-                : center(origin), x_axis(x_ax), y_axis(y_ax), c(curv)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius)
             {
                 const float2 e1 = make_float2(v1.x - v0.x, v1.y - v0.y);
                 const float2 e2 = make_float2(v2.x - v0.x, v2.y - v0.y);
@@ -410,7 +409,7 @@ namespace OptixCSP
             float3 center;
             float3 x_axis;
             float3 y_axis;
-            float c;
+            float R;
             float3 utest;
             float3 vtest;
         };
@@ -419,10 +418,10 @@ namespace OptixCSP
         {
             Quadrilateral_Spherical() = default;
             Quadrilateral_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
-                                    const float &curv,
+                                    const float &radius,
                                     const float2 &v0, const float2 &v1,
                                     const float2 &v2, const float2 &v3)
-                : center(origin), x_axis(x_ax), y_axis(y_ax), c(curv)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius)
             {
                 const float2 e1 = make_float2(v1.x - v0.x, v1.y - v0.y);
                 const float2 e2 = make_float2(v2.x - v0.x, v2.y - v0.y);
@@ -438,7 +437,7 @@ namespace OptixCSP
             float3 center;
             float3 x_axis;
             float3 y_axis;
-            float c;
+            float R;
             float3 u1test;
             float3 v1test;
             float3 u2test;
