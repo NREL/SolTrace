@@ -228,30 +228,34 @@ TEST(CylinderCalculator, ConstructorWrongApertureTypeThrows)
 
 TEST(CylinderCalculator, ConstructorZeroRadiusThrows)
 {
-    auto zero_radius_surface = create_cylinder_surface(0.0);
+    auto surf = create_cylinder_surface();
+    surf->radius = 0.0;
     auto aperture = create_rectangle_aperture();
-    EXPECT_THROW({ CylinderCalculator calc(zero_radius_surface, aperture); }, std::invalid_argument);
+    EXPECT_THROW({ CylinderCalculator calc(surf, aperture); }, std::invalid_argument);
 }
 
 TEST(CylinderCalculator, ConstructorNegativeRadiusThrows)
 {
-    auto negative_radius_surface = create_cylinder_surface(-1.0);
+    auto surf = create_cylinder_surface();
+    surf->radius = -1.0;
     auto aperture = create_rectangle_aperture();
-    EXPECT_THROW({ CylinderCalculator calc(negative_radius_surface, aperture); }, std::invalid_argument);
+    EXPECT_THROW({ CylinderCalculator calc(surf, aperture); }, std::invalid_argument);
 }
 
 TEST(CylinderCalculator, ConstructorNaNRadiusThrows)
 {
-    auto nan_radius_surface = create_cylinder_surface(std::nan(""));
+    auto surf = create_cylinder_surface();
+    surf->radius = std::nan("");
     auto aperture = create_rectangle_aperture();
-    EXPECT_THROW({ CylinderCalculator calc(nan_radius_surface, aperture); }, std::invalid_argument);
+    EXPECT_THROW({ CylinderCalculator calc(surf, aperture); }, std::invalid_argument);
 }
 
 TEST(CylinderCalculator, ConstructorInfiniteRadiusThrows)
 {
-    auto inf_radius_surface = create_cylinder_surface(std::numeric_limits<double>::infinity());
+    auto surf = create_cylinder_surface();
+    surf->radius = std::numeric_limits<double>::infinity();
     auto aperture = create_rectangle_aperture();
-    EXPECT_THROW({ CylinderCalculator calc(inf_radius_surface, aperture); }, std::invalid_argument);
+    EXPECT_THROW({ CylinderCalculator calc(surf, aperture); }, std::invalid_argument);
 }
 
 TEST(CylinderCalculator, ConstructorMismatchedApertureDimensionsThrows)
@@ -265,8 +269,9 @@ TEST(CylinderCalculator, ConstructorMismatchedApertureDimensionsThrows)
 TEST(CylinderCalculator, ConstructorZeroApertureDimensionsThrows)
 {
     auto surface = create_cylinder_surface();
-    auto zero_aperture = create_rectangle_aperture(2.0, 0.0); // y_length = 0
-    EXPECT_THROW({ CylinderCalculator calc(surface, zero_aperture); }, std::invalid_argument);
+    auto aperture = create_rectangle_aperture();
+    aperture->set_y_length(0.0);
+    EXPECT_THROW({ CylinderCalculator calc(surface, aperture); }, std::invalid_argument);
 }
 
 // // Basic intersection test

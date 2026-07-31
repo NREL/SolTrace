@@ -112,6 +112,9 @@ namespace SolTrace::Data
             }
             return "Unknown";
         }
+
+    protected:
+        virtual void validate() const {}
     };
 
     struct Cone : public Surface
@@ -119,7 +122,7 @@ namespace SolTrace::Data
         // z(x,y) = sqrt(x^2 + y^2) / tan(theta)
         // where theta = half_angle
         double half_angle;
-        Cone(double ha) : Surface(SurfaceType::CONE), half_angle(ha) {}
+        Cone(double ha) : Surface(SurfaceType::CONE), half_angle(ha) { validate(); }
         Cone(const nlohmann::ordered_json &jnode);
         virtual ~Cone() {}
         virtual void bounding_box(const double x_minmax[2],
@@ -130,6 +133,9 @@ namespace SolTrace::Data
         virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         virtual double z(double x, double y) const override;
+
+    private:
+        void validate() const override;
     };
 
     struct Cylinder : public Surface
@@ -139,6 +145,7 @@ namespace SolTrace::Data
         double radius;
         Cylinder(double r) : Surface(SurfaceType::CYLINDER), radius(r)
         {
+            validate();
         }
         Cylinder(const nlohmann::ordered_json &jnode);
         virtual ~Cylinder() {}
@@ -150,12 +157,15 @@ namespace SolTrace::Data
         virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         virtual double z(double x, double y) const override;
+
+    private:
+        void validate() const override;
     };
 
     struct Flat : public Surface
     {
-        Flat() : Surface(SurfaceType::FLAT) {}
-        Flat(const nlohmann::ordered_json &jnode) : Surface(SurfaceType::FLAT) {};
+        Flat() : Surface(SurfaceType::FLAT) { validate(); }
+        Flat(const nlohmann::ordered_json &jnode) : Surface(SurfaceType::FLAT) { validate(); };
         virtual ~Flat() {}
         virtual void bounding_box(const double x_minmax[2],
                                   const double y_minmax[2],
@@ -177,6 +187,7 @@ namespace SolTrace::Data
                                                    focal_length_x(focal_x),
                                                    focal_length_y(focal_y)
         {
+            validate();
         }
         Parabola(const nlohmann::ordered_json &jnode);
         virtual ~Parabola() {}
@@ -188,6 +199,9 @@ namespace SolTrace::Data
         virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         virtual double z(double x, double y) const override;
+
+    private:
+        void validate() const override;
     };
 
     struct Sphere : public Surface
@@ -204,6 +218,7 @@ namespace SolTrace::Data
         Sphere(double curv) : Surface(SurfaceType::SPHERE),
                               vertex_curv(curv)
         {
+            validate();
         }
         Sphere(const nlohmann::ordered_json &jnode);
         virtual ~Sphere() {}
@@ -215,6 +230,9 @@ namespace SolTrace::Data
         virtual void write_json(nlohmann::ordered_json &jnode) const override;
 
         virtual double z(double x, double y) const override;
+
+    private:
+        void validate() const override;
     };
 
     // TODO: Add other surface types. Documentation has the following:

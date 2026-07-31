@@ -45,37 +45,41 @@ TEST(SphereCalculator, ConstructorWrongSurfaceTypeThrows)
 
 TEST(SphereCalculator, ConstructorZeroVertexCurvatureThrows)
 {
-    auto zero_curvature_surface = create_sphere_surface(0.0);
+    auto surf = create_sphere_surface();
+    surf->vertex_curv = 0.0;
     auto circ = create_circle_aperture();
     EXPECT_THROW({
-        SphereCalculator calc(zero_curvature_surface, circ);
+        SphereCalculator calc(surf, circ);
     }, std::invalid_argument);
 }
 
 TEST(SphereCalculator, ConstructorNegativeVertexCurvatureThrows)
 {
-    auto negative_curvature_surface = create_sphere_surface(-0.1);
+    auto surf = create_sphere_surface();
+    surf->vertex_curv = -0.1;
     auto circ = create_circle_aperture();
     EXPECT_THROW({
-        SphereCalculator calc(negative_curvature_surface, circ);
+        SphereCalculator calc(surf, circ);
     }, std::invalid_argument);
 }
 
 TEST(SphereCalculator, ConstructorNaNVertexCurvatureThrows)
 {
-    auto nan_curvature_surface = create_sphere_surface(std::nan(""));
+    auto surf = create_sphere_surface();
+    surf->vertex_curv = std::nan("");
     auto circ = create_circle_aperture();
     EXPECT_THROW({
-        SphereCalculator calc(nan_curvature_surface, circ);
+        SphereCalculator calc(surf, circ);
     }, std::invalid_argument);
 }
 
 TEST(SphereCalculator, ConstructorInfiniteVertexCurvatureThrows)
 {
-    auto inf_curvature_surface = create_sphere_surface(std::numeric_limits<double>::infinity());
+    auto surf = create_sphere_surface();
+    surf->vertex_curv = std::numeric_limits<double>::infinity();
     auto circ = create_circle_aperture();
     EXPECT_THROW({
-        SphereCalculator calc(inf_curvature_surface, circ);
+        SphereCalculator calc(surf, circ);
     }, std::invalid_argument);
 }
 

@@ -2,6 +2,8 @@
 #include "surface.hpp"
 #include "simdata_io.hpp"
 
+#include <cmath>
+#include <stdexcept>
 #include <vector>
 
 #include <utilities.hpp>
@@ -82,6 +84,13 @@ namespace SolTrace::Data
         : Surface(SurfaceType::CONE)
     {
         this->half_angle = jnode.at("half_angle");
+        validate();
+    }
+
+    void Cone::validate() const
+    {
+        if (!std::isfinite(half_angle) || half_angle <= 0.0 || half_angle >= 90.0)
+            throw std::invalid_argument("Cone: half_angle must be in (0, 90) degrees");
     }
 
     void Cone::bounding_box(const double x_minmax[2],
@@ -113,6 +122,13 @@ namespace SolTrace::Data
         : Surface(SurfaceType::CYLINDER)
     {
         this->radius = jnode.at("radius");
+        validate();
+    }
+
+    void Cylinder::validate() const
+    {
+        if (!std::isfinite(radius) || radius <= 0.0)
+            throw std::invalid_argument("Cylinder: radius must be positive");
     }
 
     void Cylinder::bounding_box(const double x_minmax[2],
@@ -169,6 +185,15 @@ namespace SolTrace::Data
     {
         this->focal_length_x = jnode.at("focal_length_x");
         this->focal_length_y = jnode.at("focal_length_y");
+        validate();
+    }
+
+    void Parabola::validate() const
+    {
+        if (std::isnan(focal_length_x) || std::isnan(focal_length_y))
+            throw std::invalid_argument("Parabola: focal lengths cannot be NaN");
+        if (std::isinf(focal_length_x) && std::isinf(focal_length_y))
+            throw std::invalid_argument("Parabola: both focal lengths cannot be infinite");
     }
 
     void Parabola::bounding_box(const double x_minmax[2],
@@ -214,6 +239,13 @@ namespace SolTrace::Data
         : Surface(SurfaceType::SPHERE)
     {
         this->vertex_curv = jnode.at("vertex_curv");
+        validate();
+    }
+
+    void Sphere::validate() const
+    {
+        if (!std::isfinite(vertex_curv) || vertex_curv <= 0.0)
+            throw std::invalid_argument("Sphere: vertex_curv must be positive");
     }
 
     void Sphere::bounding_box(const double x_minmax[2],
