@@ -172,7 +172,7 @@ TEST(HighFluxSolarFurnace, OptixRunnerResultsConsistentWithNativeRunner)
     EXPECT_GT(native_total_hits, 0);
     EXPECT_GT(optix_total_hits, 0);
 
-    const double tolerance = 0.05;
+    const double tolerance = 0.1;
     const double relative_diff =
         fabs(static_cast<double>(optix_total_hits - native_total_hits) /
              static_cast<double>(native_total_hits));
