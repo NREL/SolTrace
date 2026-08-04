@@ -220,7 +220,11 @@ static void run_parabolic_geometry_intersection_test(
         surf,
         aper,
         rotation_deg,
-        [surf](double lx, double ly) { return surf->z(lx, ly); });
+        [surf](double lx, double ly)
+        {
+            return lx * lx / (4.0 * surf->focal_length_x) +
+                   ly * ly / (4.0 * surf->focal_length_y);
+        });
 }
 
 template <typename ApertureT>
@@ -233,7 +237,10 @@ static void run_cylindrical_geometry_intersection_test(
         surf,
         aper,
         rotation_deg,
-        [surf](double lx, double) { return surf->z(lx, 0.0); });
+        [surf](double lx, double)
+        {
+            return sqrt(surf->radius * surf->radius - lx * lx);
+        });
 }
 
 template <typename ApertureT>
