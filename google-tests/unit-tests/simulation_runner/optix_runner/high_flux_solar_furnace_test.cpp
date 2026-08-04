@@ -100,6 +100,7 @@ TEST(HighFluxSolarFurnace, OptixRunnerResultsConsistentWithNativeRunner)
 
         SolTrace::NativeRunner::NativeRunner native_runner;
         native_runner.set_number_of_threads(1);
+        native_runner.disable_stages();
         RunnerStatus sts = native_runner.initialize();
         ASSERT_EQ(sts, RunnerStatus::SUCCESS);
         sts = native_runner.setup_simulation(&sd);
@@ -163,11 +164,11 @@ TEST(HighFluxSolarFurnace, OptixRunnerResultsConsistentWithNativeRunner)
     }
 
     // Both runners should see a similar number of total interactions.
-    // Allow a 10% relative tolerance due to floating-point and stochastic differences.
+    // Allow a 1% relative tolerance due to floating-point and stochastic differences.
     EXPECT_GT(native_total_hits, 0);
     EXPECT_GT(optix_total_hits, 0);
 
-    const double tolerance = 0.10;
+    const double tolerance = 0.01;
     double ratio = static_cast<double>(optix_total_hits) /
                    static_cast<double>(native_total_hits);
     EXPECT_NEAR(ratio, 1.0, tolerance)

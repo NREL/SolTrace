@@ -765,7 +765,6 @@ TEST(Annulus, Validate)
 
     EXPECT_NO_THROW(make_aperture<Annulus>(0.5, 1.0, 180.0));
     EXPECT_NO_THROW(make_aperture<Annulus>(0.0, 1.0, 360.0)); // inner_radius == 0 is valid
-    EXPECT_NO_THROW(make_aperture<Annulus>(0.0, 1.0, 360.0));
 
     EXPECT_THROW(make_aperture<Annulus>(-0.1, 1.0, 180.0), std::invalid_argument); // negative inner
     EXPECT_THROW(make_aperture<Annulus>(0.5, 0.0, 180.0),  std::invalid_argument); // zero outer
