@@ -12,6 +12,36 @@ extern "C"
 /**************** Surface Helper Functions ****************/
 
 // -----------------------------------------------------------------------
+// Shared helper for transforming a world-space ray to a local frame.
+//
+// Curved surface kernels (parabolic, spherical, etc.) use a local frame
+// defined by (center, x_ax, y_ax) with
+//   n = normalize(cross(x_ax, y_ax)).
+// This helper projects the ray origin and direction into that frame.
+// -----------------------------------------------------------------------
+
+// Transform a world-space ray into a local element frame.
+// Outputs the frame normal n = normalize(cross(x_ax, y_ax)) and
+// the local ray origin (ox,oy,oz) and direction (dx,dy,dz).
+extern "C" __device__ __inline__ void ray_to_local_frame(
+    const float3 &ray_orig, const float3 &ray_dir,
+    const float3 &center,
+    const float3 &x_ax, const float3 &y_ax,
+    float3 &n,
+    float &ox, float &oy, float &oz,
+    float &dx, float &dy, float &dz)
+{
+    n = normalize(cross(x_ax, y_ax));
+    const float3 d = ray_orig - center;
+    ox = dot(d, x_ax);
+    oy = dot(d, y_ax);
+    oz = dot(d, n);
+    dx = dot(ray_dir, x_ax);
+    dy = dot(ray_dir, y_ax);
+    dz = dot(ray_dir, n);
+}
+
+// -----------------------------------------------------------------------
 // Shared helpers for a planar (flat) surface
 //
 // All planar surfaces have the equation
@@ -35,30 +65,8 @@ extern "C" __device__ __inline__ float ray_distance_to_plane(float3 ro, float3 r
 // All parabolic surfaces share the same quadric equation:
 //   z = (cx/2)*x^2 + (cy/2)*y^2
 // in a local frame (center, x_ax, y_ax, n=cross(x_ax,y_ax)).
-// The three helpers below factor out the ray transform, quadratic solve,
+// The two parabolic-specific helpers below factor out the quadratic solve
 // and normal computation. Each kernel only supplies the aperture test.
-// -----------------------------------------------------------------------
-
-// Transform a world-space ray into the local parabolic frame.
-// Outputs the frame normal n = normalize(cross(x_ax, y_ax)) and
-// the local ray origin (ox,oy,oz) and direction (dx,dy,dz).
-extern "C" __device__ __inline__ void parabolic_ray_to_local(
-    const float3 &ray_orig, const float3 &ray_dir,
-    const float3 &center,
-    const float3 &x_ax, const float3 &y_ax,
-    float3 &n,
-    float &ox, float &oy, float &oz,
-    float &dx, float &dy, float &dz)
-{
-    n = normalize(cross(x_ax, y_ax));
-    const float3 d = ray_orig - center;
-    ox = dot(d, x_ax);
-    oy = dot(d, y_ax);
-    oz = dot(d, n);
-    dx = dot(ray_dir, x_ax);
-    dy = dot(ray_dir, y_ax);
-    dz = dot(ray_dir, n);
-}
 
 // Solve A*t^2 + B*t + C = 0 for the paraboloid-ray intersection and return
 // up to two hits within [ray_tmin, ray_tmax], ordered by ascending t.
@@ -817,7 +825,7 @@ extern "C" __global__ void __intersection__rectangle_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir, center, e1, e2,
+    ray_to_local_frame(ray_orig, ray_dir, center, e1, e2,
                            n, ox, oy, oz, dx, dy, dz);
 
     float ts[2], lxs[2], lys[2];
@@ -858,7 +866,7 @@ extern "C" __global__ void __intersection__circle_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            circp.center, circp.x_axis, circp.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -897,7 +905,7 @@ extern "C" __global__ void __intersection__hexagon_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            hexp.center, hexp.x_axis, hexp.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -944,7 +952,7 @@ extern "C" __global__ void __intersection__triangle_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            trip.center, trip.x_axis, trip.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -983,7 +991,7 @@ extern "C" __global__ void __intersection__annulus_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            anap.center, anap.x_axis, anap.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -1022,7 +1030,7 @@ extern "C" __global__ void __intersection__quadrilateral_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            quap.center, quap.x_axis, quap.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -1063,7 +1071,7 @@ extern "C" __global__ void __intersection__rectangle_spherical()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            rs.center, rs.x_axis, rs.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -1103,7 +1111,7 @@ extern "C" __global__ void __intersection__circle_spherical()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            cs.center, cs.x_axis, cs.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -1139,7 +1147,7 @@ extern "C" __global__ void __intersection__hexagon_spherical()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            hs.center, hs.x_axis, hs.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -1175,7 +1183,7 @@ extern "C" __global__ void __intersection__annulus_spherical()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            as.center, as.x_axis, as.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -1211,7 +1219,7 @@ extern "C" __global__ void __intersection__triangle_spherical()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            tris.center, tris.x_axis, tris.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -1247,7 +1255,7 @@ extern "C" __global__ void __intersection__quadrilateral_spherical()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            qus.center, qus.x_axis, qus.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
