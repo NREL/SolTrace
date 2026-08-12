@@ -41,9 +41,6 @@ ComboBox {
         height: Math.min(contentItem.implicitHeight, root.Window.height - topMargin - bottomMargin)
         padding: 2
 
-        //onOpened: console.log("popup opened")
-        //onClosed: console.log("popup closed")
-
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         contentItem: ListView {

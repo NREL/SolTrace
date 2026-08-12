@@ -19,13 +19,16 @@ namespace analysis {
 
 namespace {
 
+/// Number of rays to show by default
 constexpr quint64 DEFAULT_VISIBLE_RAY_COUNT = 10000;
 
+/// Percent of a ray count. Used in a few places.
 float percent_for_ray_count(quint64 count, quint64 available) {
     if (available == 0) return 0.0f;
     return static_cast<float>(count * 100.0 / available);
 }
 
+/// From percent of a count, to the actual count
 size_t visible_ray_limit(size_t available, float show_percent) {
     const auto effective_percent = std::clamp(show_percent, 0.0f, 100.0f);
     const auto requested_rays =
@@ -34,6 +37,7 @@ size_t visible_ray_limit(size_t available, float show_percent) {
                     static_cast<size_t>(std::llround(requested_rays)));
 }
 
+/// Ask if our event filter contains an event.
 bool includes_event(EventTypeContainer const& filter, db::RayEventType event) {
     return filter.events.contains(event);
 }
@@ -75,20 +79,24 @@ struct LineVertex {
 };
 
 void RayGeometry::rebuild_geometry() {
+    // Kickoff
     qDebug() << Q_FUNC_INFO << "Start";
     clear();
 
+    // No db, no geom for you
     if (!m_database) {
         qDebug() << Q_FUNC_INFO << "No database";
-        update();
+        update(); // note that we have cleared
         return;
     }
 
     const size_t ray_limit =
         visible_ray_limit(m_database->records.size(), this->show_percent());
 
+    // Collect total vertex count
     size_t vertex_count = 0;
     size_t counted_rays = 0;
+
     for (auto const& rec : m_database->records) {
         if (counted_rays >= ray_limit) break;
         vertex_count += rec.events.size();
@@ -115,8 +123,6 @@ void RayGeometry::rebuild_geometry() {
         for (auto const& ray : target_span) {
 
             if (rays_remaining == 0) { break; }
-
-            // qDebug() << "Ray" << ray_number;
 
             rays_remaining -= 1;
             ray_number += 1;
@@ -148,8 +154,6 @@ void RayGeometry::rebuild_geometry() {
 
             if (total_ray_distance == 0.0) { total_ray_distance = 1.0; }
 
-            // qDebug() << "Distance" << total_ray_distance;
-
             // Reset counter
             size_t visible_point_index  = 0;
             double current_ray_distance = 0.0;
@@ -163,8 +167,7 @@ void RayGeometry::rebuild_geometry() {
 
                 auto p = convert(interaction.location);
 
-                // qDebug() << "Point" << p << "type" <<
-                // (int)interaction->event;
+                // Segments are flip flopped for simplicity
 
                 if (texture_mode == TextureMode::Segment &&
                     visible_point_index > 0) {
@@ -228,6 +231,8 @@ void RayGeometry::rebuild_geometry() {
     }
 
     qDebug() << Q_FUNC_INFO << "New buffers ready";
+
+    // install all computed geometry
 
     auto vertex_buffer = QByteArray(reinterpret_cast<const char*>(verts.data()),
                                     verts.size() * sizeof(LineVertex));
@@ -313,14 +318,19 @@ void RayGeometry::set_results(db::SimulationResultPtr data) {
     if (!percent_changed) rebuild_geometry();
 }
 
-
+/// Classic; give me the closest point on a line segment to a ray
+/// A and B are line points, P is the query ray start, rayDir is the query ray
+/// direction.
+///
+/// Output is the distance, and the closest point is the closestOnSegment out
+/// param
 static float dist_segment_ray_closest_points(glm::vec3  A,
                                              glm::vec3  B,
                                              glm::vec3  P,
-                                             glm::vec3  rayDir,
-                                             glm::vec3& closestOnSegment) {
+                                             glm::vec3  ray_dir,
+                                             glm::vec3& closest_on_segment) {
     glm::vec3 u = B - A;
-    glm::vec3 v = rayDir;
+    glm::vec3 v = ray_dir;
     glm::vec3 w = A - P;
 
     float a = dot(u, u);
@@ -333,16 +343,16 @@ static float dist_segment_ray_closest_points(glm::vec3  A,
 
     // Degenerate segment: A == B
     if (a < EPS) {
-        closestOnSegment = A;
+        closest_on_segment = A;
 
         if (c < EPS) {
             // Degenerate ray too: ray is just point C
-            return length(closestOnSegment - P);
+            return length(closest_on_segment - P);
         }
 
         float t            = glm::max(dot(A - P, v) / c, 0.0f);
         auto  closestOnRay = P + t * v;
-        return length(closestOnSegment - closestOnRay);
+        return length(closest_on_segment - closestOnRay);
     }
 
     // Degenerate ray direction: ray is just point C
@@ -350,8 +360,8 @@ static float dist_segment_ray_closest_points(glm::vec3  A,
         auto closestOnRay = P;
 
         float s          = glm::clamp(dot(P - A, u) / a, 0.0f, 1.0f);
-        closestOnSegment = A + s * u;
-        return length(closestOnSegment - closestOnRay);
+        closest_on_segment = A + s * u;
+        return length(closest_on_segment - closestOnRay);
     }
 
     float denom = a * c - b * b;
@@ -377,17 +387,22 @@ static float dist_segment_ray_closest_points(glm::vec3  A,
     s = glm::clamp((b * t - d) / a, 0.0f, 1.0f);
     t = glm::max((b * s + e) / c, 0.0f);
 
-    closestOnSegment  = A + s * u;
+    closest_on_segment = A + s * u;
     auto closestOnRay = P + t * v;
 
-    return length(closestOnSegment - closestOnRay);
+    return length(closest_on_segment - closestOnRay);
 }
 
+/// Ray cast query result
 struct RayCastRayResult {
+    /// Ray id, -1 if not found
     int64_t    ray_id = -1;
+    /// World position, valid only if valid ray
     glm::dvec3 world_pos;
 };
 
+/// For a traced ray, and a query ray, check if this 'intersects' with some
+/// tolerance
 static RayCastRayResult check_distance(db::RayRecord const& record,
                                        glm::dvec3 const&    world_position,
                                        glm::dvec3 const&    world_direction,
@@ -399,7 +414,10 @@ static RayCastRayResult check_distance(db::RayRecord const& record,
     bool       have_segment_start = false;
     glm::dvec3 segment_a;
 
+    // we assemble ray segments from non-ignored events
+
     for (auto const& event : record.events) {
+        // Skip filtered events
         if (!includes_event(filter, event.event)) continue;
 
         if (!have_segment_start) {
@@ -439,30 +457,37 @@ void RayGeometry::pick_ray(QVector3D world_position,
                            QVector3D world_direction,
                            float     angle_tolerance_rads) {
 
+    // Sanitize tolerance
     angle_tolerance_rads = std::clamp<float>(angle_tolerance_rads, 0, M_PI);
     float angle_tolerance_rads_cos = std::cos(angle_tolerance_rads);
 
-    qDebug() << Q_FUNC_INFO << "has_results=" << static_cast<bool>(m_database)
-             << "position=" << world_position
-             << "direction=" << world_direction;
-
+    // No database, bail
     if (!m_database) return;
+
+    // Sanitize query ray
 
     auto glm_world_pos =
         glm::dvec3(world_position.x(), world_position.y(), world_position.z());
 
     auto glm_world_dir = glm::dvec3(
         world_direction.x(), world_direction.y(), world_direction.z());
+
     if (glm::length2(glm_world_dir) == 0.0) return;
+
     glm_world_dir = glm::normalize(glm_world_dir);
 
+    // Get filter
+
     const auto event_filter = m_include_events;
+
+    // Build iteration over all rays, bounded by what we can see
 
     auto start_iter = m_database->records.begin();
     auto end_iter =
         m_database->records.begin() +
         visible_ray_limit(m_database->records.size(), this->show_percent());
 
+    // Do this in parallel
     RayCastRayResult result = QtConcurrent::blockingMappedReduced(
         start_iter,
         end_iter,

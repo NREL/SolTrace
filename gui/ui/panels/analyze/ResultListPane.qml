@@ -16,10 +16,6 @@ ColumnLayout {
 
     spacing: 8
 
-    InlineDocumentation {
-        key: "analyze.results"
-    }
-
     function formatRayCount(count) {
         return Number(count).toLocaleString(Qt.locale(), "f", 0) + " rays"
     }
@@ -34,9 +30,73 @@ ColumnLayout {
     }
 
     Label {
-        Layout.fillWidth: true
-        text: "Simulation Results"
+        text: "Current Result"
         font.bold: true
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+        enabled: root.has_current_result
+        spacing: 8
+
+        Label {
+            Layout.alignment: Qt.AlignVCenter
+            font.family: "Font Awesome 7 Free"
+            font.pointSize: 16
+            text: "\uf303"
+        }
+
+        STTextField {
+            Layout.fillWidth: true
+            text: root.has_current_result ?
+                      AppData.simulation.current_simulation_result_name : ""
+
+            onTextEdited: {
+                if (root.has_current_result) {
+                    AppData.simulation.rename_result(root.selected_result_index,
+                                                     text)
+                }
+            }
+        }
+    }
+
+    RowLayout {
+        Layout.fillWidth: true
+
+        STIconButton {
+            enabled: root.has_current_result
+            icon: "\uf2ed"
+            toolTip: "Delete Result"
+            onClicked: AppData.simulation.delete_result(root.selected_result_index)
+        }
+
+        Item {
+            Layout.fillWidth: true
+        }
+
+        STIconButton {
+            enabled: root.has_current_result
+            icon: "\uf24d"
+            label: "Create Scene"
+            toolTip: "Create Scene from Result"
+
+            onClicked: {
+                AppData.simulation.duplicate_current_result_for_edit()
+                root.showSceneMode()
+                root.closeRequested()
+            }
+        }
+
+        STIconButton {
+            enabled: root.has_current_result
+            icon: "\uf019"
+            label: "Export"
+            toolTip: "Export Result"
+            onClicked: {
+                AppData.simulation.select_result(root.selected_result_index)
+                AppData.exporter.export_current()
+            }
+        }
     }
 
     Rectangle {
@@ -45,6 +105,17 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: 3
         Layout.rightMargin: 3
+    }
+
+    InlineDocumentation {
+        key: "analyze.results"
+        Layout.fillWidth: true
+    }
+
+    Label {
+        Layout.fillWidth: true
+        text: "Simulation Results"
+        font.bold: true
     }
 
     Label {
@@ -140,79 +211,6 @@ ColumnLayout {
                 root.selected_result_index = index
                 AppData.simulation.select_result(index)
                 root.showResultMode()
-            }
-        }
-    }
-
-    Rectangle {
-        color: Material.dividerColor
-        Layout.preferredHeight: 1
-        Layout.fillWidth: true
-        Layout.leftMargin: 3
-        Layout.rightMargin: 3
-    }
-
-    Label {
-        text: "Current Result"
-        font.bold: true
-    }
-
-    RowLayout {
-        enabled: root.has_current_result
-
-        Label {
-            font.family: "Font Awesome 7 Free"
-            font.pointSize: 16
-            text: "\uf303"
-        }
-
-        STTextField {
-            text: root.has_current_result ?
-                      AppData.simulation.current_simulation_result_name : ""
-            Layout.fillWidth: true
-
-            onTextEdited: {
-                if (root.has_current_result) {
-                    AppData.simulation.rename_result(root.selected_result_index,
-                                                     text)
-                }
-            }
-        }
-    }
-
-    RowLayout {
-        STIconButton {
-            enabled: root.has_current_result
-            icon: "\uf2ed"
-            toolTip: "Delete Result"
-            onClicked: AppData.simulation.delete_result(root.selected_result_index)
-        }
-
-        Item {
-            Layout.fillWidth: true
-        }
-
-        STIconButton {
-            enabled: root.has_current_result
-            icon: "\uf24d"
-            label: "Create Scene"
-            toolTip: "Create Scene from Result"
-
-            onClicked: {
-                AppData.simulation.duplicate_current_result_for_edit()
-                root.showSceneMode()
-                root.closeRequested()
-            }
-        }
-
-        STIconButton {
-            enabled: root.has_current_result
-            icon: "\uf019"
-            label: "Export"
-            toolTip: "Export Result"
-            onClicked: {
-                AppData.simulation.select_result(root.selected_result_index)
-                AppData.exporter.export_current()
             }
         }
     }

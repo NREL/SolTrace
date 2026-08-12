@@ -7,6 +7,7 @@
 
 namespace db {
 
+/// QQuick3DGeometry wrapper around a db::Mesh value.
 class QMLMesh : public QQuick3DGeometry {
     Q_OBJECT
 
@@ -22,8 +23,11 @@ public:
     QMLMesh();
     ~QMLMesh();
 
+    /// Current mesh value used to rebuild the Quick3D geometry buffers.
     Mesh const& current_mesh() const;
-    void        set_current_mesh(Mesh const& new_value);
+
+    /// Replace current_mesh and rebuild the geometry buffers.
+    void set_current_mesh(Mesh const& new_value);
 
 signals:
     void current_mesh_changed();

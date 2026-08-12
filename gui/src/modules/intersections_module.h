@@ -15,8 +15,8 @@ namespace SolTrace::GUI::App {
  * @brief Ray intersection analysis module.
  *
  * Provides access to intersection results from the simulation.
- * Holds non-owning references to both the shared results backend
- * and the intersections-specific backend.
+ * Owns the RayGeometry adapter used by the 3D viewport and points it at the
+ * currently selected simulation result.
  *
  * QML access pattern: App.intersections.results
  */
@@ -30,10 +30,8 @@ class IntersectionsModule : public QObject {
 public:
     explicit IntersectionsModule(QObject* parent = nullptr);
 
-
 public slots:
+    /// Set the result set whose rays should be visualized.
     void set_results(db::SimulationResultPtr);
 };
-
-
 } // namespace SolTrace::GUI::App

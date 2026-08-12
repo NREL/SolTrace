@@ -1,9 +1,62 @@
-#include "worldgeometrymodel.h"
+#include "database/models/world_geometry_model.h"
 #include "utilities/math_utility.h"
 
 #include <algorithm>
+#include <limits>
+#include <QVariantMap>
+
+#include <glm/common.hpp>
 
 namespace db {
+
+namespace {
+
+struct BoundsAccumulator {
+    bool       valid = false;
+    glm::dvec3 min;
+    glm::dvec3 max;
+
+    BoundsAccumulator()
+        : min(std::numeric_limits<double>::max()),
+          max(-std::numeric_limits<double>::max()) { }
+
+    void include(glm::dvec3 const& point) {
+        min   = glm::min(min, point);
+        max   = glm::max(max, point);
+        valid = true;
+    }
+};
+
+QVariantMap bounds_map(BoundsAccumulator const& bounds) {
+    return QVariantMap {
+        { QStringLiteral("valid"), bounds.valid },
+        { QStringLiteral("min"), convert(bounds.min) },
+        { QStringLiteral("max"), convert(bounds.max) },
+    };
+}
+
+void include_transformed_box(BoundsAccumulator&        bounds,
+                             BoundingBox const&       box,
+                             GlobalTransformComponent const& transform) {
+    auto local_min = convert(box.min);
+    auto local_max = convert(box.max);
+
+    for (int ix = 0; ix < 2; ++ix) {
+        for (int iy = 0; iy < 2; ++iy) {
+            for (int iz = 0; iz < 2; ++iz) {
+                auto corner = glm::dvec3(
+                    ix ? local_max.x : local_min.x,
+                    iy ? local_max.y : local_min.y,
+                    iz ? local_max.z : local_min.z);
+
+                bounds.include(transform.position +
+                               transform.rotation * corner);
+            }
+        }
+    }
+}
+
+} // namespace
 
 void InstancedElements::on_geometry_group_change(entt::entity group) {
     if (group != entt::null && Entity(group) != m_target_group) return;
@@ -48,8 +101,6 @@ void InstancedElements::on_geometry_group_change(entt::entity group) {
 
         if (m_database->is_selected(member)) { color = Qt::yellow; }
 
-        // qDebug() << convert(global->position) << convert(global->rotation);
-
         auto entry =
             calculateTableEntryFromQuaternion(convert(global->position),
                                               QVector3D(1, 1, 1),
@@ -62,9 +113,6 @@ void InstancedElements::on_geometry_group_change(entt::entity group) {
         m_rev_cache[member] = m_member_cache.size();
         m_member_cache.push_back(member);
     }
-
-    // qDebug() << Q_FUNC_INFO << "group" << entt::to_integral(group) << "->"
-    //          << m_member_cache.size();
 
     markDirty();
 }
@@ -142,7 +190,6 @@ Entity InstancedElements::geometry_of_group() {
 Entity InstancedElements::material_of(int index) {
     entt::entity instance = entity_at(index);
     if (instance == entt::null) return { };
-    // qDebug() << m_database->material_of(instance);
     return m_database->material_of(instance);
 }
 
@@ -231,13 +278,45 @@ QByteArray InstancedElements::getInstanceBuffer(int* instanceCount) {
 
     if (instanceCount) { *instanceCount = m_member_cache.size(); }
 
-    // qDebug() << Q_FUNC_INFO << m_target_group << m_member_cache.size()
-    //          << m_instance_data.size();
-
     return m_instance_data;
 }
 
 // =============================================================================
+
+QVariantMap
+WorldGeometryModel::content_bounds(bool include_flux_mapped) const {
+    BoundsAccumulator bounds;
+
+    if (!m_host) return bounds_map(bounds);
+
+    for (auto const& group : m_records) {
+        if (!group.group_geometry || group.group_geometry->vertex_count() == 0) {
+            continue;
+        }
+
+        auto const* root = m_host->geometry_root.get(group.geometry_group_entity);
+        if (!root) continue;
+
+        for (auto const& member : root->members) {
+            if (m_host->as_registry().all_of<InvisibleComponent>(member)) {
+                continue;
+            }
+            if (!include_flux_mapped &&
+                m_host->as_registry().all_of<HasFluxMapComponent>(member)) {
+                continue;
+            }
+
+            auto const* global = m_host->global_transform.get(member);
+            if (!global) continue;
+
+            include_transformed_box(bounds,
+                                    group.group_geometry->bounding_box(),
+                                    *global);
+        }
+    }
+
+    return bounds_map(bounds);
+}
 
 void WorldGeometryModel::apply_surface_options(VisibleGroup const& group) {
     if (!group.group_geometry) return;

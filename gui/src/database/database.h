@@ -3,6 +3,7 @@
 #include <entt/entt.hpp>
 
 #include "database/components.h"
+#include "database/database_export.h"
 #include "database/database_notification.h"
 #include "entity.h"
 #include "magic_enum/magic_enum.hpp"
@@ -13,8 +14,6 @@
 #include <QStringListModel>
 #include <QtTypes>
 #include <qqmlintegration.h>
-
-// TODO BETTER COMPOSITE SUPPORT
 
 namespace db {
 
@@ -44,21 +43,7 @@ void build_options(QStringListModel& dest) {
 }
 
 
-class Database;
-
-struct DatabaseExport {
-    std::shared_ptr<SolTrace::Data::SimulationData>              data;
-    std::unordered_map<SolTrace::Data::element_id, entt::entity> element_map;
-    std::unique_ptr<Database> source_database;
-
-    DatabaseExport() = default;
-
-    DatabaseExport(DatabaseExport const&)            = delete;
-    DatabaseExport& operator=(DatabaseExport const&) = delete;
-    DatabaseExport(DatabaseExport&&)                 = default;
-    DatabaseExport& operator=(DatabaseExport&&)      = default;
-};
-
+/// A simulation scene
 class Database : public QObject {
     Q_OBJECT
     entt::registry m_registry;
@@ -71,6 +56,7 @@ public:
 
     virtual ~Database();
 
+    /// Duplicate this database with an optional QObject parent
     Database* clone(QString new_database_name, QObject* p = nullptr) const;
 
     /// Merge in simulation data. Note, this should be called closely after
@@ -86,6 +72,8 @@ public:
     void    set_name(QString);
 
 public:
+    /// Get underlying registry of this database
+
     operator entt::registry&();
     operator entt::registry const&() const;
 
@@ -93,14 +81,14 @@ public:
     entt::registry const& as_registry() const;
 
 public:
-    ComponentAPIUpdate<IdentityComponent>  identity;
-    ComponentAPIUpdate<TransformComponent> transform;
-    ComponentAPI<GlobalTransformComponent> global_transform;
-    ComponentAPIUpdate<InvisibleComponent> invisible;
-    ComponentAPIUpdate<DisabledComponent>  disabled;
+    ComponentAPIUpdate<IdentityComponent>   identity;
+    ComponentAPIUpdate<TransformComponent>  transform;
+    ComponentAPI<GlobalTransformComponent>  global_transform;
+    ComponentAPIUpdate<InvisibleComponent>  invisible;
+    ComponentAPIUpdate<DisabledComponent>   disabled;
     ComponentAPIUpdate<VirtualTagComponent> virtual_tag;
-    ComponentAPI<ChildOfComponent>         parent;
-    ComponentAPI<TagComponent>             tag_root;
+    ComponentAPI<ChildOfComponent>          parent;
+    ComponentAPI<TagComponent>              tag_root;
 
     ComponentAPI<ElementComponent> element_tag;
 
@@ -201,7 +189,7 @@ public slots:
     QString sanitize_element_name(QString);
     QString sanitize_entity_name(QString);
 
-    db::Entity add_element(QString new_name, db::Entity parent = {});
+    db::Entity add_element(QString new_name, db::Entity parent = { });
 
     void delete_element(db::Entity to_delete);
 
@@ -212,12 +200,12 @@ public slots:
     QString sanitize_material_name(QString);
 
     db::Entity add_material_group(QString             new_name,
-                                  QVector<db::Entity> members    = {},
-                                  db::Entity          clone_from = {});
+                                  QVector<db::Entity> members    = { },
+                                  db::Entity          clone_from = { });
 
     size_t material_use_count(db::Entity material);
 
-    void delete_material_group(db::Entity to_delete, db::Entity move_to = {});
+    void delete_material_group(db::Entity to_delete, db::Entity move_to = { });
 
     db::Entity material_of(db::Entity element) const;
 
@@ -226,12 +214,12 @@ public slots:
     QString sanitize_geometry_name(QString);
 
     db::Entity add_geometry_group(QString             new_name,
-                                  QVector<db::Entity> members    = {},
-                                  db::Entity          clone_from = {});
+                                  QVector<db::Entity> members    = { },
+                                  db::Entity          clone_from = { });
 
     size_t geometry_use_count(db::Entity geometry);
 
-    void delete_geometry_group(db::Entity to_delete, db::Entity move_to = {});
+    void delete_geometry_group(db::Entity to_delete, db::Entity move_to = { });
 
     db::Entity geometry_of(db::Entity element) const;
 
@@ -258,87 +246,6 @@ public slots:
 signals:
     void bulk_selection_changed();
     void name_changed();
-};
-
-class DatabaseObserver {
-    QPointer<Database>               m_database;
-    QVector<QMetaObject::Connection> m_database_conns;
-
-protected:
-    void observe(Database* ptr) {
-        if (ptr == m_database) return;
-        if (m_database) {
-            for (auto const& c : std::as_const(m_database_conns)) {
-                QObject::disconnect(c);
-            }
-            m_database_conns.clear();
-        }
-        m_database = ptr;
-        if (ptr) set_new_database_connections(ptr);
-    }
-
-    void add_connection(QMetaObject::Connection c) {
-        m_database_conns.push_back(c);
-    }
-
-    Database*       database() { return m_database; }
-    Database const* database() const { return m_database; }
-
-    virtual void set_new_database_connections(Database* ptr) = 0;
-
-    template <class F>
-    void with_db(F&& f) {
-        if (m_database) { f(m_database); }
-    }
-
-public:
-    DatabaseObserver()          = default;
-    virtual ~DatabaseObserver() = default;
-
-    DatabaseObserver(DatabaseObserver const&)            = delete;
-    DatabaseObserver& operator=(DatabaseObserver const&) = delete;
-    DatabaseObserver(DatabaseObserver&&)                 = delete;
-    DatabaseObserver& operator=(DatabaseObserver&&)      = delete;
-};
-
-class ConstDatabaseObserver {
-    QPointer<Database const>         m_database;
-    QVector<QMetaObject::Connection> m_database_conns;
-
-protected:
-    void observe(Database const* ptr) {
-        if (ptr == m_database) return;
-        if (m_database) {
-            for (auto const& c : std::as_const(m_database_conns)) {
-                QObject::disconnect(c);
-            }
-            m_database_conns.clear();
-        }
-        m_database = ptr;
-        if (ptr) set_new_database_connections(ptr);
-    }
-
-    void add_connection(QMetaObject::Connection c) {
-        m_database_conns.push_back(c);
-    }
-
-    Database const* database() const { return m_database; }
-
-    virtual void set_new_database_connections(Database const* ptr) = 0;
-
-    template <class F>
-    void with_db(F&& f) {
-        if (m_database) { f(m_database); }
-    }
-
-public:
-    ConstDatabaseObserver()          = default;
-    virtual ~ConstDatabaseObserver() = default;
-
-    ConstDatabaseObserver(ConstDatabaseObserver const&)            = delete;
-    ConstDatabaseObserver& operator=(ConstDatabaseObserver const&) = delete;
-    ConstDatabaseObserver(ConstDatabaseObserver&&)                 = delete;
-    ConstDatabaseObserver& operator=(ConstDatabaseObserver&&)      = delete;
 };
 
 } // namespace db

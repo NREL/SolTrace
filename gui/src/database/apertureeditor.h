@@ -4,11 +4,11 @@
 #include <QPointF>
 #include <QStringListModel>
 #include <limits>
-#include <vector>
 
 #include "aperture.hpp"
 
 #include "database/database.h"
+#include "database/database_observer.h"
 #include "utilities/qt_helpers.h"
 #include "utilities/structmodel.h"
 
@@ -16,6 +16,7 @@ namespace SD = SolTrace::Data;
 
 namespace db {
 
+/// The type of the aperture parameter
 enum ApertureParameterType {
     GenericApertureParameter = 0,
     AngleApertureParameter   = 1,
@@ -39,12 +40,12 @@ struct ApertureParameter {
                 SM_EXPOSE_RO(type));
 };
 
-
+/// Model to present aperture parameters to QML
 class ApertureParameterModel : public StructTableModel<ApertureParameter>,
                                public DatabaseObserver {
     Q_OBJECT
 
-    entt::entity m_current_group = entt::null;
+    entt::entity m_current_group         = entt::null;
     bool         m_syncing_from_database = false;
 
     void set_new_database_connections(Database* ptr) override;
@@ -55,14 +56,22 @@ class ApertureParameterModel : public StructTableModel<ApertureParameter>,
     void make_new_aperture(SD::ApertureType);
 
 public:
+    /// Get valid aperture types for a surface
     static std::span<SolTrace::Data::ApertureType const>
         valid_apertures_for_surf(SD::SurfaceType);
+
     explicit ApertureParameterModel(QObject* parent);
 
+    /// Set the database/group to edit
     void set(Database*, entt::entity group);
 
+    /// Update the aperture type (i.e. a new aperture of this type).
     void set_for(SD::ApertureType);
+
+    /// Set from an existing SD aperture
     void set_from(SD::Aperture const&);
+
+    /// Update the SD aperture from this model
     void write_back(SD::Aperture&) const;
 
 private slots:

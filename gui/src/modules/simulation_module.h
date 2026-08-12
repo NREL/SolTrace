@@ -2,7 +2,7 @@
 
 #include "database/database.h"
 #include "database/simulationresult.h"
-#include "database/worldgeometrymodel.h"
+#include "database/models/world_geometry_model.h"
 #include "job_control/job_run.h"
 #include "utilities/notification.h"
 #include "utilities/qt_helpers.h"
@@ -13,6 +13,7 @@
 #include <QObject>
 #include <QQmlEngine>
 #include <QString>
+#include <QVariantMap>
 #include <QVector3D>
 
 namespace SolTrace::GUI::App {
@@ -88,6 +89,9 @@ public:
     Q_READONLY_PROPERTY(double, elapsed_seconds)
 
 public slots:
+    /// Compute current simulation ray-result bounds on demand.
+    Q_INVOKABLE QVariantMap current_result_bounds() const;
+
     void run();
     // void pause(); // no executor support for pause or resume
     // void resume();

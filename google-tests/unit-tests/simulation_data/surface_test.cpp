@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <limits>
+#include <stdexcept>
+
 #include <simulation_data_export.hpp>
 #include <surface.hpp>
 
@@ -343,4 +346,72 @@ TEST(Sphere, BoundingBox)
     sph->bounding_box(xbox2, ybox2, z0, z1);
     EXPECT_NEAR(z0, 0.0, TOL);
     EXPECT_NEAR(z1, R - sqrt(R*R - rsq), TOL);
+}
+
+TEST(Cone, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_surface<Cone>(1.0));
+    EXPECT_NO_THROW(make_surface<Cone>(45.0));
+    EXPECT_NO_THROW(make_surface<Cone>(89.9));
+
+    EXPECT_THROW(make_surface<Cone>(0.0),    std::invalid_argument);
+    EXPECT_THROW(make_surface<Cone>(-1.0),   std::invalid_argument);
+    EXPECT_THROW(make_surface<Cone>(90.0),   std::invalid_argument);
+    EXPECT_THROW(make_surface<Cone>(91.0),   std::invalid_argument);
+    EXPECT_THROW(make_surface<Cone>(NAN_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_surface<Cone>(INF_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_surface<Cone>(-INF_VAL), std::invalid_argument);
+}
+
+TEST(Cylinder, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_surface<Cylinder>(0.001));
+    EXPECT_NO_THROW(make_surface<Cylinder>(1.0));
+
+    EXPECT_THROW(make_surface<Cylinder>(0.0),    std::invalid_argument);
+    EXPECT_THROW(make_surface<Cylinder>(-1.0),   std::invalid_argument);
+    EXPECT_THROW(make_surface<Cylinder>(NAN_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_surface<Cylinder>(INF_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_surface<Cylinder>(-INF_VAL), std::invalid_argument);
+}
+
+TEST(Parabola, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_surface<Parabola>(1.0, 2.0));
+    EXPECT_NO_THROW(make_surface<Parabola>(-1.0, -2.0));  // negative focal lengths are valid
+    EXPECT_NO_THROW(make_surface<Parabola>(0.0, 1.0));    // zero in one direction means flat
+    EXPECT_NO_THROW(make_surface<Parabola>(1.0, 0.0));    // zero in one direction means flat
+    EXPECT_NO_THROW(make_surface<Parabola>(INF_VAL, 1.0));   // single inf means flat in that direction
+    EXPECT_NO_THROW(make_surface<Parabola>(1.0, INF_VAL));
+    EXPECT_NO_THROW(make_surface<Parabola>(-INF_VAL, 1.0));
+    EXPECT_NO_THROW(make_surface<Parabola>(1.0, -INF_VAL));
+
+    EXPECT_THROW(make_surface<Parabola>(NAN_VAL, 1.0),        std::invalid_argument);
+    EXPECT_THROW(make_surface<Parabola>(1.0, NAN_VAL),        std::invalid_argument);
+    EXPECT_THROW(make_surface<Parabola>(INF_VAL, INF_VAL),   std::invalid_argument);
+    EXPECT_THROW(make_surface<Parabola>(-INF_VAL, -INF_VAL), std::invalid_argument);
+}
+
+TEST(Sphere, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_surface<Sphere>(0.001));
+    EXPECT_NO_THROW(make_surface<Sphere>(1.0));
+
+    EXPECT_THROW(make_surface<Sphere>(0.0),    std::invalid_argument);
+    EXPECT_THROW(make_surface<Sphere>(-1.0),   std::invalid_argument);
+    EXPECT_THROW(make_surface<Sphere>(NAN_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_surface<Sphere>(INF_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_surface<Sphere>(-INF_VAL), std::invalid_argument);
 }

@@ -7,6 +7,8 @@
 #include "common.hpp"
 
 #include <array>
+#include <limits>
+#include <stdexcept>
 #include <utility>
 
 // Bounding box test helper functions
@@ -754,4 +756,119 @@ TEST(Aperture, MakeApertureFromType)
     std::vector<double> empty_args;
     auto null_ap2 = Aperture::make_aperture_from_type(ApertureType::CIRCLE, empty_args);
     EXPECT_TRUE(null_ap2 == nullptr);
+}
+
+TEST(Annulus, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_aperture<Annulus>(0.5, 1.0, 180.0));
+    EXPECT_NO_THROW(make_aperture<Annulus>(0.0, 1.0, 360.0)); // inner_radius == 0 is valid
+
+    EXPECT_THROW(make_aperture<Annulus>(-0.1, 1.0, 180.0), std::invalid_argument); // negative inner
+    EXPECT_THROW(make_aperture<Annulus>(0.5, 0.0, 180.0),  std::invalid_argument); // zero outer
+    EXPECT_THROW(make_aperture<Annulus>(0.5, -1.0, 180.0), std::invalid_argument); // negative outer
+    EXPECT_THROW(make_aperture<Annulus>(1.0, 0.5, 180.0),  std::invalid_argument); // inner >= outer
+    EXPECT_THROW(make_aperture<Annulus>(1.0, 1.0, 180.0),  std::invalid_argument); // inner == outer
+    EXPECT_THROW(make_aperture<Annulus>(0.5, 1.0, 0.0),    std::invalid_argument); // zero arc
+    EXPECT_THROW(make_aperture<Annulus>(0.5, 1.0, -10.0),  std::invalid_argument); // negative arc
+    EXPECT_THROW(make_aperture<Annulus>(0.5, 1.0, 361.0),  std::invalid_argument); // arc > 360
+    EXPECT_THROW(make_aperture<Annulus>(NAN_VAL, 1.0, 180.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<Annulus>(0.5, NAN_VAL, 180.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<Annulus>(0.5, 1.0, NAN_VAL),   std::invalid_argument);
+    EXPECT_THROW(make_aperture<Annulus>(INF_VAL, 1.0, 180.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<Annulus>(0.5, INF_VAL, 180.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<Annulus>(0.5, 1.0, INF_VAL),   std::invalid_argument);
+}
+
+TEST(Circle, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_aperture<Circle>(0.001));
+    EXPECT_NO_THROW(make_aperture<Circle>(1.0));
+
+    EXPECT_THROW(make_aperture<Circle>(0.0),    std::invalid_argument);
+    EXPECT_THROW(make_aperture<Circle>(-1.0),   std::invalid_argument);
+    EXPECT_THROW(make_aperture<Circle>(NAN_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<Circle>(INF_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<Circle>(-INF_VAL), std::invalid_argument);
+}
+
+TEST(EquilateralTriangle, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_aperture<EquilateralTriangle>(1.0));
+
+    EXPECT_THROW(make_aperture<EquilateralTriangle>(0.0),    std::invalid_argument);
+    EXPECT_THROW(make_aperture<EquilateralTriangle>(-1.0),   std::invalid_argument);
+    EXPECT_THROW(make_aperture<EquilateralTriangle>(NAN_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<EquilateralTriangle>(INF_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<EquilateralTriangle>(-INF_VAL), std::invalid_argument);
+}
+
+TEST(Hexagon, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_aperture<Hexagon>(1.0));
+
+    EXPECT_THROW(make_aperture<Hexagon>(0.0),    std::invalid_argument);
+    EXPECT_THROW(make_aperture<Hexagon>(-1.0),   std::invalid_argument);
+    EXPECT_THROW(make_aperture<Hexagon>(NAN_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<Hexagon>(INF_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<Hexagon>(-INF_VAL), std::invalid_argument);
+}
+
+TEST(Rectangle, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_aperture<Rectangle>(1.0, 2.0));
+    EXPECT_NO_THROW(make_aperture<Rectangle>(1.0, 2.0, -0.5, -1.0)); // offset coords are fine
+    EXPECT_NO_THROW(make_aperture<Rectangle>(0.0, 1.0));   // zero side length is allowed
+    EXPECT_NO_THROW(make_aperture<Rectangle>(1.0, 0.0));
+
+    EXPECT_THROW(make_aperture<Rectangle>(-1.0, 1.0),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<Rectangle>(1.0, -1.0),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<Rectangle>(NAN_VAL, 1.0),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<Rectangle>(1.0, NAN_VAL),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<Rectangle>(INF_VAL, 1.0),  std::invalid_argument);
+    EXPECT_THROW(make_aperture<Rectangle>(1.0, INF_VAL),  std::invalid_argument);
+}
+
+TEST(IrregularTriangle, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_aperture<IrregularTriangle>(0.0, 0.0, 1.0, 0.0, 0.0, 1.0));
+    EXPECT_NO_THROW(make_aperture<IrregularTriangle>(-1.0, -1.0, 1.0, -1.0, 0.0, 1.0));
+
+    // Collinear vertices
+    EXPECT_THROW(make_aperture<IrregularTriangle>(0.0, 0.0, 1.0, 0.0, 2.0, 0.0), std::invalid_argument);
+
+    EXPECT_THROW(make_aperture<IrregularTriangle>(NAN_VAL, 0.0, 1.0, 0.0, 0.0, 1.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<IrregularTriangle>(0.0, NAN_VAL, 1.0, 0.0, 0.0, 1.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<IrregularTriangle>(0.0, 0.0, INF_VAL, 0.0, 0.0, 1.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<IrregularTriangle>(0.0, 0.0, 1.0, 0.0, 0.0, INF_VAL), std::invalid_argument);
+}
+
+TEST(IrregularQuadrilateral, Validate)
+{
+    const double NAN_VAL = std::numeric_limits<double>::quiet_NaN();
+    const double INF_VAL = std::numeric_limits<double>::infinity();
+
+    EXPECT_NO_THROW(make_aperture<IrregularQuadrilateral>(0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0));
+
+    EXPECT_THROW(make_aperture<IrregularQuadrilateral>(NAN_VAL, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<IrregularQuadrilateral>(0.0, NAN_VAL, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<IrregularQuadrilateral>(0.0, 0.0, INF_VAL, 0.0, 1.0, 1.0, 0.0, 1.0), std::invalid_argument);
+    EXPECT_THROW(make_aperture<IrregularQuadrilateral>(0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, INF_VAL), std::invalid_argument);
 }

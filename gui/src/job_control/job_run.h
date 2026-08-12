@@ -27,6 +27,7 @@ class RunningJob : public QObject {
     std::shared_ptr<db::SimulationResult> m_result;
 
 public:
+    /// Start a simulation job immediately using exported simulation data.
     explicit RunningJob(
         SimDataPtr          data,
         uint32_t            thread_count,
@@ -34,11 +35,17 @@ public:
         QObject*            parent  = nullptr);
     virtual ~RunningJob();
 
+    /// Transfer the completed result out of the job object.
     std::shared_ptr<db::SimulationResult> take();
 
 public slots:
+    /// Request the runner pause, if the selected backend supports it.
     void pause();
+
+    /// Request the runner resume, if the selected backend supports it.
     void resume();
+
+    /// Request cancellation of the running job.
     void cancel();
 
 signals:

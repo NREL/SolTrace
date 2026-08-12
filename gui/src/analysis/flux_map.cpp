@@ -285,7 +285,7 @@ raster_triangle_flux(std::vector<TriangleFluxBin> const& triangles,
             continue;
         }
 
-        // This is just a slightly ugly fill
+        // Fill covered pixels directly before nearby-sample interpolation.
 
         auto const& v1 = mesh.vertex[mesh.triangles[tri_index].x];
         auto const& v2 = mesh.vertex[mesh.triangles[tri_index].y];
@@ -630,11 +630,6 @@ execute_map_generation_for(TaskControl&            control,
                                         power_per_ray);
 
     qDebug() << Q_FUNC_INFO << "complete";
-
-    // img.save("debug.png");
-    // points_img.save("points.png");
-    //  dump_interaction_points_csv(interaction_points,
-    //  "interaction_points.csv");
 
     img = img.convertToFormat(QImage::Format_RGBA8888);
 

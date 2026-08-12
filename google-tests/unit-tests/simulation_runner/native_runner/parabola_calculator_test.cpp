@@ -51,10 +51,12 @@ TEST(ParabolaCalculator, ConstructorWrongSurfaceTypeThrows)
 
 TEST(ParabolaCalculator, ConstructorZeroFocalLengthAllowed)
 {
-    auto zero_focal_surface = create_parabola_surface(0.0);
+    auto para = create_parabola_surface();
+    para->focal_length_x = 0.0;
+    para->focal_length_y = 0.0;
     auto circ = create_circle_aperture();
     EXPECT_NO_THROW({
-        ParabolaCalculator calc(zero_focal_surface, circ);
+        ParabolaCalculator calc(para, circ);
     });
 }
 
@@ -69,16 +71,19 @@ TEST(ParabolaCalculator, ConstructorNegativeFocalLengthAllowed)
 
 TEST(ParabolaCalculator, ConstructorNaNFocalLengthThrows)
 {
-    auto nan_focal_surface = create_parabola_surface(std::nan(""));
+    auto para = create_parabola_surface();
+    para->focal_length_x = std::nan("");
     auto circ = create_circle_aperture();
-    EXPECT_THROW({ ParabolaCalculator calc(nan_focal_surface, circ); }, std::invalid_argument);
+    EXPECT_THROW({ ParabolaCalculator calc(para, circ); }, std::invalid_argument);
 }
 
 TEST(ParabolaCalculator, ConstructorInfiniteFocalLengthThrows)
 {
-    auto inf_focal_surface = create_parabola_surface(std::numeric_limits<double>::infinity());
+    auto para = create_parabola_surface();
+    para->focal_length_x = std::numeric_limits<double>::infinity();
+    para->focal_length_y = std::numeric_limits<double>::infinity();
     auto circ = create_circle_aperture();
-    EXPECT_THROW({ ParabolaCalculator calc(inf_focal_surface, circ); }, std::invalid_argument);
+    EXPECT_THROW({ ParabolaCalculator calc(para, circ); }, std::invalid_argument);
 }
 
 TEST(ParabolaCalculator, ConstructorValidFocalLength)

@@ -6,6 +6,7 @@
 #include <simulation_result_export.hpp>
 #include <simulation_runner.hpp>
 
+#include <functional>
 #include <iostream>
 #include <limits>
 
@@ -121,18 +122,18 @@ element_id set_default_sd(SimulationData &sd,
     return id;
 }
 
-TEST(OptixRunner, FlatRectangle)
+template <typename ApertureT>
+static void run_geometry_intersection_test(
+    const surface_ptr &surf,
+    const std::shared_ptr<ApertureT> &aper,
+    double rotation_deg,
+    const std::function<double(double, double)> &surface_z,
+    bool use_local_coordinates = true)
 {
-    const double XL = 10.0;
-    const double YL = 5.0;
-    const double ROT_DEG = -10.0;
-    auto surf = make_surface<Flat>();
-    auto aper = make_aperture<Rectangle>(XL, YL);
-
     uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
 
     SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
+    element_id test_elid = set_default_sd(sd, surf, aper, rotation_deg);
     SimulationResult result;
 
     OptixRunner runner;
@@ -147,8 +148,10 @@ TEST(OptixRunner, FlatRectangle)
 
     ASSERT_EQ(result.get_number_of_records(),
               sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
+
+    const double cos_rot = cos(rotation_deg * D2R);
+    const double sin_rot = sin(rotation_deg * D2R);
+
     for (int i = 0; i < (int)result.get_number_of_records(); ++i)
     {
         auto rr = result[i];
@@ -159,14 +162,18 @@ TEST(OptixRunner, FlatRectangle)
         auto id = rr->get_element(1);
         EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
         EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
+
+        const double lx = use_local_coordinates
+                              ? p1[0] * cos_rot - p1[1] * sin_rot
+                              : p1[0];
+        const double ly = use_local_coordinates
+                              ? p1[0] * sin_rot + p1[1] * cos_rot
+                              : p1[1];
 
         if (id == test_elid)
         {
-            // We hit the test element. Check that the height is as expected
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            // And that we are in the aperture
+            EXPECT_NEAR(p1[2], Z_ELEM + surface_z(lx, ly), TOL * Z_ELEM)
+                << "ray " << i;
             EXPECT_TRUE(aper->is_in(lx, ly));
             ++hits;
             if (!aper->is_in(lx, ly))
@@ -174,15 +181,14 @@ TEST(OptixRunner, FlatRectangle)
         }
         else
         {
-            // We hit the back stop element. Check that the height is as expected
             EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            // And that we are not in the aperture.
             EXPECT_FALSE(aper->is_in(lx, ly));
             ++misses;
             if (aper->is_in(lx, ly))
                 ++fneg;
         }
     }
+
     EXPECT_GT(hits, 0u);
     EXPECT_GT(misses, 0u);
     std::cout << "hits: " << hits << ", misses: " << misses
@@ -190,68 +196,83 @@ TEST(OptixRunner, FlatRectangle)
               << ", false negatives: " << fneg << std::endl;
 }
 
+template <typename ApertureT>
+static void run_flat_geometry_intersection_test(
+    const std::shared_ptr<ApertureT> &aper,
+    double rotation_deg,
+    bool use_local_coordinates = true)
+{
+    run_geometry_intersection_test(
+        make_surface<Flat>(),
+        aper,
+        rotation_deg,
+        [](double, double) { return 0.0; },
+        use_local_coordinates);
+}
+
+template <typename ApertureT>
+static void run_parabolic_geometry_intersection_test(
+    const std::shared_ptr<Parabola> &surf,
+    const std::shared_ptr<ApertureT> &aper,
+    double rotation_deg)
+{
+    run_geometry_intersection_test(
+        surf,
+        aper,
+        rotation_deg,
+        [surf](double lx, double ly)
+        {
+            return lx * lx / (4.0 * surf->focal_length_x) +
+                   ly * ly / (4.0 * surf->focal_length_y);
+        });
+}
+
+template <typename ApertureT>
+static void run_cylindrical_geometry_intersection_test(
+    const std::shared_ptr<Cylinder> &surf,
+    const std::shared_ptr<ApertureT> &aper,
+    double rotation_deg)
+{
+    run_geometry_intersection_test(
+        surf,
+        aper,
+        rotation_deg,
+        [surf](double lx, double)
+        {
+            return sqrt(surf->radius * surf->radius - lx * lx);
+        });
+}
+
+template <typename ApertureT>
+static void run_spherical_geometry_intersection_test(
+    const std::shared_ptr<Sphere> &surf,
+    const std::shared_ptr<ApertureT> &aper,
+    double rotation_deg)
+{
+    run_geometry_intersection_test(
+        surf,
+        aper,
+        rotation_deg,
+        [surf](double lx, double ly) { return surf->z(lx, ly); });
+}
+
+TEST(OptixRunner, FlatRectangle)
+{
+    const double XL = 10.0;
+    const double YL = 5.0;
+    const double ROT_DEG = -10.0;
+    auto aper = make_aperture<Rectangle>(XL, YL);
+
+    run_flat_geometry_intersection_test(aper, ROT_DEG);
+}
+
 TEST(OptixRunner, FlatEquilateralTriangle)
 {
     const double d = 4.0;
     const double ROT_DEG = 90.0;
-    auto surf = make_surface<Flat>();
     auto aper = make_aperture<EquilateralTriangle>(d);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_flat_geometry_intersection_test(aper, ROT_DEG);
 }
 
 TEST(OptixRunner, FlatTriangle)
@@ -263,64 +284,9 @@ TEST(OptixRunner, FlatTriangle)
     const double x1 = 0.0, x2 = 2.0, x3 = 1.0;
     const double y1 = 0.0, y2 = 0.0, y3 = 2.0;
     const double ROT_DEG = 110.0;
-    auto surf = make_surface<Flat>();
     auto aper = make_aperture<IrregularTriangle>(x1, y1, x2, y2, x3, y3);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_flat_geometry_intersection_test(aper, ROT_DEG);
 }
 
 TEST(OptixRunner, FlatTriangle_CW)
@@ -331,64 +297,9 @@ TEST(OptixRunner, FlatTriangle_CW)
     const double x1 = 0.0, x2 = 1.0, x3 = 2.0 * x2;
     const double y1 = 0.0, y2 = 2.0, y3 = y1;
     const double ROT_DEG = 110.0;
-    auto surf = make_surface<Flat>();
     auto aper = make_aperture<IrregularTriangle>(x1, y1, x2, y2, x3, y3);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_flat_geometry_intersection_test(aper, ROT_DEG);
 }
 
 TEST(OptixRunner, FlatQuadrilateral)
@@ -397,65 +308,10 @@ TEST(OptixRunner, FlatQuadrilateral)
     const double x1 = 0.0, x2 = 3.0, x3 = (x2 - x1) + 1.0, x4 = x3 - x2 + x1;
     const double y1 = 0.0, y2 = y1, y3 = 2.0, y4 = y3;
     const double ROT_DEG = -45.0;
-    auto surf = make_surface<Flat>();
     auto aper = make_aperture<IrregularQuadrilateral>(
         x1, y1, x2, y2, x3, y3, x4, y4);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_flat_geometry_intersection_test(aper, ROT_DEG);
 }
 
 TEST(OptixRunner, FlatQuadrilateral_CW)
@@ -470,65 +326,10 @@ TEST(OptixRunner, FlatQuadrilateral_CW)
     const double x1 = 0.0, x2 = 1.0, x3 = 4.0, x4 = 3.0;
     const double y1 = 0.0, y2 = 2.0, y3 = 2.0, y4 = 0.0;
     const double ROT_DEG = -45.0;
-    auto surf = make_surface<Flat>();
     auto aper = make_aperture<IrregularQuadrilateral>(
         x1, y1, x2, y2, x3, y3, x4, y4);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_flat_geometry_intersection_test(aper, ROT_DEG);
 }
 
 TEST(OptixRunner, ParabolaRectangle)
@@ -542,62 +343,7 @@ TEST(OptixRunner, ParabolaRectangle)
     auto surf = make_surface<Parabola>(FX, FY);
     auto aper = make_aperture<Rectangle>(XL, YL);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            const double z1 = Z_ELEM + 0.5 * CX * lx * lx + 0.5 * CY * ly * ly;
-            EXPECT_NEAR(p1[2], z1, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_parabolic_geometry_intersection_test(surf, aper, ROT_DEG);
 }
 
 TEST(OptixRunner, Cylinder)
@@ -608,186 +354,25 @@ TEST(OptixRunner, Cylinder)
     auto surf = make_surface<Cylinder>(R);
     auto aper = make_aperture<Rectangle>(2 * R, YL);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            const double z1 = Z_ELEM + sqrt(R * R - lx * lx);
-            EXPECT_NEAR(p1[2], z1, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_cylindrical_geometry_intersection_test(surf, aper, ROT_DEG);
 }
 
 TEST(OptixRunner, FlatCircle)
 {
     const double R = 5.0;
     const double ROT_DEG = 10.0; // Should make no difference
-    auto surf = make_surface<Flat>();
     auto aper = make_aperture<Circle>(2 * R);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-
-        if (id == test_elid)
-        {
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(p1[0], p1[1]));
-            ++hits;
-            if (!aper->is_in(p1[0], p1[1]))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(p1[0], p1[1]));
-            ++misses;
-            if (aper->is_in(p1[0], p1[1]))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_flat_geometry_intersection_test(aper, ROT_DEG, false);
 }
 
 TEST(OptixRunner, FlatHexagon)
 {
     const double S = 5.0;
     const double ROT_DEG = 30.0;
-    auto surf = make_surface<Flat>();
     auto aper = make_aperture<Hexagon>(2 * S);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_flat_geometry_intersection_test(aper, ROT_DEG);
 }
 
 TEST(OptixRunner, FlatAnnulus_FullArc)
@@ -796,60 +381,9 @@ TEST(OptixRunner, FlatAnnulus_FullArc)
     const double R1 = 180.0;
     const double ARC = 360.0;
     const double ROT_DEG = -15.0; // Should make no difference
-    auto surf = make_surface<Flat>();
     auto aper = make_aperture<Annulus>(R0, R1, ARC);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-
-        if (id == test_elid)
-        {
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(p1[0], p1[1]));
-            ++hits;
-            if (!aper->is_in(p1[0], p1[1]))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(p1[0], p1[1]));
-            ++misses;
-            if (aper->is_in(p1[0], p1[1]))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_flat_geometry_intersection_test(aper, ROT_DEG, false);
 }
 
 TEST(OptixRunner, FlatAnnulus_PartialArc)
@@ -858,64 +392,9 @@ TEST(OptixRunner, FlatAnnulus_PartialArc)
     const double R1 = 180.0;
     const double ARC = 90.0;
     const double ROT_DEG = -15.0;
-    auto surf = make_surface<Flat>();
     auto aper = make_aperture<Annulus>(R0, R1, ARC);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            EXPECT_NEAR(p1[2], Z_ELEM, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_flat_geometry_intersection_test(aper, ROT_DEG);
 }
 
 TEST(OptixRunner, ParabolicHexagon)
@@ -927,65 +406,7 @@ TEST(OptixRunner, ParabolicHexagon)
     auto surf = make_surface<Parabola>(FOCAL_X, FOCAL_Y);
     auto aper = make_aperture<Hexagon>(2 * S);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            double zsol = lx * lx / (4.0 * FOCAL_X) + ly * ly / (4.0 * FOCAL_Y) + Z_ELEM;
-            EXPECT_NEAR(p1[2], zsol, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_parabolic_geometry_intersection_test(surf, aper, ROT_DEG);
 }
 
 TEST(OptixRunner, ParabolicTriangle)
@@ -997,65 +418,7 @@ TEST(OptixRunner, ParabolicTriangle)
     auto surf = make_surface<Parabola>(FOCAL_X, FOCAL_Y);
     auto aper = make_aperture<EquilateralTriangle>(d);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            double zsol = lx * lx / (4.0 * FOCAL_X) + ly * ly / (4.0 * FOCAL_Y) + Z_ELEM;
-            EXPECT_NEAR(p1[2], zsol, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_parabolic_geometry_intersection_test(surf, aper, ROT_DEG);
 }
 
 TEST(OptixRunner, ParabolicAnnulus)
@@ -1069,65 +432,7 @@ TEST(OptixRunner, ParabolicAnnulus)
     auto surf = make_surface<Parabola>(FOCAL_X, FOCAL_Y);
     auto aper = make_aperture<Annulus>(R0, R1, ARC);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            double zsol = lx * lx / (4.0 * FOCAL_X) + ly * ly / (4.0 * FOCAL_Y) + Z_ELEM;
-            EXPECT_NEAR(p1[2], zsol, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_parabolic_geometry_intersection_test(surf, aper, ROT_DEG);
 }
 
 TEST(OptixRunner, ParabolicQuadrilateral)
@@ -1141,65 +446,7 @@ TEST(OptixRunner, ParabolicQuadrilateral)
     auto surf = make_surface<Parabola>(FOCAL_X, FOCAL_Y);
     auto aper = make_aperture<IrregularQuadrilateral>(x1, y1, x2, y2, x3, y3, x4, y4);
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
-
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
-
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
-
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
-
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
-
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
-
-        if (id == test_elid)
-        {
-            double zsol = lx * lx / (4.0 * FOCAL_X) + ly * ly / (4.0 * FOCAL_Y) + Z_ELEM;
-            EXPECT_NEAR(p1[2], zsol, TOL * Z_ELEM) << "ray " << i;
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_parabolic_geometry_intersection_test(surf, aper, ROT_DEG);
 }
 
 TEST(OptixRunner, ParabolicCircle)
@@ -1211,70 +458,77 @@ TEST(OptixRunner, ParabolicCircle)
     auto surf = make_surface<Parabola>(FOCAL_X, FOCAL_Y);
     auto aper = make_aperture<Circle>(2 * R);
 
-    // z(x,y) = x^2/(2*FOCAL_X) + y^2/(2*FOCAL_Y). Maximum over the circle x^2+y^2<=R^2
-    // is R^2 / (2 * min(FOCAL_X, FOCAL_Y)), achieved along the axis with lower focal length.
-    // const double Z_MAX_OFFSET = R * R / (2.0 * std::min(FOCAL_X, FOCAL_Y));
+    run_parabolic_geometry_intersection_test(surf, aper, ROT_DEG);
+}
 
-    uint_fast64_t fpos = 0, fneg = 0, hits = 0, misses = 0;
+TEST(OptixRunner, SphericalRectangle)
+{
+    const double XL = 10.0;
+    const double YL = 5.0;
+    const double SPHERE_R = 20.0;
+    const double ROT_DEG = -10.0;
+    auto surf = make_surface<Sphere>(1.0 / SPHERE_R);
+    auto aper = make_aperture<Rectangle>(XL, YL);
 
-    SimulationData sd;
-    element_id test_elid = set_default_sd(sd, surf, aper, ROT_DEG);
-    SimulationResult result;
+    run_spherical_geometry_intersection_test(surf, aper, ROT_DEG);
+}
 
-    OptixRunner runner;
-    RunnerStatus sts = runner.initialize();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.setup_simulation(&sd);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.run_simulation();
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
-    sts = runner.report_simulation(&result, 0);
-    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+TEST(OptixRunner, SphericalTriangle)
+{
+    const double x1 = 0.0, x2 = 2.0, x3 = 1.0;
+    const double y1 = 0.0, y2 = 0.0, y3 = 2.0;
+    const double SPHERE_R = 20.0;
+    const double ROT_DEG = 110.0;
+    auto surf = make_surface<Sphere>(1.0 / SPHERE_R);
+    auto aper = make_aperture<IrregularTriangle>(x1, y1, x2, y2, x3, y3);
 
-    ASSERT_EQ(result.get_number_of_records(),
-              sd.get_simulation_parameters().number_of_rays);
+    run_spherical_geometry_intersection_test(surf, aper, ROT_DEG);
+}
 
-    const double cos_rot = cos(ROT_DEG * D2R);
-    const double sin_rot = sin(ROT_DEG * D2R);
+TEST(OptixRunner, SphericalQuadrilateral)
+{
+    const double x1 = 0.0, x2 = 3.0, x3 = (x2 - x1) + 1.0, x4 = x3 - x2 + x1;
+    const double y1 = 0.0, y2 = y1, y3 = 2.0, y4 = y3;
+    const double SPHERE_R = 20.0;
+    const double ROT_DEG = -45.0;
+    auto surf = make_surface<Sphere>(1.0 / SPHERE_R);
+    auto aper = make_aperture<IrregularQuadrilateral>(
+        x1, y1, x2, y2, x3, y3, x4, y4);
 
-    for (int i = 0; i < (int)result.get_number_of_records(); ++i)
-    {
-        auto rr = result[i];
-        ASSERT_GE(rr->get_number_of_interactions(), 2);
-        glm::dvec3 p0, p1;
-        rr->get_position(0, p0);
-        rr->get_position(1, p1);
-        auto id = rr->get_element(1);
-        EXPECT_NEAR(p0[0], p1[0], TOL) << "ray " << i;
-        EXPECT_NEAR(p0[1], p1[1], TOL) << "ray " << i;
+    run_spherical_geometry_intersection_test(surf, aper, ROT_DEG);
+}
 
-        const double lx = p1[0] * cos_rot - p1[1] * sin_rot;
-        const double ly = p1[0] * sin_rot + p1[1] * cos_rot;
+TEST(OptixRunner, SphericalCircle)
+{
+    const double R = 5.0;
+    const double SPHERE_R = 20.0;
+    const double ROT_DEG = 10.0;
+    auto surf = make_surface<Sphere>(1.0 / SPHERE_R);
+    auto aper = make_aperture<Circle>(2 * R);
 
-        if (id == test_elid)
-        {
-            // z is curved: Z_ELEM <= z <= Z_ELEM + Z_MAX_OFFSET
-            // EXPECT_GE(p1[2], Z_ELEM - TOL * Z_ELEM) << "ray " << i;
-            // EXPECT_LE(p1[2], Z_ELEM + Z_MAX_OFFSET + TOL * Z_ELEM) << "ray " << i;
-            double zsol = lx * lx / (4.0 * FOCAL_X) + ly * ly / (4.0 * FOCAL_Y) + Z_ELEM;
-            EXPECT_NEAR(p1[2], zsol, TOL * Z_ELEM);
-            EXPECT_TRUE(aper->is_in(lx, ly));
-            ++hits;
-            if (!aper->is_in(lx, ly))
-                ++fpos;
-        }
-        else
-        {
-            EXPECT_NEAR(p1[2], Z_BACKSTOP, TOL * Z_ELEM);
-            EXPECT_FALSE(aper->is_in(lx, ly));
-            ++misses;
-            if (aper->is_in(lx, ly))
-                ++fneg;
-        }
-    }
-    EXPECT_GT(hits, 0u);
-    EXPECT_GT(misses, 0u);
-    std::cout << "hits: " << hits << ", misses: " << misses
-              << ", false positives: " << fpos
-              << ", false negatives: " << fneg << std::endl;
+    run_spherical_geometry_intersection_test(surf, aper, ROT_DEG);
+}
+
+TEST(OptixRunner, SphericalHexagon)
+{
+    const double S = 5.0;
+    const double SPHERE_R = 20.0;
+    const double ROT_DEG = 30.0;
+    auto surf = make_surface<Sphere>(1.0 / SPHERE_R);
+    auto aper = make_aperture<Hexagon>(2 * S);
+
+    run_spherical_geometry_intersection_test(surf, aper, ROT_DEG);
+}
+
+TEST(OptixRunner, SphericalAnnulus)
+{
+    const double R0 = 2.0;
+    const double R1 = 5.0;
+    const double ARC = 180.0;
+    const double SPHERE_R = 20.0;
+    const double ROT_DEG = -15.0;
+    auto surf = make_surface<Sphere>(1.0 / SPHERE_R);
+    auto aper = make_aperture<Annulus>(R0, R1, ARC);
+
+    run_spherical_geometry_intersection_test(surf, aper, ROT_DEG);
 }

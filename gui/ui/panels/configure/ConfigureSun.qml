@@ -201,6 +201,7 @@ Flickable {
                             label: "X"
                             from: -1000000
                             to: 1000000
+                            decimals: 4
                         }
 
                         STSpinBoxField {
@@ -216,6 +217,7 @@ Flickable {
                             }
                             from: -1000000
                             to: 1000000
+                            decimals: 4
                         }
 
                         STSpinBoxField {
@@ -231,6 +233,7 @@ Flickable {
                             }
                             from: -1000000
                             to: 1000000
+                            decimals: 4
                         }
                     }
                 }

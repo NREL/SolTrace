@@ -30,7 +30,13 @@ namespace OptixCSP
             HEXAGON_PARABOLIC = 11,
             TRIANGLE_PARABOLIC = 12,
             ANNULUS_PARABOLIC = 13,
-            QUADRILATERAL_PARABOLIC = 14
+            QUADRILATERAL_PARABOLIC = 14,
+            RECTANGLE_SPHERICAL = 15,
+            CIRCLE_SPHERICAL = 16,
+            HEXAGON_SPHERICAL = 17,
+            ANNULUS_SPHERICAL = 18,
+            TRIANGLE_SPHERICAL = 19,
+            QUADRILATERAL_SPHERICAL = 20
         };
 
         struct Parallelogram
@@ -312,6 +318,132 @@ namespace OptixCSP
             float3 v2test;
         };
 
+        // -----------------------------------------------------------------------
+        // Spherical surface data structures.
+        // All spherical aperture structs share the sphere radius R.
+        // The surface equation in the local element frame is:
+        //   z(x, y) = (x^2 + y^2) / [(R + sqrt(R^2 - (x^2 + y^2)))]
+        // which is the lower cap of a sphere with radius R centred at
+        // (0, 0, R) in element-local coordinates.
+        // -----------------------------------------------------------------------
+
+        struct Rectangle_Spherical
+        {
+            Rectangle_Spherical() = default;
+            Rectangle_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
+                                 const float &radius, const float &w, const float &h,
+                                 const float &xc, const float &yc)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius),
+                  width(w), height(h), x_coord(xc), y_coord(yc)
+            {}
+            float3 center;  // element origin in global coordinates
+            float3 x_axis;  // local x axis unit vector
+            float3 y_axis;  // local y axis unit vector
+            float R;        // sphere radius
+            float width;    // full width along x
+            float height;   // full height along y
+            float x_coord;  // aperture x offset
+            float y_coord;  // aperture y offset
+        };
+
+        struct Circle_Spherical
+        {
+            Circle_Spherical() = default;
+            Circle_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
+                             const float &sphere_R, const float &r)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(sphere_R), radius(r)
+            {}
+            float3 center;
+            float3 x_axis;
+            float3 y_axis;
+            float R;
+            float radius;
+        };
+
+        struct Hexagon_Spherical
+        {
+            Hexagon_Spherical() = default;
+            Hexagon_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
+                              const float &radius, const float &side_len)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius), s(side_len)
+            {}
+            float3 center;
+            float3 x_axis;
+            float3 y_axis;
+            float R;
+            float s;  // circumradius (vertex-to-center distance)
+        };
+
+        struct Annulus_Spherical
+        {
+            Annulus_Spherical() = default;
+            Annulus_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
+                              const float &radius,
+                              const float &r_inner, const float &r_outer, const float &arc_ang)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius),
+                  ri(r_inner), ro(r_outer), arc(arc_ang)
+            {}
+            float3 center;
+            float3 x_axis;
+            float3 y_axis;
+            float R;
+            float ri;
+            float ro;
+            float arc;  // in radians
+        };
+
+        struct Triangle_Spherical
+        {
+            Triangle_Spherical() = default;
+            Triangle_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
+                               const float &radius,
+                               const float2 &v0, const float2 &v1, const float2 &v2)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius)
+            {
+                const float2 e1 = make_float2(v1.x - v0.x, v1.y - v0.y);
+                const float2 e2 = make_float2(v2.x - v0.x, v2.y - v0.y);
+                const float inv_det = 1.0f / (e1.x * e2.y - e1.y * e2.x);
+                utest = make_float3(e2.y, -e2.x, v0.y * e2.x - v0.x * e2.y) * inv_det;
+                vtest = make_float3(-e1.y, e1.x, v0.x * e1.y - v0.y * e1.x) * inv_det;
+            }
+            float3 center;
+            float3 x_axis;
+            float3 y_axis;
+            float R;
+            float3 utest;
+            float3 vtest;
+        };
+
+        struct Quadrilateral_Spherical
+        {
+            Quadrilateral_Spherical() = default;
+            Quadrilateral_Spherical(const float3 &origin, const float3 &x_ax, const float3 &y_ax,
+                                    const float &radius,
+                                    const float2 &v0, const float2 &v1,
+                                    const float2 &v2, const float2 &v3)
+                : center(origin), x_axis(x_ax), y_axis(y_ax), R(radius)
+            {
+                const float2 e1 = make_float2(v1.x - v0.x, v1.y - v0.y);
+                const float2 e2 = make_float2(v2.x - v0.x, v2.y - v0.y);
+                const float inv_det = 1.0f / (e1.x * e2.y - e1.y * e2.x);
+                u1test = make_float3(e2.y, -e2.x, v0.y * e2.x - v0.x * e2.y) * inv_det;
+                v1test = make_float3(-e1.y, e1.x, v0.x * e1.y - v0.y * e1.x) * inv_det;
+
+                const float2 e3 = make_float2(v3.x - v0.x, v3.y - v0.y);
+                const float inv_det2 = 1.0f / (e2.x * e3.y - e2.y * e3.x);
+                u2test = make_float3(e3.y, -e3.x, v0.y * e3.x - v0.x * e3.y) * inv_det2;
+                v2test = make_float3(-e2.y, e2.x, v0.x * e2.y - v0.y * e2.x) * inv_det2;
+            }
+            float3 center;
+            float3 x_axis;
+            float3 y_axis;
+            float R;
+            float3 u1test;
+            float3 v1test;
+            float3 u2test;
+            float3 v2test;
+        };
+
         GeometryDataST() = default;
 
         void setParallelogram(const Parallelogram &p)
@@ -496,6 +628,84 @@ namespace OptixCSP
             return quadrilateral_parabolic;
         }
 
+        void setRectangle_Spherical(const Rectangle_Spherical &rs)
+        {
+            assert(type == UNKNOWN_TYPE);
+            type = RECTANGLE_SPHERICAL;
+            rectangle_spherical = rs;
+        }
+
+        __host__ __device__ const Rectangle_Spherical &getRectangle_Spherical() const
+        {
+            assert(type == RECTANGLE_SPHERICAL);
+            return rectangle_spherical;
+        }
+
+        void setCircle_Spherical(const Circle_Spherical &cs)
+        {
+            assert(type == UNKNOWN_TYPE);
+            type = CIRCLE_SPHERICAL;
+            circle_spherical = cs;
+        }
+
+        __host__ __device__ const Circle_Spherical &getCircle_Spherical() const
+        {
+            assert(type == CIRCLE_SPHERICAL);
+            return circle_spherical;
+        }
+
+        void setHexagon_Spherical(const Hexagon_Spherical &hs)
+        {
+            assert(type == UNKNOWN_TYPE);
+            type = HEXAGON_SPHERICAL;
+            hexagon_spherical = hs;
+        }
+
+        __host__ __device__ const Hexagon_Spherical &getHexagon_Spherical() const
+        {
+            assert(type == HEXAGON_SPHERICAL);
+            return hexagon_spherical;
+        }
+
+        void setAnnulus_Spherical(const Annulus_Spherical &as)
+        {
+            assert(type == UNKNOWN_TYPE);
+            type = ANNULUS_SPHERICAL;
+            annulus_spherical = as;
+        }
+
+        __host__ __device__ const Annulus_Spherical &getAnnulus_Spherical() const
+        {
+            assert(type == ANNULUS_SPHERICAL);
+            return annulus_spherical;
+        }
+
+        void setTriangle_Spherical(const Triangle_Spherical &ts)
+        {
+            assert(type == UNKNOWN_TYPE);
+            type = TRIANGLE_SPHERICAL;
+            triangle_spherical = ts;
+        }
+
+        __host__ __device__ const Triangle_Spherical &getTriangle_Spherical() const
+        {
+            assert(type == TRIANGLE_SPHERICAL);
+            return triangle_spherical;
+        }
+
+        void setQuadrilateral_Spherical(const Quadrilateral_Spherical &qs)
+        {
+            assert(type == UNKNOWN_TYPE);
+            type = QUADRILATERAL_SPHERICAL;
+            quadrilateral_spherical = qs;
+        }
+
+        __host__ __device__ const Quadrilateral_Spherical &getQuadrilateral_Spherical() const
+        {
+            assert(type == QUADRILATERAL_SPHERICAL);
+            return quadrilateral_spherical;
+        }
+
         Type type = UNKNOWN_TYPE;
 
         int32_t id = OptixCSP::kElementIdUnassigned;
@@ -517,6 +727,12 @@ namespace OptixCSP
             Triangle_Parabolic triangle_parabolic;
             Annulus_Parabolic annulus_parabolic;
             Quadrilateral_Parabolic quadrilateral_parabolic;
+            Rectangle_Spherical rectangle_spherical;
+            Circle_Spherical circle_spherical;
+            Hexagon_Spherical hexagon_spherical;
+            Annulus_Spherical annulus_spherical;
+            Triangle_Spherical triangle_spherical;
+            Quadrilateral_Spherical quadrilateral_spherical;
         };
     };
 }

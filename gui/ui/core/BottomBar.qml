@@ -207,25 +207,6 @@ RowLayout {
                                 App.view.sim.fps_walk_speed = value
                             }
                         }
-                    }
-                }
-            }
-
-            STIconButton {
-                icon: "\uf06e"
-                toolTip: "Perspective"
-
-                onClicked: perspective_popup.open()
-
-                STPopup {
-                    id: perspective_popup
-
-                    width: 250
-                    y: -height - 16
-                    x: (parent.width - width) / 2
-
-                    ColumnLayout {
-                        width: parent.width
 
                         InlineDocumentation {
                             key: "view.perspective"
@@ -238,6 +219,35 @@ RowLayout {
                             Layout.fillWidth: true
                             model: ["Perspective", "Orthographic"]
                             iconModel: ["\uf1b2", "\uf0c8"]
+                        }
+                    }
+                }
+            }
+
+            STIconButton {
+                icon: "\uf279"
+                toolTip: "View Tools"
+
+                onClicked: view_tools_popup.open()
+
+                STPopup {
+                    id: view_tools_popup
+
+                    width: 250
+                    y: -height - 16
+                    x: (parent.width - width) / 2
+
+                    ColumnLayout {
+                        width: parent.width
+
+                        STButton {
+                            Layout.fillWidth: true
+                            text: "Fit All in View"
+                            left_text_icon: "\uf279"
+                            onClicked: {
+                                simulation_scene.fit_all_in_view()
+                                view_tools_popup.close()
+                            }
                         }
                     }
                 }
@@ -332,6 +342,7 @@ RowLayout {
                             from: 0
                             to: 10
                             stepSize: 0.01
+                            decimals: 2
                             value: App.view.sim.geometry_thickness
                             onValueModified: App.view.sim.geometry_thickness = value
                         }

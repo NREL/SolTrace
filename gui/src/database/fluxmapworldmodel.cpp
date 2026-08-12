@@ -4,7 +4,65 @@
 #include "database/components.h"
 #include "database/surface.h"
 
+#include <algorithm>
+#include <limits>
+#include <QVariantMap>
+
 namespace db {
+
+namespace {
+
+struct QVectorBoundsAccumulator {
+    bool      valid = false;
+    QVector3D min;
+    QVector3D max;
+
+    QVectorBoundsAccumulator()
+        : min(std::numeric_limits<float>::max(),
+              std::numeric_limits<float>::max(),
+              std::numeric_limits<float>::max()),
+          max(-std::numeric_limits<float>::max(),
+              -std::numeric_limits<float>::max(),
+              -std::numeric_limits<float>::max()) { }
+
+    void include(QVector3D const& point) {
+        min.setX(std::min(min.x(), point.x()));
+        min.setY(std::min(min.y(), point.y()));
+        min.setZ(std::min(min.z(), point.z()));
+        max.setX(std::max(max.x(), point.x()));
+        max.setY(std::max(max.y(), point.y()));
+        max.setZ(std::max(max.z(), point.z()));
+        valid = true;
+    }
+};
+
+QVariantMap bounds_map(QVectorBoundsAccumulator const& bounds) {
+    return QVariantMap {
+        { QStringLiteral("valid"), bounds.valid },
+        { QStringLiteral("min"), bounds.min },
+        { QStringLiteral("max"), bounds.max },
+    };
+}
+
+void include_transformed_box(QVectorBoundsAccumulator& bounds,
+                             BoundingBox const&       box,
+                             QVector3D const&         position,
+                             QQuaternion const&       rotation) {
+    for (int ix = 0; ix < 2; ++ix) {
+        for (int iy = 0; iy < 2; ++iy) {
+            for (int iz = 0; iz < 2; ++iz) {
+                QVector3D corner(
+                    ix ? box.max.x() : box.min.x(),
+                    iy ? box.max.y() : box.min.y(),
+                    iz ? box.max.z() : box.min.z());
+
+                bounds.include(position + rotation.rotatedVector(corner));
+            }
+        }
+    }
+}
+
+} // namespace
 
 static QString image_name(Entity e) {
     return QString::number(entt::to_integral((entt::entity)e));
@@ -165,9 +223,8 @@ bool PendingFluxMapModel::start_generate_for(Entity entity) {
 
     auto mesh_res = std::max(1, mesh_resolution_multiply());
 
-    mesh_res = 4;
-
     db::SurfaceGenerationOptions surface_options;
+    surface_options.subdivide_polygon_apertures = true;
     surface_options.height_field_resolution *= mesh_res;
     surface_options.radial_subdivisions *= mesh_res;
     surface_options.perimeter_subdivisions *= mesh_res;
@@ -192,7 +249,7 @@ bool PendingFluxMapModel::start_generate_for(Entity entity) {
         .image_resolution = { this->image_resolution().width(),
                               this->image_resolution().height(), },
         .grid_line_color =
-            this->show_mesh_grid() ? this->mesh_line_color() : QColor("grey"),
+            this->show_mesh_grid() ? this->mesh_line_color() : QColor(),
         .color_map = QImage(color_map()),
     };
 
@@ -235,12 +292,28 @@ void FluxMapWorldModel::on_reset() {
 FluxMapWorldModel::FluxMapWorldModel(QObject* parent)
     : StructModelAdapter(parent) { }
 
+QVariantMap FluxMapWorldModel::content_bounds() const {
+    QVectorBoundsAccumulator bounds;
+
+    for (auto const& item : m_records) {
+        if (!item.flux_geometry || item.flux_geometry->vertex_count() == 0) {
+            continue;
+        }
+
+        include_transformed_box(bounds,
+                                item.flux_geometry->bounding_box(),
+                                item.flux_position,
+                                item.flux_rotation);
+    }
+
+    return bounds_map(bounds);
+}
+
 
 void FluxMapWorldModel::on_ready(Entity                    e,
                                  analysis::BakedFluxMapPtr img,
                                  Database const*           db) {
-    // make sure we dont have this already. Not the cleanest, but we shouldn't
-    // have that many maps here
+    // Avoid duplicating map entries; this list should stay small.
 
     if (!db) return;
 
@@ -386,7 +459,7 @@ AllComputedMapsModel::AllComputedMapsModel(QObject* parent)
 void AllComputedMapsModel::reset(Database* database) {
     if (m_host) {
         disconnect(m_host->identity.self(), nullptr, this, nullptr);
-        disconnect(m_host->element_tag.self(), nullptr, this, nullptr);
+        disconnect(m_host->flux_map.self(), nullptr, this, nullptr);
     }
 
     m_host = database;
@@ -408,6 +481,21 @@ void AllComputedMapsModel::reset(Database* database) {
             &ComponentAPIBase::removed,
             this,
             &AllComputedMapsModel::recompute);
+}
+
+int AllComputedMapsModel::index_of(db::Entity entity) const {
+    if (auto iter = m_reverse.find(entity); iter != m_reverse.end()) {
+        return iter->second;
+    }
+
+    return -1;
+}
+
+db::Entity AllComputedMapsModel::entity_at(int index) const {
+    auto const& items = vector();
+    if (index < 0 || index >= items.size()) { return {}; }
+
+    return items[index].entity;
 }
 
 } // namespace db

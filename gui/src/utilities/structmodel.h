@@ -207,8 +207,6 @@ public:
     QVariant data(QModelIndex const& index,
                   int                role = Qt::DisplayRole) const override {
 
-        // qDebug() << Q_FUNC_INFO << index << role;
-
         if (!index.isValid()) return {};
         if (index.row() >= m_records.size()) return {};
 
@@ -235,8 +233,6 @@ public:
     bool setData(QModelIndex const& index,
                  QVariant const&    value,
                  int                role = Qt::EditRole) override {
-
-        // qDebug() << Q_FUNC_INFO << index << value << role;
 
         if (data(index, role) == value) return false;
 
@@ -303,7 +299,6 @@ public:
     }
 
     void reset(QVector<Record> new_records = {}) {
-        // qDebug() << Q_FUNC_INFO;
         beginResetModel();
         m_records = new_records;
         endResetModel();
@@ -311,7 +306,6 @@ public:
 
     // this emits a remove signal, instead of a reset
     void remove_all() {
-        // qDebug() << Q_FUNC_INFO;
         if (m_records.isEmpty()) return;
         beginRemoveRows({}, 0, rowCount() - 1);
         m_records.clear();
@@ -345,8 +339,6 @@ public:
     }
 
     void update(int i, Record const& r) {
-        // qDebug() << Q_FUNC_INFO;
-
         if (i < 0) return;
         if (i >= m_records.size()) return;
 
@@ -368,7 +360,6 @@ public:
     }
 
     void insert_at(int index, std::span<Record> records) {
-        // qDebug() << Q_FUNC_INFO << index << (m_records.size());
         if (records.empty()) return;
         beginInsertRows({}, index, index + records.size() - 1);
         m_records.insert(index, records.size(), Record {});
@@ -517,8 +508,6 @@ public:
 
     QVariant data(QModelIndex const& index,
                   int                role = Qt::DisplayRole) const override {
-
-        // qDebug() << Q_FUNC_INFO << index << role;
 
         if (!index.isValid()) return {};
         if (index.row() >= m_records.size()) return {};

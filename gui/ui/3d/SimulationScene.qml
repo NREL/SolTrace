@@ -39,6 +39,83 @@ Item {
         controller.reset_view()
     }
 
+    function empty_bounds() {
+        return {
+            valid: false,
+            min: Qt.vector3d(0, 0, 0),
+            max: Qt.vector3d(0, 0, 0)
+        }
+    }
+
+    function include_scene_point(bounds, point) {
+        if (!bounds.valid) {
+            bounds.min = Qt.vector3d(point.x, point.y, point.z)
+            bounds.max = Qt.vector3d(point.x, point.y, point.z)
+            bounds.valid = true
+            return
+        }
+
+        bounds.min = Qt.vector3d(Math.min(bounds.min.x, point.x),
+                                 Math.min(bounds.min.y, point.y),
+                                 Math.min(bounds.min.z, point.z))
+        bounds.max = Qt.vector3d(Math.max(bounds.max.x, point.x),
+                                 Math.max(bounds.max.y, point.y),
+                                 Math.max(bounds.max.z, point.z))
+    }
+
+    function include_database_bounds(bounds, source) {
+        if (!source || !source.valid)
+            return
+
+        var minPoint = source.min
+        var maxPoint = source.max
+
+        for (var ix = 0; ix < 2; ++ix) {
+            for (var iy = 0; iy < 2; ++iy) {
+                for (var iz = 0; iz < 2; ++iz) {
+                    include_scene_point(bounds, scene_position_from_database_position(
+                                            Qt.vector3d(ix ? maxPoint.x : minPoint.x,
+                                                        iy ? maxPoint.y : minPoint.y,
+                                                        iz ? maxPoint.z : minPoint.z)))
+                }
+            }
+        }
+    }
+
+    function fit_all_in_view() {
+        var bounds = empty_bounds()
+
+        if (App.view.simulation_content_view) {
+            var fluxBounds = AppData.flux.flux_map_world_model.content_bounds()
+            var normalGeometryVisible = AppData.flux.show_other_geometry
+                    || !fluxBounds.valid
+
+            if (normalGeometryVisible) {
+                include_database_bounds(
+                            bounds,
+                            AppData.simulation.world_geometry_model.content_bounds(false))
+            }
+
+            include_database_bounds(bounds, fluxBounds)
+
+            if (AppData.view.show_intersections) {
+                include_database_bounds(bounds,
+                                        AppData.simulation.current_result_bounds())
+            }
+        } else {
+            include_database_bounds(
+                        bounds,
+                        AppData.layout.world_geometry_model.content_bounds(false))
+        }
+
+        if (!bounds.valid) {
+            reset_camera_view()
+            return
+        }
+
+        controller.fit_bounds(bounds.min, bounds.max)
+    }
+
     View3D {
         id: view
         anchors.fill: parent

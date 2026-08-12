@@ -12,6 +12,36 @@ extern "C"
 /**************** Surface Helper Functions ****************/
 
 // -----------------------------------------------------------------------
+// Shared helper for transforming a world-space ray to a local frame.
+//
+// Curved surface kernels (parabolic, spherical, etc.) use a local frame
+// defined by (center, x_ax, y_ax) with
+//   n = normalize(cross(x_ax, y_ax)).
+// This helper projects the ray origin and direction into that frame.
+// -----------------------------------------------------------------------
+
+// Transform a world-space ray into a local element frame.
+// Outputs the frame normal n = normalize(cross(x_ax, y_ax)) and
+// the local ray origin (ox,oy,oz) and direction (dx,dy,dz).
+extern "C" __device__ __inline__ void ray_to_local_frame(
+    const float3 &ray_orig, const float3 &ray_dir,
+    const float3 &center,
+    const float3 &x_ax, const float3 &y_ax,
+    float3 &n,
+    float &ox, float &oy, float &oz,
+    float &dx, float &dy, float &dz)
+{
+    n = normalize(cross(x_ax, y_ax));
+    const float3 d = ray_orig - center;
+    ox = dot(d, x_ax);
+    oy = dot(d, y_ax);
+    oz = dot(d, n);
+    dx = dot(ray_dir, x_ax);
+    dy = dot(ray_dir, y_ax);
+    dz = dot(ray_dir, n);
+}
+
+// -----------------------------------------------------------------------
 // Shared helpers for a planar (flat) surface
 //
 // All planar surfaces have the equation
@@ -35,30 +65,8 @@ extern "C" __device__ __inline__ float ray_distance_to_plane(float3 ro, float3 r
 // All parabolic surfaces share the same quadric equation:
 //   z = (cx/2)*x^2 + (cy/2)*y^2
 // in a local frame (center, x_ax, y_ax, n=cross(x_ax,y_ax)).
-// The three helpers below factor out the ray transform, quadratic solve,
+// The two parabolic-specific helpers below factor out the quadratic solve
 // and normal computation. Each kernel only supplies the aperture test.
-// -----------------------------------------------------------------------
-
-// Transform a world-space ray into the local parabolic frame.
-// Outputs the frame normal n = normalize(cross(x_ax, y_ax)) and
-// the local ray origin (ox,oy,oz) and direction (dx,dy,dz).
-extern "C" __device__ __inline__ void parabolic_ray_to_local(
-    const float3 &ray_orig, const float3 &ray_dir,
-    const float3 &center,
-    const float3 &x_ax, const float3 &y_ax,
-    float3 &n,
-    float &ox, float &oy, float &oz,
-    float &dx, float &dy, float &dz)
-{
-    n = normalize(cross(x_ax, y_ax));
-    const float3 d = ray_orig - center;
-    ox = dot(d, x_ax);
-    oy = dot(d, y_ax);
-    oz = dot(d, n);
-    dx = dot(ray_dir, x_ax);
-    dy = dot(ray_dir, y_ax);
-    dz = dot(ray_dir, n);
-}
 
 // Solve A*t^2 + B*t + C = 0 for the paraboloid-ray intersection and return
 // up to two hits within [ray_tmin, ray_tmax], ordered by ascending t.
@@ -131,6 +139,88 @@ extern "C" __device__ __inline__ float3 parabolic_world_normal(
     const float3 &x_ax, const float3 &y_ax, const float3 &n)
 {
     const float3 N_local = make_float3(-cx * x_hit, -cy * y_hit, 1.0f);
+    return N_local.x * x_ax + N_local.y * y_ax + N_local.z * n;
+}
+
+// -----------------------------------------------------------------------
+// Shared helpers for spherical surface intersections.
+//
+// The spherical surface equation in the local element frame is:
+//   z(x, y) = (x^2 + y^2) / [(R + sqrt(R^2 - (x^2 + y^2)))]
+// which is the lower cap of a sphere with radius R centred at (0, 0, R):
+//   x^2 + y^2 + (z - R)^2 = R^2
+// -----------------------------------------------------------------------
+
+// Solve the sphere-ray intersection in local element coordinates.
+// The sphere has radius R and is centred at (0, 0, R).
+// Only hits on the lower cap (local z <= R) are returned — this is the
+// concave surface that rays hit from above.
+// Returns the number of valid hits (0, 1, or 2) and fills t_out, lx_out, ly_out.
+extern "C" __device__ __inline__ int spherical_solve(
+    float ox, float oy, float oz,
+    float dx, float dy, float dz,
+    float R,
+    float ray_tmin, float ray_tmax,
+    float t_out[2], float lx_out[2], float ly_out[2])
+{
+    // Sphere: x^2 + y^2 + z^2 - 2*R*z = 0
+    // Substituting ray P = O + t*D gives:
+    //   A*t^2 + B*t + C = 0
+    //   A = dx^2 + dy^2 + dz^2  (= 1 for a unit direction)
+    //   B = 2*(ox*dx + oy*dy + (oz - R)*dz)
+    //   C = ox^2 + oy^2 + oz*(oz - 2*R)
+    int count = 0;
+
+    const float A = dx * dx + dy * dy + dz * dz;
+    const float B = 2.0f * (ox * dx + oy * dy + (oz - R) * dz);
+    const float C = ox * ox + oy * oy + oz * (oz - 2.0f * R);
+
+    const float discr = B * B - 4.0f * A * C;
+    if (discr < 0.0f)
+        return 0;
+
+    const float sq = sqrtf(discr);
+    const float inv2A = 0.5f / A;
+    const float ta = (-B - sq) * inv2A;
+    const float tb = (-B + sq) * inv2A;
+    float lz = oz + ta * dz;
+
+    if (ta >= ray_tmin && ta <= ray_tmax && lz <= R)
+    {
+        t_out[count] = ta;
+        lx_out[count] = ox + ta * dx;
+        ly_out[count] = oy + ta * dy;
+        ++count;
+    }
+
+    lz = oz + tb * dz;
+    if (tb >= ray_tmin && tb <= ray_tmax && lz <= R)
+    {
+        t_out[count] = tb;
+        lx_out[count] = ox + tb * dx;
+        ly_out[count] = oy + tb * dy;
+        ++count;
+    }
+    return count;
+}
+
+// Compute the world-space unit normal at a spherical surface hit.
+// x_hit, y_hit : local (x, y) coordinates of the hit point
+// R            : sphere radius
+// x_ax, y_ax   : local frame unit vectors
+// n            : normalize(cross(x_ax, y_ax))
+//
+// The local normal pointing away from the surface (outward, toward incoming rays)
+// is: N_local = (-c*x, -c*y, sqrt(1 - c^2*(x^2 + y^2))),  where c = 1/R
+extern "C" __device__ __inline__ float3 spherical_world_normal(
+    float x_hit, float y_hit,
+    float R,
+    const float3 &x_ax, const float3 &y_ax, const float3 &n)
+{
+    const float c = 1.0f / R;
+    const float r2 = x_hit * x_hit + y_hit * y_hit;
+    const float arg = fmaxf(0.0f, 1.0f - c * c * r2);
+    const float3 N_local = make_float3(-c * x_hit, -c * y_hit, sqrtf(arg));
     return N_local.x * x_ax + N_local.y * y_ax + N_local.z * n;
 }
 
@@ -735,7 +825,7 @@ extern "C" __global__ void __intersection__rectangle_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir, center, e1, e2,
+    ray_to_local_frame(ray_orig, ray_dir, center, e1, e2,
                            n, ox, oy, oz, dx, dy, dz);
 
     float ts[2], lxs[2], lys[2];
@@ -776,7 +866,7 @@ extern "C" __global__ void __intersection__circle_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            circp.center, circp.x_axis, circp.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -815,7 +905,7 @@ extern "C" __global__ void __intersection__hexagon_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            hexp.center, hexp.x_axis, hexp.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -862,7 +952,7 @@ extern "C" __global__ void __intersection__triangle_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            trip.center, trip.x_axis, trip.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -901,7 +991,7 @@ extern "C" __global__ void __intersection__annulus_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            anap.center, anap.x_axis, anap.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -940,7 +1030,7 @@ extern "C" __global__ void __intersection__quadrilateral_parabolic()
 
     float3 n;
     float ox, oy, oz, dx, dy, dz;
-    parabolic_ray_to_local(ray_orig, ray_dir,
+    ray_to_local_frame(ray_orig, ray_dir,
                            quap.center, quap.x_axis, quap.y_axis,
                            n, ox, oy, oz, dx, dy, dz);
 
@@ -958,6 +1048,229 @@ extern "C" __global__ void __intersection__quadrilateral_parabolic()
             const float3 wn = parabolic_world_normal(lxs[i], lys[i],
                                                      quap.cx, quap.cy,
                                                      quap.x_axis, quap.y_axis, n);
+            optixReportIntersection(ts[i], 0,
+                                    __float_as_uint(wn.x),
+                                    __float_as_uint(wn.y),
+                                    __float_as_uint(wn.z));
+            return;
+        }
+    }
+}
+
+/**************** Spherical Surface Intersection Programs ****************/
+
+extern "C" __global__ void __intersection__rectangle_spherical()
+{
+    const OptixCSP::GeometryDataST::Rectangle_Spherical &rs =
+        params.geometry_data_array[optixGetPrimitiveIndex()].getRectangle_Spherical();
+
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+    const float ray_tmin  = optixGetRayTmin();
+    const float ray_tmax  = optixGetRayTmax();
+
+    float3 n;
+    float ox, oy, oz, dx, dy, dz;
+    ray_to_local_frame(ray_orig, ray_dir,
+                           rs.center, rs.x_axis, rs.y_axis,
+                           n, ox, oy, oz, dx, dy, dz);
+
+    float ts[2], lxs[2], lys[2];
+    const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
+                                   rs.R, ray_tmin, ray_tmax,
+                                   ts, lxs, lys);
+
+    const float xlo = rs.x_coord;
+    const float ylo = rs.y_coord;
+
+    for (int i = 0; i < nc; ++i)
+    {
+        if (lxs[i] >= xlo && lxs[i] <= xlo + rs.width &&
+            lys[i] >= ylo && lys[i] <= ylo + rs.height)
+        {
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], rs.R,
+                                                     rs.x_axis, rs.y_axis, n);
+            optixReportIntersection(ts[i], 0,
+                                    __float_as_uint(wn.x),
+                                    __float_as_uint(wn.y),
+                                    __float_as_uint(wn.z));
+            return;
+        }
+    }
+}
+
+extern "C" __global__ void __intersection__circle_spherical()
+{
+    const OptixCSP::GeometryDataST::Circle_Spherical &cs =
+        params.geometry_data_array[optixGetPrimitiveIndex()].getCircle_Spherical();
+
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+    const float ray_tmin  = optixGetRayTmin();
+    const float ray_tmax  = optixGetRayTmax();
+
+    float3 n;
+    float ox, oy, oz, dx, dy, dz;
+    ray_to_local_frame(ray_orig, ray_dir,
+                           cs.center, cs.x_axis, cs.y_axis,
+                           n, ox, oy, oz, dx, dy, dz);
+
+    float ts[2], lxs[2], lys[2];
+    const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
+                                   cs.R, ray_tmin, ray_tmax,
+                                   ts, lxs, lys);
+
+    for (int i = 0; i < nc; ++i)
+    {
+        if (lxs[i] * lxs[i] + lys[i] * lys[i] <= cs.radius * cs.radius)
+        {
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], cs.R,
+                                                     cs.x_axis, cs.y_axis, n);
+            optixReportIntersection(ts[i], 0,
+                                    __float_as_uint(wn.x),
+                                    __float_as_uint(wn.y),
+                                    __float_as_uint(wn.z));
+            return;
+        }
+    }
+}
+
+extern "C" __global__ void __intersection__hexagon_spherical()
+{
+    const OptixCSP::GeometryDataST::Hexagon_Spherical &hs =
+        params.geometry_data_array[optixGetPrimitiveIndex()].getHexagon_Spherical();
+
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+    const float ray_tmin  = optixGetRayTmin();
+    const float ray_tmax  = optixGetRayTmax();
+
+    float3 n;
+    float ox, oy, oz, dx, dy, dz;
+    ray_to_local_frame(ray_orig, ray_dir,
+                           hs.center, hs.x_axis, hs.y_axis,
+                           n, ox, oy, oz, dx, dy, dz);
+
+    float ts[2], lxs[2], lys[2];
+    const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
+                                   hs.R, ray_tmin, ray_tmax,
+                                   ts, lxs, lys);
+
+    for (int i = 0; i < nc; ++i)
+    {
+        if (hexagon_contains(lxs[i], lys[i], hs.s))
+        {
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], hs.R,
+                                                     hs.x_axis, hs.y_axis, n);
+            optixReportIntersection(ts[i], 0,
+                                    __float_as_uint(wn.x),
+                                    __float_as_uint(wn.y),
+                                    __float_as_uint(wn.z));
+            return;
+        }
+    }
+}
+
+extern "C" __global__ void __intersection__annulus_spherical()
+{
+    const OptixCSP::GeometryDataST::Annulus_Spherical &as =
+        params.geometry_data_array[optixGetPrimitiveIndex()].getAnnulus_Spherical();
+
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+    const float ray_tmin  = optixGetRayTmin();
+    const float ray_tmax  = optixGetRayTmax();
+
+    float3 n;
+    float ox, oy, oz, dx, dy, dz;
+    ray_to_local_frame(ray_orig, ray_dir,
+                           as.center, as.x_axis, as.y_axis,
+                           n, ox, oy, oz, dx, dy, dz);
+
+    float ts[2], lxs[2], lys[2];
+    const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
+                                   as.R, ray_tmin, ray_tmax,
+                                   ts, lxs, lys);
+
+    for (int i = 0; i < nc; ++i)
+    {
+        if (annulus_contains(lxs[i], lys[i], as.ri, as.ro, as.arc))
+        {
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], as.R,
+                                                     as.x_axis, as.y_axis, n);
+            optixReportIntersection(ts[i], 0,
+                                    __float_as_uint(wn.x),
+                                    __float_as_uint(wn.y),
+                                    __float_as_uint(wn.z));
+            return;
+        }
+    }
+}
+
+extern "C" __global__ void __intersection__triangle_spherical()
+{
+    const OptixCSP::GeometryDataST::Triangle_Spherical &tris =
+        params.geometry_data_array[optixGetPrimitiveIndex()].getTriangle_Spherical();
+
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+    const float ray_tmin  = optixGetRayTmin();
+    const float ray_tmax  = optixGetRayTmax();
+
+    float3 n;
+    float ox, oy, oz, dx, dy, dz;
+    ray_to_local_frame(ray_orig, ray_dir,
+                           tris.center, tris.x_axis, tris.y_axis,
+                           n, ox, oy, oz, dx, dy, dz);
+
+    float ts[2], lxs[2], lys[2];
+    const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
+                                   tris.R, ray_tmin, ray_tmax,
+                                   ts, lxs, lys);
+
+    for (int i = 0; i < nc; ++i)
+    {
+        if (triangle_contains(lxs[i], lys[i], tris.utest, tris.vtest))
+        {
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], tris.R,
+                                                     tris.x_axis, tris.y_axis, n);
+            optixReportIntersection(ts[i], 0,
+                                    __float_as_uint(wn.x),
+                                    __float_as_uint(wn.y),
+                                    __float_as_uint(wn.z));
+            return;
+        }
+    }
+}
+
+extern "C" __global__ void __intersection__quadrilateral_spherical()
+{
+    const OptixCSP::GeometryDataST::Quadrilateral_Spherical &qus =
+        params.geometry_data_array[optixGetPrimitiveIndex()].getQuadrilateral_Spherical();
+
+    const float3 ray_orig = optixGetWorldRayOrigin();
+    const float3 ray_dir  = optixGetWorldRayDirection();
+    const float ray_tmin  = optixGetRayTmin();
+    const float ray_tmax  = optixGetRayTmax();
+
+    float3 n;
+    float ox, oy, oz, dx, dy, dz;
+    ray_to_local_frame(ray_orig, ray_dir,
+                           qus.center, qus.x_axis, qus.y_axis,
+                           n, ox, oy, oz, dx, dy, dz);
+
+    float ts[2], lxs[2], lys[2];
+    const int nc = spherical_solve(ox, oy, oz, dx, dy, dz,
+                                   qus.R, ray_tmin, ray_tmax,
+                                   ts, lxs, lys);
+
+    for (int i = 0; i < nc; ++i)
+    {
+        if (triangle_contains(lxs[i], lys[i], qus.u1test, qus.v1test) ||
+            triangle_contains(lxs[i], lys[i], qus.u2test, qus.v2test))
+        {
+            const float3 wn = spherical_world_normal(lxs[i], lys[i], qus.R,
+                                                     qus.x_axis, qus.y_axis, n);
             optixReportIntersection(ts[i], 0,
                                     __float_as_uint(wn.x),
                                     __float_as_uint(wn.y),

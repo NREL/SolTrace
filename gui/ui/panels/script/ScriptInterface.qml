@@ -282,7 +282,7 @@ ScrollView {
                     onTextEdited: root.module.working_directory = text
                 }
 
-                // something weird with this icon button. doesnt seem to have the right bounds
+                // The icon button bounds do not match the visual frame here.
                 STIconButton {
                     icon: "\uf07c"
                     toolTip: "Select Working Directory"

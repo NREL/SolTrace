@@ -6,6 +6,9 @@ DoubleSpinBox {
     id: control
     editable: true
 
+    from: -Infinity
+    to: Infinity
+
     property string suffix
 
     contentItem: TextInput {

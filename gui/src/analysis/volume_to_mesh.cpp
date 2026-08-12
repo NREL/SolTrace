@@ -248,7 +248,7 @@ Result<db::Mesh, QString> volume_to_mesh(TaskControl&        output,
 
     for (int z = active_min.z; z + 1 < active_max.z; ++z) {
         for (int y = active_min.y; y + 1 < active_max.y; ++y) {
-            // dont want to check too often
+            // Avoid checking cancellation too frequently.
             ASYNC_TASK_SYNC_POINT(output);
 
             for (int x = active_min.x; x + 1 < active_max.x; ++x) {

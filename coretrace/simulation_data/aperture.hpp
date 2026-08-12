@@ -191,6 +191,8 @@ namespace SolTrace::Data
         }
 
     protected:
+        virtual void validate() const {}
+
         struct Point
         {
         public:
@@ -263,6 +265,7 @@ namespace SolTrace::Data
               outer_radius(ro),
               arc_angle(arc)
         {
+            validate();
         }
 
         /**
@@ -316,6 +319,9 @@ namespace SolTrace::Data
          */
         virtual std::tuple<std::vector<double>, std::vector<int>>
         triangulation() const override;
+
+    private:
+        void validate() const override;
     };
 
     struct Circle : public Aperture
@@ -326,7 +332,7 @@ namespace SolTrace::Data
          * @brief Constructor for circular aperture
          * @param d Diameter of the circle
          */
-        Circle(double d) : Aperture(ApertureType::CIRCLE), diameter(d) {}
+        Circle(double d) : Aperture(ApertureType::CIRCLE), diameter(d) { validate(); }
 
         /**
          * @brief Json-based constructor for circular aperture
@@ -379,6 +385,9 @@ namespace SolTrace::Data
          */
         virtual std::tuple<std::vector<double>, std::vector<int>>
         triangulation() const override;
+
+    private:
+        void validate() const override;
     };
 
     struct EquilateralTriangle : public Aperture
@@ -395,7 +404,7 @@ namespace SolTrace::Data
          */
         EquilateralTriangle(double cd)
             : Aperture(ApertureType::EQUILATERAL_TRIANGLE),
-              circumscribe_diameter(cd) { }
+              circumscribe_diameter(cd) { validate(); }
 
         /**
          * @brief Json-based constructor for equilateral triangle aperture
@@ -448,6 +457,9 @@ namespace SolTrace::Data
          */
         virtual std::tuple<std::vector<double>, std::vector<int>>
         triangulation() const override;
+
+    private:
+        void validate() const override;
     };
 
     struct Hexagon : public Aperture
@@ -462,7 +474,7 @@ namespace SolTrace::Data
          */
         Hexagon(double d)
             : Aperture(ApertureType::HEXAGON),
-              circumscribe_diameter(d) {}
+              circumscribe_diameter(d) { validate(); }
 
         /**
          * @brief Json-based constructor for hexagonal aperture
@@ -515,6 +527,9 @@ namespace SolTrace::Data
          */
         virtual std::tuple<std::vector<double>, std::vector<int>>
         triangulation() const override;
+
+    private:
+        void validate() const override;
     };
 
     class Rectangle : public Aperture
@@ -527,6 +542,7 @@ namespace SolTrace::Data
         glm::dvec2 m_cached_range;
 
         void update_cached() { m_cached_range = m_coord + m_length; }
+        void validate() const override;
 
     public:
         /**
@@ -703,6 +719,9 @@ namespace SolTrace::Data
          */
         virtual std::tuple<std::vector<double>, std::vector<int>>
         triangulation() const override;
+
+    private:
+        void validate() const override;
     };
 
     struct IrregularQuadrilateral : public Aperture
@@ -802,6 +821,9 @@ namespace SolTrace::Data
          * shared diagonal endpoints and makes x1-x3 interior.
          */
         void ensure_valid_diagonal();
+
+    private:
+        void validate() const override;
     };
 
     /**

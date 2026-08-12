@@ -1,6 +1,7 @@
 #pragma once
 
 
+#include "database/database_observer.h"
 #include "opticaleditor.h"
 #include "utilities/qt_helpers.h"
 
@@ -8,6 +9,7 @@
 
 namespace db {
 
+/// QML-facing editor for both sides of a material group.
 class MaterialEditor : public QObject, public DatabaseObserver {
     Q_OBJECT
 
@@ -30,6 +32,7 @@ public:
     explicit MaterialEditor(QObject* parent = nullptr);
     ~MaterialEditor() override;
 
+    /// Observe database material group and synchronize front/back editors.
     void set(Database*, entt::entity group);
 
 signals:

@@ -106,6 +106,7 @@ ShadowedGlassRectangle {
                     ListElement { name: "Overview"; icon: "\ue0bb" }
                     ListElement { name: "GitHub"; icon: "\uf02d" }
                     ListElement { name: "Team"; icon: "\uf500" }
+                    ListElement { name: "Licenses"; icon: "\ue447" }
                 }
 
                 listDelegate: ItemDelegate {
@@ -146,7 +147,9 @@ ShadowedGlassRectangle {
 
                     GitHubModule {}
 
-                    TeamSettings {}
+                    TeamModule {}
+
+                    LicenseModule {}
 
                 }
             }
@@ -201,11 +204,11 @@ ShadowedGlassRectangle {
                 detailView: StackLayout {
                     currentIndex: buildView.currentIndex
 
-                    FeaturePanel {}
+                    FeatureModule {}
 
                     BInfoModule {}
 
-                    LogSettings {}
+                    LogModule {}
 
                 }
             }

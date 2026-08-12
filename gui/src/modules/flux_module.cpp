@@ -1,6 +1,7 @@
 #include "flux_module.h"
 #include "analysis/ray_volume_raster.h"
 #include "analysis/volume_to_mesh.h"
+#include "database/components.h"
 #include "utilities/asynctask.h"
 
 #include <QQmlEngine>
@@ -48,8 +49,11 @@ void FluxModule::set_results(db::SimulationResultPtr p) {
     m_results = p;
     set_current_entity({});
     set_current_entity_name(QString());
+    set_current_entity_position({});
     set_current_flux_stats({});
+    set_current_image(QString());
     m_entity_model->reset(nullptr);
+    m_computed_maps_model->reset(nullptr);
     m_pending_flux_maps->reset(nullptr);
     m_ray_iso_volume->set_current_mesh({});
 
@@ -58,11 +62,11 @@ void FluxModule::set_results(db::SimulationResultPtr p) {
     auto mptr = const_cast<db::Database*>(p->database.get());
 
     m_entity_model->reset(mptr);
+    m_computed_maps_model->reset(mptr);
     m_pending_flux_maps->reset(p);
     m_ray_iso_volume->set_current_mesh({});
 
-    // HACK HACK HACK
-
+    // Default to the entity with the most ray hits.
     entt::entity largest = entt::null;
     size_t       best    = 0;
 
@@ -81,11 +85,23 @@ void FluxModule::select_entity(db::Entity entity) {
 
     if (!m_results || !m_results->database || !entity.is_valid()) {
         set_current_entity_name(QString());
+        set_current_entity_position({});
         set_current_flux_stats({});
         return;
     }
 
     set_current_entity_name(m_results->database->name_of(entity));
+
+    auto* database = m_results->database.get();
+    auto* global   = database->global_transform.get(entity);
+    auto  transform =
+        global ? *global
+               : db::GlobalTransformComponent::compute_for(database->as_registry(),
+                                                           entity);
+    set_current_entity_position(QVector3D(transform.position.x,
+                                          transform.position.y,
+                                          transform.position.z));
+
     refresh_current_flux_stats();
 }
 
@@ -93,20 +109,21 @@ void FluxModule::refresh_current_flux_stats() {
     for (auto const& item : m_flux_map_world_model->vector()) {
         if (item.flux_entity == current_entity()) {
             set_current_flux_stats(item.flux_stats);
+            set_current_image(item.flux_image_path);
             return;
         }
     }
 
     set_current_flux_stats({});
+    set_current_image(QString());
 }
 
 void FluxModule::flux_map_ready(db::Entity              entity,
-                                analysis::BakedFluxMapPtr image,
+                                analysis::BakedFluxMapPtr,
                                 db::Database const*) {
     if (entity != current_entity()) return;
 
-    set_current_flux_stats(image ? image->stats
-                                 : analysis::BakedFluxMapStats {});
+    refresh_current_flux_stats();
 }
 
 void FluxModule::start_generate() {

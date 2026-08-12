@@ -8,7 +8,8 @@
 #include "database/apertureeditor.h"
 #include "database/components.h"
 #include "database/database.h"
-#include "database/surfaceparametermodel.h"
+#include "database/database_observer.h"
+#include "database/models/surface_parameter_model.h"
 #include "utilities/qt_helpers.h"
 
 #include "aperture.hpp"
@@ -22,6 +23,7 @@ namespace db {
 struct MaterialComponent;
 struct SurfaceGenerationOptions;
 
+/// Axis-aligned bounds for generated surface geometry.
 class BoundingBox {
     Q_GADGET
     Q_PROPERTY(QVector3D min MEMBER min)
@@ -35,8 +37,10 @@ public:
 };
 
 
-/// Surface geometry visualization. Creates geometry for Quick3D for a given
-/// group
+/// Surface geometry visualization for one geometry group.
+///
+/// Rebuilds Quick3D geometry buffers when surface or aperture parameters
+/// change in the observed database.
 class SurfaceGeometry : public QQuick3DGeometry, public ConstDatabaseObserver {
     Q_OBJECT
 
@@ -57,20 +61,32 @@ public:
 
     SurfaceGeometry();
 
+    /// The quality of the surface geometry. Rough control on surface
+    /// subdivision
     Q_WRITABLE_PROPERTY(Quality, quality, Quality::Normal)
+
+    /// Add thickness to the surface (ie, doubleside with edges)
     Q_WRITABLE_PROPERTY(bool, add_thickness, false)
+
+    /// If thickness is added, how much in world units
     Q_WRITABLE_PROPERTY(double, thickness, 0.01)
+
+    /// Subdiv control. TODO: Clarify with above
     Q_WRITABLE_PROPERTY(unsigned, subdivision_scale, 2)
+
+    /// Bounding box of the surface geometry item
     Q_READONLY_PROPERTY(BoundingBox, bounding_box)
 
+    /// Observe database geometry group and rebuild the generated geometry.
     void set(Database const*, entt::entity group);
 
 public:
+    /// Print debugging information about the generated geometry.
     void debug();
 };
 
 
-/// Model providing an interface to edit a group
+/// QML-facing editor for a geometry group.
 class GeometryEditor : public QObject, public DatabaseObserver {
     Q_OBJECT
 
@@ -93,6 +109,7 @@ public:
     explicit GeometryEditor(QObject* parent = nullptr);
     ~GeometryEditor() override;
 
+    /// Observe database geometry group and synchronize parameter models.
     void set(Database*, entt::entity group);
 
 signals:

@@ -16,7 +16,7 @@ ColumnLayout {
         showTitle: false
     }
 
-    SceneListPane {
+    LoadSceneListPane {
         Layout.fillWidth: true
         Layout.fillHeight: true
     }

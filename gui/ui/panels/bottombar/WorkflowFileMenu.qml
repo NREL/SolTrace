@@ -7,11 +7,15 @@ import SolTrace
 STMenu {
     id: root
 
+    property bool showNewScene: true
+
     FileController {
         id: file_controller
     }
 
     MenuItem {
+        visible: root.showNewScene
+        height: visible ? implicitHeight : 0
         text: "New Scene"
         onTriggered: file_controller.load_new()
     }

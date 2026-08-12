@@ -81,7 +81,6 @@ public:
     Q_WRITABLE_PROPERTY(Locale, locale, Locale::EN)
 
 public slots:
-
     void    load();
     QString get(QString key, QString metadata_key = "");
     QString blocks(QString key);

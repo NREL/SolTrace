@@ -9,6 +9,7 @@
 
 namespace db {
 
+/// Switch between SD and GUI event types
 static RayEventType convert(SolTrace::Result::RayEvent e) {
     switch (e) {
     case SolTrace::Result::RayEvent::CREATE: return RayEventType::CREATE;
@@ -22,6 +23,9 @@ static RayEventType convert(SolTrace::Result::RayEvent e) {
     return RayEventType::UNKNOWN;
 }
 
+/// Convert from an SD ray record and GUI ray record types.
+///
+/// Rec is a mut ref as the API does not have a const& version
 static RayRecord extract(uint64_t                          id,
                          SimulationResultConversion const& opts,
                          SolTrace::Result::RayRecord&      rec) {
@@ -65,6 +69,7 @@ SimulationResult::convert(SimulationResultConversion const& opts) {
 
     uint64_t id = 0;
 
+    // Copy over all rays
     for (auto iter = opts.result.get_ray_record_iterator();
          !opts.result.is_at_end(iter);
          ++iter) {
@@ -74,6 +79,7 @@ SimulationResult::convert(SimulationResultConversion const& opts) {
         id++;
     }
 
+    // Build lookup table
     for (size_t ray_i = 0; ray_i < ret->records.size(); ray_i++) {
         auto const& events = ret->records[ray_i].events;
         for (auto const& event : events) {
@@ -83,14 +89,18 @@ SimulationResult::convert(SimulationResultConversion const& opts) {
         }
     }
 
+    // Clear dupes
     for (auto& [k, v] : ret->entity_to_ray_ids) {
         std::sort(v.begin(), v.end());
         auto last = std::unique(v.begin(), v.end());
         v.erase(last, v.end());
     }
 
+    // Done
+
     qDebug() << Q_FUNC_INFO << "Converted" << ret->records.size() << "rays";
 
+    // Bound boxes
     {
         constexpr float maxFloat = std::numeric_limits<float>::max();
 

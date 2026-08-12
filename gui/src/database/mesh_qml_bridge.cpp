@@ -7,15 +7,18 @@
 namespace db {
 
 void QMLMesh::rebuild_geometry() {
+    // Always clear at start, remove stale geom
     clear();
 
+    // If mesh is empty, bail
     if (m_current_mesh.vertex.empty() || m_current_mesh.triangles.empty()) {
         qWarning() << Q_FUNC_INFO
                    << "Geometry is empty, or unable to be generated";
-        update();
+        update(); // Signal empty
         return;
     }
 
+    // Compute AABB
     constexpr float max_float = std::numeric_limits<float>::max();
 
     glm::vec3 bounds_min(max_float);
@@ -26,6 +29,7 @@ void QMLMesh::rebuild_geometry() {
         bounds_max = glm::max(bounds_max, p.position);
     }
 
+    // Init fresh buffers
     auto indexBuffer = QByteArray(
         reinterpret_cast<const char*>(m_current_mesh.triangles.data()),
         m_current_mesh.triangles.size() * sizeof(glm::uvec3));
@@ -79,7 +83,7 @@ const Mesh& QMLMesh::current_mesh() const {
     return m_current_mesh;
 }
 
-void QMLMesh::set_current_mesh(const Mesh& new_value) {
+void QMLMesh::set_current_mesh(Mesh const& new_value) {
     // Always assume it is different, as an equality check is too expensive
     m_current_mesh = new_value;
     emit current_mesh_changed();

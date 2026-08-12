@@ -124,6 +124,7 @@ Flickable {
                 to: 100.0
                 value: root.ray_geom.show_percent
                 stepSize: 1.0
+                decimals: 0
                 Layout.fillWidth: true
                 onValueModified: {
                     root.ray_geom.show_percent = value

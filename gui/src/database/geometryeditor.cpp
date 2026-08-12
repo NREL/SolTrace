@@ -176,11 +176,6 @@ void SurfaceGeometry::rebuild_geometry() {
 
     set_vertex_count(mesh->vertex.count());
 
-    // qDebug() << Q_FUNC_INFO << entt::to_integral(m_current_group)
-    //          << mesh->triangles.size() << mesh->vertex.size();
-    // qDebug() << Q_FUNC_INFO << bb.min << bb.max;
-    //   qDebug() << verts;
-
     update();
 }
 
@@ -259,6 +254,8 @@ void GeometryEditor::recompute_geometry_errors() {
                 .arg(aperture_name, surface_name));
     }
 
+    // Special case here...
+    // TODO: Generalize
     if (params->surface->my_type == SD::CYLINDER &&
         params->aperture->my_type == SD::RECTANGLE) {
 

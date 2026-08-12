@@ -33,9 +33,6 @@ Rectangle {
 
     clip: true
 
-    // onHeightChanged: console.log(height)
-    // onImplicitHeightChanged: console.log(implicitHeight)
-
     default property alias contentChildren: layout.children
 
     ColumnLayout {

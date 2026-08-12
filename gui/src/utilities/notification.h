@@ -3,12 +3,14 @@
 #include <QObject>
 #include <utility>
 
+/// User-visible notification payload passed through Qt signals and QML.
 struct ANotification {
     Q_GADGET
     Q_PROPERTY(QString message MEMBER message)
     Q_PROPERTY(Type type MEMBER type)
 
 public:
+    /// Notification severity.
     enum Type { INFO, WARNING, ERROR };
 
     Q_ENUM(Type);

@@ -21,12 +21,15 @@ namespace db {
 
 namespace {
 
+// TODO: Consolidate all our different PIs
 constexpr double PI = glm::pi<double>();
 
+/// Helper 2D mesh struct. Used for height field
 struct Mesh2D {
     QVector<glm::dvec2> vertex;
     QVector<glm::uvec3> triangles;
 
+    /// Lens the mesh through a function that modifies verticies
     template <class F>
     Mesh map(F&& f) const {
         Mesh ret;
@@ -42,6 +45,7 @@ struct Mesh2D {
         return ret;
     }
 
+    /// Get the 2d AABB
     std::tuple<glm::dvec2, glm::dvec2> bb_2d() const {
         if (vertex.empty()) { return { glm::dvec2 { 0 }, glm::dvec2 { 0 } }; }
         glm::dvec2 mins = vertex[0];
@@ -56,14 +60,17 @@ struct Mesh2D {
     }
 };
 
+/// Clamp from 0 - 1
 double saturate(double value) {
     return std::clamp(value, 0.0, 1.0);
 }
 
+/// Clamp components from 0 - 1
 glm::dvec2 saturate(glm::dvec2 value) {
     return glm::clamp(value, 0.0, 1.0);
 }
 
+/// Build a vertex from parts
 Vertex make_vertex(double    x,
                    double    y,
                    double    z,
@@ -77,6 +84,7 @@ Vertex make_vertex(double    x,
     };
 }
 
+/// Sanitize normals to a 'safe' value, for h-maps
 glm::vec3 safe_normal(glm::vec3 normal,
                       glm::vec3 fallback = glm::vec3(0.0f, 0.0f, 1.0f)) {
     float length = glm::length(normal);
@@ -84,6 +92,7 @@ glm::vec3 safe_normal(glm::vec3 normal,
     return normal / length;
 }
 
+/// Compute a normal, check it against winding for 'front'
 bool front_winding_matches_vertex_normals(Mesh const& mesh) {
     glm::vec3 geometric_normal_sum(0.0f);
     glm::vec3 vertex_normal_sum(0.0f);
@@ -107,6 +116,7 @@ bool front_winding_matches_vertex_normals(Mesh const& mesh) {
     return glm::dot(geometric_normal_sum, vertex_normal_sum) >= 0.0f;
 }
 
+/// Take a mesh h-field, dupe the faces, and add an edge
 Mesh add_height_field_thickness(Mesh mesh, double thickness) {
     if (thickness <= 0.0 || mesh.vertex.empty() || mesh.triangles.empty()) {
         return mesh;
@@ -465,8 +475,79 @@ Mesh2D generate_annulus_aperture(SD::Annulus const&              annulus,
     return mesh;
 }
 
+void append_subdivided_triangle(Mesh2D&        mesh,
+                                glm::dvec2     a,
+                                glm::dvec2     b,
+                                glm::dvec2     c,
+                                uint32_t const subdivisions) {
+    auto first_vertex = static_cast<uint32_t>(mesh.vertex.size());
+
+    auto index = [first_vertex, subdivisions](uint32_t i, uint32_t j) {
+        uint32_t before_row = i * (subdivisions + 1) - (i * (i - 1)) / 2;
+        return first_vertex + before_row + j;
+    };
+
+    for (uint32_t i = 0; i <= subdivisions; ++i) {
+        for (uint32_t j = 0; j <= subdivisions - i; ++j) {
+            double u = static_cast<double>(i) / subdivisions;
+            double v = static_cast<double>(j) / subdivisions;
+            mesh.vertex.push_back(a + u * (b - a) + v * (c - a));
+        }
+    }
+
+    for (uint32_t i = 0; i < subdivisions; ++i) {
+        for (uint32_t j = 0; j < subdivisions - i; ++j) {
+            uint32_t p00 = index(i, j);
+            uint32_t p10 = index(i + 1, j);
+            uint32_t p01 = index(i, j + 1);
+
+            mesh.triangles.push_back({ p00, p10, p01 });
+
+            if (j + 1 < subdivisions - i) {
+                uint32_t p11 = index(i + 1, j + 1);
+                mesh.triangles.push_back({ p10, p11, p01 });
+            }
+        }
+    }
+}
+
+Mesh2D generate_subdivided_polygon_aperture(
+    std::vector<glm::dvec2> const&  corners,
+    SurfaceGenerationOptions const& options) {
+    Mesh2D mesh;
+    if (corners.size() < 3) {
+        qDebug() << Q_FUNC_INFO << "Polygon aperture has <3 vertex";
+        return mesh;
+    }
+
+    glm::dvec2 center(0.0);
+    for (auto const& corner : corners)
+        center += corner;
+    center /= static_cast<double>(corners.size());
+
+    uint32_t subdivisions = std::max<uint32_t>(1, options.radial_subdivisions);
+    uint32_t sector_vertices = ((subdivisions + 1) * (subdivisions + 2)) / 2;
+
+    mesh.vertex.reserve(sector_vertices * corners.size());
+    mesh.triangles.reserve(subdivisions * subdivisions * corners.size());
+
+    for (size_t i = 0; i < corners.size(); ++i) {
+        append_subdivided_triangle(mesh,
+                                   center,
+                                   corners[i],
+                                   corners[(i + 1) % corners.size()],
+                                   subdivisions);
+    }
+
+    return mesh;
+}
+
 Mesh2D generate_polygon_aperture(std::vector<glm::dvec2> const&  corners,
                                  SurfaceGenerationOptions const& options) {
+    if (options.subdivide_polygon_apertures) {
+        return generate_subdivided_polygon_aperture(corners, options);
+    }
+
     Mesh2D mesh;
     if (corners.size() < 3) {
         qDebug() << Q_FUNC_INFO << "Polygon aperture has <3 vertex";

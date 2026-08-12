@@ -1,4 +1,5 @@
 #include "components.h"
+#include "sun.hpp"
 #include <QtGui/qmatrix4x4.h>
 #include <stdexcept>
 

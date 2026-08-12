@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 #include <vector>
 
 // #include <iostream>
@@ -174,6 +175,21 @@ namespace SolTrace::Data
         this->inner_radius = jnode.at("inner_radius");
         this->outer_radius = jnode.at("outer_radius");
         this->arc_angle = jnode.at("arc_angle");
+        validate();
+    }
+
+    void Annulus::validate() const
+    {
+        if (!std::isfinite(inner_radius) || !std::isfinite(outer_radius) || !std::isfinite(arc_angle))
+            throw std::invalid_argument("Annulus: parameters must be finite");
+        if (inner_radius < 0.0)
+            throw std::invalid_argument("Annulus: inner_radius must be non-negative");
+        if (outer_radius <= 0.0)
+            throw std::invalid_argument("Annulus: outer_radius must be positive");
+        if (inner_radius >= outer_radius)
+            throw std::invalid_argument("Annulus: inner_radius must be less than outer_radius");
+        if (arc_angle <= 0.0 || arc_angle > 360.0)
+            throw std::invalid_argument("Annulus: arc_angle must be in (0, 360] degrees");
     }
 
     double Annulus::aperture_area() const
@@ -272,6 +288,13 @@ namespace SolTrace::Data
         : Aperture(ApertureType::CIRCLE)
     {
         this->diameter = jnode.at("diameter");
+        validate();
+    }
+
+    void Circle::validate() const
+    {
+        if (!std::isfinite(diameter) || diameter <= 0.0)
+            throw std::invalid_argument("Circle: diameter must be positive");
     }
 
     double Circle::aperture_area() const
@@ -354,6 +377,13 @@ namespace SolTrace::Data
         : Aperture(ApertureType::EQUILATERAL_TRIANGLE)
     {
         this->circumscribe_diameter = jnode.at("circumscribe_diameter");
+        validate();
+    }
+
+    void EquilateralTriangle::validate() const
+    {
+        if (!std::isfinite(circumscribe_diameter) || circumscribe_diameter <= 0.0)
+            throw std::invalid_argument("EquilateralTriangle: circumscribe_diameter must be positive");
     }
 
     double EquilateralTriangle::aperture_area() const
@@ -438,6 +468,13 @@ namespace SolTrace::Data
         : Aperture(ApertureType::HEXAGON)
     {
         this->circumscribe_diameter = jnode.at("circumscribe_diameter");
+        validate();
+    }
+
+    void Hexagon::validate() const
+    {
+        if (!std::isfinite(circumscribe_diameter) || circumscribe_diameter <= 0.0)
+            throw std::invalid_argument("Hexagon: circumscribe_diameter must be positive");
     }
 
     double Hexagon::aperture_area() const
@@ -577,6 +614,7 @@ namespace SolTrace::Data
           x2(x2), y2(y2),
           x3(x3), y3(y3)
     {
+        validate();
     }
 
     IrregularTriangle::IrregularTriangle(const nlohmann::ordered_json &jnode)
@@ -588,6 +626,17 @@ namespace SolTrace::Data
         this->y2 = jnode.at("y2");
         this->x3 = jnode.at("x3");
         this->y3 = jnode.at("y3");
+        validate();
+    }
+
+    void IrregularTriangle::validate() const
+    {
+        if (!std::isfinite(x1) || !std::isfinite(y1) ||
+            !std::isfinite(x2) || !std::isfinite(y2) ||
+            !std::isfinite(x3) || !std::isfinite(y3))
+            throw std::invalid_argument("IrregularTriangle: all coordinates must be finite");
+        if ((x2 - x1) * (y3 - y1) - (x3 - x1) * (y2 - y1) == 0.0)
+            throw std::invalid_argument("IrregularTriangle: vertices must not be collinear");
     }
 
     std::tuple<std::vector<double>, std::vector<int>>
@@ -670,6 +719,7 @@ namespace SolTrace::Data
           x3(x3), y3(y3),
           x4(x4), y4(y4)
     {
+        validate();
         ensure_valid_diagonal();
     }
 
@@ -684,7 +734,17 @@ namespace SolTrace::Data
         this->y3 = jnode.at("y3");
         this->x4 = jnode.at("x4");
         this->y4 = jnode.at("y4");
+        validate();
         ensure_valid_diagonal();
+    }
+
+    void IrregularQuadrilateral::validate() const
+    {
+        if (!std::isfinite(x1) || !std::isfinite(y1) ||
+            !std::isfinite(x2) || !std::isfinite(y2) ||
+            !std::isfinite(x3) || !std::isfinite(y3) ||
+            !std::isfinite(x4) || !std::isfinite(y4))
+            throw std::invalid_argument("IrregularQuadrilateral: all coordinates must be finite");
     }
 
     double IrregularQuadrilateral::aperture_area() const
@@ -827,6 +887,7 @@ namespace SolTrace::Data
         // Default to rectangle centered at the origin.
         m_coord = -0.5 * m_length;
         update_cached();
+        validate();
     }
 
     Rectangle::Rectangle(double xlen, double ylen, double xl, double yl)
@@ -835,6 +896,7 @@ namespace SolTrace::Data
           m_coord(xl, yl)
     {
         update_cached();
+        validate();
     }
 
     Rectangle::Rectangle(const nlohmann::ordered_json &jnode)
@@ -845,6 +907,15 @@ namespace SolTrace::Data
         m_coord.x = jnode.at("x_coord");
         m_coord.y = jnode.at("y_coord");
         update_cached();
+        validate();
+    }
+
+    void Rectangle::validate() const
+    {
+        if (!std::isfinite(m_length.x) || m_length.x < 0.0)
+            throw std::invalid_argument("Rectangle: x_length must be non-negative");
+        if (!std::isfinite(m_length.y) || m_length.y < 0.0)
+            throw std::invalid_argument("Rectangle: y_length must be non-negative");
     }
 
     double Rectangle::aperture_area() const

@@ -1,4 +1,4 @@
-#include "surfaceparametermodel.h"
+#include "database/models/surface_parameter_model.h"
 
 #include <magic_enum/magic_enum.hpp>
 

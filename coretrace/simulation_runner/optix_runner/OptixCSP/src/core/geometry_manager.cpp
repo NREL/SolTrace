@@ -51,6 +51,10 @@ void GeometryManager::collect_geometry_info(const std::vector<std::shared_ptr<Cs
             {
                 sbt_offset = static_cast<uint32_t>(OpticalEntityType::ANNULUS_PARABOLIC);
             }
+            else if (element->get_surface_type() == SurfaceType::SPHERICAL)
+            {
+                sbt_offset = static_cast<uint32_t>(OpticalEntityType::ANNULUS_SPHERICAL);
+            }
             else
             {
                 std::stringstream ss;
@@ -72,6 +76,10 @@ void GeometryManager::collect_geometry_info(const std::vector<std::shared_ptr<Cs
             {
                 sbt_offset = static_cast<uint32_t>(OpticalEntityType::CIRCLE_PARABOLIC);
             }
+            else if (element->get_surface_type() == SurfaceType::SPHERICAL)
+            {
+                sbt_offset = static_cast<uint32_t>(OpticalEntityType::CIRCLE_SPHERICAL);
+            }
             else
             {
                 std::stringstream ss;
@@ -92,6 +100,10 @@ void GeometryManager::collect_geometry_info(const std::vector<std::shared_ptr<Cs
             else if (element->get_surface_type() == SurfaceType::PARABOLIC)
             {
                 sbt_offset = static_cast<uint32_t>(OpticalEntityType::HEXAGON_PARABOLIC);
+            }
+            else if (element->get_surface_type() == SurfaceType::SPHERICAL)
+            {
+                sbt_offset = static_cast<uint32_t>(OpticalEntityType::HEXAGON_SPHERICAL);
             }
             else
             {
@@ -118,6 +130,10 @@ void GeometryManager::collect_geometry_info(const std::vector<std::shared_ptr<Cs
             {
                 sbt_offset = static_cast<uint32_t>(OpticalEntityType::CYLINDRICAL);
             }
+            else if (element->get_surface_type() == SurfaceType::SPHERICAL)
+            {
+                sbt_offset = static_cast<uint32_t>(OpticalEntityType::RECTANGLE_SPHERICAL);
+            }
             else
             {
                 std::stringstream ss;
@@ -139,6 +155,10 @@ void GeometryManager::collect_geometry_info(const std::vector<std::shared_ptr<Cs
             {
                 sbt_offset = static_cast<uint32_t>(OpticalEntityType::TRIANGLE_PARABOLIC);
             }
+            else if (element->get_surface_type() == SurfaceType::SPHERICAL)
+            {
+                sbt_offset = static_cast<uint32_t>(OpticalEntityType::TRIANGLE_SPHERICAL);
+            }
             else
             {
                 std::stringstream ss;
@@ -159,6 +179,10 @@ void GeometryManager::collect_geometry_info(const std::vector<std::shared_ptr<Cs
             else if (element->get_surface_type() == SurfaceType::PARABOLIC)
             {
                 sbt_offset = static_cast<uint32_t>(OpticalEntityType::QUADRILATERAL_PARABOLIC);
+            }
+            else if (element->get_surface_type() == SurfaceType::SPHERICAL)
+            {
+                sbt_offset = static_cast<uint32_t>(OpticalEntityType::QUADRILATERAL_SPHERICAL);
             }
             else
             {

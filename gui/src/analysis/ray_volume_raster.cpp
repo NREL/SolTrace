@@ -155,10 +155,6 @@ void compute_raster_chunk(QPromise<QVector<glm::ivec3>>& promise,
             last_p = this_interaction_p;
         }
 
-        // if (complete % 10 == 0) {
-        //     qDebug() << Q_FUNC_INFO << complete << "/" << records.size();
-        // }
-        // complete += 1;
     }
 
     promise.emplaceResult(grid);

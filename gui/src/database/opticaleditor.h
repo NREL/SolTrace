@@ -1,6 +1,7 @@
 #pragma once
 
 #include "database/database.h"
+#include "database/database_observer.h"
 #include "simulation_data_export.hpp"
 
 #include <QObject>
@@ -9,6 +10,9 @@
 
 namespace db {
 
+/// QML-facing editor for one optical side of a material group.
+///
+/// Mutating setters patch MaterialComponent in the observed database.
 class OpticalPropertiesObject : public QObject, public DatabaseObserver {
     Q_OBJECT
 
@@ -75,6 +79,7 @@ public:
     explicit OpticalPropertiesObject(bool back, QObject* parent = nullptr);
     ~OpticalPropertiesObject() override;
 
+    /// Observe database material group and selected optical side.
     void set(Database*, entt::entity group);
 
 public:
@@ -89,20 +94,42 @@ public:
     double refraction_index_back() const;
 
 public slots:
+    /// Update the interaction model, for example
+    /// absorption/reflection/refraction.
     void set_interaction_type(QString v);
+
+    /// Update the optical error distribution model.
     void set_error_distribution_type(QString v);
 
+    /// Update transmissivity, clamped by the UI to [0, 1].
     void set_transmissivity(double v);
+
+    /// Update reflectivity, clamped by the UI to [0, 1].
     void set_reflectivity(double v);
+
+    /// Update slope error.
     void set_slope_error(double v);
+
+    /// Update specularity error.
     void set_specularity_error(double v);
+
+    /// Update incident-side refraction index.
     void set_refraction_index_front(double v);
+
+    /// Update outgoing-side refraction index.
     void set_refraction_index_back(double v);
 
     // presets
+    /// Apply an ideal absorber preset.
     void set_ideal_absorption();
+
+    /// Apply an ideal mirror preset.
     void set_ideal_reflection();
+
+    /// Apply an ideal transmitter preset.
     void set_ideal_transmission();
+
+    /// Apply an ideal transmitter preset with explicit refraction indices.
     void set_ideal_transmission_with_indices(double n_front, double n_back);
 
 signals:

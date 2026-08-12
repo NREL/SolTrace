@@ -1,9 +1,9 @@
 #pragma once
 
 #include "database/database.h"
-#include "database/database_models.h"
 #include "database/geometryeditor.h"
 #include "database/materialeditor.h"
+#include "database/models/group_models.h"
 #include "module_common.h"
 #include "utilities/qt_helpers.h"
 
@@ -15,12 +15,10 @@ namespace SolTrace::GUI::App {
  * @class MaterialsModule
  * @brief Materials configuration module.
  *
- * Provides QML access to the materials database models owned by
- * MaterialsBackend. This module does not own the models — it holds a non-owning
- * QPointer reference to the backend slice, constraining access to
- * materials-specific functionality.
+ * Provides QML access to material and geometry group lists plus the editors for
+ * the selected groups in the active GUI database.
  *
- * QML access pattern: App.materials.backend.child_model
+ * QML access pattern: App.materials.material_edit
  */
 class MaterialsModule : public QObject {
     Q_OBJECT

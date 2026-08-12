@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <thread>
+#include <QVariantMap>
 
 namespace SolTrace::GUI::App {
 
@@ -164,6 +165,30 @@ SimulationModule::SimulationModule(QObject* parent)
 
 SimulationModule::~SimulationModule() {
     qDebug() << Q_FUNC_INFO;
+}
+
+QVariantMap SimulationModule::current_result_bounds() const {
+    const bool valid = m_current_result &&
+                       m_current_result->bounds_min.x <
+                           m_current_result->bounds_max.x &&
+                       m_current_result->bounds_min.y <
+                           m_current_result->bounds_max.y &&
+                       m_current_result->bounds_min.z <
+                           m_current_result->bounds_max.z;
+
+    return QVariantMap {
+        { QStringLiteral("valid"), valid },
+        { QStringLiteral("min"),
+          valid ? QVector3D(m_current_result->bounds_min.x,
+                            m_current_result->bounds_min.y,
+                            m_current_result->bounds_min.z)
+                : QVector3D() },
+        { QStringLiteral("max"),
+          valid ? QVector3D(m_current_result->bounds_max.x,
+                            m_current_result->bounds_max.y,
+                            m_current_result->bounds_max.z)
+                : QVector3D() },
+    };
 }
 
 void SimulationModule::run() {

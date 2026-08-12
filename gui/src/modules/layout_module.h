@@ -1,7 +1,10 @@
 #pragma once
 
-#include "database/rootelementsmodel.h"
-#include "database/worldgeometrymodel.h"
+#include "database/models/hierarchy_models.h"
+#include "database/models/instance_editor.h"
+#include "database/models/element_models.h"
+#include "database/models/instance_sort_filter.h"
+#include "database/models/world_geometry_model.h"
 #include "module_common.h"
 #include "utilities/notification.h"
 #include "utilities/qt_helpers.h"
@@ -10,15 +13,14 @@
 
 namespace SolTrace::GUI::App {
 
-
 /**
- * @class GeometryModule
- * @brief Geometry configuration module.
+ * @class LayoutModule
+ * @brief Layout configuration and scene-selection module.
  *
- * Provides QML access to the geometry database models owned by GeometryBackend.
- * Holds a non-owning QPointer reference to its backend slice.
+ * Provides QML access to element hierarchy models, instance editing state, and
+ * rendered world geometry for the active GUI database.
  *
- * QML access pattern: App.geometry.backend.world_geometry_model
+ * QML access pattern: App.layout.world_geometry_model
  */
 class LayoutModule : public QObject {
     Q_OBJECT
@@ -58,13 +60,16 @@ public:
     QOBJECT_READONLY_PROPERTY(StatusComponent, status);
 
 public slots:
-    void clear_viewed_element() { set_viewed_element({}); }
-    void clear_edited_element() { set_edited_element({}); }
+    /// Clear the element currently shown in the layout details pane.
+    void clear_viewed_element() { set_viewed_element({ }); }
+
+    /// Clear the element currently being edited.
+    void clear_edited_element() { set_edited_element({ }); }
+
+    /// Delete edited_element from current_database, if it is valid.
     void delete_edited_element();
 
 signals:
     void notify(ANotification);
 };
-
-
 } // namespace SolTrace::GUI::App

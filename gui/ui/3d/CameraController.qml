@@ -114,6 +114,98 @@ Item {
         internal.current_controller.reset()
     }
 
+    function as_vector3d(value) {
+        return Qt.vector3d(value.x, value.y, value.z)
+    }
+
+    function dot(a, b) {
+        return a.x * b.x + a.y * b.y + a.z * b.z
+    }
+
+    function fit_bounds(bounds_min, bounds_max) {
+        var min_point = as_vector3d(bounds_min)
+        var max_point = as_vector3d(bounds_max)
+        var center = min_point.plus(max_point).times(0.5)
+        var extent = max_point.minus(min_point)
+
+        if (extent.x < 0 || extent.y < 0 || extent.z < 0)
+            return
+
+        var cam = active_camera
+        var forward = as_vector3d(cam.forward).normalized()
+        var right = as_vector3d(cam.right).normalized()
+        var up = as_vector3d(cam.up).normalized()
+
+        var half_width = 0.0
+        var half_height = 0.0
+        var half_depth = 0.0
+
+        for (var ix = 0; ix < 2; ++ix) {
+            for (var iy = 0; iy < 2; ++iy) {
+                for (var iz = 0; iz < 2; ++iz) {
+                    var corner = Qt.vector3d(
+                                ix ? max_point.x : min_point.x,
+                                iy ? max_point.y : min_point.y,
+                                iz ? max_point.z : min_point.z)
+                    var rel = corner.minus(center)
+
+                    half_width = Math.max(half_width, Math.abs(dot(rel, right)))
+                    half_height = Math.max(half_height, Math.abs(dot(rel, up)))
+                    half_depth = Math.max(half_depth, Math.abs(dot(rel, forward)))
+                }
+            }
+        }
+
+        var padding = 1.2
+        half_width = Math.max(half_width * padding, 1.0)
+        half_height = Math.max(half_height * padding, 1.0)
+        half_depth = Math.max(half_depth * padding, 1.0)
+
+        var base = rotation_target ? rotation_target.scenePosition : Qt.vector3d(0, 0, 0)
+        rotation_target_offset = center.minus(base)
+
+        if (use_orthographic && orthographic_camera) {
+            var aspect = Math.max(width, 1) / Math.max(height, 1)
+            var horizontal_mag = half_width * 2.0
+            var vertical_mag = half_height * 2.0
+
+            if (horizontal_mag / Math.max(vertical_mag, 0.000001) < aspect)
+                horizontal_mag = vertical_mag * aspect
+            else
+                vertical_mag = horizontal_mag / aspect
+
+            orthographic_camera.horizontalMagnification =
+                    clamp_orthographic_magnification(horizontal_mag)
+            orthographic_camera.verticalMagnification =
+                    clamp_orthographic_magnification(vertical_mag)
+
+            var ortho_distance = Math.max(cam.position.minus(center).length(),
+                                          half_depth * 4.0,
+                                          1.0)
+            orthographic_camera.position =
+                    clamp_camera_position(center.minus(forward.times(ortho_distance)))
+            orthographic_camera.clipFar =
+                    Math.max(orthographic_camera.clipFar, ortho_distance + half_depth * 4.0)
+        } else {
+            var vertical_fov_rad =
+                    perspective_camera.fieldOfView * Math.PI / 180.0
+            var aspect_ratio = Math.max(width, 1) / Math.max(height, 1)
+            var horizontal_fov_rad =
+                    2.0 * Math.atan(Math.tan(vertical_fov_rad / 2.0) * aspect_ratio)
+            var distance_for_height = half_height / Math.tan(vertical_fov_rad / 2.0)
+            var distance_for_width = half_width / Math.tan(horizontal_fov_rad / 2.0)
+            var distance = clamp_orbit_distance(
+                        Math.max(distance_for_height, distance_for_width) + half_depth)
+
+            perspective_camera.position =
+                    clamp_camera_position(center.minus(forward.times(distance)))
+            perspective_camera.clipFar =
+                    Math.max(perspective_camera.clipFar, distance + half_depth * 4.0)
+        }
+
+        internal.current_controller.reset()
+    }
+
     // Converts an enum axis plus an inversion flag into the world-space
     // direction the camera should look from/to for alignment commands.
     function build_align_vector(axis, invert) {

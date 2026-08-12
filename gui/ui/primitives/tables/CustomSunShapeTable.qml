@@ -50,8 +50,7 @@ ListView {
         Label {
             id: index_label
 
-            Layout.preferredWidth: implicitWidth + 5
-            Layout.preferredHeight: implicitWidth + 5
+            Layout.preferredWidth: 25
             text: index + 1
 
             

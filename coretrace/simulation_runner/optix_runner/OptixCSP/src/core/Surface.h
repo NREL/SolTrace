@@ -64,6 +64,43 @@ namespace OptixCSP
     };
 
 
+    /**
+     * @class SurfaceSpherical
+     * @brief Define spherical surface of an element
+     *
+     * Spherical surface defined by a single vertex curvature parameter c (= 1/R).
+     * The surface equation in local coordinates is:
+     *   z(x, y) = c*(x^2 + y^2) / [1 + sqrt(1 - c^2*(x^2 + y^2))]
+     * which corresponds to the lower cap of a sphere with radius R = 1/c
+     * centered at (0, 0, R) in local element coordinates.
+     */
+    class SurfaceSpherical : public Surface {
+    public:
+        SurfaceSpherical() : m_c(0.0) {}
+        SurfaceSpherical(double c) : m_c(c) {}
+        ~SurfaceSpherical() = default;
+
+        SurfaceType get_surface_type() const override {
+            return SurfaceType::SPHERICAL;
+        }
+
+        void set_curvature(double c) {
+            m_c = c;
+        }
+
+        virtual double get_curvature_1() const override {
+            return m_c;
+        }
+
+        virtual double get_curvature_2() const override {
+            return m_c;
+        }
+
+    private:
+        double m_c;
+    };
+
+
     /// flat surface 
     class SurfaceFlat : public Surface {
     public:

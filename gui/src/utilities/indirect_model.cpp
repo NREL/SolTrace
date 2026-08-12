@@ -49,8 +49,6 @@ int IndirectTableModel::columnCount(const QModelIndex& parent) const {
 }
 
 QVariant IndirectTableModel::data(const QModelIndex& index, int role) const {
-    // qDebug() << Q_FUNC_INFO << index << role;
-
     if (!index.isValid()) return {};
     if (index.row() >= _record_count()) return {};
 
@@ -74,8 +72,6 @@ QVariant IndirectTableModel::data(const QModelIndex& index, int role) const {
 bool IndirectTableModel::setData(const QModelIndex& index,
                                  const QVariant&    value,
                                  int                role) {
-    // qDebug() << Q_FUNC_INFO << index << value << role;
-
     if (data(index, role) == value) return false;
 
     auto resolved_index = index.row();
@@ -161,8 +157,6 @@ void IndirectTableModel::remove_all() {
 }
 
 void IndirectTableModel::notify_update(int i) {
-    // qDebug() << Q_FUNC_INFO;
-
     if (i < 0) return;
     if (i >= _record_count()) return;
 

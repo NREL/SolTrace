@@ -35,13 +35,15 @@ void emplace_patch(entt::registry& reg, entt::entity entity, Function&& f) {
         if constexpr (std::is_empty_v<Component>) {
             reg.emplace<Component>(entity);
         } else {
-            reg.emplace<Component>(entity, Component {});
+            reg.emplace<Component>(entity, Component { });
         }
     }
 
     reg.patch<Component>(entity, f);
 }
 
+/// Base class for all component notification, needed as Qt does not support
+/// signals+slots on template classes.
 class ComponentAPIBase : public QObject {
     Q_OBJECT
 protected:
@@ -52,10 +54,15 @@ public:
     virtual ~ComponentAPIBase() = default;
 
 signals:
+    /// An entity with this component has had that component changed
     void changed(entt::entity);
+    /// An entity with this component has had that component removed
     void removed(entt::entity);
 };
 
+/// Notification endpoint for a given component.
+///
+/// Bridges EnTT construct/update/destroy callbacks into Qt signals.
 template <class Component>
 class ComponentAPI : public ComponentAPIBase {
     void change_callback(entt::registry& reg, entt::entity entity) {
@@ -87,6 +94,7 @@ public:
             .template disconnect<&ComponentAPI::remove_callback>(this);
     }
 
+    /// A self pointer, useful for connect() calls.
     auto* self() { return this; }
 
     /// Get the content of this component on an entity. Returns null if the
@@ -98,6 +106,7 @@ public:
         return nullptr;
     }
 
+    /// Patch a component if it already exists on entity.
     template <class F>
     bool try_patch(entt::entity entity, F&& f) {
         if (!m_host.valid(entity)) return false;
@@ -110,22 +119,25 @@ public:
         return false;
     }
 
+    /// Patch a component, creating it first if needed.
     template <class F>
     void emplace_patch(entt::entity entity, F&& f) {
         if (!m_host.all_of<Component>(entity)) {
             if constexpr (std::is_empty_v<Component>) {
                 m_host.emplace<Component>(entity);
             } else {
-                m_host.emplace<Component>(entity, Component {});
+                m_host.emplace<Component>(entity, Component { });
             }
         }
 
         m_host.patch<Component>(entity, f);
     }
 
+    /// A const view of all entities with this component
     auto view() const { return m_host.view<Component const>(); }
 };
 
+/// Specialized component notification endpoint that supports editing.
 template <class Component>
 class ComponentAPIUpdate : public ComponentAPI<Component> {
 public:
@@ -133,6 +145,7 @@ public:
     ~ComponentAPIUpdate() override = default;
 
 public:
+    /// Replace the component value on entity.
     void set(entt::entity entity, Component const& c) {
         if constexpr (std::is_empty_v<Component>) {
             this->m_host.template emplace_or_replace<Component>(entity);
@@ -141,19 +154,22 @@ public:
         }
     }
 
+    /// Patch the component value on entity, creating it first if needed.
     template <class Function>
     void patch(entt::entity entity, Function&& f) {
         db::emplace_patch<Component>(this->m_host, entity, f);
     }
 
+    /// Remove the component from entity.
     void remove(entt::entity entity) {
         this->m_host.template remove<Component>(entity);
     }
 };
 
+/// Notification endpoint for a component that we treat as a unique resource.
 template <class Component>
 class SingletonComponentAPI : public ComponentAPIBase {
-    entt::entity m_entity = entt::null;
+    entt::entity m_entity      = entt::null;
     bool         m_owns_entity = false;
 
     void verify_singleton() const {
@@ -200,7 +216,7 @@ public:
             if (m_entity != entt::null) {
                 qFatal("Singleton component exists on more than one entity");
             }
-            m_entity = entity;
+            m_entity      = entity;
             m_owns_entity = false;
         }
 
@@ -223,35 +239,44 @@ public:
             .template disconnect<&SingletonComponentAPI::remove_callback>(this);
     }
 
+    /// A self pointer, useful for connect() calls.
     auto* self() { return this; }
 
+    /// Get the entity that owns this singleton
     entt::entity entity() const { return m_entity; }
-    bool         exists() const { return m_entity != entt::null; }
 
+    /// Does this singleton exist?
+    bool exists() const { return m_entity != entt::null; }
+
+    /// Get the component, or null if it does not exist
     Component const* get() const {
         if (m_entity == entt::null) return nullptr;
         if (!this->m_host.valid(m_entity)) return nullptr;
         return this->m_host.template try_get<Component>(m_entity);
     }
 
+    /// Get the component, or null if it does not exist
     Component* get() {
         if (m_entity == entt::null) return nullptr;
         if (!this->m_host.valid(m_entity)) return nullptr;
         return this->m_host.template try_get<Component>(m_entity);
     }
 
+    /// Get the component, panic if it does not exist
     Component const& require() const {
         auto ptr = get();
         if (!ptr) qFatal("Required singleton component is missing");
         return *ptr;
     }
 
+    /// Get the component, panic if it does not exist
     Component& require() {
         auto ptr = get();
         if (!ptr) qFatal("Required singleton component is missing");
         return *ptr;
     }
 
+    /// Set the component content, replacing it if it exists
     void set(Component const& component) {
         if (m_entity == entt::null) {
             m_entity      = this->m_host.create();
@@ -261,11 +286,13 @@ public:
         if constexpr (std::is_empty_v<Component>) {
             this->m_host.template emplace_or_replace<Component>(m_entity);
         } else {
-            this->m_host.template emplace_or_replace<Component>(
-                m_entity, component);
+            this->m_host.template emplace_or_replace<Component>(m_entity,
+                                                                component);
         }
     }
 
+    /// Run a patch function on the singleton, emplacing it with a default if it
+    /// does not exist
     template <class Function>
     void patch(Function&& f) {
         if (m_entity == entt::null) {
@@ -276,10 +303,11 @@ public:
             this->m_host, m_entity, std::forward<Function>(f));
     }
 
+    /// Remove the singleton from the world.
     void remove() {
         if (m_entity == entt::null) return;
 
-        const auto entity = m_entity;
+        const auto entity      = m_entity;
         const bool owns_entity = m_owns_entity;
         if (this->m_host.valid(entity)) {
             this->m_host.template remove<Component>(entity);

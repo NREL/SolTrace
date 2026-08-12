@@ -8,6 +8,7 @@
 #include "surface.hpp"
 
 #include "database/database.h"
+#include "database/database_observer.h"
 #include "utilities/qt_helpers.h"
 #include "utilities/structmodel.h"
 
@@ -15,11 +16,13 @@ namespace SD = SolTrace::Data;
 
 namespace db {
 
+/// UI presentation hint for a surface parameter.
 enum SurfaceParameterType {
     GenericSurfaceParameter = 0,
     AngleSurfaceParameter   = 1,
 };
 
+/// One editable surface parameter exposed to QML.
 struct SurfaceParameter {
     QString name;
     double  content = 0.0;
@@ -37,11 +40,12 @@ struct SurfaceParameter {
 };
 
 
+/// Model that adapts SolTrace surface parameters to editable QML rows.
 class SurfaceParameterModel : public StructTableModel<SurfaceParameter>,
                               public DatabaseObserver {
     Q_OBJECT
 
-    entt::entity m_current_group = entt::null;
+    entt::entity m_current_group         = entt::null;
     bool         m_syncing_from_database = false;
 
     void set_new_database_connections(Database* ptr) override;
@@ -54,11 +58,17 @@ class SurfaceParameterModel : public StructTableModel<SurfaceParameter>,
 public:
     explicit SurfaceParameterModel(QObject* parent = nullptr);
 
+    /// Observe a database geometry group.
     void set(Database*, entt::entity group);
 
-    void            set_for(SD::SurfaceType);
-    void            set_from(SD::Surface const&);
-    void            write_back(SD::Surface&) const;
+    /// Replace the current surface with a new surface of type.
+    void set_for(SD::SurfaceType);
+
+    /// Populate rows from an existing SolTrace surface.
+    void set_from(SD::Surface const&);
+
+    /// Write edited rows back into a SolTrace surface object.
+    void write_back(SD::Surface&) const;
 
 private slots:
     void parameters_changed(entt::entity);

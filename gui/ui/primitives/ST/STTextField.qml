@@ -60,7 +60,7 @@ Item {
             Layout.fillWidth: true
             Layout.fillHeight: true
 
-            // These dont seem to work.
+            // TextField does not currently honor these insets in this layout.
             leftInset: 0
             padding: 0
 

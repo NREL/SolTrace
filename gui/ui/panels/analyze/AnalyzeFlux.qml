@@ -10,6 +10,9 @@ Flickable {
     id: root
     property var left_panel_size: App.view.left_panel.size
     property var flux_module : AppData.flux
+    property bool singleColumn: App.view.left_panel.size === SplitPanelData.Small
+    property int labelAlignment: (singleColumn ? Qt.AlignLeft : Qt.AlignRight) | Qt.AlignVCenter
+    property int child_column_span: singleColumn ? 1 : 2
 
     function formatCoordinate(value) {
         if (!isFinite(value)) {
@@ -48,7 +51,31 @@ Flickable {
             collapsible: true
             title: "Current Flux Map"
 
-            visible: AppData.flux.current_image.length
+            visible: AppData.flux.current_image.length || computed_map_combo.count > 0
+
+            STPropertyLabel {
+                text: "Computed Map"
+                Layout.alignment: root.labelAlignment
+                visible: computed_map_combo.count > 0
+            }
+
+            STComboBox {
+                id: computed_map_combo
+                Layout.fillWidth: true
+                visible: count > 0
+
+                model: AppData.flux.computed_maps_model
+                textRole: "name"
+                currentIndex: Math.max(
+                                  0,
+                                  AppData.flux.computed_maps_model.index_of(
+                                      AppData.flux.current_entity))
+
+                onActivated: (index) => {
+                    AppData.flux.select_entity(
+                                AppData.flux.computed_maps_model.entity_at(index))
+                }
+            }
 
             Image {
                 Layout.columnSpan: 2
@@ -88,8 +115,17 @@ Flickable {
                 onToggled: AppData.flux.show_other_geometry = checked
             }
 
+            Label {
+                Layout.columnSpan: 2
+                Layout.fillWidth: true
+                text: "Flux map values are normalized ray-density values."
+                color: App.theme.fontColor
+                opacity: 0.75
+                wrapMode: Label.WrapAtWordBoundaryOrAnywhere
+            }
+
             STPropertyLabel {
-                text: "Plotted Power"
+                text: "Plotted Ray Weight"
             }
 
             Label {
@@ -99,7 +135,7 @@ Flickable {
             }
 
             STPropertyLabel {
-                text: "Peak Flux"
+                text: "Peak Normalized Flux"
             }
 
             Label {
@@ -109,7 +145,7 @@ Flickable {
             }
 
             STPropertyLabel {
-                text: "Min Flux"
+                text: "Min Normalized Flux"
             }
 
             Label {
@@ -119,7 +155,7 @@ Flickable {
             }
 
             STPropertyLabel {
-                text: "Average Flux"
+                text: "Average Normalized Flux"
             }
 
             Label {
@@ -129,7 +165,7 @@ Flickable {
             }
 
             STPropertyLabel {
-                text: "Sigma Flux"
+                text: "Sigma Normalized Flux"
             }
 
             Label {
@@ -185,70 +221,135 @@ Flickable {
 
             collapsible: true
             title: "Compute Flux Map"
+            columns: root.singleColumn ? 1 : 2
 
             STPropertyLabel {
                 text: "Element"
+                Layout.alignment: root.labelAlignment
             }
 
-            STButton {
+            RowLayout {
                 Layout.fillWidth: true
+                spacing: 8
 
-                text: AppData.flux.current_entity_name.length ?
-                          AppData.flux.current_entity_name : "Select Element"
-                left_text_icon: "\uf05b"
+                STButton {
+                    Layout.fillWidth: true
 
-                onClicked: entity_pop.open()
+                    text: AppData.flux.current_entity_name.length ?
+                              AppData.flux.current_entity_name : "Select Element"
+                    left_text_icon: "\uf03a"
 
-                SelectItemPopup {
-                    id: entity_pop
-                    source_model: AppData.flux.entity_model
+                    onClicked: entity_pop.open()
 
-                    onSelectedEntity: (entity) => {
-                        AppData.flux.select_entity(entity)
+                    SelectItemPopup {
+                        id: entity_pop
+                        source_model: AppData.flux.entity_model
+
+                        onSelectedEntity: (entity) => {
+                            AppData.flux.select_entity(entity)
+                        }
                     }
+                }
+
+                STIconButton {
+                    icon: "\uf245"
+                    toolTip: "Pick element from view"
+
+                    onClicked: {
+                        App.view.simulation_content_view = true
+                        App.view.mouse_mode = ViewModule.SelectElement
+                    }
+                }
+
+                STIconButton {
+                    icon: "\uf140"
+                    toolTip: "Orient Camera to Element"
+                    enabled: AppData.flux.current_entity.is_valid()
+
+                    onClicked: {
+                        App.view.simulation_content_view = true
+                        simulation_scene.orient_camera_to_database_position(
+                                    AppData.flux.current_entity_position)
+                    }
+                }
+            }
+
+            STSwitch {
+                Layout.columnSpan: root.child_column_span
+                text: "Show Triangle Grid"
+                checked: AppData.flux.pending_flux_maps.show_mesh_grid
+                onToggled: AppData.flux.pending_flux_maps.show_mesh_grid = checked
+            }
+
+            STPropertyLabel {
+                text: "Pixel Resolution"
+                Layout.alignment: root.labelAlignment
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 8
+
+                STSpinBox {
+                    Layout.fillWidth: true
+                    from: 64
+                    to: 8192
+                    stepSize: 64
+                    value: AppData.flux.pending_flux_maps.image_resolution.width
+
+                    onValueModified: {
+                        AppData.flux.pending_flux_maps.image_resolution =
+                                Qt.size(value,
+                                        AppData.flux.pending_flux_maps.image_resolution.height)
+                    }
+                }
+
+                Label {
+                    Layout.alignment: Qt.AlignVCenter
+                    text: "\u00d7"
+                    opacity: 0.7
+                }
+
+                STSpinBox {
+                    Layout.fillWidth: true
+                    from: 64
+                    to: 8192
+                    stepSize: 64
+                    value: AppData.flux.pending_flux_maps.image_resolution.height
+
+                    onValueModified: {
+                        AppData.flux.pending_flux_maps.image_resolution =
+                                Qt.size(AppData.flux.pending_flux_maps.image_resolution.width,
+                                        value)
+                    }
+                }
+            }
+
+            STPropertyLabel {
+                text: "Surface divisions"
+                Layout.alignment: root.labelAlignment
+            }
+
+            STSpinBox {
+                Layout.fillWidth: true
+                from: 1
+                to: 16
+                value: AppData.flux.pending_flux_maps.mesh_resolution_multiply
+
+                onValueModified: {
+                    AppData.flux.pending_flux_maps.mesh_resolution_multiply = value
                 }
             }
 
             STButton {
                 Layout.fillWidth: true
-                Layout.columnSpan: 2
+                Layout.columnSpan: root.child_column_span
 
                 text: "Compute Map"
                 left_text_icon: "\uf0da"
 
                 onClicked: {
                     AppData.flux.start_generate()
-                }
-            }
-
-            STPropertySeparator {
-                title: "Computed Maps"
-                visible: existing_maps.count > 0
-            }
-
-            ListView {
-                id: existing_maps
-                visible: count > 0
-                Layout.columnSpan: 2
-                Layout.fillHeight: true
-                Layout.fillWidth: true
-                Layout.preferredHeight: 200
-                clip: true
-
-                model: AppData.flux.computed_maps_model
-
-                ScrollBar.vertical: STScrollBar { }
-
-                delegate: STItemDelegate {
-                    id: delegate
-                    required property string name
-                    required property var entity
-                    text: delegate.name
-                    //highlighted: isCurrent
-
-                    onClicked: {
-                        AppData.flux.select_entity(delegate.entity)
-                    }
                 }
             }
         }
@@ -260,7 +361,7 @@ Flickable {
             visible: false
 
             collapsible: true
-            title: "Flux Volume"
+            title: "Normalized Ray Volume"
 
             STPropertyLabel {
                 text: "Grid Resolution"
@@ -303,6 +404,7 @@ Flickable {
                 value: 0.90
                 from: 0.0
                 stepSize: .01
+                decimals: 2
                 to: 1.0
             }
 

@@ -7,6 +7,7 @@
 
 namespace SolTrace::GUI::App {
 
+/// State for the full-screen overlay panel used by settings/docs/build info.
 class FullPanelData : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -29,10 +30,17 @@ public:
     Q_WRITABLE_PROPERTY(int, build_section, 0)
 
 public slots:
+    /// Mark the full panel visible.
     void show();
+
+    /// Mark the full panel hidden.
     void hide();
 };
 
+/// Width and visibility state for a side panel.
+///
+/// The discrete PanelSize value is derived from width and consumed by QML to
+/// switch between compact and expanded layouts.
 class SplitPanelData : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -65,18 +73,32 @@ public:
     // Idea: show walkthrough tags just for this section
 
 public slots:
+    /// Whether the current width maps to the compact panel layout.
     bool is_small();
+
+    /// Whether the current width maps to the normal panel layout.
     bool is_normal();
+
+    /// Whether the current width maps to the wide panel layout.
     bool is_wide();
+
+    /// Recompute size from width and emit the generated property changes.
     void update_size();
 
+    /// Preserve the current visibility before opening a mutually exclusive UI.
     void save_visibility();
+
+    /// Restore visibility saved by save_visibility().
     void restore_visibility();
 
+    /// Mark the panel visible.
     void show();
+
+    /// Mark the panel hidden.
     void hide();
 };
 
+/// User-configurable state for the 3D simulation viewport.
 class SimulationViewState : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -116,6 +138,8 @@ public:
     Q_WRITABLE_PROPERTY(int, fps_walk_speed, 10)
 };
 
+/// Top-level QML-facing state machine for panels, workflow sections, and view
+/// modes.
 class ViewModule : public QObject {
     Q_OBJECT
     QML_ELEMENT
@@ -172,21 +196,38 @@ public:
     QOBJECT_READONLY_PROPERTY(SimulationViewState, sim)
 
 public slots:
+    /// Adjust split-panel widths and visibility to fit the available window
+    /// width.
     void fit_panels(int  available_width,
                     bool expanding_right_panel = false,
                     bool resizing_window       = false,
                     int  margin                = 30);
 
+    /// Open the modal/full-width panel.
     void open_full_panel();
+
+    /// Close the modal/full-width panel and refit side panels.
     void close_full_panel(int available_width);
+
+    /// Toggle the modal/full-width panel and refit side panels.
     void toggle_full_panel(int available_width);
 
+    /// Open the left workflow panel and refit available width.
     void open_left_panel(int available_width);
+
+    /// Close the left workflow panel.
     void close_left_panel();
+
+    /// Toggle the left workflow panel.
     void toggle_left_panel(int available_width);
 
+    /// Open the right details panel and refit available width.
     void open_right_panel(int availalbe_width);
+
+    /// Close the right details panel.
     void close_right_panel();
+
+    /// Toggle the right details panel.
     void toggle_right_panel(int available_width);
 };
 

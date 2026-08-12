@@ -11,122 +11,132 @@ ColumnLayout {
     id: root
 
     property var current_db: AppData.file_source.current_database
+    property bool showFooter: true
 
     spacing: 8
 
-    STPropertyPanel {
+    Label {
         Layout.fillWidth: true
-        title: "Current Scene"
+        text: "Current Scene"
+        font.bold: true
+    }
 
+    RowLayout {
+        Layout.fillWidth: true
         enabled: !!root.current_db
+        spacing: 8
 
-        RowLayout {
+        Label {
+            Layout.alignment: Qt.AlignVCenter
+            font.family: "Font Awesome 7 Free"
+            font.pointSize: 16
+            text: "\uf303"
+        }
+
+        STTextField {
             Layout.fillWidth: true
-            Layout.columnSpan: 2
+            text: root.current_db ? root.current_db.name : ""
 
-            STTextField {
-                text: root.current_db ? root.current_db.name : ""
-                Layout.fillWidth: true
-
-                onTextEdited: {
-                    if (root.current_db) {
-                        root.current_db.name = text
-                    }
+            onTextEdited: {
+                if (root.current_db) {
+                    root.current_db.name = text
                 }
-            }
-
-            Label {
-                font.family: "Font Awesome 7 Free"
-                font.pointSize: 16
-                text: "\uf303"
             }
         }
 
-        RowLayout {
-            Layout.fillWidth: true
-            Layout.columnSpan: 2
+        STIconButton {
+            enabled: !!root.current_db && !AppData.file_source.is_loading
+            icon: "\uf56e"
+            label: "Export"
+            toolTip: "Export scene to file"
 
-            Item {
-                Layout.fillWidth: true
+            onClicked: {
+                if (!AppData.file_source.save_current_dialog()) {
+                    file_dialog.open()
+                }
             }
 
+            FileDialog {
+                id: file_dialog
 
-            STIconButton {
-                enabled: !AppData.file_source.is_loading
-                icon: "\uf56e"
-                label: "Export"
-                toolTip: "Export scene to file"
+                fileMode: FileDialog.SaveFile
+                defaultSuffix: "json"
+                nameFilters: ["JSON files (*.json)"]
 
-                onClicked: {
-                    if (!AppData.file_source.save_current_dialog()) {
-                        file_dialog.open()
-                    }
-                }
+                onAccepted: AppData.file_source.save_current(
+                                file_dialog.selectedFile)
 
-                FileDialog {
-                    id: file_dialog
+                Settings {
+                    id: save_file_history
 
-                    fileMode: FileDialog.SaveFile
+                    category: "save_file_history"
 
-                    defaultSuffix: "json"
-
-                    nameFilters: ["JSON files (*.json)"]
-
-                    onAccepted:
-                        AppData.file_source.save_current(file_dialog.selectedFile)
-
-
-                    Settings {
-                        id: save_file_history
-
-                        category: "save_file_history"
-
-                        property alias last_selected_file: file_dialog.selectedFile
-                        property alias last_selected_folder: file_dialog.currentFolder
-                    }
+                    property alias last_selected_file: file_dialog.selectedFile
+                    property alias last_selected_folder: file_dialog.currentFolder
                 }
             }
         }
     }
 
-    STPropertyPanel {
+    Rectangle {
+        color: Material.dividerColor
+        Layout.preferredHeight: 1
         Layout.fillWidth: true
+        Layout.leftMargin: 3
+        Layout.rightMargin: 3
+    }
+
+    Label {
+        Layout.fillWidth: true
+        text: "Available Scenes"
+        font.bold: true
+    }
+
+    Label {
+        Layout.fillWidth: true
+        visible: scene_list.count === 0
+        text: "No scenes loaded."
+        opacity: 0.7
+        horizontalAlignment: Text.AlignHCenter
+    }
+
+    ListView {
+        id: scene_list
+
         Layout.fillHeight: true
-        title: "Available Scenes"
+        Layout.fillWidth: true
+        model: AppData.file_source
+        clip: true
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.fillHeight: true
+        ScrollBar.vertical: STScrollBar { }
 
-            ListView {
-                Layout.fillHeight: true
-                Layout.fillWidth: true
+        delegate: STItemDelegate {
+            id: db_delegate
 
-                model: AppData.file_source
-                clip: true
+            required property int index
+            required property var database
 
-                ScrollBar.vertical: STScrollBar { }
+            text: database.name
+            font.pointSize: 18
+            highlighted: root.current_db === database
 
-                delegate: STItemDelegate {
-                    id: db_delegate
-
-                    required property int index
-                    required property var database
-
-                    text: database.name
-                    font.pointSize: 18
-                    highlighted: root.current_db === database
-
-                    onClicked: {
-                        AppData.file_source.set_current(index)
-                        App.view.simulation_content_view = false
-                    }
-                }
-            }
-
-            SceneListFooter {
-                Layout.fillWidth: true
+            onClicked: {
+                AppData.file_source.set_current(index)
+                App.view.simulation_content_view = false
             }
         }
+    }
+
+    Rectangle {
+        color: Material.dividerColor
+        Layout.preferredHeight: 1
+        Layout.fillWidth: true
+        Layout.leftMargin: 3
+        Layout.rightMargin: 3
+    }
+
+    SceneListFooter {
+        Layout.fillWidth: true
+        visible: root.showFooter
     }
 }

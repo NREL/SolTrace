@@ -7,7 +7,7 @@
 namespace db {
 
 namespace {
-
+/// Build a parameter list for a given aperture type
 QVector<ApertureParameter> make_parameters_for(SD::ApertureType type) {
     QVector<ApertureParameter> ret;
 
@@ -83,26 +83,8 @@ QVector<ApertureParameter> make_parameters_for(SD::ApertureType type) {
         };
         break;
     case SolTrace::Data::SINGLE_AXIS_CURVATURE_SECTION:
-        // ret = {
-        //     {
-        //         .name    = "X min",
-        //         .content = -0.5,
-        //     },
-        //     {
-        //         .name    = "X max",
-        //         .content = 0.5,
-        //     },
-        //     {
-        //         .name    = "Y length (x)",
-        //         .content = 1.0,
-        //         .min     = 0.0,
-        //     },
-        //     {
-        //         .name    = "Y length (y)",
-        //         .content = 0.0,
-        //         .min     = 0.0,
-        //     },
-        // };
+        // TODO: Not supported yet!
+        qWarning() << "Single axis curvature section is not yet supported";
         break;
     case SolTrace::Data::IRREGULAR_TRIANGLE:
         ret = {

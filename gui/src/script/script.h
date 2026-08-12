@@ -5,9 +5,9 @@
 #include "utilities/qt_helpers.h"
 #include "utilities/structmodel.h"
 
+#include <QJSValue>
 #include <QObject>
 #include <QQmlEngine>
-#include <QJSValue>
 #include <QStringList>
 
 namespace SolTrace::GUI::Script {
@@ -54,8 +54,10 @@ public:
     explicit ScriptPropertyModel(QObject* parent = nullptr);
 };
 
+/// Severity for messages emitted by user scripts.
 enum class ScriptLogLevel { Log, Warn, Error };
 
+/// Console object exposed to scripts for log/warn/error output.
 class ScriptConsole : public QObject {
     Q_OBJECT
 
@@ -63,32 +65,35 @@ public:
     explicit ScriptConsole(QObject*);
 
 public slots:
-    void log(QJSValue a = {},
-             QJSValue b = {},
-             QJSValue c = {},
-             QJSValue d = {},
-             QJSValue e = {},
-             QJSValue f = {},
-             QJSValue g = {},
-             QJSValue h = {});
+    /// Emit a log-level message built from up to eight JavaScript values.
+    void log(QJSValue a = { },
+             QJSValue b = { },
+             QJSValue c = { },
+             QJSValue d = { },
+             QJSValue e = { },
+             QJSValue f = { },
+             QJSValue g = { },
+             QJSValue h = { });
 
-    void warn(QJSValue a = {},
-              QJSValue b = {},
-              QJSValue c = {},
-              QJSValue d = {},
-              QJSValue e = {},
-              QJSValue f = {},
-              QJSValue g = {},
-              QJSValue h = {});
+    /// Emit a warning-level message built from up to eight JavaScript values.
+    void warn(QJSValue a = { },
+              QJSValue b = { },
+              QJSValue c = { },
+              QJSValue d = { },
+              QJSValue e = { },
+              QJSValue f = { },
+              QJSValue g = { },
+              QJSValue h = { });
 
-    void error(QJSValue a = {},
-               QJSValue b = {},
-               QJSValue c = {},
-               QJSValue d = {},
-               QJSValue e = {},
-               QJSValue f = {},
-               QJSValue g = {},
-               QJSValue h = {});
+    /// Emit an error-level message built from up to eight JavaScript values.
+    void error(QJSValue a = { },
+               QJSValue b = { },
+               QJSValue c = { },
+               QJSValue d = { },
+               QJSValue e = { },
+               QJSValue f = { },
+               QJSValue g = { },
+               QJSValue h = { });
 
 signals:
     void logged(int, QString);
@@ -157,7 +162,7 @@ class Script : public QObject {
     QPointer<ScriptDBInterface> m_interface;
     QPointer<db::Database>      m_database;
 
-    Q_WRITABLE_PROPERTY(QString, code, {});
+    Q_WRITABLE_PROPERTY(QString, code, { });
     Q_READONLY_PROPERTY(QString, title);
     Q_READONLY_PROPERTY(QString, description);
     Q_READONLY_PROPERTY(bool, valid);
@@ -166,20 +171,27 @@ class Script : public QObject {
 
 
     // Directory where scripts can pull additional content from
-    Q_WRITABLE_PROPERTY(QString, working_directory, {});
+    Q_WRITABLE_PROPERTY(QString, working_directory, { });
 
     Q_READONLY_PROPERTY(QStringList, builtin_scripts);
 
 public:
     explicit Script(QObject* parent = nullptr);
 
+    /// Attach the script to the database it will inspect and mutate.
     void set_database(db::Database*);
 
 public slots:
+    /// Parse header metadata and validate property declarations.
     bool parse();
 
+    /// Parse, compile, and run the script against the attached database.
     void run();
+
+    /// Emit a script error notification.
     void notify_error(QString message);
+
+    /// Generate markdown documentation for the script database API.
     QString api_markdown();
 
 signals:

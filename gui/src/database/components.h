@@ -9,8 +9,11 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include "analysis/baked_flux_map.h"
+#include "aperture.hpp"
 #include "entity.h"
-#include "simulation_data_api.hpp"
+#include "optical_properties.hpp"
+#include "ray_source.hpp"
+#include "surface.hpp"
 
 namespace SD = SolTrace::Data;
 

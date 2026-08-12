@@ -1,20 +1,9 @@
 #include "materialeditor.h"
 
+#include "database.h"
+
 namespace db {
 
-template <class K>
-void build_options(QStringListModel&               dest,
-                   std::map<K, std::string> const& opts) {
-    QStringList items;
-
-    for (auto const& iter : opts) {
-        auto val = QString::fromStdString(iter.second);
-
-        items.push_back(val);
-    }
-
-    dest.setStringList(items);
-}
 
 MaterialEditor::MaterialEditor(QObject* parent)
     : QObject { parent },
@@ -23,8 +12,8 @@ MaterialEditor::MaterialEditor(QObject* parent)
       m_interaction_type_model(new QStringListModel(this)),
       m_distribution_type_model(new QStringListModel(this)) {
 
-    build_options(*m_interaction_type_model, SD::InteractionTypeMap);
-    build_options(*m_distribution_type_model, SD::DistributionTypeMap);
+    build_options<SD::InteractionType>(*m_interaction_type_model);
+    build_options<SD::DistributionType>(*m_distribution_type_model);
 }
 
 MaterialEditor::~MaterialEditor() = default;
