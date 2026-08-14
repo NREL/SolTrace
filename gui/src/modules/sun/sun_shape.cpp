@@ -91,7 +91,7 @@ void SunShape::sample_pillbox() {
     m_generated_distribution->reset({
         { .angle = 0, .intensity = 1 },
         { .angle = m_half_width, .intensity = 1 },
-        { .angle = m_half_width, .intensity = 0 },
+        { .angle = m_half_width + 1e-4, .intensity = 0 },
     });
 }
 
@@ -188,6 +188,11 @@ void SunShape::sample_limb_darkened() {
         });
         theta += theta_inc;
     }
+
+    points.push_back({
+        .angle = disk_edge + 1.e-3,
+        .intensity = 0.0,
+    });
 
     m_generated_distribution->reset(points);
 }
