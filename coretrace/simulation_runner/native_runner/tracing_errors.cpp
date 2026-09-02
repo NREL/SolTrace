@@ -12,8 +12,6 @@ namespace SolTrace::NativeRunner {
 	// incoming ray.
 	//
 	// Remaining cleanup:
-	//     - Reduce the random number calls. I.e., sample theta directly rather than thetax
-	//       and thetay.
 	//     - Validate the sun shape and distribution type during setup so the
 	//       sampling paths do not need to throw.
 
@@ -89,48 +87,43 @@ glm::dvec3 PerturbAboutAxis(MTRand& myrng, const glm::dvec3& axis, double theta)
 	return CosRef;
 }
 
-// Polar angle of a normally distributed perturbation.
+// MTRand::rand() is inclusive of 0, which the log below cannot take.
+double SampleNonZeroUniform(MTRand& myrng)
+{
+	double u = myrng();
+	while (u <= 0.0)
+		u = myrng();
+
+	return u;
+}
+
+// Polar angle of a normally distributed perturbation. Two independent normal
+// components make the angle Rayleigh distributed, so invert that CDF directly.
 double SampleGaussianAngle(MTRand& myrng, double sigma)
 {
-	const double thetax = myrng.randNorm(0., sigma);
-	const double thetay = myrng.randNorm(0., sigma);
-	return sqrt(thetax * thetax + thetay * thetay);
+	return sigma * std::sqrt(-2.0 * std::log(SampleNonZeroUniform(myrng)));
 }
 
 // Polar angle of a perturbation drawn uniformly over a disc of radius `half_width`.
 double SampleDiscAngle(MTRand& myrng, double half_width)
 {
-	double theta2 = 0.0;
-	do
-	{
-		const double thetax = 2.0 * half_width * myrng() - half_width;
-		const double thetay = 2.0 * half_width * myrng() - half_width;
-		theta2 = thetax * thetax + thetay * thetay;
-	} while (theta2 > (half_width * half_width));
-
-	return sqrt(theta2);
+	return half_width * std::sqrt(myrng()); // Wang et al. 2010 Solar Energy 195 461-474
 }
 
-// Polar angle for a radial intensity profile, by rejection sampling a
-// (theta_x, theta_y) box out to `max_angle`.
+// Polar angle for a radial intensity profile. The proposal is uniform over the
+// disc out to `max_angle`, accepted against the normalized intensity, which
+// leaves a radial density proportional to theta*intensity(theta).
 template <typename IntensityFn>
 double SampleProfileAngle(MTRand& myrng, double max_angle, double max_intensity,
                           IntensityFn intensity)
 {
-	double theta2 = 0.0;
 	double theta = 0.0;
-	double stest = 0.0;
 
 	do
 	{
-		const double thetax = 2.0 * max_angle * myrng() - max_angle;
-		const double thetay = 2.0 * max_angle * myrng() - max_angle;
-		theta2 = thetax * thetax + thetay * thetay;
-		theta = sqrt(theta2); // wendelin 1-9-12  do the test once on theta NOT individually on thetax and thetay as before
+		theta = SampleDiscAngle(myrng, max_angle);
 
-		stest = intensity(theta);
-
-	} while ((myrng() > (stest / max_intensity)) || (theta2 > (max_angle * max_angle)));
+	} while (myrng() > (intensity(theta) / max_intensity));
 
 	return theta;
 }
@@ -145,7 +138,6 @@ double SampleSunAngleMrad(MTRand& myrng, const TSun& Sun)
 		return SampleGaussianAngle(myrng, Sun.Sigma);
 
 	case SunShape::PILLBOX:				// case 'p':
-		//theta = delop * sqrt(myrng()); // Wang et al. 2010 Solar Energy 195 461-474
 		return SampleDiscAngle(myrng, Sun.Sigma);
 
 	case SunShape::LIMBDARKENED:
