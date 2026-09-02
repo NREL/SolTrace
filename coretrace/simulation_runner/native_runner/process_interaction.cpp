@@ -9,6 +9,9 @@
 namespace SolTrace::NativeRunner
 {
 
+// Only consumed by the diffraction interaction types, which are disabled.
+constexpr double kDefaultWavelength = 630.0;
+
 void ProcessInteraction(
     TSystem*                                  System,
     MTRand&                                   myrng,
@@ -28,10 +31,6 @@ void ProcessInteraction(
     glm::dvec3& LastPosRaySurfElement,
     glm::dvec3& PosRayOutElement)
 {
-    // Initialize
-    glm::dvec3 CosIn(0.0, 0.0, 0.0);
-    glm::dvec3 CosOut(0.0, 0.0, 0.0);
-
     if (!Stage->Virtual)
     {
         // change to account for first hit only in primary stage 8-11-31
@@ -39,9 +38,8 @@ void ProcessInteraction(
         {
             // Apply sunshape to UNPERTURBED ray at intersection point
             // only apply sunshape error once for primary stage
-            CosIn = LastCosRaySurfElement;
-            SampleSunShape(myrng, CosIn, &System->Sun, CosOut);
-            LastCosRaySurfElement = CosOut;
+            LastCosRaySurfElement =
+                ApplySunShape(myrng, LastCosRaySurfElement, System->Sun);
         }
 
         //{Determine interaction at surface and direction of perturbed ray}
@@ -51,10 +49,8 @@ void ProcessInteraction(
         // ray at intersection point - Wendelin 11-23-09}
         if (IncludeErrors)
         {
-            // surface normal errors
-            SurfaceNormalErrors(
-                myrng, LastDFXYZ, optics, LastHitBackSide, CosOut);
-            LastDFXYZ = CosOut;
+            LastDFXYZ =
+                ApplySlopeError(myrng, LastDFXYZ, *optics, LastHitBackSide);
         }
 
         Interaction(myrng,
@@ -63,7 +59,7 @@ void ProcessInteraction(
                     LastDFXYZ, // Stage->ElementList[k]->InteractionType,
                     optics,
                     LastHitBackSide,
-                    630.0,
+                    kDefaultWavelength,
                     PosRayOutElement,
                     CosRayOutElement,
                     &ErrorFlag);
@@ -72,19 +68,17 @@ void ProcessInteraction(
         // interaction) ray at intersection point}
         if (IncludeErrors)
         {
-
             const OpticalSide side = LastHitBackSide == false
                                          ? OpticalSide::Front
                                          : OpticalSide::Back;
 
-            CosIn = optics->get_error_distribution(side) ==
-                            DistributionType::DIFFUSE
-                        ? LastDFXYZ
-                        : CosRayOutElement;
+            const glm::dvec3 CosIn = optics->get_error_distribution(side) ==
+                                             DistributionType::DIFFUSE
+                                         ? LastDFXYZ
+                                         : CosRayOutElement;
 
-            ApplySurfaceError(
-                myrng, CosIn, optics, LastHitBackSide, LastDFXYZ, CosOut);
-            CosRayOutElement = CosOut;
+            CosRayOutElement = ApplySpecularityError(
+                myrng, CosIn, *optics, LastHitBackSide, LastDFXYZ);
         }
     }
 }

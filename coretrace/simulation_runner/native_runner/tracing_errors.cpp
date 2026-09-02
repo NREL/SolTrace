@@ -5,21 +5,33 @@
 
 namespace SolTrace::NativeRunner {
 
-	// NOTES: SurfaceNormalErrors() applies the slope error to the surface
-	// normal. ApplySurfaceError() applies the specularity error to the ray
+	// NOTES: ApplySlopeError() applies the slope error to the surface normal.
+	// ApplySpecularityError() applies the specularity error to the ray
 	// direction, has a diffuse option, and rejects perturbations that pass
-	// through an opaque surface. SampleSunShape() applies the sun shape to the
+	// through an opaque surface. ApplySunShape() applies the sun shape to the
 	// incoming ray.
 	//
 	// Remaining cleanup:
-	//     - Separate DistributionType::NONE from the default switch case, and make
-	//       an unhandled distribution or sun shape loud rather than silent.
 	//     - Reduce the random number calls. I.e., sample theta directly rather than thetax
 	//       and thetay.
+	//     - Validate the sun shape and distribution type during setup so the
+	//       sampling paths do not need to throw.
 
 namespace {
 
 constexpr unsigned int kMaxRejectionAttempts = 50000;
+
+constexpr double kMradPerRad = 1000.0;
+
+// Angular radius of the solar disc.
+constexpr double kSolarDiscHalfAngleMrad = 4.65;
+
+// Limb darkening profile coefficient.
+constexpr double kLimbDarkeningCoeff = 0.5138;
+
+// Buie (2003) solar disc profile, cos(a*theta)/cos(b*theta).
+constexpr double kBuieDiscCoeffA = 0.326;
+constexpr double kBuieDiscCoeffB = 0.308;
 
 // Rotation taking the frame whose +z axis is `axis` back to the reference frame.
 glm::dmat3 BuildRayFrame(const glm::dvec3& axis)
@@ -139,7 +151,7 @@ double SampleSunAngleMrad(MTRand& myrng, const TSun& Sun)
 	case SunShape::LIMBDARKENED:
 		return SampleProfileAngle(myrng, Sun.MaxAngle, Sun.MaxIntensity,
 			[&](double theta) {
-				return 1.0 - 0.5138 * std::pow((theta / Sun.MaxAngle), 4);
+				return 1.0 - kLimbDarkeningCoeff * std::pow((theta / Sun.MaxAngle), 4);
 			});
 
 	case SunShape::BUIE_CSR:
@@ -147,8 +159,8 @@ double SampleSunAngleMrad(MTRand& myrng, const TSun& Sun)
 		// TODO: add an option to set the max angle (thereby reducing the tail)
 		return SampleProfileAngle(myrng, Sun.MaxAngle, Sun.MaxIntensity,
 			[&](double theta) {
-				if (std::abs(theta) <= 4.65) // within solar disc
-					return cos(0.326 * theta) / cos(0.308 * theta);
+				if (std::abs(theta) <= kSolarDiscHalfAngleMrad) // within solar disc
+					return cos(kBuieDiscCoeffA * theta) / cos(kBuieDiscCoeffB * theta);
 				// within circumsolar region
 				return std::exp(Sun.buie_kappa) * std::pow(std::abs(theta), Sun.buie_gamma);
 			});
@@ -178,13 +190,13 @@ double SampleSunAngleMrad(MTRand& myrng, const TSun& Sun)
 
 // Surface error perturbation angle, in radians.
 double SampleSurfaceErrorAngle(MTRand& myrng,
-                               const SolTrace::Data::OpticalPropertySet* OptProperties,
+                               const SolTrace::Data::OpticalPropertySet& OptProperties,
                                const OpticalSide side)
 {
 	// delop = sqrt(4.0*sqr(OptProperties->RMSSlopeError)+sqr(OptProperties->RMSSpecError))/1000.0;
-	const double delop = OptProperties->get_specularity_error(side) / 1000.0; // mrad -> rad
+	const double delop = OptProperties.get_specularity_error(side) / kMradPerRad;
 
-	switch (OptProperties->get_error_distribution(side))
+	switch (OptProperties.get_error_distribution(side))
 	{
 	case DistributionType::GAUSSIAN:			// case 'g':
 		return SampleGaussianAngle(myrng, delop);
@@ -205,30 +217,28 @@ double SampleSurfaceErrorAngle(MTRand& myrng,
 
 } // namespace
 
-void SurfaceNormalErrors(MTRand &myrng,
-                         const glm::dvec3 &CosIn,
-                         const SolTrace::Data::OpticalPropertySet* OptProperties,
-						 const bool LastHitBackSide,
-                         glm::dvec3 &CosOut)
+glm::dvec3 ApplySlopeError(MTRand& myrng,
+                           const glm::dvec3& CosIn,
+                           const SolTrace::Data::OpticalPropertySet& OptProperties,
+                           const bool LastHitBackSide)
 {
-
 	/*{Purpose:  To add error terms to the surface normal vector at the surface in question
 
-			   Input - Seed    = Seed for RNG
-					   CosIn   = Direction cosine vector of surface normal to which errors will be applied.
-					   Element = Element data record
-					   DFXYZ   = surface normal vector at interaction point
+			   Input - myrng   = RNG
+					   CosIn   = Direction cosine vector of surface normal to which errors
+								 will be applied.
+					   OptProperties = record of optical properties
 
-			   Output - CosOut  = Output direction cosine vector of surface normal after error terms have been included
+			   Returns the surface normal after the slope error has been applied.
 					   }*/
 
 	const OpticalSide side = LastHitBackSide == false ? OpticalSide::Front : OpticalSide::Back;
 
-	const double delop = OptProperties->get_slope_error(side) / 1000.0;
+	const double delop = OptProperties.get_slope_error(side) / kMradPerRad;
 
 	double theta = 0.0;
 
-	switch (OptProperties->get_error_distribution(side))
+	switch (OptProperties.get_error_distribution(side))
 	{
 	case DistributionType::GAUSSIAN:		// case 'g':
 		theta = SampleGaussianAngle(myrng, delop);
@@ -237,17 +247,13 @@ void SurfaceNormalErrors(MTRand &myrng,
 		theta = SampleDiscAngle(myrng, delop);
 		break;
 	default:
-		// TODO: Need an error here.
 		break;
 	}
 
-	CosOut = PerturbAboutAxis(myrng, CosIn, theta);
+	return PerturbAboutAxis(myrng, CosIn, theta);
 }
 
-void SampleSunShape(MTRand& myrng,
-                    const glm::dvec3& CosIn,
-                    const TSun* Sun,
-                    glm::dvec3& CosOut)
+glm::dvec3 ApplySunShape(MTRand& myrng, const glm::dvec3& CosIn, const TSun& Sun)
 {
 	/*{Purpose:  To apply the sun shape to the unperturbed ray at the surface in question
 
@@ -256,21 +262,19 @@ void SampleSunShape(MTRand& myrng,
 								 with the element surface
 					   Sun     = Sun data record
 
-			   Output - CosOut  = Output direction cosine vector of ray after the sun
-								  shape has been applied
+			   Returns the ray direction after the sun shape has been applied.
 					   }*/
 
-	const double theta = SampleSunAngleMrad(myrng, *Sun) / 1.e3; // convert from mrad to rad
+	const double theta = SampleSunAngleMrad(myrng, Sun) / kMradPerRad;
 
-	CosOut = PerturbAboutAxis(myrng, CosIn, theta);
+	return PerturbAboutAxis(myrng, CosIn, theta);
 }
 
-void ApplySurfaceError(MTRand& myrng,
-                       const glm::dvec3& CosIn,
-                       const SolTrace::Data::OpticalPropertySet* OptProperties,
-                       const bool LastHitBackSide,
-                       const glm::dvec3& DFXYZ,
-                       glm::dvec3& CosOut)
+glm::dvec3 ApplySpecularityError(MTRand& myrng,
+                                 const glm::dvec3& CosIn,
+                                 const SolTrace::Data::OpticalPropertySet& OptProperties,
+                                 const bool LastHitBackSide,
+                                 const glm::dvec3& DFXYZ)
 {
 	/*{Purpose:  To add error terms to the perturbed ray at the surface in question
 
@@ -280,14 +284,15 @@ void ApplySurfaceError(MTRand& myrng,
 					   OptProperties = record of optical properties
 					   DFXYZ   = surface normal vector at interaction point
 
-			   Output - CosOut  = Output direction cosine vector of ray after error terms
-								  have been included
+			   Returns the ray direction after error terms have been included.
 					   }*/
 
 	const OpticalSide side = LastHitBackSide == false ? OpticalSide::Front : OpticalSide::Back;
 
 	const bool reflecting =
-		OptProperties->get_interaction_type() == InteractionType::REFLECTION;
+		OptProperties.get_interaction_type() == InteractionType::REFLECTION;
+
+	glm::dvec3 CosOut(0.0, 0.0, 0.0);
 
 	for (unsigned int attempt = 0; attempt < kMaxRejectionAttempts; ++attempt)
 	{
@@ -298,8 +303,10 @@ void ApplySurfaceError(MTRand& myrng,
 		/*{If reflection error application and new ray direction (after errors) physically goes through opaque surface,
 		then go back and get new perturbation 06-12-07}*/
 		if (!reflecting || glm::dot(CosOut, DFXYZ) >= 0.0)
-			return;
+			break;
 	}
+
+	return CosOut;
 }
 // End of Procedure--------------------------------------------------------------
 

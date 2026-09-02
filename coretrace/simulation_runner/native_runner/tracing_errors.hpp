@@ -8,23 +8,22 @@
 
 namespace SolTrace::NativeRunner {
 
-void SampleSunShape(MTRand& myrng,
-                    const glm::dvec3& CosIn,
-                    const TSun* Sun,
-                    glm::dvec3& CosOut);
+// Perturbs a surface normal by the slope error.
+glm::dvec3 ApplySlopeError(MTRand& myrng,
+                           const glm::dvec3& CosIn,
+                           const SolTrace::Data::OpticalPropertySet& OptProperties,
+                           const bool LastHitBackSide);
 
-void ApplySurfaceError(MTRand& myrng,
-                       const glm::dvec3& CosIn,
-                       const SolTrace::Data::OpticalPropertySet* OptProperties,
-                       const bool LastHitBackSide,
-                       const glm::dvec3& DFXYZ,
-                       glm::dvec3& CosOut);
+// Perturbs an incoming ray by the sun shape.
+glm::dvec3 ApplySunShape(MTRand& myrng, const glm::dvec3& CosIn, const TSun& Sun);
 
-void SurfaceNormalErrors(MTRand& myrng,
-                         const glm::dvec3& CosIn,
-                         const SolTrace::Data::OpticalPropertySet* OptProperties,
-                         const bool LastHitBackSide,
-                         glm::dvec3& CosOut);
+// Perturbs an outgoing ray by the specularity error, rejecting directions that
+// would pass through an opaque reflecting surface.
+glm::dvec3 ApplySpecularityError(MTRand& myrng,
+                                 const glm::dvec3& CosIn,
+                                 const SolTrace::Data::OpticalPropertySet& OptProperties,
+                                 const bool LastHitBackSide,
+                                 const glm::dvec3& DFXYZ);
 
 
 } // namespace SolTrace::NativeRunner
