@@ -21,8 +21,9 @@ using SolTrace::Data::InteractionType;
 using SolTrace::Data::OpticalPropertySet;
 using SolTrace::Data::OpticalSide;
 using SolTrace::Data::SunShape;
-using SolTrace::NativeRunner::Errors;
+using SolTrace::NativeRunner::ApplySurfaceError;
 using SolTrace::NativeRunner::MTRand;
+using SolTrace::NativeRunner::SampleSunShape;
 using SolTrace::NativeRunner::SurfaceNormalErrors;
 using SolTrace::NativeRunner::TSun;
 
@@ -32,8 +33,6 @@ namespace
 constexpr int      kSamples    = 200000;
 constexpr uint32_t kSeed       = 20260902;
 constexpr double   kFrameTol   = 1e-12;
-constexpr int      kSunSource  = 1;
-constexpr int      kSurfSource = 2;
 
 // Axes chosen to cover every branch of the frame construction in
 // tracing_errors.cpp, including the two axis.z == 0 degenerate cases.
@@ -164,12 +163,10 @@ double KsStatistic(std::vector<double> samples,
 // Generous enough to avoid flakes, tight enough to catch a wrong distribution.
 double KsThreshold(int n) { return 2.5 / std::sqrt(static_cast<double>(n)); }
 
-// Sun-shape sample angles, in mrad (Errors() returns radians).
+// Sun-shape sample angles, in mrad (SampleSunShape() returns radians).
 std::vector<double> SampleSunAngles(TSun& sun, int n, uint32_t seed = kSeed)
 {
-    MTRand                   rng(seed);
-    const OpticalPropertySet optics =
-        MakeReflector(DistributionType::GAUSSIAN, 1.0, 1.0);
+    MTRand           rng(seed);
     const glm::dvec3 axis(0.0, 0.0, 1.0);
 
     std::vector<double> angles;
@@ -177,7 +174,7 @@ std::vector<double> SampleSunAngles(TSun& sun, int n, uint32_t seed = kSeed)
     for (int i = 0; i < n; ++i)
     {
         glm::dvec3 out(0.0);
-        Errors(rng, axis, kSunSource, &sun, &optics, false, out, axis);
+        SampleSunShape(rng, axis, &sun, out);
         angles.push_back(AngleBetween(axis, out) * 1.0e3);
     }
     return angles;
@@ -188,7 +185,6 @@ std::vector<double> SampleSurfaceAngles(const OpticalPropertySet& optics, int n,
                                         uint32_t seed = kSeed)
 {
     MTRand           rng(seed);
-    TSun             sun  = MakeSun(SunShape::GAUSSIAN, 1.0, 4.65);
     const glm::dvec3 axis(0.0, 0.0, 1.0);
 
     std::vector<double> angles;
@@ -196,7 +192,7 @@ std::vector<double> SampleSurfaceAngles(const OpticalPropertySet& optics, int n,
     for (int i = 0; i < n; ++i)
     {
         glm::dvec3 out(0.0);
-        Errors(rng, axis, kSurfSource, &sun, &optics, false, out, axis);
+        ApplySurfaceError(rng, axis, &optics, false, axis, out);
         angles.push_back(AngleBetween(axis, out) * 1.0e3);
     }
     return angles;
@@ -278,7 +274,10 @@ TEST(TracingErrors, PerturbedDirectionIsUnitLengthForAllAxes)
             SurfaceNormalErrors(rng, axis, &optics, false, out);
             EXPECT_NEAR(glm::length(out), 1.0, 1e-12);
 
-            Errors(rng, axis, kSurfSource, &sun, &optics, false, out, axis);
+            ApplySurfaceError(rng, axis, &optics, false, axis, out);
+            EXPECT_NEAR(glm::length(out), 1.0, 1e-12);
+
+            SampleSunShape(rng, axis, &sun, out);
             EXPECT_NEAR(glm::length(out), 1.0, 1e-12);
         }
     }
@@ -308,61 +307,6 @@ TEST(TracingErrors, PillboxRespectsHalfWidthForAllAxes)
 // Independence invariants that make splitting Errors() safe
 // ---------------------------------------------------------------------------
 
-TEST(TracingErrors, SunShapeIgnoresOptics)
-{
-    TSun sun_a = MakeSun(SunShape::GAUSSIAN, 2.73, 4.65);
-    TSun sun_b = MakeSun(SunShape::GAUSSIAN, 2.73, 4.65);
-
-    const OpticalPropertySet optics_a =
-        MakeReflector(DistributionType::GAUSSIAN, 1.0, 1.0, "a");
-    const OpticalPropertySet optics_b =
-        MakeReflector(DistributionType::PILLBOX, 900.0, 900.0, "b");
-
-    const glm::dvec3 axis = glm::normalize(glm::dvec3(0.2, -0.4, 0.9));
-
-    MTRand rng_a(kSeed);
-    MTRand rng_b(kSeed);
-
-    for (int i = 0; i < 5000; ++i)
-    {
-        glm::dvec3 out_a(0.0);
-        glm::dvec3 out_b(0.0);
-        Errors(rng_a, axis, kSunSource, &sun_a, &optics_a, false, out_a, axis);
-        Errors(rng_b, axis, kSunSource, &sun_b, &optics_b, false, out_b, axis);
-
-        ASSERT_DOUBLE_EQ(out_a.x, out_b.x);
-        ASSERT_DOUBLE_EQ(out_a.y, out_b.y);
-        ASSERT_DOUBLE_EQ(out_a.z, out_b.z);
-    }
-}
-
-TEST(TracingErrors, SurfaceErrorIgnoresSun)
-{
-    TSun sun_a = MakeSun(SunShape::GAUSSIAN, 2.73, 4.65);
-    TSun sun_b = MakeSun(SunShape::PILLBOX, 43.6, 43.6);
-    sun_b.MaxIntensity = 7.0;
-
-    const OpticalPropertySet optics =
-        MakeReflector(DistributionType::GAUSSIAN, 3.0, 3.0);
-
-    const glm::dvec3 axis = glm::normalize(glm::dvec3(0.2, -0.4, 0.9));
-
-    MTRand rng_a(kSeed);
-    MTRand rng_b(kSeed);
-
-    for (int i = 0; i < 5000; ++i)
-    {
-        glm::dvec3 out_a(0.0);
-        glm::dvec3 out_b(0.0);
-        Errors(rng_a, axis, kSurfSource, &sun_a, &optics, false, out_a, axis);
-        Errors(rng_b, axis, kSurfSource, &sun_b, &optics, false, out_b, axis);
-
-        ASSERT_DOUBLE_EQ(out_a.x, out_b.x);
-        ASSERT_DOUBLE_EQ(out_a.y, out_b.y);
-        ASSERT_DOUBLE_EQ(out_a.z, out_b.z);
-    }
-}
-
 // ---------------------------------------------------------------------------
 // Rejection of perturbations that pass through an opaque surface
 // ---------------------------------------------------------------------------
@@ -370,7 +314,6 @@ TEST(TracingErrors, SurfaceErrorIgnoresSun)
 TEST(TracingErrors, RejectionKeepsRayAboveSurface)
 {
     MTRand rng(kSeed);
-    TSun   sun = MakeSun(SunShape::GAUSSIAN, 2.73, 4.65);
 
     // A large specularity error at grazing incidence drives a substantial
     // fraction of the raw perturbations below the surface.
@@ -380,17 +323,14 @@ TEST(TracingErrors, RejectionKeepsRayAboveSurface)
     const glm::dvec3 normal = glm::dvec3(0.0, 0.0, 1.0);
     const glm::dvec3 axis   = glm::normalize(glm::dvec3(1.0, 0.0, 1.0));
 
-    int above = 0;
     for (int i = 0; i < 20000; ++i)
     {
         glm::dvec3 out(0.0);
-        Errors(rng, axis, kSurfSource, &sun, &optics, false, out, normal);
+        ApplySurfaceError(rng, axis, &optics, false, normal, out);
 
         ASSERT_GE(glm::dot(out, normal), 0.0)
             << "perturbed ray passed through the surface";
-        ++above;
     }
-    EXPECT_EQ(above, 20000);
 }
 
 // With the surface normal opposed to the incoming direction no perturbation
@@ -398,7 +338,6 @@ TEST(TracingErrors, RejectionKeepsRayAboveSurface)
 TEST(TracingErrors, RejectionCapTerminates)
 {
     MTRand rng(kSeed);
-    TSun   sun = MakeSun(SunShape::GAUSSIAN, 2.73, 4.65);
 
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::GAUSSIAN, 0.0, 1.0);
@@ -407,7 +346,7 @@ TEST(TracingErrors, RejectionCapTerminates)
     const glm::dvec3 normal = -axis;
 
     glm::dvec3 out(0.0);
-    Errors(rng, axis, kSurfSource, &sun, &optics, false, out, normal);
+    ApplySurfaceError(rng, axis, &optics, false, normal, out);
 
     // The call returned, and it did so having exhausted the cap rather than
     // having found an acceptable direction.
@@ -475,20 +414,24 @@ TEST(TracingErrors, SpecularityErrorPillboxMagnitudeInMrad)
 TEST(TracingErrors, NoneDistributionIsIdentity)
 {
     MTRand                   rng(kSeed);
-    TSun                     sun = MakeSun(SunShape::GAUSSIAN, 2.73, 4.65);
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::NONE, 0.0, 0.0);
 
     const glm::dvec3 axis = glm::normalize(glm::dvec3(0.2, -0.4, 0.9));
 
+    // Compared component-wise: acos() is ill-conditioned near zero angle.
     for (int i = 0; i < 1000; ++i)
     {
         glm::dvec3 out(0.0);
-        Errors(rng, axis, kSurfSource, &sun, &optics, false, out, axis);
-        EXPECT_NEAR(AngleBetween(axis, out), 0.0, kFrameTol);
+        ApplySurfaceError(rng, axis, &optics, false, axis, out);
+        EXPECT_NEAR(out.x, axis.x, kFrameTol);
+        EXPECT_NEAR(out.y, axis.y, kFrameTol);
+        EXPECT_NEAR(out.z, axis.z, kFrameTol);
 
         SurfaceNormalErrors(rng, axis, &optics, false, out);
-        EXPECT_NEAR(AngleBetween(axis, out), 0.0, kFrameTol);
+        EXPECT_NEAR(out.x, axis.x, kFrameTol);
+        EXPECT_NEAR(out.y, axis.y, kFrameTol);
+        EXPECT_NEAR(out.z, axis.z, kFrameTol);
     }
 }
 
@@ -502,7 +445,6 @@ TEST(TracingErrors, NoneDistributionIsIdentity)
 TEST(TracingErrors, DiffuseIsLambertian)
 {
     MTRand rng(kSeed);
-    TSun   sun = MakeSun(SunShape::GAUSSIAN, 2.73, 4.65);
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::DIFFUSE, 0.0, 0.0);
 
@@ -517,7 +459,7 @@ TEST(TracingErrors, DiffuseIsLambertian)
     for (int i = 0; i < kSamples; ++i)
     {
         glm::dvec3 out(0.0);
-        Errors(rng, normal, kSurfSource, &sun, &optics, false, out, normal);
+        ApplySurfaceError(rng, normal, &optics, false, normal, out);
 
         const double theta = AngleBetween(normal, out);
         thetas.push_back(theta);
@@ -538,7 +480,6 @@ TEST(TracingErrors, DiffuseIsLambertian)
 TEST(TracingErrors, DiffuseAzimuthIsUniform)
 {
     MTRand rng(kSeed);
-    TSun   sun = MakeSun(SunShape::GAUSSIAN, 2.73, 4.65);
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::DIFFUSE, 0.0, 0.0);
 
@@ -552,7 +493,7 @@ TEST(TracingErrors, DiffuseAzimuthIsUniform)
     for (int i = 0; i < kSamples; ++i)
     {
         glm::dvec3 out(0.0);
-        Errors(rng, normal, kSurfSource, &sun, &optics, false, out, normal);
+        ApplySurfaceError(rng, normal, &optics, false, normal, out);
 
         const double r = std::hypot(out.x, out.y);
         if (r < 1e-15)
@@ -751,15 +692,11 @@ TEST(TracingErrors, SunShapeUserDefinedMatchesProfile)
 
 TEST(TracingErrors, UnsupportedSunShapeThrows)
 {
-    MTRand                   rng(kSeed);
-    TSun                     sun = MakeSun(SunShape::UNKNOWN, 2.73, 4.65);
-    const OpticalPropertySet optics =
-        MakeReflector(DistributionType::GAUSSIAN, 1.0, 1.0);
+    MTRand rng(kSeed);
+    TSun   sun = MakeSun(SunShape::UNKNOWN, 2.73, 4.65);
 
     const glm::dvec3 axis(0.0, 0.0, 1.0);
     glm::dvec3       out(0.0);
 
-    EXPECT_THROW(
-        Errors(rng, axis, kSunSource, &sun, &optics, false, out, axis),
-        std::invalid_argument);
+    EXPECT_THROW(SampleSunShape(rng, axis, &sun, out), std::invalid_argument);
 }

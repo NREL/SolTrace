@@ -5,19 +5,21 @@
 
 namespace SolTrace::NativeRunner {
 
-	// NOTES: SurfaceNormalErrors() and Errors() differ in that
-	// SurfaceNormalErrors() uses the slope error and applies it to the surface
-	// normal, while Errors() uses the specularity error, applies it to the ray
-	// direction, has a diffuse option, rejects perturbations that pass through
-	// an opaque surface, and also handles sun shape errors.
+	// NOTES: SurfaceNormalErrors() applies the slope error to the surface
+	// normal. ApplySurfaceError() applies the specularity error to the ray
+	// direction, has a diffuse option, and rejects perturbations that pass
+	// through an opaque surface. SampleSunShape() applies the sun shape to the
+	// incoming ray.
 	//
 	// Remaining cleanup:
-	//     - Split sun shape and surface error handling into separate functions.
-	//     - Fix the mrad->rad conversion, which wrongly scales the diffuse case.
+	//     - Separate DistributionType::NONE from the default switch case, and make
+	//       an unhandled distribution or sun shape loud rather than silent.
 	//     - Reduce the random number calls. I.e., sample theta directly rather than thetax
-	//       and thetay -> this will break tests because the number of RNG calls will change.
+	//       and thetay.
 
 namespace {
+
+constexpr unsigned int kMaxRejectionAttempts = 50000;
 
 // Rotation taking the frame whose +z axis is `axis` back to the reference frame.
 glm::dmat3 BuildRayFrame(const glm::dvec3& axis)
@@ -75,6 +77,132 @@ glm::dvec3 PerturbAboutAxis(MTRand& myrng, const glm::dvec3& axis, double theta)
 	return CosRef;
 }
 
+// Polar angle of a normally distributed perturbation.
+double SampleGaussianAngle(MTRand& myrng, double sigma)
+{
+	const double thetax = myrng.randNorm(0., sigma);
+	const double thetay = myrng.randNorm(0., sigma);
+	return sqrt(thetax * thetax + thetay * thetay);
+}
+
+// Polar angle of a perturbation drawn uniformly over a disc of radius `half_width`.
+double SampleDiscAngle(MTRand& myrng, double half_width)
+{
+	double theta2 = 0.0;
+	do
+	{
+		const double thetax = 2.0 * half_width * myrng() - half_width;
+		const double thetay = 2.0 * half_width * myrng() - half_width;
+		theta2 = thetax * thetax + thetay * thetay;
+	} while (theta2 > (half_width * half_width));
+
+	return sqrt(theta2);
+}
+
+// Polar angle for a radial intensity profile, by rejection sampling a
+// (theta_x, theta_y) box out to `max_angle`.
+template <typename IntensityFn>
+double SampleProfileAngle(MTRand& myrng, double max_angle, double max_intensity,
+                          IntensityFn intensity)
+{
+	double theta2 = 0.0;
+	double theta = 0.0;
+	double stest = 0.0;
+
+	do
+	{
+		const double thetax = 2.0 * max_angle * myrng() - max_angle;
+		const double thetay = 2.0 * max_angle * myrng() - max_angle;
+		theta2 = thetax * thetax + thetay * thetay;
+		theta = sqrt(theta2); // wendelin 1-9-12  do the test once on theta NOT individually on thetax and thetay as before
+
+		stest = intensity(theta);
+
+	} while ((myrng() > (stest / max_intensity)) || (theta2 > (max_angle * max_angle)));
+
+	return theta;
+}
+
+// Sun shape perturbation angle, in mrad. The sun profiles are tabulated in mrad,
+// so sampling happens in those units and the caller converts.
+double SampleSunAngleMrad(MTRand& myrng, const TSun& Sun)
+{
+	switch (Sun.ShapeIndex)
+	{
+	case SunShape::GAUSSIAN:			// case 'g':
+		return SampleGaussianAngle(myrng, Sun.Sigma);
+
+	case SunShape::PILLBOX:				// case 'p':
+		//theta = delop * sqrt(myrng()); // Wang et al. 2010 Solar Energy 195 461-474
+		return SampleDiscAngle(myrng, Sun.Sigma);
+
+	case SunShape::LIMBDARKENED:
+		return SampleProfileAngle(myrng, Sun.MaxAngle, Sun.MaxIntensity,
+			[&](double theta) {
+				return 1.0 - 0.5138 * std::pow((theta / Sun.MaxAngle), 4);
+			});
+
+	case SunShape::BUIE_CSR:
+		// This sun model has long tails so this might take more iterations
+		// TODO: add an option to set the max angle (thereby reducing the tail)
+		return SampleProfileAngle(myrng, Sun.MaxAngle, Sun.MaxIntensity,
+			[&](double theta) {
+				if (std::abs(theta) <= 4.65) // within solar disc
+					return cos(0.326 * theta) / cos(0.308 * theta);
+				// within circumsolar region
+				return std::exp(Sun.buie_kappa) * std::pow(std::abs(theta), Sun.buie_gamma);
+			});
+
+	case SunShape::USER_DEFINED:
+		return SampleProfileAngle(myrng, Sun.MaxAngle, Sun.MaxIntensity,
+			[&](double theta) {
+				size_t i = 0;
+				while (i < Sun.SunShapeAngle.size() - 1 && Sun.SunShapeAngle[i] < theta)
+					i++;
+
+				if (i == 0)
+					return Sun.SunShapeIntensity[0];
+
+				// linear interpolation (switched from average) 12-20-11 wendelin
+				return Sun.SunShapeIntensity[i - 1]
+					+ (Sun.SunShapeIntensity[i] - Sun.SunShapeIntensity[i - 1])
+					* (theta - Sun.SunShapeAngle[i - 1])
+					/ (Sun.SunShapeAngle[i] - Sun.SunShapeAngle[i - 1]);
+			});
+
+	default:
+		// TODO: This shouldn't throw here...
+		throw std::invalid_argument("Unsupported sun shape.");
+	}
+}
+
+// Surface error perturbation angle, in radians.
+double SampleSurfaceErrorAngle(MTRand& myrng,
+                               const SolTrace::Data::OpticalPropertySet* OptProperties,
+                               const OpticalSide side)
+{
+	// delop = sqrt(4.0*sqr(OptProperties->RMSSlopeError)+sqr(OptProperties->RMSSpecError))/1000.0;
+	const double delop = OptProperties->get_specularity_error(side) / 1000.0; // mrad -> rad
+
+	switch (OptProperties->get_error_distribution(side))
+	{
+	case DistributionType::GAUSSIAN:			// case 'g':
+		return SampleGaussianAngle(myrng, delop);
+
+	case DistributionType::PILLBOX:				// case 'p':
+		return SampleDiscAngle(myrng, delop);
+
+	case DistributionType::DIFFUSE:
+		// Gray diffuse (Lambertian) surface: cosine-weighted over the
+		// hemisphere, and already in radians.
+		return asin(sqrt(myrng()));
+
+	default:
+		// TODO: Add error message here.
+		return 0.0;
+	}
+}
+
 } // namespace
 
 void SurfaceNormalErrors(MTRand &myrng,
@@ -98,190 +226,79 @@ void SurfaceNormalErrors(MTRand &myrng,
 
 	const double delop = OptProperties->get_slope_error(side) / 1000.0;
 
-	double thetax = 0.0, thetay = 0.0, theta2 = 0.0;
+	double theta = 0.0;
 
 	switch (OptProperties->get_error_distribution(side))
 	{
 	case DistributionType::GAUSSIAN:		// case 'g':
-		// gaussian distribution
-		thetax = myrng.randNorm(0., delop);
-		thetay = myrng.randNorm(0., delop);
-		theta2 = thetax * thetax + thetay * thetay;
+		theta = SampleGaussianAngle(myrng, delop);
 		break;
 	case DistributionType::PILLBOX:			// case 'p':
-		// pillbox distribution
-		do
-		{
-			thetax = 2.0 * delop * myrng() - delop;
-			thetay = 2.0 * delop * myrng() - delop;
-			theta2 = thetax * thetax + thetay * thetay;
-		} while (theta2 > (delop * delop));
+		theta = SampleDiscAngle(myrng, delop);
 		break;
 	default:
 		// TODO: Need an error here.
 		break;
 	}
 
-	CosOut = PerturbAboutAxis(myrng, CosIn, sqrt(theta2));
+	CosOut = PerturbAboutAxis(myrng, CosIn, theta);
 }
 
-void Errors(
-    MTRand& myrng,
-    const glm::dvec3& CosIn,
-    int Source,
-    TSun* Sun,
-    const SolTrace::Data::OpticalPropertySet* OptProperties,
-	const bool LastHitBackSide,
-    glm::dvec3& CosOut,
-    const glm::dvec3& DFXYZ)
+void SampleSunShape(MTRand& myrng,
+                    const glm::dvec3& CosIn,
+                    const TSun* Sun,
+                    glm::dvec3& CosOut)
+{
+	/*{Purpose:  To apply the sun shape to the unperturbed ray at the surface in question
+
+			   Input - myrng   = RNG
+					   CosIn   = Direction cosine vector of the ray before interaction
+								 with the element surface
+					   Sun     = Sun data record
+
+			   Output - CosOut  = Output direction cosine vector of ray after the sun
+								  shape has been applied
+					   }*/
+
+	const double theta = SampleSunAngleMrad(myrng, *Sun) / 1.e3; // convert from mrad to rad
+
+	CosOut = PerturbAboutAxis(myrng, CosIn, theta);
+}
+
+void ApplySurfaceError(MTRand& myrng,
+                       const glm::dvec3& CosIn,
+                       const SolTrace::Data::OpticalPropertySet* OptProperties,
+                       const bool LastHitBackSide,
+                       const glm::dvec3& DFXYZ,
+                       glm::dvec3& CosOut)
 {
 	/*{Purpose:  To add error terms to the perturbed ray at the surface in question
 
-			   Input - Seed    = Seed for RNG
-					   CosIn   = Direction cosine vector of ray to which errors will be applied.
-								  If Source below is 1 (i.e. sunshape) then this ray vector is before interaction with element surface
-								  If Source below is 2 (i.e. surface error) then this ray vector is after interaction with element surface
-									(i.e. reflected ray or transmitted ray)
-
-					   Source  = Source indicator flag
-							   = 1 for Sunshape error (Can be gaussian, pillbox or profile data distribution)
-							   = 2 for surface errors (Can be gaussian or pillbox distribution)
-					   Sun     = Sun data record
-					   Element = Element data record
+			   Input - myrng   = RNG
+					   CosIn   = Direction cosine vector of the ray after interaction with
+								 the element surface (i.e. reflected or transmitted ray)
+					   OptProperties = record of optical properties
 					   DFXYZ   = surface normal vector at interaction point
 
-			   Output - CosOut  = Output direction cosine vector of ray after error terms have been included
+			   Output - CosOut  = Output direction cosine vector of ray after error terms
+								  have been included
 					   }*/
 
 	const OpticalSide side = LastHitBackSide == false ? OpticalSide::Front : OpticalSide::Back;
 
-    double delop = 0.0, thetax = 0.0, thetay = 0.0, theta2 = 0.0, theta = 0.0, stest = 0.0;
+	const bool reflecting =
+		OptProperties->get_interaction_type() == InteractionType::REFLECTION;
 
-    unsigned int maxcall = 0;
-	// g,p,d
-	if (Source == 1)  // sun error
+	for (unsigned int attempt = 0; attempt < kMaxRejectionAttempts; ++attempt)
 	{
-		delop = Sun->Sigma;
+		const double theta = SampleSurfaceErrorAngle(myrng, OptProperties, side);
 
-		switch (Sun->ShapeIndex)
-		{
-		case SunShape::GAUSSIAN:			// case 'g':
-			thetax = myrng.randNorm(0., delop);
-			thetay = myrng.randNorm(0., delop);
+		CosOut = PerturbAboutAxis(myrng, CosIn, theta);
 
-			theta2 = thetax * thetax + thetay * thetay;
-			break;
-
-		case SunShape::PILLBOX:				// case 'p':
-			do
-			{
-				thetax = 2.0 * delop * myrng() - delop;
-				thetay = 2.0 * delop * myrng() - delop;
-				theta2 = thetax * thetax + thetay * thetay;
-			} while (theta2 > (delop * delop));
-			//theta = delop * sqrt(myrng()); // Wang et al. 2010 Solar Energy 195 461-474
-			//theta2 = theta * theta;
-			break;
-		case SunShape::LIMBDARKENED:
-			do {
-				thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
-				thetay = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
-				theta2 = thetax * thetax + thetay * thetay;
-				theta = sqrt(theta2);
-
-				stest = 1.0 - 0.5138 * std::pow((theta / Sun->MaxAngle), 4);
-			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
-			break;
-		case SunShape::BUIE_CSR:
-			// This sun model has long tails so this might take more iterations
-			// TODO: add an option to set the max angle (thereby reducing the tail)
-			do 
-			{
-				thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
-				thetay = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
-				theta2 = thetax * thetax + thetay * thetay;
-				theta = sqrt(theta2);
-
-				if (std::abs(theta) <= 4.65) // within solar disc
-					stest = cos(0.326 * theta) / cos(0.308 * theta);
-				else // within circumsolar region
-					stest = std::exp(Sun->buie_kappa) * std::pow(std::abs(theta), Sun->buie_gamma);
-
-			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
-			break;
-		case SunShape::USER_DEFINED:
-			do
-			{
-				thetax = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
-				thetay = 2.0 * Sun->MaxAngle * myrng() - Sun->MaxAngle;
-				theta2 = thetax * thetax + thetay * thetay;
-				theta = sqrt(theta2); // wendelin 1-9-12  do the test once on theta NOT individually on thetax and thetay as before
-
-				size_t idx = 0;
-				while (idx < Sun->SunShapeAngle.size() - 1 && Sun->SunShapeAngle[idx] < theta)
-					idx++;
-
-				if (idx == 0)
-                    stest = Sun->SunShapeIntensity[0];
-				else // linear interpolation (switched from average) 12-20-11 wendelin
-					stest = Sun->SunShapeIntensity[idx - 1] + (Sun->SunShapeIntensity[idx] - Sun->SunShapeIntensity[idx - 1]) * (theta - Sun->SunShapeAngle[idx - 1]) /
-					(Sun->SunShapeAngle[idx] - Sun->SunShapeAngle[idx - 1]);
-
-			} while ((myrng() > (stest / Sun->MaxIntensity)) || (theta2 > (Sun->MaxAngle * Sun->MaxAngle)));
-			break;
-		default:
-			// TODO: This shouldn't throw here...
-			throw std::invalid_argument("Unsupported sun shape in Errors function.");
-		}
-	}
-
-	if (Source == 2)	// surface error
-	{
-		delop = OptProperties->get_specularity_error(side);
-
-	Label_50:
-		switch (OptProperties->get_error_distribution(side))
-		{
-		case DistributionType::GAUSSIAN:			// case 'g':
-			thetax = myrng.randNorm(0., delop);
-			thetay = myrng.randNorm(0., delop);
-
-			theta2 = thetax * thetax + thetay * thetay;
-			break;
-
-		case DistributionType::PILLBOX:				// case 'p':
-			do
-			{
-				thetax = 2.0 * delop * myrng() - delop;
-				thetay = 2.0 * delop * myrng() - delop;
-				theta2 = thetax * thetax + thetay * thetay;
-			} while (theta2 > (delop * delop));
-			break;
-
-		case DistributionType::DIFFUSE:
-			theta2 = pow(asin(sqrt(myrng())), 2);
-			break;
-
-		default:
-			// TODO: Add error message here.
-			break;
-		}
-	}
-
-	theta = sqrt(theta2) / 1.e3; // convert from mrad to rad
-
-	CosOut = PerturbAboutAxis(myrng, CosIn, theta);
-
-    // TODO: Remove goto, should we always do dot product check? // We could move this out of the function and into the caller.
-
-    /*{If reflection error application and new ray direction (after errors) physically goes through opaque surface,
-    then go back and get new perturbation 06-12-07}*/		
-	if ((Source == 2) &&
-		(OptProperties->get_interaction_type() == InteractionType::REFLECTION) &&
-        (glm::dot(CosOut, DFXYZ) < 0) &&
-		maxcall++ < 50000)
-	{
-		goto Label_50;
+		/*{If reflection error application and new ray direction (after errors) physically goes through opaque surface,
+		then go back and get new perturbation 06-12-07}*/
+		if (!reflecting || glm::dot(CosOut, DFXYZ) >= 0.0)
+			return;
 	}
 }
 // End of Procedure--------------------------------------------------------------

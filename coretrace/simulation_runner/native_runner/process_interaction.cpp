@@ -40,15 +40,7 @@ void ProcessInteraction(
             // Apply sunshape to UNPERTURBED ray at intersection point
             // only apply sunshape error once for primary stage
             CosIn = LastCosRaySurfElement;
-            // sun shape
-            Errors(myrng,
-                   CosIn,
-                   1,
-                   &System->Sun,
-                   optics,
-                   LastHitBackSide,
-                   CosOut,
-                   LastDFXYZ);
+            SampleSunShape(myrng, CosIn, &System->Sun, CosOut);
             LastCosRaySurfElement = CosOut;
         }
 
@@ -90,15 +82,8 @@ void ProcessInteraction(
                         ? LastDFXYZ
                         : CosRayOutElement;
 
-            // optical errors
-            Errors(myrng,
-                   CosIn,
-                   2,
-                   &System->Sun,
-                   optics,
-                   LastHitBackSide,
-                   CosOut,
-                   LastDFXYZ);
+            ApplySurfaceError(
+                myrng, CosIn, optics, LastHitBackSide, LastDFXYZ, CosOut);
             CosRayOutElement = CosOut;
         }
     }

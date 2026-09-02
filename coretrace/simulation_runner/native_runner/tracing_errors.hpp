@@ -8,14 +8,17 @@
 
 namespace SolTrace::NativeRunner {
 
-void Errors(MTRand& myrng,
-            const glm::dvec3& CosIn,
-            int Source,
-            TSun* Sun,
-            const SolTrace::Data::OpticalPropertySet* OptProperties,
-            const bool LastHitBackSide,
-            glm::dvec3& CosOut,
-            const glm::dvec3& DFXYZ);
+void SampleSunShape(MTRand& myrng,
+                    const glm::dvec3& CosIn,
+                    const TSun* Sun,
+                    glm::dvec3& CosOut);
+
+void ApplySurfaceError(MTRand& myrng,
+                       const glm::dvec3& CosIn,
+                       const SolTrace::Data::OpticalPropertySet* OptProperties,
+                       const bool LastHitBackSide,
+                       const glm::dvec3& DFXYZ,
+                       glm::dvec3& CosOut);
 
 void SurfaceNormalErrors(MTRand& myrng,
                          const glm::dvec3& CosIn,
