@@ -11,9 +11,8 @@ namespace SolTrace::NativeRunner {
 	// through an opaque surface. ApplySunShape() applies the sun shape to the
 	// incoming ray.
 	//
-	// Remaining cleanup:
-	//     - Validate the sun shape and distribution type during setup so the
-	//       sampling paths do not need to throw.
+	// Sun shapes and error distributions are validated during setup, so the
+	// sampling paths below never throw.
 
 namespace {
 
@@ -175,8 +174,9 @@ double SampleSunAngleMrad(MTRand& myrng, const TSun& Sun)
 			});
 
 	default:
-		// TODO: This shouldn't throw here...
-		throw std::invalid_argument("Unsupported sun shape.");
+		// Unsupported shapes are rejected by Sun::set_shape() and again when the
+		// runner builds its TSun, so nothing to do here.
+		return 0.0;
 	}
 }
 

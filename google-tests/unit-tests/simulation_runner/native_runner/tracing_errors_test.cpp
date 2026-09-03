@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <vector>
 
 #include <constants.hpp>
@@ -682,12 +683,28 @@ TEST(TracingErrors, SunShapeUserDefinedMatchesProfile)
     EXPECT_LT(d, KsThreshold(kSamples));
 }
 
-TEST(TracingErrors, UnsupportedSunShapeThrows)
+TEST(TracingErrors, NativeRunnerRejectsUnimplementedDistribution)
 {
-    MTRand rng(kSeed);
-    TSun   sun = MakeSun(SunShape::UNKNOWN, 2.73, 4.65);
+    using SolTrace::Runner::RunnerStatus;
 
-    const glm::dvec3 axis(0.0, 0.0, 1.0);
+    SolTrace::NativeRunner::NativeRunner runner;
+    SimulationData                       simulation;
 
-    EXPECT_THROW(ApplySunShape(rng, axis, sun), std::invalid_argument);
+    auto sun = make_ray_source<Sun>();
+    sun->set_position(0.0, 0.0, 100.0);
+    simulation.add_ray_source(sun);
+
+    auto mirror = make_element<SingleElement>();
+    mirror->set_aperture(make_aperture<Rectangle>(10.0, 10.0));
+    mirror->set_surface(make_surface<Flat>());
+
+    OpticalPropertySet optics(InteractionType::REFLECTION, "user_defined_errors");
+    optics.set_ideal_reflection(OpticalSide::Both);
+    optics.set_errors(OpticalSide::Both, DistributionType::USER_DEFINED, 0.0, 0.0);
+
+    mirror->set_optical_property_set(simulation.add_optical_property_set(optics));
+    simulation.add_element(mirror);
+
+    ASSERT_EQ(runner.initialize(), RunnerStatus::SUCCESS);
+    EXPECT_THROW(runner.setup_simulation(&simulation), std::invalid_argument);
 }
