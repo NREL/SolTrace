@@ -138,7 +138,12 @@ RunnerStatus OptixRunner::setup_sun(const SimulationData *data)
         }
         if (!is_supported)
         {
-            return RunnerStatus::ERROR;
+            std::stringstream ss;
+            ss << "Unimplemented sun shape: "
+               << SolTrace::Data::SunShapeMap.at(shape)
+               << std::endl;
+
+            throw std::invalid_argument(ss.str());
         }
     }
 
@@ -574,6 +579,8 @@ OptixCSP::OpticalDistribution OptixRunner::to_optical_distribution(SolTrace::Dat
         od = OptixCSP::OpticalDistribution::OPT_GAUSSIAN;
     else if (dt == SolTrace::Data::DistributionType::PILLBOX)
         od = OptixCSP::OpticalDistribution::OPT_PILLBOX;
+    else if (dt == SolTrace::Data::DistributionType::DIFFUSE)
+        od = OptixCSP::OpticalDistribution::OPT_DIFFUSE;
     else
     {
         std::stringstream ss;

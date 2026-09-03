@@ -32,6 +32,7 @@ namespace OptixCSP {
         OPT_NONE = 0,
         OPT_GAUSSIAN = 1,
         OPT_PILLBOX = 2,
+        OPT_DIFFUSE = 3,
         OPT_UNKNOWN = 255
     };
 
