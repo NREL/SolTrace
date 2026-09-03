@@ -110,7 +110,7 @@ extern "C" __device__ float3 apply_lambertian_errors(float,
     float3 d = sinf(theta) * cosf(phi) * eta + sinf(theta) * sinf(phi) * xi +
                cosf(theta) * n;
     params.rng_states[prd.ray_path_index] = local_rng;
-    return d;
+    return normalize(d);
 }
 
 extern "C" __global__ void __closesthit__element()

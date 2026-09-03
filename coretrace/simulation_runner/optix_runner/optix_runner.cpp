@@ -500,7 +500,9 @@ RunnerStatus OptixRunner::report_simulation(SimulationResult *result,
     m_sys.get_hp_output(hp_vec, raynumber_vec, element_id_vec, hit_type_vec);
 
     // Check sizes
-    if (!(hp_vec.size() == raynumber_vec.size() && raynumber_vec.size() == element_id_vec.size() && element_id_vec.size() == hit_type_vec.size()))
+    if (!(hp_vec.size() == raynumber_vec.size() &&
+          raynumber_vec.size() == element_id_vec.size() &&
+          element_id_vec.size() == hit_type_vec.size()))
     {
         return RunnerStatus::ERROR;
     }

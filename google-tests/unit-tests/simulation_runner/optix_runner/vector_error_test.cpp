@@ -1,5 +1,9 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cmath>
+#include <vector>
+
 #include <optical_properties.hpp>
 #include <simulation_data_export.hpp>
 #include <simulation_result_export.hpp>
@@ -15,6 +19,68 @@ static OpticalPropertySetReference add_plate_optics(SimulationData& sd,
     plate_optics.set_errors(OpticalSide::Front, distribution, 1, 1e-3);
 
     return sd.add_optical_property_set(plate_optics);
+}
+
+static std::vector<glm::dvec3> trace_diffuse_plate(const glm::dvec3& aim)
+{
+    constexpr uint_fast64_t kRays = 20000;
+
+    OptixRunner runner;
+    ASSERT_EQ(runner.initialize(), SolTrace::Runner::RunnerStatus::SUCCESS);
+
+    SimulationData simulation;
+    auto sun = make_ray_source<Sun>();
+    sun->set_position(0.0, 0.0, 100.0);
+    simulation.add_ray_source(sun);
+
+    auto stage = make_stage(0);
+    stage->set_origin(0.0, 0.0, 0.0);
+    stage->set_aim_vector(0.0, 0.0, 1.0);
+
+    auto plate = make_element<SingleElement>();
+    plate->set_origin(0.0, 0.0, 0.0);
+    plate->set_aim_vector(aim.x, aim.y, aim.z);
+    plate->set_surface(make_surface<Flat>());
+    plate->set_aperture(make_aperture<Rectangle>(40.0, 40.0));
+    plate->set_optical_property_set(
+        add_plate_optics(simulation, DistributionType::DIFFUSE));
+    const element_id plate_id = plate->get_id();
+    stage->add_element(plate);
+    simulation.add_stage(stage);
+
+    SimulationParameters& params = simulation.get_simulation_parameters();
+    params.number_of_rays = kRays;
+    params.max_number_of_rays = kRays * 100;
+    params.include_optical_errors = true;
+    params.include_sun_shape_errors = false;
+    params.seed = 123;
+
+    ASSERT_EQ(runner.setup_simulation(&simulation),
+              SolTrace::Runner::RunnerStatus::SUCCESS);
+    ASSERT_EQ(runner.run_simulation(), SolTrace::Runner::RunnerStatus::SUCCESS);
+
+    SimulationResult result;
+    ASSERT_EQ(runner.report_simulation(&result, 0),
+              SolTrace::Runner::RunnerStatus::SUCCESS);
+
+    std::vector<glm::dvec3> directions;
+    directions.reserve(result.get_number_of_records());
+    auto iter = result.get_ray_record_iterator();
+    while (!result.is_at_end(iter))
+    {
+        const auto record = *iter;
+        if (record->get_number_of_interactions() > 1 &&
+            record->get_element(1) == plate_id)
+        {
+            glm::dvec3 direction(0.0);
+            record->get_direction(1, direction);
+            directions.push_back(glm::normalize(direction));
+        }
+        ++iter;
+    }
+
+    EXPECT_GT(directions.size(), kRays / 2);
+    return directions;
 }
 
 TEST(OpticalErrors, Disabled)
@@ -313,7 +379,7 @@ TEST(OpticalErrors, Gaussian)
     EXPECT_TRUE(result_error.is_at_end(it_error));
 }
 
-TEST(OpticalErrors, PILLBOX)
+TEST(OpticalErrors, Pillbox)
 {
     const uint_fast64_t NRAYS = 10000;
 
@@ -409,4 +475,38 @@ TEST(OpticalErrors, PILLBOX)
     }
 
     EXPECT_TRUE(result_error.is_at_end(it_error));
+}
+
+TEST(OpticalErrors, DiffuseIsLambertian)
+{
+    const glm::dvec3 normal(0.0, 0.0, 1.0);
+    const std::vector<glm::dvec3> directions = trace_diffuse_plate(normal);
+
+    double mean_cosine = 0.0;
+    double max_theta = 0.0;
+    for (const glm::dvec3& direction : directions)
+    {
+        const double cosine = glm::dot(direction, normal);
+        mean_cosine += cosine;
+        max_theta = std::max(max_theta, std::acos(std::clamp(cosine, -1.0, 1.0)));
+    }
+    mean_cosine /= directions.size();
+
+    // Cosine-weighted hemisphere sampling has E[cos(theta)] = 2/3.
+    EXPECT_NEAR(mean_cosine, 2.0 / 3.0, 0.02);
+    EXPECT_GT(max_theta, 1.5);
+}
+
+TEST(OpticalErrors, DiffuseUsesSurfaceNormal)
+{
+    const glm::dvec3 normal = glm::normalize(glm::dvec3(0.0, 0.4, 1.0));
+    const std::vector<glm::dvec3> directions = trace_diffuse_plate(normal);
+
+    glm::dvec3 mean_direction(0.0);
+    for (const glm::dvec3& direction : directions)
+        mean_direction += direction;
+    mean_direction = glm::normalize(mean_direction);
+
+    // Azimuthal symmetry makes the mean direction parallel to the normal.
+    EXPECT_GT(glm::dot(mean_direction, normal), 0.99);
 }
