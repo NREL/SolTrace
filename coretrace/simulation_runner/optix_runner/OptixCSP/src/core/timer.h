@@ -59,6 +59,7 @@ namespace OptixCSP {
         bool m_running;
         std::chrono::high_resolution_clock::time_point m_start;
         std::chrono::duration<double> m_total;
+        // TODO: add counter for number of times started/stopped
     };
 
 }

@@ -4,11 +4,14 @@
 #include <future>
 #include <map>
 #include <vector>
+#include <set>
 
 #include "native_runner_types.hpp"
 #include "simulation_runner.hpp"
 #include "simulation_result.hpp"
 #include "thread_manager.hpp"
+
+class grouped_results_NativeRunner_helper;
 
 namespace SolTrace::NativeRunner
 {
@@ -126,6 +129,12 @@ namespace SolTrace::NativeRunner
         RunnerStatus setup_sun(const SolTrace::Data::SimulationData *data);
         RunnerStatus setup_elements(const SolTrace::Data::SimulationData *data);
 
+        // group functions
+        std::vector<std::set<uint_fast64_t>> &get_groups() { return m_groups; }
+        void set_groups(const std::vector<std::set<uint_fast64_t>>& groups) { m_groups = groups; }
+        size_t get_num_groups() const { return m_groups.size(); }
+        int32_t get_group(uint_fast64_t element_id);
+
     protected:
         // Use power tower speed ups
         bool as_power_tower;
@@ -144,6 +153,8 @@ namespace SolTrace::NativeRunner
         thread_manager_ptr my_manager;
         TSystem tsys;
 
+        std::vector<std::set<uint_fast64_t>> m_groups;
+
         bool set_aperture_planes(TSystem *tsys);
         bool set_aperture_planes(tstage_ptr stage);
         bool aperture_plane(telement_ptr Element);
@@ -155,6 +166,8 @@ namespace SolTrace::NativeRunner
         void check_supported_options(telement_ptr telem);
 
     private:
+            // could use FRIEND_TEST macro, however to avoid linking gtest to prod, forward declare test class and make it a friend
+            friend class ::grouped_results_NativeRunner_helper;
     };
 
 } // namespace SolTrace::NativeRunner

@@ -19,6 +19,7 @@ set(CPACK_PACKAGE_FILE_NAME "@PACKAGE_FILE_NAME@")
 set(CPACK_PACKAGE_DIRECTORY "@PACKAGE_DIRECTORY@")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "@INSTALL_DIRECTORY@")
 set(CPACK_RESOURCE_FILE_LICENSE "@LICENSE_FILE@")
+set(CPACK_WIX_PRODUCT_ICON "@PRODUCT_ICON@")
 
 # Each installable flavor has a stable UpgradeCode so Windows Installer upgrades
 # it independently. ProductCodes remain package-version-specific.

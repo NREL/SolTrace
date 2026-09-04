@@ -9,6 +9,8 @@
 #include <native_runner.hpp>
 #include <native_runner_types.hpp>
 
+class grouped_results_EmbreeRunner_helper;
+
 namespace SolTrace::EmbreeRunner
 {
     using SolTrace::Runner::RunnerStatus;
@@ -46,6 +48,9 @@ namespace SolTrace::EmbreeRunner
         RTCScene embree_scene;
 
         void clean_embree();
+
+        // could use FRIEND_TEST macro, however to avoid linking gtest to prod, forward declare test class and make it a friend
+        friend class ::grouped_results_EmbreeRunner_helper;
     };
 
 } // namespace SolTrace::EmbreeRunner

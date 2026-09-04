@@ -13,22 +13,37 @@ namespace SolTrace::Data {
 SingleElement::SingleElement() : ElementBase(),
                                  aperture(nullptr),
                                  surface(nullptr),
-                                 opt_id(OPTICS_ID_UNASSIGNED)
+                                 opt_id(OPTICS_ID_UNASSIGNED),
+                                 group(-1)
 {
     return;
 }
 
 SingleElement::SingleElement(const nlohmann::ordered_json& jnode,
     const OpticalPropertySetResolver& resolve_optics) : ElementBase(jnode),
-                                                                    aperture(nullptr),
-                                                                    surface(nullptr),
-                                                                    opt_id(OPTICS_ID_UNASSIGNED)
+                                                        aperture(nullptr),
+                                                        surface(nullptr),
+                                                        opt_id(OPTICS_ID_UNASSIGNED)
 {
     this->set_aperture(Aperture::make_aperture_from_json(jnode.at("aperture")));
     this->set_surface(make_surface_from_json(jnode.at("surface")));
 
     const optics_id opt_id = jnode.at("opt_id").get<optics_id>();
     this->set_optical_property_set(resolve_optics(opt_id));
+
+    // don't need to require every element have a group
+    if (jnode.contains("group"))
+    {
+        this->group = jnode.at("group").get<int32_t>();
+        // if user set a single element to something < -1
+        // it falls out of ungrouped -> == -1 or grouped -> >= 0
+        // assume user meant ungrouped and force to = -1
+        if (this->group < -1) this->group = -1;
+    } 
+    else
+    {
+        this->group = -1;
+    }
 }
 
 SingleElement::~SingleElement()

@@ -87,6 +87,10 @@ void InstancedElements::on_geometry_group_change(entt::entity group) {
             continue;
         }
 
+        if (m_database->as_registry().all_of<InvisibleComponent>(member)) {
+            continue;
+        }
+
         QColor color = m_default_color;
 
         if (auto given_color = m_database->color.get(member); given_color) {
@@ -94,10 +98,6 @@ void InstancedElements::on_geometry_group_change(entt::entity group) {
         }
 
         if (m_database->is_virtual_element(member)) { color = Qt::red; }
-
-        if (m_database->as_registry().all_of<InvisibleComponent>(member)) {
-            color = Qt::black;
-        }
 
         if (m_database->is_selected(member)) { color = Qt::yellow; }
 
@@ -131,9 +131,10 @@ void InstancedElements::on_geometry_group_membership_change(
 }
 
 void InstancedElements::on_instance_changed(entt::entity e) {
-    auto iter = m_rev_cache.find(e);
-
-    if (iter == m_rev_cache.end()) { return; }
+    if (m_rev_cache.find(e) == m_rev_cache.end() &&
+        !belongs_to_target_group(e)) {
+        return;
+    }
 
     // TODO update only a single instance on change
 
@@ -146,6 +147,13 @@ void InstancedElements::on_selection_changed(entt::entity e) {
     if (iter == m_rev_cache.end()) { return; }
 
     on_geometry_group_change(m_target_group);
+}
+
+bool InstancedElements::belongs_to_target_group(entt::entity e) const {
+    if (!m_database || !m_target_group.is_valid()) return false;
+
+    auto const* membership = m_database->geometry_group_membership.get(e);
+    return membership && membership->group == m_target_group;
 }
 
 entt::entity InstancedElements::entity_at(int index) {

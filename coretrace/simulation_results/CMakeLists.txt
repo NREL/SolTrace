@@ -9,11 +9,13 @@ include_directories(
 
 set(SIMRES_SRC
     records.cpp
+    group_result.cpp
     simulation_result.cpp
 )
 
 set(SIMRES_HDRS
     records.hpp
+    group_result.hpp
     simulation_result.hpp
     simulation_result_api.hpp
     simulation_result_export.hpp

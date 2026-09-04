@@ -1,0 +1,197 @@
+{
+    "schema_version": "2026.07.15",
+    "simulation_parameters": {
+        "include_sun_shape_errors": true,
+        "include_optical_errors": true,
+        "number_of_rays": 100000,
+        "max_number_of_rays": 1000000000,
+        "tolerance": 0.1,
+        "latitude": 35.962278,
+        "longitude": -106.5122622,
+        "seed": 123
+    },
+    "ray_sources": {
+        "1": {
+            "source_type": "Sun",
+            "my_shape": "BUIE_CSR",
+            "sigma": 4.65,
+            "half_width": 4.65,
+            "csr": 0.05,
+            "user_angle": [],
+            "user_intensity": [],
+            "gen_type": "HALTON",
+            "pos": [
+                -63.41053108592473,
+                -514.866384191963,
+                854.9220496492619
+            ]
+        }
+    },
+    "optical_properties": {
+        "0": {
+            "my_name": "receiver",
+            "my_type": "REFLECTION",
+            "refraction_index_front": 1.1,
+            "refraction_index_back": 1.1,
+            "front": {
+                "error_distribution_type": "GAUSSIAN",
+                "transmissivity": 0.0,
+                "reflectivity": 0,
+                "slope_error": 0.95,
+                "specularity_error": 0.2
+            },
+            "back": {
+                "error_distribution_type": "GAUSSIAN",
+                "transmissivity": 0.0,
+                "reflectivity": 0,
+                "slope_error": 0.95,
+                "specularity_error": 0.2
+            }
+        },
+        "1": {
+            "my_name": "heliostat",
+            "my_type": "REFLECTION",
+            "refraction_index_front": 1.1,
+            "refraction_index_back": 1.1,
+            "front": {
+                "error_distribution_type": "GAUSSIAN",
+                "transmissivity": 0.0,
+                "reflectivity": 0.885,
+                "slope_error": 1.2,
+                "specularity_error": 0.05
+            },
+            "back": {
+                "error_distribution_type": "GAUSSIAN",
+                "transmissivity": 0.0,
+                "reflectivity": 0.0,
+                "slope_error": 1.2,
+                "specularity_error": 0.05
+            }
+        }
+    },
+    "elements": [
+        {
+            "is_stage": true,
+            "is_composite": true,
+            "active": true,
+            "virtual_flag": false,
+            "is_single": false,
+            "my_name": "stage",
+            "stage": 0,
+            "id": 0,
+            "position": [0, 0, 0],
+            "aim": [0, 0, 1],
+            "zrot": 0,
+            "is_virtual": false,
+            "is_multihit": false,
+            "is_tracethrough": false,
+            "origin": [0, 0, 0],
+            "elements": [
+                {
+                    "is_single": true,
+                    "active": true,
+                    "virtual_flag": false,
+                    "my_id": null,
+                    "stage": 0,
+                    "my_name": "name",
+                    "origin": [0, 0, 0],
+                    "aim": [0, 0, 0],
+                    "zrot": 1.9844841420195465,
+                    "aperture": { "aperture_type": "RECTANGLE", "x_length": 1.0, "y_length": 1.0, "x_coord": -0.5, "y_coord": -0.5 },
+                    "surface": { "surface_type": "PARABOLA", "focal_length_x": 1.0, "focal_length_y": 1.0 },
+                    "opt_id": 0
+                }, 
+                {
+                    "is_single": true,
+                    "active": true,
+                    "virtual_flag": false,
+                    "my_id": null,
+                    "stage": 0,
+                    "my_name": "name",
+                    "origin": [0, 0, 0],
+                    "aim": [0, 0, 0],
+                    "zrot": 1.9844841420195465,
+                    "aperture": { "aperture_type": "RECTANGLE", "x_length": 1.0, "y_length": 1.0, "x_coord": -0.5, "y_coord": -0.5 },
+                    "surface": { "surface_type": "PARABOLA", "focal_length_x": 1.0, "focal_length_y": 1.0 },
+                    "opt_id": 0
+                },
+                {
+                    "is_single": true,
+                    "active": true,
+                    "virtual_flag": false,
+                    "my_id": null,
+                    "stage": 0,
+                    "my_name": "name",
+                    "origin": [0, 0, 0],
+                    "aim": [0, 0, 0],
+                    "zrot": 1.9844841420195465,
+                    "aperture": { "aperture_type": "RECTANGLE", "x_length": 1.0, "y_length": 1.0, "x_coord": -0.5, "y_coord": -0.5 },
+                    "surface": { "surface_type": "PARABOLA", "focal_length_x": 1.0, "focal_length_y": 1.0 },
+                    "opt_id": 0,
+                    "group": 0
+                },
+                {
+                    "is_single": true,
+                    "active": true,
+                    "virtual_flag": false,
+                    "my_id": null,
+                    "stage": 0,
+                    "my_name": "name",
+                    "origin": [0, 0, 0],
+                    "aim": [0, 0, 0],
+                    "zrot": 1.9844841420195465,
+                    "aperture": { "aperture_type": "RECTANGLE", "x_length": 1.0, "y_length": 1.0, "x_coord": -0.5, "y_coord": -0.5 },
+                    "surface": { "surface_type": "PARABOLA", "focal_length_x": 1.0, "focal_length_y": 1.0 },
+                    "opt_id": 0,
+                    "group": 0
+                },
+                {
+                    "is_single": true,
+                    "active": true,
+                    "virtual_flag": false,
+                    "my_id": null,
+                    "stage": 0,
+                    "my_name": "name",
+                    "origin": [0, 0, 0],
+                    "aim": [0, 0, 0],
+                    "zrot": 1.9844841420195465,
+                    "aperture": { "aperture_type": "RECTANGLE", "x_length": 1.0, "y_length": 1.0, "x_coord": -0.5, "y_coord": -0.5 },
+                    "surface": { "surface_type": "PARABOLA", "focal_length_x": 1.0, "focal_length_y": 1.0 },
+                    "opt_id": 0,
+                    "group": 1
+                },
+                {
+                    "is_single": true,
+                    "active": true,
+                    "virtual_flag": false,
+                    "my_id": null,
+                    "stage": 0,
+                    "my_name": "name",
+                    "origin": [0, 0, 0],
+                    "aim": [0, 0, 0],
+                    "zrot": 1.9844841420195465,
+                    "aperture": { "aperture_type": "RECTANGLE", "x_length": 1.0, "y_length": 1.0, "x_coord": -0.5, "y_coord": -0.5 },
+                    "surface": { "surface_type": "PARABOLA", "focal_length_x": 1.0, "focal_length_y": 1.0 },
+                    "opt_id": 0,
+                    "group": 1
+                },
+                {
+                    "is_single": true,
+                    "active": true,
+                    "virtual_flag": false,
+                    "my_id": null,
+                    "stage": 0,
+                    "my_name": "name",
+                    "origin": [0, 0, 0],
+                    "aim": [0, 0, 0],
+                    "zrot": 1.9844841420195465,
+                    "aperture": { "aperture_type": "RECTANGLE", "x_length": 1.0, "y_length": 1.0, "x_coord": -0.5, "y_coord": -0.5 },
+                    "surface": { "surface_type": "PARABOLA", "focal_length_x": 1.0, "focal_length_y": 1.0 },
+                    "opt_id": 1,
+                    "group": 2
+                }
+            ]
+        }
+    ],
+    "number_of_elements": 1
+}

@@ -77,6 +77,42 @@ void SimulationResult::write_csv_file(const char* csv_name, int precision) const
     return;
 }
 
+void SimulationResult::write_group_json_file(std::string json_name,
+                                        int precision, int indent) const
+{ return this->write_group_json_file(json_name.c_str(), precision, indent); }
+
+void SimulationResult::write_group_json_file(const char *json_name,
+                                        int precision, int indent) const
+{
+    nlohmann::ordered_json root;
+
+    if (grouped_results.empty())
+    {
+        std::stringstream ss;
+        ss << "No groups set. Add group tags to elements in the input JSON.";
+        throw std::runtime_error(ss.str());
+    }
+
+    std::vector<nlohmann::ordered_json> jgroups;
+    for (const auto& group_result : grouped_results)
+    {
+        nlohmann::ordered_json jgroup;
+        group_result.write_json(jgroup);
+        jgroups.push_back(jgroup);
+    }
+
+    root["sun_ray_count"] = sun_ray_count;
+    root["A_sun_box"] = A_sun_box;
+    root["exceeded_depth_count"] = exceeded_depth_count;
+    root["groups"] = jgroups;
+
+    // Write to disk
+    std::ofstream ofs(json_name, std::ios::out | std::ios::trunc);
+    if (!ofs.is_open())
+        throw std::runtime_error("Failure writing json");
+    ofs << root.dump(indent) << '\n';
+}
+
 const ray_record_ptr& SimulationResult::operator[](int_fast64_t idx) const
 {
     if (idx < 0 || idx >= this->ray_history.size())

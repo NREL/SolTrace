@@ -4,7 +4,16 @@
 #include <QDebug>
 #include <QDir>
 #include <QDirIterator>
+#include <QFileInfo>
 #include <QRegularExpression>
+#include <QUrl>
+
+#include "modules/database_module.h"
+#include "modules/simulation_module.h"
+
+#include <initializer_list>
+#include <optional>
+#include <utility>
 
 namespace SolTrace::GUI::Script {
 
@@ -187,6 +196,94 @@ bool looks_like_legacy_function_script(QString const& code,
            body.startsWith(QStringLiteral("function"));
 }
 
+QString normalize_config_key(QString key) {
+    return key.trimmed().toLower().replace('-', "_").replace(' ', "_");
+}
+
+QJsonValue config_value(QJsonObject const& config,
+                        std::initializer_list<QString> keys) {
+    for (auto const& key : keys) {
+        auto value = config.value(key);
+        if (!value.isUndefined()) return value;
+    }
+
+    for (auto it = config.constBegin(); it != config.constEnd(); ++it) {
+        auto const input_key = normalize_config_key(it.key());
+        for (auto const& key : keys) {
+            if (input_key == normalize_config_key(key)) return it.value();
+        }
+    }
+
+    return {};
+}
+
+bool json_bool(QJsonValue const& value, bool fallback) {
+    return value.isUndefined() ? fallback : value.toBool(fallback);
+}
+
+uint32_t json_uint(QJsonValue const& value, uint32_t fallback) {
+    if (value.isUndefined()) return fallback;
+    auto number = value.toDouble(fallback);
+    if (number < 0.0) return fallback;
+    return static_cast<uint32_t>(number);
+}
+
+std::optional<App::SimulationModule::Runner>
+runner_from_value(QJsonValue const& value,
+                  App::SimulationRunnerModel const* runners) {
+    if (value.isUndefined()) return std::nullopt;
+
+    if (value.isDouble()) {
+        return static_cast<App::SimulationModule::Runner>(value.toInt());
+    }
+
+    auto key = normalize_config_key(value.toString());
+    if (key == QStringLiteral("cpu") || key == QStringLiteral("legacy") ||
+        key == QStringLiteral("native")) {
+        return App::SimulationModule::CPU;
+    }
+    if (key == QStringLiteral("embree")) return App::SimulationModule::Embree;
+    if (key == QStringLiteral("gpu") || key == QStringLiteral("optix")) {
+        return App::SimulationModule::GPU;
+    }
+
+    if (key.endsWith(QStringLiteral("_runner"))) {
+        key.chop(QStringLiteral("_runner").size());
+    }
+
+    if (runners) {
+        for (int i = 0; i < runners->rowCount(); ++i) {
+            auto const* record = runners->get_at(i);
+            if (!record) continue;
+            auto name = normalize_config_key(record->name);
+            if (name == key) return record->runner;
+        }
+    }
+
+    return std::nullopt;
+}
+
+QString resolve_script_file_path(QString const& working_directory,
+                                 QString const& relative_path,
+                                 bool           must_exist) {
+    if (relative_path.isEmpty() || QFileInfo(relative_path).isAbsolute()) {
+        return {};
+    }
+
+    auto base_dir = QDir(working_directory.isEmpty() ? QDir::currentPath()
+                                                     : working_directory);
+    auto base_path = QDir::cleanPath(base_dir.absolutePath());
+    auto file_path = QDir::cleanPath(base_dir.filePath(relative_path));
+
+    if (file_path == base_path ||
+        !file_path.startsWith(base_path + QDir::separator())) {
+        return {};
+    }
+
+    if (must_exist && !QFileInfo(file_path).isFile()) return {};
+    return file_path;
+}
+
 } // namespace
 
 // =============================================================================
@@ -265,6 +362,146 @@ void ScriptConsole::error(QJSValue a,
     emit logged((int)ScriptLogLevel::Error, msg);
 }
 
+// =============================================================================
+
+ScriptSimulationInterface::ScriptSimulationInterface(App::SimulationModule* sim,
+                                                     QObject* parent)
+    : QObject(parent), m_simulation(sim) { }
+
+bool ScriptSimulationInterface::start(QJsonObject config) {
+    if (!m_simulation || m_simulation->is_running()) return false;
+    if (!m_simulation->current_database()) return false;
+
+    auto old_runner         = m_simulation->runner();
+    auto old_ray_count      = m_simulation->ray_count();
+    auto old_max_ray_count  = m_simulation->max_ray_count();
+    auto old_max_threads    = m_simulation->max_threads();
+    auto old_seed_value     = m_simulation->seed_value();
+    auto old_sun_shape      = m_simulation->sun_shape();
+    auto old_optical_errors = m_simulation->optical_errors();
+    auto old_point_focus    = m_simulation->point_focus_system();
+
+    if (auto runner = runner_from_value(
+            config_value(config,
+                         { QStringLiteral("runner"),
+                           QStringLiteral("runner_name") }),
+            m_simulation->runners())) {
+        m_simulation->set_runner(*runner);
+    }
+
+    if (auto value = config_value(config, { QStringLiteral("runner_index") });
+        !value.isUndefined()) {
+        m_simulation->set_runner(
+            m_simulation->runners()->runner_at(value.toInt()));
+    }
+
+    m_simulation->set_ray_count(json_uint(
+        config_value(config, { QStringLiteral("ray_count"),
+                               QStringLiteral("rays") }),
+        m_simulation->ray_count()));
+    m_simulation->set_max_ray_count(json_uint(
+        config_value(config, { QStringLiteral("max_ray_count"),
+                               QStringLiteral("max_rays_traced") }),
+        m_simulation->max_ray_count()));
+    m_simulation->set_max_threads(json_uint(
+        config_value(config, { QStringLiteral("max_threads"),
+                               QStringLiteral("threads") }),
+        m_simulation->max_threads()));
+    m_simulation->set_seed_value(json_uint(
+        config_value(config, { QStringLiteral("seed_value"),
+                               QStringLiteral("seed") }),
+        m_simulation->seed_value()));
+    m_simulation->set_sun_shape(json_bool(
+        config_value(config, { QStringLiteral("sun_shape"),
+                               QStringLiteral("include_sun_shape_errors") }),
+        m_simulation->sun_shape()));
+    m_simulation->set_optical_errors(json_bool(
+        config_value(config, { QStringLiteral("optical_errors"),
+                               QStringLiteral("include_optical_errors") }),
+        m_simulation->optical_errors()));
+    m_simulation->set_point_focus_system(json_bool(
+        config_value(config, { QStringLiteral("point_focus_system") }),
+        m_simulation->point_focus_system()));
+
+    m_simulation->run();
+    auto started = m_simulation->is_running();
+
+    m_simulation->set_runner(old_runner);
+    m_simulation->set_ray_count(old_ray_count);
+    m_simulation->set_max_ray_count(old_max_ray_count);
+    m_simulation->set_max_threads(old_max_threads);
+    m_simulation->set_seed_value(old_seed_value);
+    m_simulation->set_sun_shape(old_sun_shape);
+    m_simulation->set_optical_errors(old_optical_errors);
+    m_simulation->set_point_focus_system(old_point_focus);
+
+    return started;
+}
+
+ScriptSceneInterface::ScriptSceneInterface(App::DatabaseModule* databases,
+                                           ScriptDBInterface* database_interface,
+                                           QString working_directory,
+                                           QObject* parent)
+    : QObject(parent),
+      m_databases(databases),
+      m_database_interface(database_interface),
+      m_working_directory(std::move(working_directory)) { }
+
+bool ScriptSceneInterface::set_current_index(int index) {
+    if (!m_databases || !m_databases->set_current(index)) return false;
+    if (m_database_interface) {
+        m_database_interface->set_database(m_databases->current_database());
+    }
+    return true;
+}
+
+bool ScriptSceneInterface::set_current_name(QString name) {
+    if (!m_databases) return false;
+
+    for (int i = 0; i < m_databases->rowCount(); ++i) {
+        auto const* record = m_databases->get_at(i);
+        if (record && record->database &&
+            record->database->name() == name) {
+            return set_current_index(i);
+        }
+    }
+
+    return false;
+}
+
+bool ScriptSceneInterface::new_blank(QString name) {
+    if (!m_databases) return false;
+    m_databases->append_new(name.isEmpty() ? QStringLiteral("Untitled") : name);
+    if (m_database_interface) {
+        m_database_interface->set_database(m_databases->current_database());
+    }
+    return true;
+}
+
+bool ScriptSceneInterface::new_from_file(QString relative_path,
+                                         QString name_override) {
+    if (!m_databases) return false;
+
+    auto path = resolve_script_file_path(m_working_directory,
+                                         relative_path,
+                                         true /* must_exist */);
+    if (path.isEmpty()) return false;
+
+    m_databases->load_url(QUrl::fromLocalFile(path), name_override);
+    return true;
+}
+
+bool ScriptSceneInterface::export_json(QString relative_path) {
+    if (!m_databases) return false;
+
+    auto path = resolve_script_file_path(m_working_directory,
+                                         relative_path,
+                                         false /* must_exist */);
+    if (path.isEmpty()) return false;
+
+    return m_databases->export_current_json(path);
+}
+
 
 // =============================================================================
 
@@ -294,6 +531,12 @@ Script::Script(QObject* parent)
 void Script::set_database(db::Database* db) {
     qDebug() << Q_FUNC_INFO << db;
     m_database = db;
+}
+
+void Script::set_services(App::DatabaseModule* databases,
+                          App::SimulationModule* simulation) {
+    m_databases  = databases;
+    m_simulation = simulation;
 }
 
 bool Script::parse() {
@@ -379,6 +622,7 @@ void Script::run() {
         qCritical().noquote() << "[Script]" << message;
         emit logged((int)ScriptLogLevel::Error, message);
         qDebug() << Q_FUNC_INFO << "No db.";
+        emit runCompleted();
         return;
     }
 
@@ -393,6 +637,15 @@ void Script::run() {
 
     auto js_api_obj = engine->newQObject(api.get());
     engine->globalObject().setProperty("db", js_api_obj);
+
+    auto sim_api = std::make_unique<ScriptSimulationInterface>(m_simulation);
+    engine->globalObject().setProperty("sim",
+                                       engine->newQObject(sim_api.get()));
+
+    auto scene_api = std::make_unique<ScriptSceneInterface>(
+        m_databases, api.get(), working_directory());
+    engine->globalObject().setProperty("scenes",
+                                       engine->newQObject(scene_api.get()));
 
     auto console = new ScriptConsole(engine.get());
     connect(console, &ScriptConsole::logged, this, &Script::logged);
@@ -417,6 +670,7 @@ void Script::run() {
         qCritical().noquote() << "[Script]" << line;
         emit logged((int)ScriptLogLevel::Error, exception);
         emit logged((int)ScriptLogLevel::Error, line);
+        emit runCompleted();
         return;
     }
 
@@ -425,6 +679,7 @@ void Script::run() {
             "Script did not produce a callable function.");
         qCritical().noquote() << "[Script]" << message;
         emit logged((int)ScriptLogLevel::Error, message);
+        emit runCompleted();
         return;
     }
 
@@ -488,6 +743,7 @@ void Script::run() {
                 QString("Invalid argument value for %1.").arg(arg.name);
             qCritical().noquote() << "[Script]" << message;
             emit logged((int)ScriptLogLevel::Error, message);
+            emit runCompleted();
             return;
         }
     }
@@ -506,6 +762,8 @@ void Script::run() {
         emit logged((int)ScriptLogLevel::Error, exception);
         emit logged((int)ScriptLogLevel::Error, line);
     }
+
+    emit runCompleted();
 }
 
 void Script::notify_error(QString message) {

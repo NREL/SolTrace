@@ -12,6 +12,7 @@
 
 // SimulationResult headers
 #include "records.hpp"
+#include "group_result.hpp"
 
 namespace SolTrace::Result
 {
@@ -47,7 +48,9 @@ public:
     // Functions for file IO
     void write_csv_file(std::string csv_name, int precision = 12) const;
     void write_csv_file(const char* csv_name, int precision = 12) const;
-
+    void write_group_json_file(std::string json_name, int precision = 12, int indent = 4) const;
+    void write_group_json_file(const char *json_name, int precision = 12, int indent = 4) const;
+    
     // Legacy stuff -- TODO:
     // void results_to_legacy_csv(std::string csv_name,
     //                            SimulationData *data);
@@ -77,6 +80,13 @@ public:
                                 uint_fast64_t sun_ray_count);
     void set_sun_sampling_stats(double sun_A_box, uint_fast64_t sun_ray_count);
 
+    void set_exceeded_depth_count(uint_fast64_t count) { this->exceeded_depth_count = count; }
+    uint_fast64_t get_exceeded_depth_count() const { return this->exceeded_depth_count; }
+
+    void set_grouped_results(const std::vector<GroupResult>& grouped_results) { this->grouped_results = grouped_results; }
+    std::vector<GroupResult> get_grouped_results() const { return this->grouped_results; }
+    size_t get_number_of_groups() const { return this->grouped_results.size(); }
+
 private:
     RayRecordContainer     ray_history;
     ElementRecordContainer element_view;
@@ -89,6 +99,11 @@ private:
     double        sun_height      = -1.0;
     double        A_sun_box       = -1.0;
     double        ray_area_weight = -1.0;
+    
+    uint_fast64_t exceeded_depth_count = 0;
+
+    std::vector<GroupResult> grouped_results;
+
 };
 
 } // namespace SolTrace::Result

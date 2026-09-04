@@ -29,6 +29,17 @@ static QString load_export_docs() {
     return QString::fromUtf8(file.readAll());
 }
 
+static QString load_app_api_docs() {
+    QFile file(QStringLiteral(":/docs/script/app_schema.md"));
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qCritical() << "Unable to load app script schema docs from resource"
+                    << file.fileName() << file.errorString();
+        return {};
+    }
+
+    return QString::fromUtf8(file.readAll()).trimmed();
+}
+
 static QVector<FunctionExport> parse_exports(QString const& docs) {
     QVector<FunctionExport> ret;
     auto                    lines = docs.split('\n');
@@ -144,21 +155,77 @@ QJsonObject SchemaBuilder::build(ScriptDBInterface* iface, QString task) {
 
         record.return_type = clean_type(info.typeName());
 
-        all_methods.push_back(record.to_object());
+            all_methods.push_back(record.to_object());
     }
+
+    auto const sim_methods = QJsonArray {
+        FunctionRecord {
+            .name = QStringLiteral("start"),
+            .desc = QStringLiteral(
+                "Start a simulation using the current scene and current runner "
+                "settings, patched by an optional config object."),
+            .args = { { QStringLiteral("config"),
+                        QStringLiteral("object") } },
+            .return_type = QStringLiteral("bool"),
+        }.to_object(),
+    };
+
+    auto const scenes_methods = QJsonArray {
+        FunctionRecord {
+            .name = QStringLiteral("set_current_index"),
+            .desc = QStringLiteral("Select an open scene by zero-based index."),
+            .args = { { QStringLiteral("index"), QStringLiteral("int") } },
+            .return_type = QStringLiteral("bool"),
+        }.to_object(),
+        FunctionRecord {
+            .name = QStringLiteral("set_current_name"),
+            .desc = QStringLiteral(
+                "Select the first open scene with the given display name."),
+            .args = { { QStringLiteral("name"), QStringLiteral("string") } },
+            .return_type = QStringLiteral("bool"),
+        }.to_object(),
+        FunctionRecord {
+            .name = QStringLiteral("new_blank"),
+            .desc = QStringLiteral("Create a new blank scene and select it."),
+            .args = { { QStringLiteral("name"), QStringLiteral("string") } },
+            .return_type = QStringLiteral("bool"),
+        }.to_object(),
+        FunctionRecord {
+            .name = QStringLiteral("new_from_file"),
+            .desc = QStringLiteral(
+                "Load a scene file relative to the script working directory."),
+            .args = { { QStringLiteral("relative_path"),
+                        QStringLiteral("string") },
+                      { QStringLiteral("name_override"),
+                        QStringLiteral("string") } },
+            .return_type = QStringLiteral("bool"),
+        }.to_object(),
+        FunctionRecord {
+            .name = QStringLiteral("export_json"),
+            .desc = QStringLiteral(
+                "Export the current scene to JSON relative to the script "
+                "working directory."),
+            .args = { { QStringLiteral("relative_path"),
+                        QStringLiteral("string") } },
+            .return_type = QStringLiteral("bool"),
+        }.to_object(),
+    };
 
     return QJsonObject {
         { QStringLiteral("app"), QStringLiteral("SolTrace") },
         { QStringLiteral("runtime"),
           QJsonObject {
               { QStringLiteral("language"), QStringLiteral("javascript") },
-              { QStringLiteral("global_objects"), QJsonArray() << "db" },
+              { QStringLiteral("global_objects"),
+                QJsonArray() << "db" << "sim" << "scenes" },
           } },
 
         {
             QStringLiteral("api"),
             QJsonObject {
                 { QStringLiteral("db"), all_methods },
+                { QStringLiteral("sim"), sim_methods },
+                { QStringLiteral("scenes"), scenes_methods },
             },
         },
 
@@ -173,7 +240,7 @@ QString SchemaBuilder::build_markdown(ScriptDBInterface* iface, QString task) {
     QStringList lines;
     lines << QStringLiteral("# SolTrace Script API") << QString {}
           << QStringLiteral("Runtime: JavaScript")
-          << QStringLiteral("Global objects: db");
+          << QStringLiteral("Global objects: db, sim, scenes");
 
     if (!task.isEmpty()) {
         lines << QString {} << QStringLiteral("Task: %1").arg(task);
@@ -207,6 +274,9 @@ QString SchemaBuilder::build_markdown(ScriptDBInterface* iface, QString task) {
                           args.join(QStringLiteral(", ")), suffix)
               << QString {} << method[QStringLiteral("description")].toString();
     }
+
+    auto app_docs = load_app_api_docs();
+    if (!app_docs.isEmpty()) { lines << QString {} << app_docs; }
 
     return lines.join('\n').trimmed();
 }

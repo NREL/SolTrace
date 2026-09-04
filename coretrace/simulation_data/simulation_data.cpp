@@ -19,6 +19,7 @@ SimulationData::SimulationData() : number_of_elements(0),
 
 SimulationData::~SimulationData()
 {
+    this->clear(true);
     return;
 }
 
@@ -52,6 +53,24 @@ element_id SimulationData::add_element(element_ptr el)
             else
             {
                 this->number_of_elements++;
+
+                // only check groups on single elements
+                int32_t group = el->get_group();
+
+                if (group > -1)
+                {
+                    // ensure that group index exists by adding empty groups if necessary
+                    size_t my_groups_size = this->my_groups.size();
+                    if (group >= my_groups_size)
+                    {        
+                        for (size_t i = my_groups_size; i <= (size_t)group; ++i)
+                        {
+                            this->my_groups.push_back(std::set<uint_fast64_t>());
+                        }
+                    }
+                    
+                    this->my_groups[group].insert(id);
+                }
             }
         }
         else
@@ -332,6 +351,7 @@ void SimulationData::clear(bool reset_parameters)
 {
     this->my_elements.clear();
     this->my_sources.clear();
+    this->my_groups.clear();
     this->number_of_elements = 0;
 
     this->my_optical_property_sets.reset(0);

@@ -13,6 +13,7 @@
 #include <QTextStream>
 
 #include <algorithm>
+#include <exception>
 #include <limits>
 #include <numeric>
 
@@ -77,6 +78,60 @@ size_t bounded_index(QRandomGenerator* random, size_t upper_exclusive) {
     return static_cast<size_t>(random->generate64() % upper_exclusive);
 }
 
+bool write_flux_map_mesh(QString const&             path,
+                         QString const&             object_name,
+                         analysis::BakedFluxMapPtr const& map) {
+    if (!map) return false;
+
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) return false;
+
+    QTextStream out(&file);
+    out.setRealNumberPrecision(10);
+
+    out << "# SolTrace extended OBJ flux map mesh\n";
+    out << "# fa <face_area>\n";
+    out << "# fv <face_bin_ray_count>\n";
+    out << "# power_per_ray " << map->stats.power_per_ray << '\n';
+    out << "# plotted_power " << map->stats.plotted_power << '\n';
+    out << "o " << object_name << '\n';
+
+    for (auto const& vertex : map->mesh.vertex) {
+        out << "v " << vertex.position.x << ' ' << vertex.position.y << ' '
+            << vertex.position.z << '\n';
+    }
+
+    for (auto const& vertex : map->mesh.vertex) {
+        out << "vt " << vertex.uv.x << ' ' << vertex.uv.y << '\n';
+    }
+
+    for (auto const& vertex : map->mesh.vertex) {
+        out << "vn " << vertex.normal.x << ' ' << vertex.normal.y << ' '
+            << vertex.normal.z << '\n';
+    }
+
+    for (qsizetype i = 0; i < map->mesh.triangles.size(); ++i) {
+        auto const& triangle = map->mesh.triangles[i];
+
+        auto const a = static_cast<qulonglong>(triangle.x) + 1;
+        auto const b = static_cast<qulonglong>(triangle.y) + 1;
+        auto const c = static_cast<qulonglong>(triangle.z) + 1;
+
+        out << "f " << a << '/' << a << '/' << a << ' ' << b << '/' << b
+            << '/' << b << ' ' << c << '/' << c << '/' << c << '\n';
+
+        auto const face_area =
+            i < map->face_area.size() ? map->face_area[i] : 0.0f;
+        auto const face_ray_count =
+            i < map->face_ray_count.size() ? map->face_ray_count[i] : 0;
+
+        out << "fa " << face_area << '\n';
+        out << "fv " << face_ray_count << '\n';
+    }
+
+    return out.status() == QTextStream::Ok;
+}
+
 } // namespace
 
 ExportModule::ExportModule(QObject* parent) : QObject(parent) {
@@ -90,7 +145,11 @@ ExportModule::ExportModule(QObject* parent) : QObject(parent) {
         settings.value(QStringLiteral("directory"), default_dir).toString()));
     set_export_flux_map_images(
         settings.value(QStringLiteral("flux_map_images"), true).toBool());
+    set_export_flux_map_meshes(
+        settings.value(QStringLiteral("flux_map_meshes"), false).toBool());
     set_export_rays(settings.value(QStringLiteral("rays"), true).toBool());
+    set_export_scene_copy(
+        settings.value(QStringLiteral("scene_copy"), false).toBool());
     set_random_sample_rays(
         settings.value(QStringLiteral("random_sample_rays"), false).toBool());
     set_random_sample_ray_count(
@@ -112,10 +171,23 @@ ExportModule::ExportModule(QObject* parent) : QObject(parent) {
                           export_flux_map_images());
         update_can_export();
     });
+    connect(this, &ExportModule::export_flux_map_meshes_changed, this, [this] {
+        QSettings settings;
+        settings.beginGroup(QStringLiteral("AnalysisExport"));
+        settings.setValue(QStringLiteral("flux_map_meshes"),
+                          export_flux_map_meshes());
+        update_can_export();
+    });
     connect(this, &ExportModule::export_rays_changed, this, [this] {
         QSettings settings;
         settings.beginGroup(QStringLiteral("AnalysisExport"));
         settings.setValue(QStringLiteral("rays"), export_rays());
+        update_can_export();
+    });
+    connect(this, &ExportModule::export_scene_copy_changed, this, [this] {
+        QSettings settings;
+        settings.beginGroup(QStringLiteral("AnalysisExport"));
+        settings.setValue(QStringLiteral("scene_copy"), export_scene_copy());
         update_can_export();
     });
     connect(this, &ExportModule::random_sample_rays_changed, this, [this] {
@@ -159,7 +231,8 @@ QString ExportModule::current_result_file_stem() const {
 void ExportModule::update_can_export() {
     set_can_export(m_results != nullptr &&
                    !path_from_url(export_directory()).isEmpty() &&
-                   (export_flux_map_images() || export_rays()));
+                   (export_flux_map_images() || export_flux_map_meshes() ||
+                    export_rays() || export_scene_copy()));
 }
 
 void ExportModule::export_current() {
@@ -183,28 +256,72 @@ void ExportModule::export_current() {
     auto const stem          = current_result_file_stem();
     int        files_written = 0;
 
-    if (export_flux_map_images()) {
+    if (export_scene_copy()) {
+        if (!m_results->database) {
+            emit notify(ANotification::error(QStringLiteral(
+                "Could not export the scene copy because the simulation result "
+                "does not include a scene snapshot.")));
+            return;
+        }
+
+        auto* database = const_cast<db::Database*>(m_results->database.get());
+        auto  result   = database->export_to_simdata();
+
+        if (!result) {
+            emit notify(ANotification::error(
+                QStringLiteral("Could not export the scene copy: %1")
+                    .arg(result.get_failure())));
+            return;
+        }
+
+        auto const scene_path =
+            directory.filePath(stem + QStringLiteral("_scene.json"));
+
+        try {
+            result.get_success()->data->export_json_file(
+                scene_path.toStdString());
+        } catch (std::exception const& ex) {
+            emit notify(ANotification::error(
+                QStringLiteral("Could not write the scene copy: %1")
+                    .arg(ex.what())));
+            return;
+        }
+
+        ++files_written;
+    }
+
+    if (export_flux_map_images() || export_flux_map_meshes()) {
         for (auto iter = m_flux_maps.begin(); iter != m_flux_maps.end();
              ++iter) {
+            auto const entity_id = QString::number(
+                entt::to_integral(iter->first.value));
             auto const entity_name =
                 m_results->database
                     ? file_safe(m_results->database->name_of(iter->first))
-                    : QStringLiteral("entity_%1")
-                          .arg(entt::to_integral(iter->first.value));
+                    : QStringLiteral("entity");
 
-            auto const base_name = stem + "_" + entity_name;
+            auto const base_name = stem + "_" + entity_name + "_" + entity_id;
             auto const bin_path =
                 directory.filePath(base_name + QStringLiteral("_flux-map.png"));
             auto const point_path = directory.filePath(
                 base_name + QStringLiteral("_ray-points.png"));
+            auto const mesh_path =
+                directory.filePath(base_name + QStringLiteral("_flux-mesh.obj"));
 
-            if (!iter->second->bin_map.isNull() &&
-                iter->second->bin_map.save(bin_path, "PNG")) {
-                ++files_written;
+            if (export_flux_map_images()) {
+                if (!iter->second->bin_map.isNull() &&
+                    iter->second->bin_map.save(bin_path, "PNG")) {
+                    ++files_written;
+                }
+
+                if (!iter->second->point_map.isNull() &&
+                    iter->second->point_map.save(point_path, "PNG")) {
+                    ++files_written;
+                }
             }
 
-            if (!iter->second->point_map.isNull() &&
-                iter->second->point_map.save(point_path, "PNG")) {
+            if (export_flux_map_meshes() &&
+                write_flux_map_mesh(mesh_path, entity_name, iter->second)) {
                 ++files_written;
             }
         }
@@ -233,7 +350,8 @@ void ExportModule::export_current() {
             std::sort(indices.begin(), indices.end());
         }
 
-        QFile file(directory.filePath(stem + QStringLiteral("_rays.csv")));
+        auto file =
+            QFile(directory.filePath(stem + QStringLiteral("_rays.csv")));
         if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
             emit notify(ANotification::error(QStringLiteral(
                 "Could not write the ray data file. Check folder permissions "

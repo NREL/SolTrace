@@ -1,10 +1,14 @@
 #ifndef SOLTRACE_OPTIX_RUNNER_H
 #define SOLTRACE_OPTIX_RUNNER_H
 
+#include <set>
+#include <vector>
+
 #include "simulation_data.hpp"
 #include "simulation_result.hpp"
 #include "simulation_runner.hpp"
 #include "core/soltrace_system.h"
+#include "core/timer.h"
 
 // using SolTrace::Runner::RunnerStatus;
 
@@ -72,8 +76,30 @@ public:
     // Runner accessors
     OptixCSP::SolTraceSystem *get_optix_system() { return &this->m_sys; }
 
+    // group functions
+    std::vector<std::set<int32_t>> &get_groups() { return m_groups; }
+    void set_groups(const std::vector<std::set<int32_t>>& groups) { m_groups = groups; }
+    void set_groups(const std::vector<std::set<uint_fast64_t>>& groups) 
+    { 
+        m_groups.clear();
+        m_groups.reserve(groups.size());
+        for (size_t i = 0; i < groups.size(); ++i)
+        {
+            std::set<int32_t> group_i;
+            for (auto id : groups[i])
+            {
+                group_i.insert(static_cast<int32_t>(id));
+            }
+            m_groups.push_back(std::move(group_i));
+        }
+    }
+    size_t get_num_groups() const { return m_groups.size(); }
+    int32_t get_group(int32_t element_id);
+
 private:
     OptixCSP::SolTraceSystem m_sys;
+
+    std::vector<std::set<int32_t>> m_groups;
 
     const SolTrace::Data::SimulationData *m_simdata;
     SolTrace::Runner::RunnerStatus setup_parameters(
@@ -89,6 +115,10 @@ private:
     // helper function, convert SolTrace::Data::DistributionType to Optix::OpticalDistribution
     OptixCSP::OpticalDistribution to_optical_distribution(SolTrace::Data::DistributionType dt);
     
+    // timers for report simulation
+    OptixCSP::Timer m_timer_report;
+    OptixCSP::Timer m_timer_get_output;
+    OptixCSP::Timer m_timer_report_loop;
 };
 
 #endif

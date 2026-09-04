@@ -158,7 +158,8 @@ public:
         SelectMaterial = 2,
         SelectGeometry = 3,
         EditElement    = 4,
-        PickRay        = 5
+        PickRay        = 5,
+        SelectRayFilterElement = 6
     };
 
     Q_ENUM(MouseMode)
@@ -189,6 +190,9 @@ public:
     // Simulation State
     Q_WRITABLE_PROPERTY(bool, simulation_content_view, false)
     Q_WRITABLE_PROPERTY(bool, show_intersections, true)
+    Q_WRITABLE_PROPERTY(double, intersection_opacity, 1.0)
+    Q_WRITABLE_PROPERTY(QColor, ray_color, "white")
+    Q_WRITABLE_PROPERTY(int, point_size, 1)
     Q_WRITABLE_PROPERTY(MouseMode, mouse_mode, MouseMode::Camera)
     Q_WRITABLE_PROPERTY(bool, inline_docs, false)
 

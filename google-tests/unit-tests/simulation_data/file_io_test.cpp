@@ -28,6 +28,47 @@ void get_default_element_base(nlohmann::ordered_json& jnode)
     jnode["zrot"] = 0;
 }
 
+void get_default_single_element(nlohmann::ordered_json& jnode, uint64_t opt_id)
+{
+    get_default_element_base(jnode);
+    jnode["is_single"] = true;
+    jnode["aim"] = SolTrace::Data::to_array(glm::dvec3(0, 1, 0));
+    jnode["opt_id"] = opt_id;
+    
+    nlohmann::ordered_json jrectangle;
+    jrectangle["aperture_type"] = SolTrace::Data::ApertureTypeMap.at(ApertureType::RECTANGLE);
+    jrectangle["x_length"] = 4;
+    jrectangle["y_length"] = 5;
+    jrectangle["x_coord"] = -2;
+    jrectangle["y_coord"] = -2.5;
+    jnode["aperture"] = jrectangle;
+    
+    nlohmann::ordered_json jpara;
+    jpara["surface_type"] = SolTrace::Data::SurfaceTypeMap.at(SolTrace::Data::PARABOLA);
+    jpara["focal_length_x"] = 3;
+    jpara["focal_length_y"] = 4;
+    
+    jnode["surface"] = jpara;
+}
+
+void get_default_optical_set(nlohmann::ordered_json& jnode)
+{
+    jnode["my_type"] = SolTrace::Data::InteractionTypeMap.at(SolTrace::Data::InteractionType::REFLECTION);
+    jnode["my_name"] = "default";
+    jnode["refraction_index_front"] = 1.1;
+    jnode["refraction_index_back"]  = 1.1;
+
+    nlohmann::ordered_json jside;
+    jside["error_distribution_type"] = SolTrace::Data::DistributionTypeMap.at(SolTrace::Data::DistributionType::GAUSSIAN);
+    jside["transmissivity"]          = 0.0;
+    jside["reflectivity"]            = 1.0;
+    jside["slope_error"]             = 0.0;
+    jside["specularity_error"]       = 0.0;
+
+    jnode["front"] = jside;
+    jnode["back"]  = jside;
+}
+
 TEST(io_json, json_round_trip)
 {
     namespace fs = std::filesystem;
@@ -1002,5 +1043,114 @@ TEST(io_json, upgrade_deduplicates_shared_optics)
     if (!::testing::Test::HasFailure()) {
         std::error_code ec;
         fs::remove(output_path, ec);
+    }
+}
+
+TEST(io_json, element_groups)
+{
+    using json = nlohmann::ordered_json;
+    
+    // emulating SolTrace::Data::load_json_file
+    SimulationData sd;
+
+    // dummy optical set
+    uint64_t opt_id_int = 0;
+    SolTrace::Data::optics_id opt_id = static_cast<SolTrace::Data::optics_id>(opt_id_int);
+    json j_optic;
+    get_default_optical_set(j_optic);
+    SolTrace::Data::OpticalPropertySet opt_set(j_optic);
+
+    auto ptr = std::make_shared<OpticalPropertySet>(opt_set);
+    ASSERT_NO_THROW(sd.add_optical_property_set(opt_set));
+
+    auto resolve_optics = [ptr](const optics_id id)
+    {
+        return SolTrace::Data::OpticalPropertySetReference{ id, ptr };
+    };
+    
+
+    // test an element with no group
+    json j_no_group;
+    get_default_single_element(j_no_group, opt_id_int);
+    auto e_no_group = SolTrace::Data::make_element<SingleElement>(j_no_group, resolve_optics);
+
+    ASSERT_EQ(e_no_group->get_group(), -1);
+    
+    sd.add_element(e_no_group);
+    ASSERT_EQ(sd.get_groups().size(), 0);
+
+    // test 2 elements with a group 0
+    json j_group_0_1;
+    get_default_single_element(j_group_0_1, opt_id_int);
+    j_group_0_1["group"] = 0;
+    auto e_group_0_1 = SolTrace::Data::make_element<SingleElement>(j_group_0_1, resolve_optics);
+    ASSERT_EQ(e_group_0_1->get_group(), 0);
+    
+    sd.add_element(e_group_0_1);
+    ASSERT_EQ(sd.get_groups().size(), 1);
+    
+    json j_group_0_2;
+    get_default_single_element(j_group_0_2, opt_id_int);
+    j_group_0_2["group"] = 0;
+    auto e_group_0_2 = SolTrace::Data::make_element<SingleElement>(j_group_0_2, resolve_optics);
+    ASSERT_EQ(e_group_0_2->get_group(), 0);
+    
+    sd.add_element(e_group_0_2);
+    ASSERT_EQ(sd.get_groups().size(), 1);
+    
+    // add group 1
+    json j_group_1;
+    get_default_single_element(j_group_1, opt_id_int);
+    j_group_1["group"] = 1;
+    auto e_group_1 = SolTrace::Data::make_element<SingleElement>(j_group_1, resolve_optics);
+    ASSERT_EQ(e_group_1->get_group(), 1);
+    
+    sd.add_element(e_group_1);
+    ASSERT_EQ(sd.get_groups().size(), 2);
+
+    json j_group_0_3;
+    get_default_single_element(j_group_0_3, opt_id_int);
+    j_group_0_3["group"] = 0;
+    auto e_group_0_3 = SolTrace::Data::make_element<SingleElement>(j_group_0_3, resolve_optics);
+    ASSERT_EQ(e_group_0_3->get_group(), 0);
+    
+    sd.add_element(e_group_0_3);
+    ASSERT_EQ(sd.get_groups().size(), 2);
+    
+    // check vector is the starting index of the groups
+    std::vector<std::set<uint_fast64_t>> groups = sd.get_groups();
+    ASSERT_EQ(groups[0].count(e_group_0_1->get_id()), 1);
+    ASSERT_EQ(groups[0].count(e_group_0_2->get_id()), 1);
+    ASSERT_EQ(groups[0].count(e_group_0_3->get_id()), 1);
+    ASSERT_EQ(groups[1].count(e_group_1->get_id()), 1);
+    
+    // test that sd.clear() actually clears
+    sd.clear();
+    ASSERT_EQ(sd.get_groups().size(), 0);
+}
+
+TEST(io_json, element_groups_file) {
+    namespace fs = std::filesystem;
+    using json = nlohmann::ordered_json;
+
+    // Build paths
+    const fs::path project_root(PROJECT_DIR);
+    const std::string input_str = project_root.string() + "/good_test.json";
+
+    SimulationData sd;
+    ASSERT_NO_THROW(sd.import_json_file(input_str));
+
+    // Check groups
+    EXPECT_EQ(sd.get_groups().size(), 3);
+    std::vector<std::set<uint_fast64_t>> groups = sd.get_groups();
+
+    SolTrace::Data::element_ptr ptr = nullptr;
+    int32_t group = -1;
+    for (auto iter = sd.get_iterator(); !sd.is_at_end(iter); ++iter)
+    {
+        ptr = iter->second;
+        group = ptr->get_group();
+        if (group > -1)
+            ASSERT_EQ(groups[group].count(ptr->get_id()), 1);
     }
 }

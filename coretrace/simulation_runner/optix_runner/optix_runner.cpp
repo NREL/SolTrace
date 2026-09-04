@@ -1,21 +1,28 @@
 #include "simulation_runner/optix_runner/optix_runner.hpp"
 #include "simulation_data/simulation_data_export.hpp"
+#include "simulation_results/simulation_result_export.hpp"
 
 #include <iostream>
 #include <optical_properties.hpp>
 #include <sstream>
 #include <stdexcept>
+#include <iomanip>
 
 using SolTrace::Runner::RunnerStatus;
 using SolTrace::Runner::SimulationRunner;
+using SolTrace::Runner::RunnerStatistics;
 
 using SolTrace::Result::SimulationResult;
+using SolTrace::Result::GroupResult;
 
 using SolTrace::Data::optics_id;
 
 OptixRunner::OptixRunner() : SimulationRunner(),
                              m_simdata(nullptr),
-                             m_sys() {}
+                             m_sys(),
+                             m_timer_report(),
+                             m_timer_get_output(),
+                             m_timer_report_loop() {}
 
 void OptixRunner::set_verbose(bool verbose)
 {
@@ -25,6 +32,25 @@ void OptixRunner::set_verbose(bool verbose)
 void OptixRunner::print_timing() const
 {
     m_sys.print_timing();
+
+    // print optix runner timers after soltrace system
+    const double t_report = m_timer_report.get_time_sec();
+    const double t_output = m_timer_get_output.get_time_sec();
+    const double t_loop   = m_timer_report_loop.get_time_sec();
+    const double t_missed = t_report - t_output - t_loop;
+
+    const auto pct = [](double num, double denom) -> double
+    {
+        return denom > 0.0 ? 100.0 * num / denom : 0.0;
+    };
+
+    std::cout << std::fixed << std::setprecision(6);
+    std::cout << "\n=== Report Simulation Summary ===\n";
+    std::cout << "  Get Output      : " << t_output << " s  (" << pct(t_output, t_report) << " %)\n";
+    std::cout << "  Core for loop   : " << t_loop << " s  (" << pct(t_loop, t_report) << " %)\n";
+    std::cout << "  Missed          : " << t_missed << " s  (" << pct(t_missed, t_report) << " %)\n";
+    std::cout << "  Report total    : " << t_report << " s\n";
+    std::cout << "=====================================\n";
 }
 
 void OptixRunner::set_max_ray_depth(uint_fast64_t depth)
@@ -430,6 +456,11 @@ RunnerStatus OptixRunner::setup_elements(const SimulationData *data)
             }
         }
     }
+
+    // ids from base elements are used to set the optix element ids, so can safely copy over
+    // see: optix_el->set_id(static_cast<int32_t>(id))
+    set_groups(data->get_groups());
+
     return RunnerStatus::SUCCESS;
 }
 
@@ -480,64 +511,98 @@ SolTrace::Result::RayEvent hit_type_to_ray_event(OptixCSP::HitType hit_type)
 RunnerStatus OptixRunner::report_simulation(SimulationResult *result,
                                             int level)
 {
+    m_timer_report.reset();
+    m_timer_get_output.reset();
+    m_timer_report_loop.reset();
+    m_timer_report.start();
+
+    // check groups exist if grouped statistics are requested
+    const size_t num_groups = m_groups.size();
+    if ((level == RunnerStatistics::GROUPED_COUNTS || level == RunnerStatistics::ALL) && num_groups == 0)
+    {
+        m_timer_report.stop();
+        return RunnerStatus::ERROR;
+    }
     // Declare results
     RunnerStatus retval = RunnerStatus::SUCCESS;
     std::map<unsigned int, SolTrace::Result::ray_record_ptr> ray_records;
     std::map<unsigned int, SolTrace::Result::ray_record_ptr>::iterator iter;
 
-    // TODO: This should be redone without using these vectors and just using the
-    // internal hit record vector
     // Get results from optixcsp
-    std::vector<float4> hp_vec;
-    std::vector<uint_fast64_t> raynumber_vec;
-    std::vector<int32_t> element_id_vec;
-    std::vector<uint8_t> hit_type_vec;
-    m_sys.get_hp_output(hp_vec, raynumber_vec, element_id_vec, hit_type_vec);
-
-    // Check sizes
-    if (!(hp_vec.size() == raynumber_vec.size() && raynumber_vec.size() == element_id_vec.size() && element_id_vec.size() == hit_type_vec.size()))
-    {
-        return RunnerStatus::ERROR;
-    }
+    m_timer_get_output.start();
+    const std::vector<OptixCSP::HitRecord> *hit_records = m_sys.get_hit_records();
+    m_timer_get_output.stop();
 
     // Loop through data, populating ray records
     // Assumes ray data is grouped serially
-    size_t ndata = hp_vec.size();
-    // uint_fast64_t raynum_prev = -1;
+    size_t ndata = hit_records->size();
     uint_fast64_t raynum = 0;
     SolTrace::Result::ray_record_ptr rec = nullptr;
     SolTrace::Result::interaction_ptr intr = nullptr;
+
+    // set up grouped results
+    int32_t group, prev_group = -2; // use -2 as sun
+    std::vector<GroupResult> grouped_results;
+    for (int32_t group_id = 0; group_id < (int32_t)num_groups; ++group_id)
+        grouped_results.emplace_back(group_id, num_groups);
+
+    // declare loop variables
+    OptixCSP::HitRecord temp;
+    int32_t element_id;
+    SolTrace::Result::RayEvent rev;
+    // not pos or cos bc need to change types / glm::dvec3 pos, cos;
+    float4 hp;
+    
+    m_timer_report_loop.start();
+    // timing inside the loop has really slows this down bc of how many times start/stop are called
     for (size_t ii = 0; ii < ndata; ++ii)
     {
-        // Collect results for record
-        raynum = raynumber_vec[ii];
-        glm::dvec3 pos(hp_vec[ii].y, hp_vec[ii].z, hp_vec[ii].w); // x is depth
-        glm::dvec3 cos(0.0);                                      // TODO: calculate directions
-        int32_t element_id = element_id_vec[ii];
-        uint8_t hit_type = hit_type_vec[ii];
-        SolTrace::Result::RayEvent rev = hit_type_to_ray_event(static_cast<OptixCSP::HitType>(hit_type));
+        temp = (*hit_records)[ii];
+        element_id = temp.element_id;
+        rev = hit_type_to_ray_event(static_cast<OptixCSP::HitType>(temp.hit_type));
+        group = rev == SolTrace::Result::RayEvent::CREATE ? -2 : this->get_group(element_id);
 
-        // Make new ray record if necessary
-        iter = ray_records.find(raynum);
-        if (iter == ray_records.end())
+        if ((level == RunnerStatistics::GROUPED_COUNTS || level == RunnerStatistics::ALL) && group >= 0)
         {
-            rec = SolTrace::Result::make_ray_record(raynum);
-            result->add_ray_record(rec);
-            ray_records[raynum] = rec;
-            assert(rev == SolTrace::Result::RayEvent::CREATE);
+            grouped_results[group].increment(rev, prev_group);
         }
-        else
-        {
-            rec = iter->second;
+        
+        if (level == RunnerStatistics::RAY_RECORDS || level == RunnerStatistics::ALL) {
+            if (rev == SolTrace::Result::RayEvent::CREATE) ++raynum;
+            hp = temp.hit_point;
+            glm::dvec3 pos(hp.y, hp.z, hp.w); // x is depth
+            glm::dvec3 cos(0.0);              // TODO: calculate directions
+            
+            // Make new ray record if necessary
+            iter = ray_records.find(raynum);
+            if (iter == ray_records.end())
+            {
+                rec = SolTrace::Result::make_ray_record(raynum);
+                result->add_ray_record(rec);
+                ray_records[raynum] = rec;
+                assert(rev == SolTrace::Result::RayEvent::CREATE);
+            }
+            else
+            {
+                rec = iter->second;
+            }
+            
+            // Make interaction record
+            intr = SolTrace::Result::make_interaction_record(element_id, rev, pos, cos);
+            rec->add_interaction_record(intr);
         }
 
-        // Make interaction record
-        intr = SolTrace::Result::make_interaction_record(element_id, rev, pos, cos);
-        rec->add_interaction_record(intr);
+        prev_group = group;
     }
+    m_timer_report_loop.stop();
 
     // Attach other results
     result->set_sun_sampling_stats(this->get_sun_plane_area(), this->get_N_sun_rays());
+    result->set_exceeded_depth_count(m_sys.get_N_depth_exceeded_rays());
+    
+    // attach grouped results
+    result->set_grouped_results(grouped_results);
+    m_timer_report.stop();
 
     return RunnerStatus::SUCCESS;
 }
@@ -584,4 +649,18 @@ OptixCSP::OpticalDistribution OptixRunner::to_optical_distribution(SolTrace::Dat
         throw std::invalid_argument(ss.str());
     }
     return od;
+}
+
+int32_t OptixRunner::get_group(int32_t element_id) 
+{
+    size_t num_groups = m_groups.size();
+    if (num_groups > 0) {
+        for (size_t i = 0; i < num_groups; ++i) {
+            if (m_groups[i].count(element_id) > 0) {
+                return static_cast<int32_t>(i);
+            }
+        }
+    }
+    
+    return -1;
 }

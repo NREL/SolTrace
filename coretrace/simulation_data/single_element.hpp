@@ -97,6 +97,8 @@ public:
         this->optics_back = op;
     }*/
 
+    virtual int32_t get_group() const override { return this->group; }
+
     virtual void enforce_user_fields_set() const override;
 
     virtual void write_json(nlohmann::ordered_json& jnode) const override;
@@ -107,6 +109,12 @@ protected:
 
     optics_id opt_id = OPTICS_ID_UNASSIGNED;
     std::weak_ptr<const OpticalPropertySet> optical_property_set;
+
+    // group number of element. 
+    // -2 is an element that does not interact with the trace, ie stage or composite elements. 
+    // -1 is an ungrouped element, assigned explicitly or if "group" key is missing from JSON. 
+    // 0 and above are grouped elements. 
+    int32_t group;
 };
 
 using single_element_ptr = typename std::shared_ptr<SingleElement>;

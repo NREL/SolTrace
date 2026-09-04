@@ -1,11 +1,13 @@
 #pragma once
 
 #include "modules/sun/sun_shape_model.h"
+#include "utilities/notification.h"
 
 #include "sun.hpp"
 
 #include <QList>
 #include <QObject>
+#include <QUrl>
 #include <qqmlintegration.h>
 
 namespace SolTrace::GUI::App {
@@ -14,8 +16,6 @@ namespace SolTrace::GUI::App {
 class SunShape : public QObject {
     Q_OBJECT
     QML_ELEMENT
-
-    QList<SunShapePoint> m_custom_shape;
 
     void regenerate();
     void sample_gaussian();
@@ -59,8 +59,13 @@ public:
     /// Reset the active distribution to the generated/custom source for shape.
     void reset_current_distribution();
 
+public slots:
+    void export_custom_distribution(QUrl);
+    void import_custom_distribution(QUrl);
+
 signals:
     void changed();
+    void notify(ANotification);
 };
 
 } // namespace SolTrace::GUI::App
