@@ -404,6 +404,10 @@ QVector<db::Entity> collect_entities(entt::registry const& registry) {
 ScriptDBInterface::ScriptDBInterface(db::Database* database, QObject* parent)
     : QObject { parent }, m_database { database } { }
 
+void ScriptDBInterface::set_database(db::Database* database) {
+    m_database = database;
+}
+
 void ScriptDBInterface::update_working_directory(QString directory) {
     m_working_directory = directory;
 }

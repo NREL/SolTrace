@@ -19,6 +19,7 @@
 #endif
 
 #include <exception>
+#include <utility>
 
 namespace SolTrace::GUI::App {
 
@@ -131,7 +132,14 @@ QUrl DatabaseModule::examples_folder() const {
     appDir.cdUp(); // Contents/
     appDir.cd("Resources/examples");
 #else
-    appDir.cd("examples"); // Linux/Windows: alongside binary
+    QDir installedExamples(appDir);
+    installedExamples.cdUp();
+    installedExamples.cd("share/SolTrace/assets/examples");
+    if (installedExamples.exists()) {
+        return QUrl::fromLocalFile(installedExamples.absolutePath());
+    }
+
+    appDir.cd("examples"); // Local build tree fallback.
 #endif
     return QUrl::fromLocalFile(appDir.absolutePath());
 }
@@ -361,6 +369,16 @@ void DatabaseModule::save_current(QUrl path) {
     }
 
     save_common(*m_current_database, path.toLocalFile(), *this);
+}
+
+bool DatabaseModule::export_current_json(QString path) {
+    if (!m_current_database) {
+        notify(ANotification::error(QStringLiteral(
+            "An internal error was encountered trying to save the scene.")));
+        return false;
+    }
+
+    return save_common(*m_current_database, std::move(path), *this);
 }
 
 bool DatabaseModule::save_current_dialog() {

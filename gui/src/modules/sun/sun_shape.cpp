@@ -1,6 +1,9 @@
 #include "modules/sun/sun_shape.h"
 
+#include <QFile>
 #include <QPointer>
+#include <QStringView>
+#include <QTextStream>
 
 #include <algorithm>
 #include <cmath>
@@ -258,5 +261,95 @@ Data::SunShape SunShape::get_sunshape_data() const {
     }
 }
 
+
+void SunShape::export_custom_distribution(QUrl url) {
+    auto path = url.toLocalFile();
+
+    auto file = QFile(path);
+
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        emit notify(ANotification::error(
+            QStringLiteral("Could not write CSV file. Check folder permissions "
+                           "and available disk space.")));
+        return;
+    }
+
+    auto stream = QTextStream(&file);
+
+    stream << "angle,intensity\n";
+
+    for (auto const& point : (*m_custom_distribution)) {
+        stream << point.angle << "," << point.intensity << '\n';
+    }
+}
+
+void SunShape::import_custom_distribution(QUrl url) {
+    auto path = url.toLocalFile();
+
+    auto file = QFile(path);
+
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        emit notify(ANotification::error(
+            QStringLiteral("Could not open CSV file. Check permissions.")));
+        return;
+    }
+
+    auto stream = QTextStream(&file);
+
+    auto first = stream.readLine();
+
+    auto angle_idx     = first.indexOf("angle", 0, Qt::CaseInsensitive);
+    auto intensity_idx = first.indexOf("intensity", 0, Qt::CaseInsensitive);
+
+    auto angle_loc     = angle_idx > intensity_idx;
+    auto intensity_loc = angle_idx < intensity_idx;
+
+    QList<SunShapePoint> new_custom_shape;
+
+    bool problems_detected = false;
+
+    auto line_parser = [&](QStringView line) {
+        auto parts = QStringView(line).split(',', Qt::SkipEmptyParts);
+
+        bool ok = false;
+
+        auto angle = parts.value(angle_loc).trimmed().toDouble(&ok);
+        if (!ok) { problems_detected = true; }
+
+        auto intensity = parts.value(intensity_loc).trimmed().toDouble(&ok);
+
+        if (!ok) { problems_detected = true; }
+
+        new_custom_shape << SunShapePoint {
+            .angle     = parts.value(angle_loc).toDouble(),
+            .intensity = parts.value(intensity_loc).toDouble()
+        };
+    };
+
+    if (angle_idx < 0 or intensity_idx < 0) {
+        angle_loc     = 0;
+        intensity_loc = 1;
+
+        line_parser(first.trimmed());
+    }
+
+    while (!stream.atEnd()) {
+        auto line = stream.readLine();
+
+        if (line.isEmpty()) continue;
+
+        line_parser(line);
+    }
+
+    if (problems_detected) {
+        emit notify(ANotification::error(
+            QStringLiteral("Some values of the CSV could not be interpreted. "
+                           "Check formatting.")));
+
+        return;
+    }
+
+    m_custom_distribution->reset(new_custom_shape);
+}
 
 } // namespace SolTrace::GUI::App

@@ -20,6 +20,9 @@ struct FluxMapBakeOptions {
 
     /// The color map to use. If null, uses a classic blue to red map.
     QImage color_map;
+
+    /// Solar direct normal irradiance in W/m^2.
+    double dni = 1000.0;
 };
 
 /// Asynchronous flux-map generator for simulation results.

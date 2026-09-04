@@ -38,6 +38,8 @@ private slots:
     // When an instance selection marker changes
     void on_selection_changed(entt::entity);
 
+    bool belongs_to_target_group(entt::entity) const;
+
     // Retrieve entity using instance index
     entt::entity entity_at(int index);
 

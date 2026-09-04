@@ -84,6 +84,9 @@ public slots:
     /// Save current_database to path.
     void save_current(QUrl path);
 
+    /// Export current_database to a JSON file path.
+    bool export_current_json(QString path);
+
     /// Remove current_database from the open database list.
     void delete_current();
 

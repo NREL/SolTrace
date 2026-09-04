@@ -26,7 +26,9 @@ class ExportModule : public QObject {
 
     Q_WRITABLE_PROPERTY(QUrl, export_directory, { });
     Q_WRITABLE_PROPERTY(bool, export_flux_map_images, true);
+    Q_WRITABLE_PROPERTY(bool, export_flux_map_meshes, false);
     Q_WRITABLE_PROPERTY(bool, export_rays, true);
+    Q_WRITABLE_PROPERTY(bool, export_scene_copy, false);
     Q_WRITABLE_PROPERTY(bool, random_sample_rays, false);
     Q_WRITABLE_PROPERTY(int, random_sample_ray_count, 10000);
 

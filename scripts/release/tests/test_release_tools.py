@@ -346,6 +346,9 @@ class PackageTests(unittest.TestCase):
                 (install / directory).mkdir(parents=True)
             (install / "bin" / "SolTrace.exe").write_bytes(b"executable")
             (install / "bin" / "Qt6Core.dll").write_bytes(b"runtime")
+            examples = install / "share" / "SolTrace" / "assets" / "examples"
+            examples.mkdir(parents=True)
+            (examples / "sample.stinput").write_text("scene")
             (install / "include" / "api.h").write_text("header")
             (install / "lib" / "core.lib").write_bytes(b"library")
             (install / "licenses" / "LICENSE.md").write_text("license")
@@ -358,6 +361,16 @@ class PackageTests(unittest.TestCase):
                 app_name="SolTrace",
             )
             self.assertTrue((destination / "bin" / "Qt6Core.dll").is_file())
+            self.assertTrue(
+                (
+                    destination
+                    / "share"
+                    / "SolTrace"
+                    / "assets"
+                    / "examples"
+                    / "sample.stinput"
+                ).is_file()
+            )
             self.assertTrue((destination / "qml" / "qmldir").is_file())
             self.assertFalse((destination / "include").exists())
             self.assertFalse((destination / "lib").exists())
@@ -379,6 +392,7 @@ class PackageTests(unittest.TestCase):
                     "PACKAGE_FILE_NAME": "SolTrace-Windows-x64-Embree",
                     "PACKAGE_NAME": "SolTrace OptiX",
                     "PACKAGE_VERSION": "4.0.0",
+                    "PRODUCT_ICON": root / "SolTrace.ico",
                     "UPGRADE_GUID": "D4AB6CD5-6276-5377-8E41-53D1DE59BD33",
                 },
             )
@@ -394,6 +408,7 @@ class PackageTests(unittest.TestCase):
                 '"D4AB6CD5-6276-5377-8E41-53D1DE59BD33")',
                 rendered,
             )
+            self.assertIn('set(CPACK_WIX_PRODUCT_ICON "', rendered)
             self.assertIn('set(CPACK_INSTALLED_DIRECTORIES "', rendered)
             self.assertNotIn("CPACK_INSTALL_CMAKE_PROJECTS", rendered)
             self.assertNotRegex(rendered, r"@[A-Z0-9_]+@")

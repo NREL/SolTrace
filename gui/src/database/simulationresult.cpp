@@ -65,6 +65,11 @@ SimulationResult::convert(SimulationResultConversion const& opts) {
 
     auto ret = std::make_unique<SimulationResult>();
 
+    opts.result.get_sun_dimensions(ret->sun_width, ret->sun_height);
+    ret->sun_area        = opts.result.get_sun_A_box();
+    ret->sun_ray_count   = static_cast<quint64>(opts.result.get_sun_ray_count());
+    ret->ray_area_weight = opts.result.get_ray_area_weight();
+
     ret->records.reserve(opts.result.get_number_of_records());
 
     uint64_t id = 0;

@@ -10,6 +10,11 @@
 #include <QQmlEngine>
 #include <QStringList>
 
+namespace SolTrace::GUI::App {
+class DatabaseModule;
+class SimulationModule;
+} // namespace SolTrace::GUI::App
+
 namespace SolTrace::GUI::Script {
 
 /// One user-editable argument declared in a script header.
@@ -99,6 +104,52 @@ signals:
     void logged(int, QString);
 };
 
+/// Script-facing simulation controls exposed as `sim`.
+class ScriptSimulationInterface : public QObject {
+    Q_OBJECT
+
+    QPointer<App::SimulationModule> m_simulation;
+
+public:
+    explicit ScriptSimulationInterface(App::SimulationModule*,
+                                       QObject* parent = nullptr);
+
+public slots:
+    /// Start a simulation using the selected runner and optional config patch.
+    bool start(QJsonObject config = {});
+};
+
+/// Script-facing open-scene controls exposed as `scenes`.
+class ScriptSceneInterface : public QObject {
+    Q_OBJECT
+
+    QPointer<App::DatabaseModule> m_databases;
+    QPointer<ScriptDBInterface>   m_database_interface;
+    QString                       m_working_directory;
+
+public:
+    explicit ScriptSceneInterface(App::DatabaseModule*,
+                                  ScriptDBInterface*,
+                                  QString working_directory,
+                                  QObject* parent = nullptr);
+
+public slots:
+    /// Select an open scene by list index.
+    bool set_current_index(int index);
+
+    /// Select the first open scene with the given display name.
+    bool set_current_name(QString name);
+
+    /// Create a new blank scene and select it.
+    bool new_blank(QString name = "Untitled");
+
+    /// Load a scene file relative to the script working directory.
+    bool new_from_file(QString relative_path, QString name_override = "");
+
+    /// Export the current scene to JSON relative to the script working directory.
+    bool export_json(QString relative_path);
+};
+
 /// User-authored script plus parsed metadata and execution state.
 ///
 /// Script source must start with a comment header block. No whitespace or code
@@ -161,6 +212,8 @@ class Script : public QObject {
 
     QPointer<ScriptDBInterface> m_interface;
     QPointer<db::Database>      m_database;
+    QPointer<App::DatabaseModule>   m_databases;
+    QPointer<App::SimulationModule> m_simulation;
 
     Q_WRITABLE_PROPERTY(QString, code, { });
     Q_READONLY_PROPERTY(QString, title);
@@ -181,6 +234,9 @@ public:
     /// Attach the script to the database it will inspect and mutate.
     void set_database(db::Database*);
 
+    /// Attach app-level services exposed to scripts.
+    void set_services(App::DatabaseModule*, App::SimulationModule*);
+
 public slots:
     /// Parse header metadata and validate property declarations.
     bool parse();
@@ -198,6 +254,8 @@ signals:
     void notify(ANotification);
 
     void logged(int, QString);
+
+    void runCompleted();
 };
 
 } // namespace SolTrace::GUI::Script

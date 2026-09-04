@@ -67,6 +67,12 @@ public:
     glm::dvec3 bounds_min;
     glm::dvec3 bounds_max;
 
+    double  sun_width       = 0.0;
+    double  sun_height      = 0.0;
+    double  sun_area        = 0.0;
+    quint64 sun_ray_count   = 0;
+    double  ray_area_weight = 0.0;
+
     analysis::SparseGrid3D<float> ray_volume;
 
     std::unordered_map<entt::entity, std::vector<uint64_t>> entity_to_ray_ids;

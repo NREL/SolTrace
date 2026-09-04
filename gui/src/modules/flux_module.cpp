@@ -21,9 +21,9 @@ FluxModule::FluxModule(QQmlEngine* engine, QObject* parent)
 
     m_ray_iso_volume->setParent(this);
 
-    auto provider = m_pending_flux_maps->make_new_provider();
+    m_image_provider = m_pending_flux_maps->make_new_provider();
 
-    engine->addImageProvider("fluxmap", provider);
+    engine->addImageProvider("fluxmap", m_image_provider);
 
     connect(m_pending_flux_maps,
             &db::PendingFluxMapModel::ready,
@@ -39,6 +39,11 @@ FluxModule::FluxModule(QQmlEngine* engine, QObject* parent)
             &db::PendingFluxMapModel::cleared,
             m_flux_map_world_model,
             &db::FluxMapWorldModel::on_reset);
+
+    connect(
+        m_pending_flux_maps,
+        &db::PendingFluxMapModel::failed,
+        [this](QString reason) { this->notify(ANotification::error(reason)); });
 
     connect(m_pending_flux_maps, &db::PendingFluxMapModel::cleared, this, [this] {
         set_current_flux_stats({});
@@ -128,18 +133,20 @@ void FluxModule::flux_map_ready(db::Entity              entity,
 
 void FluxModule::start_generate() {
     qDebug() << Q_FUNC_INFO << "Starting fluxmap generation for current entity";
+
     if (!m_results) {
         emit notify(ANotification::warning(
-            "Run a simulation before generating a flux map."));
+            "Run a trace before generating a flux map."));
         return;
     }
 
     if (!current_entity().is_valid()) {
         emit notify(ANotification::warning(
-            "Select an element before generating a flux map."));
+            "Select an element to generate a flux map."));
         return;
     }
 
+    m_pending_flux_maps->set_dni(dni());
     m_pending_flux_maps->start_generate_for(current_entity());
 }
 
@@ -152,7 +159,7 @@ void FluxModule::start_generate_volume_flux(unsigned resolution) {
 
     if (!m_results) {
         emit notify(ANotification::warning(
-            "Run a simulation before generating volume flux."));
+            "Run a trace before generating volume flux."));
         return;
     }
 
@@ -190,6 +197,38 @@ void FluxModule::start_generate_isosurface(float value) {
                                          analysis::volume_to_mesh,
                                          m_results->ray_volume,
                                          value);
+}
+
+void FluxModule::save_image(QString requested_image, QUrl path) {
+    static constexpr char TO_REMOVE[]    = "image://fluxmap/";
+    static constexpr auto TO_REMOTE_SIZE = std::size(TO_REMOVE) - 1;
+
+    requested_image = requested_image.mid(TO_REMOTE_SIZE);
+
+    qDebug() << Q_FUNC_INFO << requested_image << path;
+    if (!m_image_provider) {
+        emit notify(ANotification::error(
+            "Internal error trying to save image: missing image provider"));
+        return;
+    }
+
+    QSize img_size;
+
+    auto image =
+        m_image_provider->requestImage(requested_image, &img_size, QSize());
+
+    if (image.isNull()) {
+        emit notify(ANotification::error("Internal error trying to save image: "
+                                         "unable to fetch requested image"));
+        return;
+    }
+
+
+    if (!image.save(path.toLocalFile())) {
+        emit notify(ANotification::error("Internal error trying to save image: "
+                                         "unable to save image to given path"));
+        return;
+    }
 }
 
 void FluxModule::flux_vol_ready(QUuid const&                  id,

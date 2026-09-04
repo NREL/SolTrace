@@ -25,6 +25,9 @@ class ScriptDBInterface : public QObject {
 public:
     explicit ScriptDBInterface(db::Database*, QObject* parent = nullptr);
 
+    /// Retarget the API to a new current database.
+    void set_database(db::Database*);
+
     /// Update the base directory used by get_text_content/get_json_content.
     void update_working_directory(QString);
 

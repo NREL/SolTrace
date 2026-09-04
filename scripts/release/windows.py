@@ -118,6 +118,10 @@ def prepare_installer_root(
     """
     require_path(install_dir / "bin" / f"{app_name}.exe", "Windows executable")
     require_path(install_dir / "licenses", "bundled license directory")
+    require_path(
+        install_dir / "share" / "SolTrace" / "assets" / "examples",
+        "bundled examples directory",
+    )
     shutil.rmtree(installer_root, ignore_errors=True)
     installer_root.mkdir(parents=True)
 
@@ -133,6 +137,10 @@ def prepare_installer_root(
     require_path(
         installer_root / "bin" / f"{app_name}.exe",
         "installer runtime executable",
+    )
+    require_path(
+        installer_root / "share" / "SolTrace" / "assets" / "examples",
+        "installer runtime examples directory",
     )
 
 
@@ -189,6 +197,10 @@ def package_msi(
     config_dir = build_dir / "windows-msi"
     config = config_dir / f"CPackConfig-{asset.stem}.cmake"
     license_file = config_dir / "LICENSE.txt"
+    product_icon = require_path(
+        workspace / "gui" / "appicon" / "SolTrace.ico",
+        "Windows product icon",
+    )
     config_dir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(require_path(workspace / "LICENSE.md", "SolTrace license"), license_file)
     template = workspace / "packaging" / "windows" / "CPackWixConfig.cmake.in"
@@ -204,6 +216,7 @@ def package_msi(
             "PACKAGE_FILE_NAME": asset.stem,
             "PACKAGE_NAME": package_name,
             "PACKAGE_VERSION": package_version,
+            "PRODUCT_ICON": product_icon,
             "UPGRADE_GUID": upgrade_guid.upper(),
         },
     )
