@@ -107,8 +107,8 @@ static void CompareRunners(HeliostatFieldSimulationHelper<EmbreeRunner>& sim_emb
 	write_to_dict("10_sun_count", sim_embree.nsun_rays, sim_optix.nsun_rays, dict_embree, dict_optix);
 
 	// Fraction reflected hits that hit receiver
-	double frac_via_helio_a = (double)sim_embree.rec_absorb_count / (double)sim_embree.tot_reflect_count;
-	double frac_via_helio_b = (double)sim_optix.rec_absorb_count / (double)sim_optix.tot_reflect_count;
+	double frac_via_helio_a = ((double)sim_embree.rec_absorb_count - (double)sim_embree.rec_direct_count) / (double)sim_embree.tot_reflect_count;
+	double frac_via_helio_b = ((double)sim_optix.rec_absorb_count - (double)sim_optix.rec_direct_count) / (double)sim_optix.tot_reflect_count;
 	EXPECT_NEAR(frac_via_helio_a, frac_via_helio_b, err_frac);
 
 	write_to_dict("11_frac_via_helio", frac_via_helio_a, frac_via_helio_b, dict_embree, dict_optix);

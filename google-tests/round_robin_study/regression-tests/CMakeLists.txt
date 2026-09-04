@@ -17,6 +17,7 @@ include_directories(
 set(CST_TEST_HEADERS
 	heliostat_field_test_template.hpp
 	single_heliostat_test_template.hpp
+	isolated_heliostat_test_template.hpp
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release" OR FULL_FIELD_VALIDATION_TEST)
@@ -25,18 +26,21 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release" OR FULL_FIELD_VALIDATION_TEST)
 		list(APPEND CST_TEST_SRC
 			single_heliostat_test_optix.cpp
 			heliostat_field_test_optix.cpp
+			isolated_heliostat_test_optix.cpp
 		)
 	endif()
 	if(SOLTRACE_BUILD_EMBREE_SUPPORT)
 		list(APPEND CST_TEST_SRC
 			single_heliostat_test_embree.cpp
 			heliostat_field_test_embree.cpp
+			isolated_heliostat_test_embree.cpp
 		)
 	endif()
 	if(FULL_FIELD_VALIDATION_TEST)
 		list(APPEND CST_TEST_SRC
 			single_heliostat_test_native.cpp
 			heliostat_field_test_native.cpp
+			isolated_heliostat_test_native.cpp
 		)
 	endif()
 endif()
