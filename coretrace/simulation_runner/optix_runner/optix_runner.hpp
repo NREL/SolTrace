@@ -118,7 +118,7 @@ private:
         int32_t&                                    prev_group);
     void append_ray_records(
         const std::vector<OptixCSP::HitRecord>&                   hit_records,
-        SimulationResult*                                         result,
+        SolTrace::Result::SimulationResult*                       result,
         int                                                       level,
         std::map<unsigned int, SolTrace::Result::ray_record_ptr>& ray_records);
 
