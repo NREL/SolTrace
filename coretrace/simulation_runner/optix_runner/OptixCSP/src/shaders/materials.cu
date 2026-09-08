@@ -346,19 +346,21 @@ extern "C" __global__ void __closesthit__element()
 
 extern "C" __global__ void __miss__ms()
 {
-    // No action is taken here.
-    // This function simply acts as a terminator for rays that miss all
-    // geometry.
+    OptixCSP::PerRayData prd = OptixCSP::getPayload();
 
-    /*
-    OptixCSP::PerRayData prd = getPayload();
-    const int new_depth = prd.depth + 1;
+    // Do not record direct solar misses; no intersection exists to exit from.
+    const unsigned int exit_depth = prd.depth + 1;
+    if (prd.depth > 0 && exit_depth < params.max_depth)
+    {
+        const float3 exit_direction = normalize(optixGetWorldRayDirection());
+        const float3 exit_point = optixGetWorldRayOrigin() + exit_direction;
+        const unsigned int slot =
+            params.max_depth * prd.ray_path_index + exit_depth;
 
-    if (new_depth < params.max_depth) {
-        params.hit_point_buffer[params.max_depth * ray_path_index + new_depth] =
-    make_float4(4.0f);
+        params.hit_buffer[slot].hit_point = make_float4(exit_depth, exit_point);
+        params.hit_buffer[slot].element_id = OptixCSP::kElementIdUnassigned;
+        params.hit_buffer[slot].hit_type = OptixCSP::HitType::HIT_EXIT;
     }
-    */
 
     // Set the payload values to 0, indicating that the ray missed all geometry.
     optixSetPayload_0(0); // Default value

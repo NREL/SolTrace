@@ -97,6 +97,19 @@ public:
     int32_t get_group(int32_t element_id);
 
 private:
+    bool should_report_grouped_counts(int level) const;
+    bool should_report_ray_records(int level) const;
+    const std::vector<OptixCSP::HitRecord>* fetch_hit_records();
+    std::vector<GroupResult> make_grouped_results(size_t num_groups) const;
+    void append_grouped_results(const std::vector<OptixCSP::HitRecord>& hit_records,
+                               int level,
+                               std::vector<GroupResult>& grouped_results,
+                               int32_t& prev_group);
+    void append_ray_records(const std::vector<OptixCSP::HitRecord>& hit_records,
+                            SimulationResult* result,
+                            int level,
+                            std::map<unsigned int, SolTrace::Result::ray_record_ptr>& ray_records);
+
     OptixCSP::SolTraceSystem m_sys;
 
     std::vector<std::set<int32_t>> m_groups;
