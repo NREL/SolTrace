@@ -82,6 +82,10 @@ public:
   /// @return id if registered with SimulationData, ELEMENT_ID_UNASSIGNED if not
   virtual element_id get_id() const = 0;
 
+  /// @brief Get the group number this element belongs to
+  /// @return Group number
+  virtual int32_t get_group() const = 0;
+
   /**
    * @brief Get the stage number this element belongs to
    * @return Stage number
@@ -349,6 +353,8 @@ public:
     this->my_id = id;
     return;
   }
+
+  virtual int32_t get_group() const override { return -2; }
 
   virtual int_fast64_t get_stage() override { return this->stage; }
   virtual void set_stage(int_fast64_t stage) override { this->stage = stage; }

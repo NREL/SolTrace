@@ -20,6 +20,9 @@
 #include "trace.hpp"
 #include "trace_logger.hpp"
 
+using SolTrace::Runner::RunnerStatistics;
+using SolTrace::Result::GroupResult;
+
 namespace SolTrace::NativeRunner
 {
 
@@ -34,6 +37,7 @@ namespace SolTrace::NativeRunner
 
     NativeRunner::~NativeRunner()
     {
+        m_groups.clear();
         this->my_manager = nullptr;
         this->my_logger = nullptr;
         return;
@@ -278,6 +282,8 @@ namespace SolTrace::NativeRunner
             this->tsys.StageList.push_back(iter->second);
         }
 
+        set_groups(data->get_groups());
+
         if (sts == RunnerStatus::SUCCESS)
         {
             // std::cout << "Setting ZAperture..." << std::endl;
@@ -331,6 +337,13 @@ namespace SolTrace::NativeRunner
     RunnerStatus NativeRunner::report_simulation(SolTrace::Result::SimulationResult *result,
                                                  int level)
     {
+        // check groups exist if grouped statistics are requested
+        size_t num_groups = m_groups.size();
+        if ((level == RunnerStatistics::GROUPED_COUNTS || level == RunnerStatistics::ALL) && num_groups == 0)
+        {
+            return RunnerStatus::ERROR;
+        }
+
         RunnerStatus retval = RunnerStatus::SUCCESS;
 
         const TSystem *sys = this->get_system();
@@ -350,6 +363,12 @@ namespace SolTrace::NativeRunner
         SolTrace::Result::ray_record_ptr rec = nullptr;
         SolTrace::Result::interaction_ptr intr = nullptr;
         SolTrace::Result::RayEvent rev;
+
+        // set up grouped results
+        int32_t group, prev_group = -2; // use -2 as sun
+        std::vector<GroupResult> grouped_results;
+        for (int32_t group_id = 0; group_id < (int32_t)num_groups; ++group_id)
+            grouped_results.emplace_back(group_id, num_groups);
 
         // std::cout << "Num Events: " << ndata << std::endl;
 
@@ -377,23 +396,9 @@ namespace SolTrace::NativeRunner
             //           << "\nraynum: " << raynum
             //           << "\nevent: " << ray_event_string(rev)
             //           << std::endl;
-
-            iter = ray_records.find(raynum);
-            if (iter == ray_records.end())
-            {
-                rec = SolTrace::Result::make_ray_record(raynum);
-                result->add_ray_record(rec);
-                ray_records[raynum] = rec;
-                assert(rev == SolTrace::Result::RayEvent::CREATE);
-            }
-            else
-            {
-                rec = iter->second;
-            }
-
             if (element > 0)
             {
-                el = sys->StageList[stage - 1]->ElementList[element - 1];
+                el   = sys->StageList[use_stages ? stage - 1 : 0]->ElementList[element - 1];
                 elid = el->sim_data_id;
             }
             else
@@ -401,8 +406,32 @@ namespace SolTrace::NativeRunner
                 elid = element;
             }
 
-            intr = make_interaction_record(elid, rev, point, cosines);
-            rec->add_interaction_record(intr);
+            group = rev == SolTrace::Result::RayEvent::CREATE ? -2 : this->get_group(elid);
+
+            if ((level == RunnerStatistics::GROUPED_COUNTS || level == RunnerStatistics::ALL) && group >= 0)
+            {
+                grouped_results[group].increment(rev, prev_group);
+            }
+            if (level == RunnerStatistics::RAY_RECORDS || level == RunnerStatistics::ALL) 
+            {
+                iter = ray_records.find(raynum);
+                if (iter == ray_records.end())
+                {
+                    rec = SolTrace::Result::make_ray_record(raynum);
+                    result->add_ray_record(rec);
+                    ray_records[raynum] = rec;
+                    assert(rev == SolTrace::Result::RayEvent::CREATE);
+                }
+                else
+                {
+                    rec = iter->second;
+                }
+
+                intr = make_interaction_record(elid, rev, point, cosines);
+                rec->add_interaction_record(intr);
+            }
+            
+            prev_group = group;
         }
 
         // Attach sun results
@@ -410,6 +439,9 @@ namespace SolTrace::NativeRunner
         double sun_width = sun.MaxXSun - sun.MinXSun;
         double sun_height = sun.MaxYSun - sun.MinYSun;
         result->set_sun_sampling_stats(sun_width, sun_height, this->tsys.SunRayCount);
+
+        // attach grouped results
+        result->set_grouped_results(grouped_results);
 
         return retval;
     }
@@ -514,4 +546,17 @@ namespace SolTrace::NativeRunner
         return;
     }
 
+    int32_t NativeRunner::get_group(uint_fast64_t element_id) 
+    {
+        size_t num_groups = m_groups.size();
+        if (num_groups > 0) {
+            for (size_t i = 0; i < num_groups; ++i) {
+                if (m_groups[i].count(element_id) > 0) {
+                    return static_cast<int32_t>(i);
+                }
+            }
+        }
+        
+        return -1;
+    }
 } // namespace SolTrace::NativeRunner

@@ -56,6 +56,7 @@ private slots:
     void on_changed();
 
     void on_ready(db::Entity, analysis::BakedFluxMapPtr);
+    void on_failed(db::Entity, QString);
     void on_progress(db::Entity, int);
 
 public:
@@ -67,6 +68,7 @@ public:
     Q_WRITABLE_PROPERTY(QColor, mesh_line_color, "black");
     Q_WRITABLE_PROPERTY(bool, show_mesh_grid, false);
     Q_WRITABLE_PROPERTY(QString, color_map, "");
+    Q_WRITABLE_PROPERTY(double, dni, 1000.0);
 
     explicit PendingFluxMapModel(QObject* parent = nullptr);
     virtual ~PendingFluxMapModel() = default;
@@ -91,6 +93,7 @@ public slots:
 signals:
     /// A new flux map is ready, for an entity, from a given database
     void ready(db::Entity, analysis::BakedFluxMapPtr, db::Database const*);
+    void failed(QString);
     void cleared();
 };
 

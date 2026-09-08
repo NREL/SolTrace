@@ -1,6 +1,7 @@
 #pragma once
 
 #include "analysis/ray_geometry.h"
+#include "database/models/element_models.h"
 #include "database/simulationresult.h"
 #include "module_common.h"
 #include "utilities/qt_helpers.h"
@@ -25,6 +26,7 @@ class IntersectionsModule : public QObject {
 
     db::SimulationResultPtr m_results;
 
+    QOBJECT_READONLY_PROPERTY(db::AllElementsModel, entity_model)
     QOBJECT_READONLY_PROPERTY(analysis::RayGeometry, ray_geometry)
 
 public:

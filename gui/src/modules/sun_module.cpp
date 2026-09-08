@@ -75,6 +75,7 @@ SunModule::SunModule(QObject* parent)
 
 {
     connect(m_shape, &SunShape::changed, this, &SunModule::update_shape);
+    connect(m_shape, &SunShape::notify, this, &SunModule::notify);
 
     /* connect(m_calc_data,
             &SolarCalculatorData::changed,
@@ -378,6 +379,9 @@ void SunModule::load_from_ray_source(SD::RaySource&    ray_source,
     m_ps_position->set_z(position.z);
     m_ps_position->set_azimuth(azimuth);
     m_ps_position->set_elevation(elevation);
+
+    qDebug() << Q_FUNC_INFO << "loaded sun shape" << int(ray_source.get_shape())
+             << "mapped gui shape" << int(gui_shape);
 }
 
 Data::SolarPositionCalculationMethod

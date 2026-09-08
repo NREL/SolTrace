@@ -27,6 +27,7 @@ set(NATIVE_RUNNER_TEST_SRC
     tracing_errors_test.cpp
     tower_demo.cpp
     stage_test.cpp
+    grouped_results_test.cpp
 )
 
 if (NOT ENABLE_COVERAGE)

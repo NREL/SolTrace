@@ -104,6 +104,8 @@ void AppData::load_session() {
         s.value("sim_sun_color", QColor("yellow")).value<QColor>());
     sim->set_geometry_color(
         s.value("sim_geometry_color", QColor("white")).value<QColor>());
+    m_view->set_ray_color(
+        s.value("ray_color", QColor("white")).value<QColor>());
     sim->set_show_grid(s.value("sim_show_grid", true).toBool());
     s.endGroup();
 
@@ -198,6 +200,7 @@ void AppData::save_session() {
     s.setValue("sim_sun_viz_scale", sim->sun_viz_scale());
     s.setValue("sim_sun_color", sim->sun_color());
     s.setValue("sim_geometry_color", sim->geometry_color());
+    s.setValue("ray_color", m_view->ray_color());
     s.setValue("sim_show_grid", sim->show_grid());
 
     s.endGroup();
@@ -357,6 +360,8 @@ AppData::AppData(QObject*       parent,
 
     connect(
         this, &AppData::new_database, m_script, &Script::Script::set_database);
+
+    m_script->set_services(m_file_source, m_simulation);
 
     connect(qApp, &QCoreApplication::aboutToQuit, this, &AppData::save_session);
 

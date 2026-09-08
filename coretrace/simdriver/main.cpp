@@ -52,7 +52,10 @@ using SolTrace::Runner::RunnerStatus;
 static void print_usage(const char *prog)
 {
     std::cerr
-        << "Usage: " << prog << " <input.json|input.stinput> [<output.csv>] [options]\n"
+        << "Usage: " << prog << " <input.json|input.stinput> [<output_filename>] [options]\n"
+        << "Please include the .json extension for the input.json argument, while"
+        << " excluding a file extension for the output filename. The output file "
+        << "extension will be determined based on the level specified (see below).\n"
         << "\n"
         << "Options:\n"
         << "  --threads <n>   Number of threads (default: 1)\n"
@@ -61,6 +64,7 @@ static void print_usage(const char *prog)
         << "                  (output file argument not required with this flag)\n"
         << "  --no-csv        Retrieve results but skip writing the CSV file\n"
         << "                  (output file argument not required with this flag)\n"
+        << "  --level <n>     Runner reporting level (default: 0, see SolTrace::Runner::RunnerStatistics for available levels)\n"
 #ifdef SOLTRACE_EMBREE_SUPPORT
         << "  --embree        Use Embree runner instead of the native runner\n"
         << "                  (requires SOLTRACE_BUILD_EMBREE_SUPPORT=ON at build time)\n"
@@ -69,13 +73,16 @@ static void print_usage(const char *prog)
         << "  --optix         Use OptiX runner instead of the native runner\n"
         << "                  (requires SOLTRACE_BUILD_OPTIX_SUPPORT=ON at build time)\n"
 #endif
-        << "  --verbose       Enable verbose logging in the OptiX runner\n"
+        << "  -v, --verbose   Enable verbose logging in the OptiX runner\n"
+        << "  -t, --timing    Enable timing logging in the OptiX runner\n"
         ;
 }
 
 int main(int argc, char *argv[])
 {
-    if (argc < 2)
+    using SolTrace::Runner::RunnerStatistics;
+    // double check that this works with no-output/no-csv flags
+    if (argc < 3)
     {
         print_usage(argv[0]);
         return EXIT_FAILURE;
@@ -112,9 +119,11 @@ int main(int argc, char *argv[])
 
     int num_threads = 1;
     long long num_rays_override = -1; // -1 means use what the JSON specifies
+    int level = 0;
     bool use_embree = false;
     bool use_optix = false;
     bool verbose = false;
+    bool log_timing = false;
 
     for (int i = opts_start; i < argc; ++i)
     {
@@ -167,6 +176,28 @@ int main(int argc, char *argv[])
         {
             // already handled in pre-scan; skip here
         }
+        else if (arg == "--level")
+        {
+            if (i + 1 >= argc)
+            {
+                std::cerr << "Error: --level requires an argument\n";
+                return EXIT_FAILURE;
+            }
+            try
+            {
+                level = std::stoi(argv[++i]);
+            }
+            catch (...)
+            {
+                std::cerr << "Error: invalid level '" << argv[i] << "'\n";
+                return EXIT_FAILURE;
+            }
+            if (level < RunnerStatistics::RAY_RECORDS || level > RunnerStatistics::ALL)
+            {
+                std::cerr << "Error: level must map to SolTrace::Runner::RunnerStatistics\n";
+                return EXIT_FAILURE;
+            }
+        }
         else if (arg == "--embree")
         {
             use_embree = true;
@@ -175,9 +206,13 @@ int main(int argc, char *argv[])
         {
             use_optix = true;
         }
-        else if (arg == "--verbose")
+        else if (arg == "-v" || arg == "--verbose")
         {
             verbose = true;
+        }
+        else if (arg == "-t" || arg == "--timing")
+        {
+            log_timing = true;
         }
         else
         {
@@ -271,6 +306,7 @@ int main(int argc, char *argv[])
 
         std::cout << "Setting up simulation...\n";
         auto t_setup_start = std::chrono::steady_clock::now();
+        runner.disable_stages();
         sts = runner.setup_simulation(&simData);
         auto t_setup_end = std::chrono::steady_clock::now();
         if (sts != RunnerStatus::SUCCESS)
@@ -301,7 +337,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Retrieving results...\n";
             auto t_report_start = std::chrono::steady_clock::now();
-            sts = runner.report_simulation(&result, 0);
+            sts = runner.report_simulation(&result, level);
             auto t_report_end = std::chrono::steady_clock::now();
             if (sts != RunnerStatus::SUCCESS)
             {
@@ -365,9 +401,9 @@ int main(int argc, char *argv[])
 
         if (!skip_output)
         {
-            std::cout << "Retrieving results...\n";
+            std::cout << "Retrieving results at level " << level << "...\n";
             auto t_report_start = std::chrono::steady_clock::now();
-            sts = runner.report_simulation(&result, 0);
+            sts = runner.report_simulation(&result, level);
             auto t_report_end = std::chrono::steady_clock::now();
             if (sts != RunnerStatus::SUCCESS)
             {
@@ -383,7 +419,7 @@ int main(int argc, char *argv[])
             std::cout << "Skipping result retrieval (--no-output).\n";
         }
 
-        if (!verbose)
+        if (verbose || log_timing)
         {
             runner.print_timing();
         }
@@ -450,7 +486,7 @@ int main(int argc, char *argv[])
         {
             std::cout << "Retrieving results...\n";
             auto t_report_start = std::chrono::steady_clock::now();
-            sts = runner.report_simulation(&result, 0);
+            sts = runner.report_simulation(&result, level);
             auto t_report_end = std::chrono::steady_clock::now();
             if (sts != RunnerStatus::SUCCESS)
             {
@@ -468,16 +504,16 @@ int main(int argc, char *argv[])
     }
 
     // -------------------------------------------------------------------------
-    // Write results to CSV
+    // Write results to CSV / JSON
     // -------------------------------------------------------------------------
-    if (!skip_output && !skip_csv)
+    if (!skip_csv && (level == RunnerStatistics::RAY_RECORDS || level == RunnerStatistics::ALL))
     {
         std::cout << "Writing " << result.get_number_of_records()
-                  << " ray records to: " << output_file << "...\n";
+                  << " ray records to: " << output_file << ".csv ...\n";
         try
         {
             auto t_write_start = std::chrono::steady_clock::now();
-            result.write_csv_file(output_file);
+            result.write_csv_file(output_file + ".csv");
             auto t_write_end = std::chrono::steady_clock::now();
             std::cout << "  Written in "
                       << std::chrono::duration<double>(t_write_end - t_write_start).count()
@@ -493,11 +529,31 @@ int main(int argc, char *argv[])
     {
         std::cout << "Skipping CSV output (--no-csv).\n";
     }
-    else
+
+    if (!skip_output && (level == RunnerStatistics::GROUPED_COUNTS || level == RunnerStatistics::ALL))
+    {
+        std::cout << "Writing " << result.get_number_of_groups()
+            << " group results to: " << output_file << ".json ...\n";
+        try
+        {
+            auto t_write_start = std::chrono::steady_clock::now();
+            result.write_group_json_file(output_file + ".json");
+            auto t_write_end = std::chrono::steady_clock::now();
+            std::cout << "  Written in "
+            << std::chrono::duration<double>(t_write_end - t_write_start).count()
+            << " s\n";
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Error writing JSON file: " << e.what() << "\n";
+            return EXIT_FAILURE;
+        }
+    }
+    else if (skip_output)
     {
         std::cout << "Skipping CSV output (--no-output).\n";
     }
-
+    
     std::cout << "Done.\n";
     return EXIT_SUCCESS;
 }

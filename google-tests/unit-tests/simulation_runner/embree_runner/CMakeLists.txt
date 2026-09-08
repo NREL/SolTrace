@@ -17,6 +17,7 @@ include_directories(
 set(EMBREE_RUNNER_TEST_SRC
     ../../common/common.cpp
     embree_runner_test.cpp
+    grouped_results_test.cpp
 )
 
 if (NOT ENABLE_COVERAGE)

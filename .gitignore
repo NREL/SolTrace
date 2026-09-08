@@ -326,3 +326,6 @@ google-tests/*.csv
 **/*.DS_Store
 **/strace
 **/straced
+
+**/.venv
+**/*.whl

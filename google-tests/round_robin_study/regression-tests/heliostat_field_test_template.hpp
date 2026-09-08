@@ -83,7 +83,7 @@ public:
     double sun_width;
     double sun_height;
     double A_sun_box;
-    int nsun_rays;
+    uint_fast64_t nsun_rays;
     double power_per_ray;
 
     // Ray counts

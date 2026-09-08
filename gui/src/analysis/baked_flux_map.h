@@ -1,5 +1,6 @@
 #pragma once
 
+#include "database/mesh.h"
 #include "utilities/grid2d.h"
 
 #include <QImage>
@@ -35,10 +36,10 @@ public:
     /// Number of plotted ray/surface interactions that contributed to this map.
     quint64 plotted_ray_count = 0;
 
-    /// Current normalized energy per plotted ray interaction.
+    /// Power represented by each plotted ray interaction, in W when scaled.
     double power_per_ray = 1.0;
 
-    /// Integrated normalized power represented by plotted interactions.
+    /// Integrated power represented by plotted interactions, in W when scaled.
     double plotted_power = 0.0;
 
     /// Flux statistics over the rasterized map values.
@@ -60,8 +61,17 @@ public:
 
 /// A computed flux map
 struct BakedFluxMap {
-    /// A per-pixel normalized count, used with a color map to generate images
+    /// Per-pixel flux values used with a color map to generate images.
     Grid2D<float> counts;
+
+    /// Mesh used when projecting ray hits into the map.
+    db::Mesh mesh;
+
+    /// Per-face world-space area, ordered with mesh.triangles.
+    QVector<float> face_area;
+
+    /// Per-face ray interaction count, ordered with mesh.triangles.
+    QVector<quint64> face_ray_count;
 
     /// A generated image using counts and a color map
     QImage bin_map;

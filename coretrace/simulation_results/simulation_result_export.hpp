@@ -14,6 +14,7 @@ using SolTrace::Result::RayEvent;
 using SolTrace::Result::RayRecord;
 using SolTrace::Result::ray_record_ptr;
 using SolTrace::Result::SimulationResult;
+using SolTrace::Result::GroupResult;
 
 // Functions
 using SolTrace::Result::make_element_record;

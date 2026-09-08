@@ -18,6 +18,8 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <set>
+#include <vector>
 
 #include "container.hpp"
 #include "element.hpp"
@@ -294,6 +296,11 @@ public:
         return this->my_parameters;
     }
 
+    const std::vector<std::set<uint_fast64_t>>& get_groups() const
+    {
+        return this->my_groups;
+    }
+
     int update_simulation_positions();
     int update_simulation_positions(const Time &);
     int update_simulation_positions(const Date &);
@@ -327,6 +334,8 @@ private:
     // mutable element_id next_element_id;
 
     uint_fast64_t number_of_elements;
+    // index is the group number and the value is a set containing the element ids of the group
+    std::vector<std::set<uint_fast64_t>> my_groups;
 
     ElementContainer my_elements;
     RaySourceContainer my_sources;

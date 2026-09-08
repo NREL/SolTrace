@@ -27,6 +27,9 @@ public:
     virtual bool is_stage() const override { return true; }
     virtual element_id add_element(element_ptr el);
     virtual void write_json(nlohmann::ordered_json& jnode) const override;
+    
+    // only single elements have groups
+    virtual int32_t get_group() const override { return -2; }
 private:
 };
 

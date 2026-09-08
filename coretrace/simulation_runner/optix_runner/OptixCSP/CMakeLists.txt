@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.20)
 
 project(OptixCSP LANGUAGES CXX CUDA)
 
+if(MSVC)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/Zc:preprocessor")
+endif()
+
 # C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

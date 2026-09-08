@@ -2414,7 +2414,7 @@ Heliostat field
 STAGE	XYZ	0	0	0	AIM	0	0	1	ZROT	0	VIRTUAL	0	MULTIHIT	1	ELEMENTS	8	TRACETHROUGH	0
 Receiver
 1	0	-7.75	180	0	992.25	180	0	l	0	0	22	0	0	0	0	0	t	0.129032	0	0	0	0	0	0	0		Receiver 1	2	
-1	0	-7.75	85.5	0	992.25	85.5	0	l	0	0	171	0	0	0	0	0	t	0.129032	0	0	0	0	0	0	0		absorbant	2	
+1	0	-7.75	83.5	0	992.25	83.5	0	l	0	0	171	0	0	0	0	0	t	0.129032	0	0	0	0	0	0	0		absorbant	2	
 1	0	0	125	0	0	100	0	r	20	20	0	0	0	0	0	0	f	0	0	0	0	0	0	0	0		absorbant	2	
 1	0	0	145	0	0	160	0	r	20	20	0	0	0	0	0	0	f	0	0	0	0	0	0	0	0		absorbant	2	
 1	10	0	135	20	0	135	0	r	20	20	0	0	0	0	0	0	f	0	0	0	0	0	0	0	0		absorbant	2	
