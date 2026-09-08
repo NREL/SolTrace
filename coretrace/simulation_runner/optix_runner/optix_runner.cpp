@@ -12,9 +12,6 @@ using SolTrace::Runner::RunnerStatistics;
 using SolTrace::Runner::RunnerStatus;
 using SolTrace::Runner::SimulationRunner;
 
-using SolTrace::Result::GroupResult;
-using SolTrace::Result::SimulationResult;
-
 using SolTrace::Data::optics_id;
 
 OptixRunner::OptixRunner()
