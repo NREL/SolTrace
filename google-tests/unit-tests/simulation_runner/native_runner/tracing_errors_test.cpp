@@ -31,9 +31,9 @@ using SolTrace::NativeRunner::TSun;
 namespace
 {
 
-constexpr int      kSamples    = 200000;
-constexpr uint32_t kSeed       = 20260902;
-constexpr double   kFrameTol   = 1e-12;
+constexpr int      kSamples  = 200000;
+constexpr uint32_t kSeed     = 20260902;
+constexpr double   kFrameTol = 1e-12;
 
 // Axes chosen to cover every branch of the frame construction in
 // tracing_errors.cpp, including the two axis.z == 0 degenerate cases.
@@ -53,9 +53,9 @@ double AngleBetween(const glm::dvec3& a, const glm::dvec3& b)
     return std::acos(std::clamp(c, -1.0, 1.0));
 }
 
-OpticalPropertySet MakeReflector(DistributionType dist,
-                                 double           slope_mrad,
-                                 double           spec_mrad,
+OpticalPropertySet MakeReflector(DistributionType   dist,
+                                 double             slope_mrad,
+                                 double             spec_mrad,
                                  const std::string& name = "test_optics")
 {
     OpticalPropertySet optics(InteractionType::REFLECTION, name);
@@ -105,12 +105,14 @@ void BuieParameters(double csr, double& kappa, double& gamma)
 
 // Numerically integrated CDF of the polar angle for a rejection-sampled shape.
 // The sampler draws uniformly in a (theta_x, theta_y) box and accepts with
-// probability s(theta), so the radial density is proportional to theta*s(theta).
+// probability s(theta), so the radial density is proportional to
+// theta*s(theta).
 class RadialCdf
 {
 public:
-    RadialCdf(std::function<double(double)> intensity, double max_angle,
-              int bins = 20000)
+    RadialCdf(std::function<double(double)> intensity,
+              double                        max_angle,
+              int                           bins = 20000)
         : m_max(max_angle), m_cdf(bins + 1, 0.0)
     {
         const double h = max_angle / bins;
@@ -120,7 +122,7 @@ public:
             const double t1 = i * h;
             const double w0 = t0 * intensity(t0);
             const double w1 = t1 * intensity(t1);
-            m_cdf[i] = m_cdf[i - 1] + 0.5 * (w0 + w1) * h;
+            m_cdf[i]        = m_cdf[i - 1] + 0.5 * (w0 + w1) * h;
         }
         const double total = m_cdf.back();
         for (double& v : m_cdf)
@@ -129,10 +131,8 @@ public:
 
     double operator()(double theta) const
     {
-        if (theta <= 0.0)
-            return 0.0;
-        if (theta >= m_max)
-            return 1.0;
+        if (theta <= 0.0) return 0.0;
+        if (theta >= m_max) return 1.0;
 
         const double x  = theta / m_max * (m_cdf.size() - 1);
         const int    i  = static_cast<int>(x);
@@ -146,7 +146,7 @@ private:
 };
 
 // Two-sided Kolmogorov-Smirnov statistic against an analytic CDF.
-double KsStatistic(std::vector<double> samples,
+double KsStatistic(std::vector<double>                  samples,
                    const std::function<double(double)>& cdf)
 {
     std::sort(samples.begin(), samples.end());
@@ -156,13 +156,14 @@ double KsStatistic(std::vector<double> samples,
     for (size_t i = 0; i < samples.size(); ++i)
     {
         const double f = cdf(samples[i]);
-        d = std::max(d, std::max((i + 1) / n - f, f - i / n));
+        d              = std::max(d, std::max((i + 1) / n - f, f - i / n));
     }
     return d;
 }
 
 // Generous enough to avoid flakes, tight enough to catch a wrong distribution.
-double KsThreshold(int n) { return 2.5 / std::sqrt(static_cast<double>(n)); }
+double KsThreshold(int n)
+{ return 2.5 / std::sqrt(static_cast<double>(n)); }
 
 // Sun-shape sample angles, in mrad (ApplySunShape() returns radians).
 std::vector<double> SampleSunAngles(TSun& sun, int n, uint32_t seed = kSeed)
@@ -181,8 +182,9 @@ std::vector<double> SampleSunAngles(TSun& sun, int n, uint32_t seed = kSeed)
 }
 
 // Surface-error sample angles, in mrad.
-std::vector<double> SampleSurfaceAngles(const OpticalPropertySet& optics, int n,
-                                        uint32_t seed = kSeed)
+std::vector<double> SampleSurfaceAngles(const OpticalPropertySet& optics,
+                                        int                       n,
+                                        uint32_t                  seed = kSeed)
 {
     MTRand           rng(seed);
     const glm::dvec3 axis(0.0, 0.0, 1.0);
@@ -199,8 +201,9 @@ std::vector<double> SampleSurfaceAngles(const OpticalPropertySet& optics, int n,
 }
 
 // Slope-error sample angles, in mrad.
-std::vector<double> SampleSlopeAngles(const OpticalPropertySet& optics, int n,
-                                      uint32_t seed = kSeed)
+std::vector<double> SampleSlopeAngles(const OpticalPropertySet& optics,
+                                      int                       n,
+                                      uint32_t                  seed = kSeed)
 {
     MTRand           rng(seed);
     const glm::dvec3 axis(0.0, 0.0, 1.0);
@@ -269,11 +272,12 @@ TEST(TracingErrors, PerturbedDirectionIsUnitLengthForAllAxes)
         for (int i = 0; i < 1000; ++i)
         {
             EXPECT_NEAR(glm::length(ApplySlopeError(rng, axis, optics, false)),
-                        1.0, 1e-12);
-            EXPECT_NEAR(
-                glm::length(
-                    ApplySpecularityError(rng, axis, optics, false, axis)),
-                1.0, 1e-12);
+                        1.0,
+                        1e-12);
+            EXPECT_NEAR(glm::length(ApplySpecularityError(
+                            rng, axis, optics, false, axis)),
+                        1.0,
+                        1e-12);
             EXPECT_NEAR(glm::length(ApplySunShape(rng, axis, sun)), 1.0, 1e-12);
         }
     }
@@ -357,52 +361,52 @@ TEST(TracingErrors, RejectionCapTerminates)
 // sigma*sqrt(2).
 TEST(TracingErrors, SlopeErrorGaussianMagnitudeInMrad)
 {
-    const double kSlopeMrad = 5.0;
+    const double             kSlopeMrad = 5.0;
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::GAUSSIAN, kSlopeMrad, 0.0);
 
     const std::vector<double> angles = SampleSlopeAngles(optics, kSamples);
 
-    EXPECT_NEAR(RootMeanSquare(angles), kSlopeMrad * std::sqrt(2.0),
-                0.02 * kSlopeMrad);
+    EXPECT_NEAR(
+        RootMeanSquare(angles), kSlopeMrad * std::sqrt(2.0), 0.02 * kSlopeMrad);
 }
 
 // Pillbox samples uniformly over a disc of radius sigma, so the RMS polar
 // angle is sigma/sqrt(2).
 TEST(TracingErrors, SlopeErrorPillboxMagnitudeInMrad)
 {
-    const double kSlopeMrad = 5.0;
+    const double             kSlopeMrad = 5.0;
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::PILLBOX, kSlopeMrad, 0.0);
 
     const std::vector<double> angles = SampleSlopeAngles(optics, kSamples);
 
-    EXPECT_NEAR(RootMeanSquare(angles), kSlopeMrad / std::sqrt(2.0),
-                0.02 * kSlopeMrad);
+    EXPECT_NEAR(
+        RootMeanSquare(angles), kSlopeMrad / std::sqrt(2.0), 0.02 * kSlopeMrad);
 }
 
 TEST(TracingErrors, SpecularityErrorGaussianMagnitudeInMrad)
 {
-    const double kSpecMrad = 5.0;
+    const double             kSpecMrad = 5.0;
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::GAUSSIAN, 0.0, kSpecMrad);
 
     const std::vector<double> angles = SampleSurfaceAngles(optics, kSamples);
 
-    EXPECT_NEAR(RootMeanSquare(angles), kSpecMrad * std::sqrt(2.0),
-                0.02 * kSpecMrad);
+    EXPECT_NEAR(
+        RootMeanSquare(angles), kSpecMrad * std::sqrt(2.0), 0.02 * kSpecMrad);
 }
 
 TEST(TracingErrors, SpecularityErrorPillboxMagnitudeInMrad)
 {
-    const double kSpecMrad = 5.0;
+    const double             kSpecMrad = 5.0;
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::PILLBOX, 0.0, kSpecMrad);
 
     const std::vector<double> angles = SampleSurfaceAngles(optics, kSamples);
 
-    EXPECT_NEAR(RootMeanSquare(angles), kSpecMrad / std::sqrt(2.0),
-                0.02 * kSpecMrad);
+    EXPECT_NEAR(
+        RootMeanSquare(angles), kSpecMrad / std::sqrt(2.0), 0.02 * kSpecMrad);
 }
 
 TEST(TracingErrors, NoneDistributionIsIdentity)
@@ -437,7 +441,7 @@ TEST(TracingErrors, NoneDistributionIsIdentity)
 // E[cos(theta)] = 2/3 and CDF F(theta) = sin(theta)^2.
 TEST(TracingErrors, DiffuseIsLambertian)
 {
-    MTRand rng(kSeed);
+    MTRand                   rng(kSeed);
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::DIFFUSE, 0.0, 0.0);
 
@@ -472,7 +476,7 @@ TEST(TracingErrors, DiffuseIsLambertian)
 
 TEST(TracingErrors, DiffuseAzimuthIsUniform)
 {
-    MTRand rng(kSeed);
+    MTRand                   rng(kSeed);
     const OpticalPropertySet optics =
         MakeReflector(DistributionType::DIFFUSE, 0.0, 0.0);
 
@@ -489,8 +493,7 @@ TEST(TracingErrors, DiffuseAzimuthIsUniform)
             ApplySpecularityError(rng, normal, optics, false, normal);
 
         const double r = std::hypot(out.x, out.y);
-        if (r < 1e-15)
-            continue;
+        if (r < 1e-15) continue;
         cos_phi.push_back(out.x / r);
         sin_phi.push_back(out.y / r);
     }
@@ -505,7 +508,8 @@ TEST(TracingErrors, DiffuseIsIndependentOfIncidenceDirection)
 {
     const uint_fast64_t NRAYS = 20000;
 
-    auto mean_cosine_for_tilt = [&](const glm::dvec3& aim) {
+    auto mean_cosine_for_tilt = [&](const glm::dvec3& aim)
+    {
         using SolTrace::Runner::RunnerStatus;
 
         SolTrace::NativeRunner::NativeRunner runner;
@@ -537,12 +541,12 @@ TEST(TracingErrors, DiffuseIsIndependentOfIncidenceDirection)
         stage->add_element(plate);
         sd.add_stage(stage);
 
-        SimulationParameters& params = sd.get_simulation_parameters();
-        params.number_of_rays          = NRAYS;
-        params.max_number_of_rays      = NRAYS * 100;
-        params.include_optical_errors  = true;
+        SimulationParameters& params    = sd.get_simulation_parameters();
+        params.number_of_rays           = NRAYS;
+        params.max_number_of_rays       = NRAYS * 100;
+        params.include_optical_errors   = true;
         params.include_sun_shape_errors = false;
-        params.seed                    = kSeed;
+        params.seed                     = kSeed;
 
         EXPECT_EQ(runner.setup_simulation(&sd), RunnerStatus::SUCCESS);
         EXPECT_EQ(runner.run_simulation(), RunnerStatus::SUCCESS);
@@ -560,7 +564,8 @@ TEST(TracingErrors, DiffuseIsIndependentOfIncidenceDirection)
         while (!result.is_at_end(it))
         {
             auto rec = *it;
-            if (rec->get_element(1) == plate_id)
+            if (rec->get_number_of_interactions() > 1 &&
+                rec->get_element(1) == plate_id)
             {
                 glm::dvec3 u(0.0);
                 rec->get_direction(1, u);
@@ -574,8 +579,8 @@ TEST(TracingErrors, DiffuseIsIndependentOfIncidenceDirection)
         return acc / count;
     };
 
-    const double flat    = mean_cosine_for_tilt(glm::dvec3(0.0, 0.0, 100.0));
-    const double tilted  = mean_cosine_for_tilt(glm::dvec3(0.0, 40.0, 100.0));
+    const double flat   = mean_cosine_for_tilt(glm::dvec3(0.0, 0.0, 100.0));
+    const double tilted = mean_cosine_for_tilt(glm::dvec3(0.0, 40.0, 100.0));
 
     EXPECT_NEAR(flat, 2.0 / 3.0, 0.02);
     EXPECT_NEAR(tilted, 2.0 / 3.0, 0.02);
@@ -593,22 +598,24 @@ TEST(TracingErrors, SunShapeGaussianMatchesRayleigh)
 
     const std::vector<double> angles = SampleSunAngles(sun, kSamples);
 
-    const double d = KsStatistic(angles, [&](double t) {
-        return 1.0 - std::exp(-t * t / (2.0 * kSigma * kSigma));
-    });
+    const double d = KsStatistic(
+        angles,
+        [&](double t)
+        { return 1.0 - std::exp(-t * t / (2.0 * kSigma * kSigma)); });
     EXPECT_LT(d, KsThreshold(kSamples));
 }
 
 TEST(TracingErrors, SunShapePillboxIsUniformOnDisc)
 {
     const double kHalfWidth = 4.65;
-    TSun         sun        = MakeSun(SunShape::PILLBOX, kHalfWidth, kHalfWidth);
+    TSun         sun = MakeSun(SunShape::PILLBOX, kHalfWidth, kHalfWidth);
 
     const std::vector<double> angles = SampleSunAngles(sun, kSamples);
 
-    const double d = KsStatistic(angles, [&](double t) {
-        return std::clamp(t * t / (kHalfWidth * kHalfWidth), 0.0, 1.0);
-    });
+    const double d = KsStatistic(
+        angles,
+        [&](double t)
+        { return std::clamp(t * t / (kHalfWidth * kHalfWidth), 0.0, 1.0); });
     EXPECT_LT(d, KsThreshold(kSamples));
 }
 
@@ -619,9 +626,9 @@ TEST(TracingErrors, SunShapeLimbDarkenedMatchesProfile)
 
     const std::vector<double> angles = SampleSunAngles(sun, kSamples);
 
-    const RadialCdf cdf(
-        [&](double t) { return 1.0 - 0.5138 * std::pow(t / kMaxAngle, 4.0); },
-        kMaxAngle);
+    const RadialCdf cdf([&](double t)
+                        { return 1.0 - 0.5138 * std::pow(t / kMaxAngle, 4.0); },
+                        kMaxAngle);
 
     const double d = KsStatistic(angles, [&](double t) { return cdf(t); });
     EXPECT_LT(d, KsThreshold(kSamples));
@@ -635,14 +642,15 @@ TEST(TracingErrors, SunShapeBuieCsrMatchesProfile)
     double kappa = 0.0, gamma = 0.0;
     BuieParameters(kCsr, kappa, gamma);
 
-    TSun sun         = MakeSun(SunShape::BUIE_CSR, 0.0, kMaxAngle);
-    sun.buie_kappa   = kappa;
-    sun.buie_gamma   = gamma;
+    TSun sun       = MakeSun(SunShape::BUIE_CSR, 0.0, kMaxAngle);
+    sun.buie_kappa = kappa;
+    sun.buie_gamma = gamma;
 
     const std::vector<double> angles = SampleSunAngles(sun, kSamples);
 
     const RadialCdf cdf(
-        [&](double t) {
+        [&](double t)
+        {
             if (std::abs(t) <= 4.65)
                 return std::cos(0.326 * t) / std::cos(0.308 * t);
             return std::exp(kappa) * std::pow(std::abs(t), gamma);
@@ -658,22 +666,22 @@ TEST(TracingErrors, SunShapeUserDefinedMatchesProfile)
     const double kMaxAngle = 10.0;
 
     TSun sun          = MakeSun(SunShape::USER_DEFINED, 0.0, kMaxAngle);
-    sun.SunShapeAngle = {0.0, 2.5, 5.0, 7.5, 10.0};
+    sun.SunShapeAngle = { 0.0, 2.5, 5.0, 7.5, 10.0 };
     // A simple ramp-down profile, linearly interpolated by the sampler.
-    sun.SunShapeIntensity = {1.0, 0.8, 0.5, 0.2, 0.0};
+    sun.SunShapeIntensity = { 1.0, 0.8, 0.5, 0.2, 0.0 };
     sun.MaxIntensity      = 1.0;
 
     const std::vector<double> angles = SampleSunAngles(sun, kSamples);
 
     const RadialCdf cdf(
-        [&](double t) {
+        [&](double t)
+        {
             const auto& a = sun.SunShapeAngle;
             const auto& s = sun.SunShapeIntensity;
             size_t      i = 0;
             while (i < a.size() - 1 && a[i] < t)
                 ++i;
-            if (i == 0)
-                return s[0];
+            if (i == 0) return s[0];
             return s[i - 1] +
                    (s[i] - s[i - 1]) * (t - a[i - 1]) / (a[i] - a[i - 1]);
         },
@@ -698,11 +706,14 @@ TEST(TracingErrors, NativeRunnerRejectsUnimplementedDistribution)
     mirror->set_aperture(make_aperture<Rectangle>(10.0, 10.0));
     mirror->set_surface(make_surface<Flat>());
 
-    OpticalPropertySet optics(InteractionType::REFLECTION, "user_defined_errors");
+    OpticalPropertySet optics(InteractionType::REFLECTION,
+                              "user_defined_errors");
     optics.set_ideal_reflection(OpticalSide::Both);
-    optics.set_errors(OpticalSide::Both, DistributionType::USER_DEFINED, 0.0, 0.0);
+    optics.set_errors(
+        OpticalSide::Both, DistributionType::USER_DEFINED, 0.0, 0.0);
 
-    mirror->set_optical_property_set(simulation.add_optical_property_set(optics));
+    mirror->set_optical_property_set(
+        simulation.add_optical_property_set(optics));
     simulation.add_element(mirror);
 
     ASSERT_EQ(runner.initialize(), RunnerStatus::SUCCESS);

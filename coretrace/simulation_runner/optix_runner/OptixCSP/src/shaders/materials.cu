@@ -341,7 +341,7 @@ extern "C" __global__ void __closesthit__element()
                   1ULL);
     }
 
-    setPayload(prd);
+    OptixCSP::setPayload(prd);
 }
 
 extern "C" __global__ void __miss__ms()
