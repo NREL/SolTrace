@@ -441,9 +441,9 @@ TEST(OpticalErrors, DiffuseIsLambertian)
     plate->set_aperture(make_aperture<Rectangle>(40.0, 40.0));
     plate->set_optical_property_set(
         add_plate_optics(simulation, DistributionType::DIFFUSE));
-    const element_id plate_id = plate->get_id();
     stage->add_element(plate);
     simulation.add_stage(stage);
+    const element_id plate_id = plate->get_id();
 
     SimulationParameters& params    = simulation.get_simulation_parameters();
     params.number_of_rays           = kRays;
@@ -516,9 +516,9 @@ TEST(OpticalErrors, DiffuseUsesSurfaceNormal)
     plate->set_aperture(make_aperture<Rectangle>(40.0, 40.0));
     plate->set_optical_property_set(
         add_plate_optics(simulation, DistributionType::DIFFUSE));
-    const element_id plate_id = plate->get_id();
     stage->add_element(plate);
     simulation.add_stage(stage);
+    const element_id plate_id = plate->get_id();
 
     SimulationParameters& params    = simulation.get_simulation_parameters();
     params.number_of_rays           = kRays;
