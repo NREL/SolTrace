@@ -135,7 +135,21 @@ TEST(NativeRunner, ErrorOnUnsupportedOptions)
     mirror->set_surface(make_surface<Flat>());
     SolTrace::Data::OpticalPropertySet mirror_optics(SolTrace::Data::InteractionType::REFLECTION, "Mirror");
     mirror_optics.set_ideal_one_sided_reflector(SolTrace::Data::OpticalSide::Front);
-    mirror_optics.set_errors(SolTrace::Data::OpticalSide::Front, SolTrace::Data::DistributionType::UNKNOWN, 0.0, 0.0);
+
+    // An unknown distribution is not valid data, so it is rejected as soon as
+    // the optical properties are configured.
+    EXPECT_THROW(mirror_optics.set_errors(SolTrace::Data::OpticalSide::Front,
+                                          SolTrace::Data::DistributionType::UNKNOWN,
+                                          0.0,
+                                          0.0),
+                 std::invalid_argument);
+
+    // A valid distribution that this runner does not implement is rejected
+    // when the simulation is set up.
+    mirror_optics.set_errors(SolTrace::Data::OpticalSide::Front,
+                             SolTrace::Data::DistributionType::USER_DEFINED,
+                             0.0,
+                             0.0);
     auto mirror_optics_ref = my_sim.add_optical_property_set(mirror_optics);
     mirror->set_optical_property_set(mirror_optics_ref);
 

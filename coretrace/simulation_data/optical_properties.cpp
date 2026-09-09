@@ -1,6 +1,5 @@
 
-// #include <exception>
-// #include <sstream>
+#include <cmath>
 
 #include "optical_properties.hpp"
 #include "simdata_io.hpp"
@@ -33,6 +32,20 @@ OpticalPropertySet::OpticalPropertiesFace::OpticalPropertiesFace(const nlohmann:
     this->reflectivity = jnode.at("reflectivity");
     this->slope_error = jnode.at("slope_error");
     this->specularity_error = jnode.at("specularity_error");
+
+    validate();
+}
+
+void OpticalPropertySet::OpticalPropertiesFace::validate() const
+{
+    if (this->error_distribution_type == DistributionType::UNKNOWN)
+        throw std::invalid_argument("Optical properties: unknown error distribution type");
+
+    if (!std::isfinite(this->slope_error) || this->slope_error < 0.0)
+        throw std::invalid_argument("Optical properties: slope error must be finite and non-negative");
+
+    if (!std::isfinite(this->specularity_error) || this->specularity_error < 0.0)
+        throw std::invalid_argument("Optical properties: specularity error must be finite and non-negative");
 }
 
 void OpticalPropertySet::OpticalPropertiesFace::write_json(nlohmann::ordered_json& jnode) const

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <composite_element.hpp>
+#include <limits>
 #include <single_element.hpp>
 #include <sun.hpp>
 #include <simulation_data.hpp>
@@ -45,6 +46,24 @@ TEST(OpticalProperties, MissingOptical)
 
     // Add element to simulation data
     EXPECT_THROW(sd.add_element(test_element), std::invalid_argument);
+}
+
+TEST(OpticalProperties, InvalidErrorSettingsThrow)
+{
+    OpticalPropertySet optics(InteractionType::REFLECTION, "invalid_errors");
+    optics.set_ideal_reflection(OpticalSide::Both);
+
+    EXPECT_THROW(
+        optics.set_errors(OpticalSide::Both, DistributionType::UNKNOWN, 1.0, 1.0),
+        std::invalid_argument);
+    EXPECT_THROW(
+        optics.set_errors(OpticalSide::Both, DistributionType::GAUSSIAN, -1.0, 1.0),
+        std::invalid_argument);
+    EXPECT_THROW(optics.set_errors(OpticalSide::Both,
+                                   DistributionType::GAUSSIAN,
+                                   1.0,
+                                   std::numeric_limits<double>::quiet_NaN()),
+                 std::invalid_argument);
 }
 
 TEST(OpticalProperties, MutateOptics)
