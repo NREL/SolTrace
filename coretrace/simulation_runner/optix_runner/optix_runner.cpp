@@ -204,41 +204,7 @@ RunnerStatus OptixRunner::setup_elements(const SimulationData* data)
             optix_el->set_id(static_cast<int32_t>(id));
 
             // Add optical properties
-            auto opt_set = el->get_optical_property_set();
-
-            if (opt_set == nullptr)
-                throw std::runtime_error(
-                    "Element has invalid optical property set.");
-
-            DistributionType front_dist;
-            double           front_slope, front_spec;
-            opt_set->get_errors(
-                OpticalSide::Front, front_dist, front_slope, front_spec);
-
-            OptixCSP::OpticalDistribution front_dist_optix =
-                this->to_optical_distribution(front_dist);
-            optix_el->set_optics_front(
-                opt_set->get_interaction_type() == InteractionType::REFRACTION,
-                opt_set->get_reflectivity(OpticalSide::Front),
-                opt_set->get_transmissivity(OpticalSide::Front),
-                front_slope,
-                front_spec,
-                front_dist_optix);
-
-            DistributionType back_dist;
-            double           back_slope, back_spec;
-            opt_set->get_errors(
-                OpticalSide::Back, back_dist, back_slope, back_spec);
-
-            OptixCSP::OpticalDistribution back_dist_optix =
-                this->to_optical_distribution(back_dist);
-            optix_el->set_optics_back(
-                opt_set->get_interaction_type() == InteractionType::REFRACTION,
-                opt_set->get_reflectivity(OpticalSide::Back),
-                opt_set->get_transmissivity(OpticalSide::Back),
-                back_slope,
-                back_spec,
-                back_dist_optix);
+            optix_el->set_optics(el->get_optical_property_set());
 
             if (m_sys.is_verbose())
             {
@@ -743,29 +709,6 @@ OptixCSP::Matrix33d OptixRunner::ToMatrix33d(const glm::dmat3& mat)
                                mat[0][2],
                                mat[1][2],
                                mat[2][2]);
-}
-
-OptixCSP::OpticalDistribution
-OptixRunner::to_optical_distribution(SolTrace::Data::DistributionType dt)
-{
-    OptixCSP::OpticalDistribution od;
-    if (dt == SolTrace::Data::DistributionType::NONE)
-        od = OptixCSP::OpticalDistribution::OPT_NONE;
-    else if (dt == SolTrace::Data::DistributionType::GAUSSIAN)
-        od = OptixCSP::OpticalDistribution::OPT_GAUSSIAN;
-    else if (dt == SolTrace::Data::DistributionType::PILLBOX)
-        od = OptixCSP::OpticalDistribution::OPT_PILLBOX;
-    else if (dt == SolTrace::Data::DistributionType::DIFFUSE)
-        od = OptixCSP::OpticalDistribution::OPT_DIFFUSE;
-    else
-    {
-        std::stringstream ss;
-        ss << "Unimplemented error distribution: "
-           << SolTrace::Data::distribution_string(dt) << std::endl;
-
-        throw std::invalid_argument(ss.str());
-    }
-    return od;
 }
 
 int32_t OptixRunner::get_group(int32_t element_id)
