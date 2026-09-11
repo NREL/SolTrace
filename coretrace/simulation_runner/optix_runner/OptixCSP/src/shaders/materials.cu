@@ -28,16 +28,6 @@ static __device__ __inline__ void setPayload(const OptixCSP::PerRayData& prd)
     optixSetPayload_1(prd.depth);
 }
 
-// // 32-bit avalanche mix (fast, good diffusion)
-// static __device__ __inline__ float rng_uniform(uint32_t x)
-// {
-//     x ^= x >> 16;
-//     x *= 0x85EBCA6Bu;
-//     x ^= x >> 13;
-//     x *= 0xC2B2AE35u;
-//     x ^= x >> 16;
-//     return float(x >> 8) * (1.0f / 16777216.0f); // Scale to [0, 1)
-// }
 } // namespace OptixCSP
 
 // Assumes that v is a unit vector
@@ -61,6 +51,25 @@ extern "C" __device__ __inline__ float3 orthonormal_vector(float3 v)
     }
     return normalize(u);
 }
+
+/**
+ * Reflect an incident direction about a surface normal.
+ *
+ * The incident direction `i` points toward the surface. The normal `n` must
+ * be normalized. The returned vector is the reflected direction pointing away
+ * from the surface and has the same magnitude as `i`.
+ */
+extern "C" __device__ __host__ __inline__ float3 reflect(const float3& i, const float3& n)
+{
+    return i - 2.0f * n * dot(n, i);
+}
+
+
+extern "C" __device__ __host__ __inline__ float3 refract(const float3& i, const float3& n)
+{
+    return i;
+}
+
 
 // Add perturbation ortogonal to given vector. Perturbation is uniform over
 // a disk of radius a centered at the vector n. Returned vector is a
@@ -152,7 +161,7 @@ extern "C" __global__ void __closesthit__element()
 
     // we have two scenarios here
     // if we use refraction, then we look at transmissivity to determine if the
-    // ray will refract or get obsorbed. otherwise, it will get reflected.
+    // ray will refract or get absorbed. otherwise, it will get reflected.
     float3 new_dir;
     bool absorbed = false; // determine whether the ray is absorbed or not, this
                            // is montecarlo based, should be applied to

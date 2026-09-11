@@ -13,6 +13,11 @@
 #include "shaders/GeometryDataST.h"
 #include "shaders/MaterialDataST.h"
 
+namespace SolTrace::Data
+{
+    class OpticalPropertySet;
+}
+
 namespace OptixCSP
 {
 
@@ -75,6 +80,8 @@ namespace OptixCSP
         void set_optics_back(const bool use_refraction, const float reflectivity,
                              const float transmissivity, const float slope_error, const float specularity_error,
                              const OpticalDistribution od);
+        void set_optics(
+            const std::shared_ptr<SolTrace::Data::OpticalPropertySet>& optics);
 
         // return L2G rotation matrix
         Matrix33d get_rotation_matrix() const;

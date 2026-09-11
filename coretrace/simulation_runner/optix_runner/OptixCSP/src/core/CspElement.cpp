@@ -1,7 +1,9 @@
 #include <cstdint>
 #include <limits>
+#include <stdexcept>
 #include <vector>
 
+#include "optical_properties.hpp"
 #include "vec3d.h"
 #include "soltrace_type.h"
 #include "Surface.h"
@@ -13,6 +15,29 @@
 #include "soltrace_constants.h"
 
 using namespace OptixCSP;
+
+namespace
+{
+OpticalDistribution to_optical_distribution(
+    SolTrace::Data::DistributionType distribution)
+{
+    using SolTrace::Data::DistributionType;
+
+    switch (distribution)
+    {
+    case DistributionType::NONE:
+        return OpticalDistribution::OPT_NONE;
+    case DistributionType::GAUSSIAN:
+        return OpticalDistribution::OPT_GAUSSIAN;
+    case DistributionType::PILLBOX:
+        return OpticalDistribution::OPT_PILLBOX;
+    case DistributionType::DIFFUSE:
+        return OpticalDistribution::OPT_DIFFUSE;
+    default:
+        throw std::invalid_argument("Unimplemented error distribution");
+    }
+}
+}
 
 CspElementBase::CspElementBase()
 {
@@ -93,6 +118,43 @@ void CspElement::set_optics_back(const bool use_refraction, const float reflecti
                                  const OpticalDistribution od)
 {
     this->set_optics(false, use_refraction, reflectivity, transmissivity, slope_error, specularity_error, od);
+}
+
+void CspElement::set_optics(
+    const std::shared_ptr<SolTrace::Data::OpticalPropertySet>& optics)
+{
+    if (optics == nullptr)
+        throw std::invalid_argument("Element has invalid optical property set.");
+
+    const bool use_refraction =
+        optics->get_interaction_type() ==
+        SolTrace::Data::InteractionType::REFRACTION;
+
+    SolTrace::Data::DistributionType front_distribution;
+    SolTrace::Data::DistributionType back_distribution;
+    double front_slope, front_specularity;
+    double back_slope, back_specularity;
+    optics->get_errors(SolTrace::Data::OpticalSide::Front,
+                       front_distribution,
+                       front_slope,
+                       front_specularity);
+    optics->get_errors(SolTrace::Data::OpticalSide::Back,
+                       back_distribution,
+                       back_slope,
+                       back_specularity);
+
+    set_optics_front(use_refraction,
+                     optics->get_reflectivity(SolTrace::Data::OpticalSide::Front),
+                     optics->get_transmissivity(SolTrace::Data::OpticalSide::Front),
+                     static_cast<float>(front_slope),
+                     static_cast<float>(front_specularity),
+                     to_optical_distribution(front_distribution));
+    set_optics_back(use_refraction,
+                    optics->get_reflectivity(SolTrace::Data::OpticalSide::Back),
+                    optics->get_transmissivity(SolTrace::Data::OpticalSide::Back),
+                    static_cast<float>(back_slope),
+                    static_cast<float>(back_specularity),
+                    to_optical_distribution(back_distribution));
 }
 
 // return L2G rotation matrix
