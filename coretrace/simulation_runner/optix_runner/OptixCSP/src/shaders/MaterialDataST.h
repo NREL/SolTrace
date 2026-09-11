@@ -10,6 +10,8 @@ namespace OptixCSP
     {
         float reflectivity;
         float transmissivity;
+        float refractive_index_incident;
+        float refractive_index_transmitted;
         float slope_error;
         float specularity_error;
         OpticalDistribution optical_dist; // uint8_t
