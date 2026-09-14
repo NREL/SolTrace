@@ -46,6 +46,15 @@ void make_tilted_plate_sd(SimulationData& sd,
     plate->set_aperture(make_aperture<Rectangle>(5, 5));
     plate->set_name("plate");
 
+    // Placeholder optics; tests mutate this in place via
+    // get_mutable_optical_property_set() once the element is registered.
+    OpticalPropertySet default_optics(
+        InteractionType::REFRACTION, 1.0, 1.0, "PlateOptics");
+    default_optics.set_properties(
+        OpticalSide::Both, DistributionType::NONE, 1.0, 0.0, 0.0, 0.0);
+    auto default_optics_ref = sd.add_optical_property_set(default_optics);
+    plate->set_optical_property_set(default_optics_ref);
+
     stage->add_element(plate);
     sd.add_stage(stage);
 
@@ -114,12 +123,10 @@ TEST(MaterialInteraction, FresnelSplitAtFixedAngle)
     element_ptr    plate;
     make_tilted_plate_sd(sd, plate, incidence_angle_deg);
 
-    OpticalPropertySet optics(
-        InteractionType::REFRACTION, n_incident, n_transmit, "RefractingPlate");
-    optics.set_properties(
-        OpticalSide::Both, DistributionType::NONE, 1.0, 0.0, 0.0, 0.0);
-    auto optics_ref = sd.add_optical_property_set(optics);
-    plate->set_optical_property_set(optics_ref);
+    OpticalPropertySet* plate_optics = sd.get_mutable_optical_property_set(*plate);
+    ASSERT_NE(plate_optics, nullptr);
+    plate_optics->set_refraction_indices(n_incident, n_transmit);
+    plate_optics->set_transmissivity(OpticalSide::Both, 1.0);
 
     OptixRunner runner;
     ASSERT_EQ(runner.initialize(), RunnerStatus::SUCCESS);
@@ -156,14 +163,11 @@ TEST(MaterialInteraction, ReflectanceIncreasesTowardGrazingAngle)
         element_ptr    plate;
         make_tilted_plate_sd(sd, plate, angle);
 
-        OpticalPropertySet optics(InteractionType::REFRACTION,
-                                  n_incident,
-                                  n_transmit,
-                                  "RefractingPlate");
-        optics.set_properties(
-            OpticalSide::Both, DistributionType::NONE, 1.0, 0.0, 0.0, 0.0);
-        auto optics_ref = sd.add_optical_property_set(optics);
-        plate->set_optical_property_set(optics_ref);
+        OpticalPropertySet* plate_optics =
+            sd.get_mutable_optical_property_set(*plate);
+        ASSERT_NE(plate_optics, nullptr);
+        plate_optics->set_refraction_indices(n_incident, n_transmit);
+        plate_optics->set_transmissivity(OpticalSide::Both, 1.0);
 
         OptixRunner runner;
         ASSERT_EQ(runner.initialize(), RunnerStatus::SUCCESS);
@@ -201,16 +205,10 @@ TEST(MaterialInteraction, CombinedTransmissivityAndFresnel)
     element_ptr    plate;
     make_tilted_plate_sd(sd, plate, incidence_angle_deg);
 
-    OpticalPropertySet optics(
-        InteractionType::REFRACTION, n_incident, n_transmit, "RefractingPlate");
-    optics.set_properties(OpticalSide::Both,
-                          DistributionType::NONE,
-                          transmissivity,
-                          0.0,
-                          0.0,
-                          0.0);
-    auto optics_ref = sd.add_optical_property_set(optics);
-    plate->set_optical_property_set(optics_ref);
+    OpticalPropertySet* plate_optics = sd.get_mutable_optical_property_set(*plate);
+    ASSERT_NE(plate_optics, nullptr);
+    plate_optics->set_refraction_indices(n_incident, n_transmit);
+    plate_optics->set_transmissivity(OpticalSide::Both, transmissivity);
 
     OptixRunner runner;
     ASSERT_EQ(runner.initialize(), RunnerStatus::SUCCESS);
