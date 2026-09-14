@@ -19,6 +19,7 @@ set(OPTIX_RUNNER_TEST_SRC
     geometry_intersection_test.cpp
     gpu_tower_demo.cpp
     flat_optical_test.cpp
+    material_interaction_test.cpp
     two_plate_test.cpp
     sun_test.cpp
     ray_position_sampling_test.cpp

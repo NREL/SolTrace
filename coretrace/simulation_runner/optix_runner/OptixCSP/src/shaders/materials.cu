@@ -94,12 +94,13 @@ fresnel_reflection_coef(float mu, float ci, float ct)
     return 0.5 * (rs + rp);
 }
 
-extern "C" __device__ __host__ __inline__ float3
+extern "C" __device__ __host__ __inline__ uint8_t
 refract(const float3&         i,
         const float3&         n,
         float                 refract_incident,
         float                 refract_transmit,
-        OptixCSP::PerRayData& prd)
+        OptixCSP::PerRayData& prd,
+        float3&               out_dir)
 {
     const float mu = refract_incident / refract_transmit;
     const float ci =
@@ -108,21 +109,25 @@ refract(const float3&         i,
     if (delta < 0.0f)
     {
         // Total internal reflection
-        return reflect(i, n);
+        out_dir = reflect(i, n);
+        return OptixCSP::HitType::HIT_REFLECT;
     }
-    else
+
+    const float ct   = sqrtf(delta);
+    const float reff = fresnel_reflection_coef(mu, ci, ct);
+
+    curandState local_rng = params.rng_states[prd.ray_path_index];
+    const float u         = curand_uniform(&local_rng);
+    params.rng_states[prd.ray_path_index] = local_rng;
+
+    if (u < reff)
     {
-        const float ct   = sqrtf(delta);
-        const float reff = fresnel_reflection_coef(mu, ci, ct);
-
-        curandState local_rng = params.rng_states[prd.ray_path_index];
-        const float u         = curand_uniform(&local_rng);
-        params.rng_states[prd.ray_path_index] = local_rng;
-
-        if (u < reff) return reflect(i, n);
-        else
-            return mu * i + (mu * ci - ct) * n;
+        out_dir = reflect(i, n);
+        return OptixCSP::HitType::HIT_REFLECT;
     }
+
+    out_dir = mu * i + (mu * ci - ct) * n;
+    return OptixCSP::HitType::HIT_TRANSMIT;
 }
 
 
@@ -270,12 +275,12 @@ extern "C" __global__ void __closesthit__element()
         } // ray is absorbed
         else
         {
-            new_dir  = refract(ray_dir,
+            hit_type = refract(ray_dir,
                                ffnormal,
                                material.refractive_index_incident,
                                material.refractive_index_transmitted,
-                               prd);
-            hit_type = OptixCSP::HitType::HIT_TRANSMIT;
+                               prd,
+                               new_dir);
         }
     }
     else
