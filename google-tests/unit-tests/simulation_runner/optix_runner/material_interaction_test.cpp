@@ -240,3 +240,111 @@ TEST(MaterialInteraction, CombinedTransmissivityAndFresnel)
 
     EXPECT_NEAR(measured_reflectance, expected, 0.03);
 }
+
+namespace
+{
+
+// Ideal flat mirror tilted by tilt_angle_deg, with an ideal absorbing target
+// placed exactly where the law of reflection (angle in = angle out) predicts
+// the reflected beam should land.
+void make_mirror_and_target_sd(SimulationData& sd,
+                               element_ptr&    mirror,
+                               element_ptr&    target,
+                               double          tilt_angle_deg)
+{
+    sd.clear();
+
+    auto sun = make_ray_source<Sun>();
+    sun->set_position(0, 0, 100);
+    sd.add_ray_source(sun);
+
+    auto stage = make_stage(0);
+    stage->set_origin(0, 0, 0);
+    stage->set_aim_vector(0, 0, 1);
+    stage->set_name("stage");
+
+    const double theta     = tilt_angle_deg * std::acos(-1.0) / 180.0;
+    const double mirror_x = 0.0, mirror_y = 0.0, mirror_z = 50.0;
+
+    mirror = make_element<SingleElement>();
+    mirror->set_origin(mirror_x, mirror_y, mirror_z);
+    mirror->set_aim_vector(mirror_x,
+                           mirror_y + 100.0 * std::sin(theta),
+                           mirror_z + 100.0 * std::cos(theta));
+    mirror->set_surface(make_surface<Flat>());
+    mirror->set_aperture(make_aperture<Rectangle>(5, 5));
+    mirror->set_name("mirror");
+
+    OpticalPropertySet mirror_optics(
+        InteractionType::REFLECTION, 0.0, 0.0, "IdealMirror");
+    mirror_optics.set_ideal_reflection(OpticalSide::Both);
+    auto mirror_optics_ref = sd.add_optical_property_set(mirror_optics);
+    mirror->set_optical_property_set(mirror_optics_ref);
+
+    // Incident ray (0,0,-1) reflects to (0, sin(2*theta), cos(2*theta)).
+    const double rx       = 0.0;
+    const double ry       = std::sin(2.0 * theta);
+    const double rz       = std::cos(2.0 * theta);
+    const double distance = 50.0;
+
+    const double target_x = mirror_x + distance * rx;
+    const double target_y = mirror_y + distance * ry;
+    const double target_z = mirror_z + distance * rz;
+
+    target = make_element<SingleElement>();
+    target->set_origin(target_x, target_y, target_z);
+    target->set_aim_vector(
+        target_x - 100.0 * rx, target_y - 100.0 * ry, target_z - 100.0 * rz);
+    target->set_surface(make_surface<Flat>());
+    target->set_aperture(make_aperture<Rectangle>(10, 10));
+    target->set_name("target");
+
+    OpticalPropertySet target_optics(
+        InteractionType::REFLECTION, 0.0, 0.0, "IdealAbsorber");
+    target_optics.set_ideal_absorption(OpticalSide::Both);
+    auto target_optics_ref = sd.add_optical_property_set(target_optics);
+    target->set_optical_property_set(target_optics_ref);
+
+    stage->add_element(mirror);
+    stage->add_element(target);
+    sd.add_stage(stage);
+
+    SimulationParameters& params    = sd.get_simulation_parameters();
+    params.number_of_rays           = 20000;
+    params.max_number_of_rays       = params.number_of_rays * 100;
+    params.include_optical_errors   = false;
+    params.include_sun_shape_errors = false;
+    params.seed                     = 321;
+}
+
+} // namespace
+
+TEST(MaterialInteraction, ReflectionFollowsLawOfReflection)
+{
+    const std::vector<double> tilt_angles_deg = { 10.0, 25.0, 40.0 };
+
+    for (double tilt_angle_deg : tilt_angles_deg)
+    {
+        SimulationData sd;
+        element_ptr    mirror, target;
+        make_mirror_and_target_sd(sd, mirror, target, tilt_angle_deg);
+
+        OptixRunner runner;
+        ASSERT_EQ(runner.initialize(), RunnerStatus::SUCCESS);
+        ASSERT_EQ(runner.setup_simulation(&sd), RunnerStatus::SUCCESS);
+        ASSERT_EQ(runner.run_simulation(), RunnerStatus::SUCCESS);
+
+        SimulationResult result;
+        ASSERT_EQ(runner.report_simulation(&result, 0), RunnerStatus::SUCCESS);
+
+        int absorbed, transmitted, reflected;
+        count_hits(result, absorbed, transmitted, reflected);
+        ASSERT_GT(reflected, 0);
+
+        // A wrong sign/formula in reflect() sends the beam elsewhere and this
+        // capture fraction collapses toward zero.
+        const double capture_fraction =
+            static_cast<double>(absorbed) / static_cast<double>(reflected);
+        EXPECT_GT(capture_fraction, 0.95) << "tilt_angle_deg=" << tilt_angle_deg;
+    }
+}
