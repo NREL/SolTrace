@@ -777,8 +777,8 @@ void CspElement::set_optics(const bool                is_front,
     md.use_refraction = use_refraction;
     md.reflectivity   = reflectivity;
     md.transmissivity = transmissivity;
-    md.refractive_index_incident    = refractive_index_incident;
-    md.refractive_index_transmitted = refractive_index_transmitted;
+    // Precompute the relative index so the shader can skip the division per hit.
+    md.mu = refractive_index_incident / refractive_index_transmitted;
     md.slope_error         = slope_error;
     md.specularity_error   = specularity_error;
     md.optical_dist        = od;

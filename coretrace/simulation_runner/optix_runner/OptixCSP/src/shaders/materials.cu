@@ -84,6 +84,9 @@ extern "C" __device__ __host__ __inline__ float3 reflect(const float3& i,
 //     }
 // }
 
+// Unpolarized Fresnel reflectance (average of s- and p-polarized components)
+// for a ray crossing an interface with relative index mu, given the cosines
+// of the incident (ci) and transmitted (ct) angles.
 extern "C" __device__ __host__ __inline__ float
 fresnel_reflection_coef(float mu, float ci, float ct)
 {
@@ -94,15 +97,17 @@ fresnel_reflection_coef(float mu, float ci, float ct)
     return 0.5 * (rs + rp);
 }
 
+// Applies Snell's law to refract (or, on total internal reflection/Fresnel
+// roll, reflect) an incident ray at a surface. mu is the precomputed relative
+// refractive index (incident/transmitted). Returns the resulting hit type and
+// writes the outgoing direction to out_dir.
 extern "C" __device__ __host__ __inline__ uint8_t
 refract(const float3&         i,
         const float3&         n,
-        float                 refract_incident,
-        float                 refract_transmit,
+        float                 mu,
         OptixCSP::PerRayData& prd,
         float3&               out_dir)
 {
-    const float mu = refract_incident / refract_transmit;
     const float ci =
         -dot(i, n); // Cosine of (negative) incident vector and surface normal
     const float delta = 1.0f - mu * mu * (1.0f - ci * ci);
@@ -120,6 +125,8 @@ refract(const float3&         i,
     const float u         = curand_uniform(&local_rng);
     params.rng_states[prd.ray_path_index] = local_rng;
 
+    // Monte Carlo split between reflection and transmission per Fresnel
+    // probability
     if (u < reff)
     {
         out_dir = reflect(i, n);
@@ -131,7 +138,7 @@ refract(const float3&         i,
 }
 
 
-// Add perturbation ortogonal to given vector. Perturbation is uniform over
+// Add perturbation orthogonal to given vector. Perturbation is uniform over
 // a disk of radius a centered at the vector n. Returned vector is a
 // unit vector.
 extern "C" __device__ float3 apply_uniform_errors(float                 a,
@@ -277,8 +284,7 @@ extern "C" __global__ void __closesthit__element()
         {
             hit_type = refract(ray_dir,
                                ffnormal,
-                               material.refractive_index_incident,
-                               material.refractive_index_transmitted,
+                               material.mu,
                                prd,
                                new_dir);
         }
