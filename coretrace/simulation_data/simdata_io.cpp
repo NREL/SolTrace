@@ -24,7 +24,8 @@
 #include "utilities.hpp"
 #include "virtual_element.hpp"
 
-namespace SolTrace::Data {
+namespace SolTrace::Data
+{
 
 DistributionType char_to_distribution(const char dist_char)
 {
@@ -158,7 +159,8 @@ char surface_to_char(const SurfaceType surface)
     }
 }
 
-static void read_line(char* buf, int len, FILE* fp) {
+static void read_line(char* buf, int len, FILE* fp)
+{
     fgets(buf, len, fp);
     int nch = strlen(buf);
     if (nch > 0 && buf[nch - 1] == '\n') buf[nch - 1] = 0;
@@ -168,20 +170,25 @@ static void read_line(char* buf, int len, FILE* fp) {
 std::vector<std::string> split(const std::string& str,
                                const std::string& delim,
                                bool               ret_empty,
-                               bool               ret_delim) {
+                               bool               ret_delim)
+{
     std::vector<std::string> list;
 
     char                   cur_delim[2] = { 0, 0 };
     std::string::size_type m_pos        = 0;
     std::string            token;
 
-    while (m_pos < str.length()) {
+    while (m_pos < str.length())
+    {
         std::string::size_type pos = str.find_first_of(delim, m_pos);
-        if (pos == std::string::npos) {
+        if (pos == std::string::npos)
+        {
             cur_delim[0] = 0;
             token.assign(str, m_pos, std::string::npos);
             m_pos = str.length();
-        } else {
+        }
+        else
+        {
             cur_delim[0]               = str[pos];
             std::string::size_type len = pos - m_pos;
             token.assign(str, m_pos, len);
@@ -199,7 +206,8 @@ std::vector<std::string> split(const std::string& str,
     return list;
 }
 
-bool process_sun(FILE* fp, SimulationData& sd) {
+bool process_sun(FILE* fp, SimulationData& sd)
+{
     char buf[1024];
 
     // Read Sun info
@@ -218,7 +226,8 @@ bool process_sun(FILE* fp, SimulationData& sd) {
            &Sigma,
            &HalfWidth);
     PointSource = (bi != 0);
-    cshape      = static_cast<char>(std::tolower(static_cast<unsigned char>(cshape)));
+    cshape =
+        static_cast<char>(std::tolower(static_cast<unsigned char>(cshape)));
 
     read_line(buf, 1023, fp);
 
@@ -237,8 +246,10 @@ bool process_sun(FILE* fp, SimulationData& sd) {
     sscanf(buf, "USER SHAPE DATA\t%d", &count);
     std::vector<double> angle_vec;
     std::vector<double> intensity_vec;
-    if (count > 0) {
-        for (int i = 0; i < count; i++) {
+    if (count > 0)
+    {
+        for (int i = 0; i < count; i++)
+        {
             double x, y;
             read_line(buf, 1023, fp);
             sscanf(buf, "%lg\t%lg", &x, &y);
@@ -251,7 +262,8 @@ bool process_sun(FILE* fp, SimulationData& sd) {
     auto sun = make_ray_source<Sun>();
 
     // Define sun position
-    if (UseLDHSpec) {
+    if (UseLDHSpec)
+    {
         // sun->set_position(Latitude, Day, Hour);
         st_sun_position(Latitude, Day, Hour, &X, &Y, &Z);
     }
@@ -277,12 +289,14 @@ bool read_optic_surface(FILE*               fp,
                         bool                is_front,
                         OpticalPropertySet& optics,
                         int&                OpticalSurfaceNumber,
-                        double&             refraction) {
+                        double&             refraction)
+{
     if (!fp) return false;
     char buf[1024];
     read_line(buf, 1023, fp);
     std::vector<std::string> parts = split(std::string(buf), "\t", true, false);
-    if (parts.size() < 15) {
+    if (parts.size() < 15)
+    {
         printf("too few tokens for optical surface: %zu\n", parts.size());
         printf("\t>> %s\n", buf);
         return false;
@@ -307,41 +321,49 @@ bool read_optic_surface(FILE*               fp,
     GratingCoeffs[2] = atof(parts[13].c_str());
     GratingCoeffs[3] = atof(parts[14].c_str());
 
-    bool    UseReflectivityTable = false;
-    int     refl_npoints         = 0;
-    double* refl_angles          = 0;
-    double* refls                = 0;
+    bool UseReflectivityTable   = false;
+    int  refl_npoints           = 0;
+    bool UseTransmissivityTable = false;
+    int  trans_npoints          = 0;
 
-    bool    UseTransmissivityTable = false;
-    int     trans_npoints          = 0;
-    double* trans_angles           = 0;
-    double* transs                 = 0;
-
-    if (parts.size() >= 17) {
+    if (parts.size() >= 17)
+    {
         UseReflectivityTable = (atoi(parts[15].c_str()) > 0);
         refl_npoints         = atoi(parts[16].c_str());
-        if (parts.size() >= 19) {
+        if (parts.size() >= 19)
+        {
             UseTransmissivityTable = (atoi(parts[17].c_str()) > 0);
             trans_npoints          = atoi(parts[18].c_str());
         }
     }
 
-    if (UseReflectivityTable) {
-        refl_angles = new double[refl_npoints];
-        refls       = new double[refl_npoints];
+    std::vector<AngularTablePoint> reflectivity_table;
+    if (UseReflectivityTable)
+    {
+        reflectivity_table.resize(refl_npoints);
 
-        for (int i = 0; i < refl_npoints; i++) {
+        for (int i = 0; i < refl_npoints; i++)
+        {
             read_line(buf, 1023, fp);
-            sscanf(buf, "%lg %lg", &refl_angles[i], &refls[i]);
+            sscanf(buf,
+                   "%lg %lg",
+                   &reflectivity_table[i].angle,
+                   &reflectivity_table[i].value);
         }
     }
-    if (UseTransmissivityTable) {
-        trans_angles = new double[trans_npoints];
-        transs       = new double[trans_npoints];
 
-        for (int i = 0; i < trans_npoints; i++) {
+    std::vector<AngularTablePoint> transmissivity_table;
+    if (UseTransmissivityTable)
+    {
+        transmissivity_table.resize(trans_npoints);
+
+        for (int i = 0; i < trans_npoints; i++)
+        {
             read_line(buf, 1023, fp);
-            sscanf(buf, "%lg %lg", &trans_angles[i], &transs[i]);
+            sscanf(buf,
+                   "%lg %lg",
+                   &transmissivity_table[i].angle,
+                   &transmissivity_table[i].value);
         }
     }
 
@@ -351,15 +373,17 @@ bool read_optic_surface(FILE*               fp,
     optics.set_properties(
         side, dist, Transmissivity, Reflectivity, RMSSlope, RMSSpecularity);
 
-    if (refl_angles != 0) delete[] refl_angles;
-    if (refls != 0) delete[] refls;
-    if (trans_angles != 0) delete[] trans_angles;
-    if (transs != 0) delete[] transs;
+    if (UseReflectivityTable)
+        optics.set_reflectivity_table(side, reflectivity_table);
+    if (UseTransmissivityTable)
+        optics.set_transmissivity_table(side, transmissivity_table);
+
     return true;
 }
 
 bool process_optics(FILE*                                      fp,
-                    std::map<std::string, OpticalPropertySet>& optics_map) {
+                    std::map<std::string, OpticalPropertySet>& optics_map)
+{
     char buf[1024];
 
     // Read number of optics
@@ -368,11 +392,13 @@ bool process_optics(FILE*                                      fp,
     sscanf(buf, "OPTICS LIST COUNT\t%d", &count);
 
     // Define each optics
-    for (int i = 0; i < count; i++) {
+    for (int i = 0; i < count; i++)
+    {
         // Read optical pair info line
         read_line(buf, 1023, fp);
 
-        if (strncmp(buf, "OPTICAL PAIR", 12) == 0) {
+        if (strncmp(buf, "OPTICAL PAIR", 12) == 0)
+        {
             // int iopt = st_add_optic(cxt, (const char*)(buf + 13));
             std::string optics_name = std::string(buf + 13);
             double      refrac_front, refrac_back;
@@ -380,14 +406,17 @@ bool process_optics(FILE*                                      fp,
 
             OpticalPropertySet optics_set(InteractionType::UNKNOWN,
                                           optics_name);
-            if(!read_optic_surface(fp, true, optics_set, OpticalSurfaceNumber, refrac_front))
+            if (!read_optic_surface(
+                    fp, true, optics_set, OpticalSurfaceNumber, refrac_front))
                 return false;
-            if(!read_optic_surface(fp, false, optics_set, OpticalSurfaceNumber, refrac_back))
+            if (!read_optic_surface(
+                    fp, false, optics_set, OpticalSurfaceNumber, refrac_back))
                 return false;
             optics_set.set_refraction_indices(refrac_front, refrac_back);
 
             optics_map[optics_name] = optics_set;
-        } else
+        }
+        else
             return false;
     }
 
@@ -398,12 +427,14 @@ bool read_element(FILE*                                      fp,
                   std::map<std::string, OpticalPropertySet>& optics_map,
                   element_ptr&                               el,
                   SimulationData&                            sd,
-                  bool                                       virt) {
+                  bool                                       virt)
+{
     char buf[1024];
     read_line(buf, 1023, fp);
 
     std::vector<std::string> tok = split(buf, "\t", true, false);
-    if (tok.size() < 29) {
+    if (tok.size() < 29)
+    {
         printf("too few tokens for element: %zu\n", tok.size());
         printf("\t>> %s\n", buf);
         return false;
@@ -419,28 +450,30 @@ bool read_element(FILE*                                      fp,
     double     zrot    = atof(tok[7].c_str());
 
     char ShapeIndex = ' ';
-    if (tok[8].length() > 0) {
-        ShapeIndex = tok[8][0];
-    } else {
+    if (tok[8].length() > 0) { ShapeIndex = tok[8][0]; }
+    else
+    {
         printf("no aperture index specified for element\n");
         return false;
     }
 
     std::vector<double> aperture_params;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 8; i++)
+    {
         aperture_params.push_back(atof(tok[i + 9].c_str()));
     }
 
     char SurfaceIndex = ' ';
-    if (tok[17].length() > 0) {
-        SurfaceIndex = tok[17][0];
-    } else {
+    if (tok[17].length() > 0) { SurfaceIndex = tok[17][0]; }
+    else
+    {
         printf("no surface index specified for element\n");
         return false;
     }
 
     std::vector<double> surface_params;
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 8; i++)
+    {
         surface_params.push_back(atof(tok[i + 18].c_str()));
     }
 
@@ -458,7 +491,8 @@ bool read_element(FILE*                                      fp,
 
     // Make aperture
     ApertureType aperture_type = char_to_aperture(ShapeIndex);
-    if (aperture_type == ApertureType::APERTURE_UNKNOWN) {
+    if (aperture_type == ApertureType::APERTURE_UNKNOWN)
+    {
         std::stringstream ss;
         ss << "Aperture character " << ShapeIndex
            << " returned unknown aperture type " << aperture_type;
@@ -467,13 +501,15 @@ bool read_element(FILE*                                      fp,
 
     aperture_ptr ap_ptr =
         Aperture::make_aperture_from_type(aperture_type, aperture_params);
-    if (ap_ptr == nullptr) {
+    if (ap_ptr == nullptr)
+    {
         std::stringstream ss;
         ss << "Unable to make aperture pointer -- "
            << "\nChar: " << ShapeIndex << "\nType: " << aperture_type
            << "\nParams: [";
         for (auto cit = aperture_params.cbegin(); cit != aperture_params.cend();
-             ++cit) {
+             ++cit)
+        {
             ss << *cit << ", ";
         }
         ss << "]" << std::endl;
@@ -483,18 +519,21 @@ bool read_element(FILE*                                      fp,
 
     // Make surface
     SurfaceType surface_type = char_to_surface(SurfaceIndex);
-    if (surface_type == SurfaceType::SURFACE_UNKNOWN) {
+    if (surface_type == SurfaceType::SURFACE_UNKNOWN)
+    {
         std::stringstream ss;
         ss << "Unknown surface type " << surface_type;
         throw std::invalid_argument(ss.str());
     }
     surface_ptr surf_ptr = make_surface_from_type(surface_type, surface_params);
     el->set_surface(surf_ptr);
-    if (surface_type == SurfaceType::CYLINDER) {
+    if (surface_type == SurfaceType::CYLINDER)
+    {
         ap_ptr    = el->get_aperture();
         auto rect = std::dynamic_pointer_cast<Rectangle>(ap_ptr);
         auto cyl  = std::dynamic_pointer_cast<Cylinder>(surf_ptr);
-        if (rect == nullptr || cyl == nullptr) {
+        if (rect == nullptr || cyl == nullptr)
+        {
             throw std::invalid_argument("This should not happen!");
         }
         double r = cyl->radius;
@@ -517,9 +556,11 @@ bool read_element(FILE*                                      fp,
     el->set_reference_frame_geometry(glm::dvec3(xyz), glm::dvec3(aim), zrot);
 
     // Set optical properties
-    if (!virt) {
+    if (!virt)
+    {
         auto optics_iter = optics_map.find(optics_name);
-        if (optics_iter == optics_map.end()) {
+        if (optics_iter == optics_map.end())
+        {
             std::stringstream ss;
             ss << "Element references unknown optical property set: "
                << optics_name;
@@ -528,7 +569,8 @@ bool read_element(FILE*                                      fp,
 
         OpticalPropertySet optics_set = optics_iter->second;
         // should optical interaction type be defined per element?
-        // this code would mean the optical set interaction type is set by the last seen element of that optical set in the input file
+        // this code would mean the optical set interaction type is set by the
+        // last seen element of that optical set in the input file
         optics_set.set_interaction_type(interaction);
 
         auto optics_ref = sd.find_or_add_optical_property_set(optics_set);
@@ -540,7 +582,8 @@ bool read_element(FILE*                                      fp,
 
 bool process_stages(FILE*                                      fp,
                     SimulationData&                            sd,
-                    std::map<std::string, OpticalPropertySet>& optics_map) {
+                    std::map<std::string, OpticalPropertySet>& optics_map)
+{
     char buf[1024];
 
     // Loop through stages
@@ -548,7 +591,8 @@ bool process_stages(FILE*                                      fp,
     read_line(buf, 1023, fp);
     sscanf(buf, "STAGE LIST COUNT\t%d", &count_stage);
 
-    for (int i_stage = 0; i_stage < count_stage; i_stage++) {
+    for (int i_stage = 0; i_stage < count_stage; i_stage++)
+    {
         int    virt = 0, multi = 1, count_element = 0, tr = 0;
         double X, Y, Z, AX, AY, AZ, ZRot;
 
@@ -576,14 +620,15 @@ bool process_stages(FILE*                                      fp,
         stage->set_aim_vector(AX, AY, AZ);
         stage->set_zrot(ZRot);
         stage->compute_coordinate_rotations();
-        if (virt) {
-            stage->mark_virtual();
-        } else {
+        if (virt) { stage->mark_virtual(); }
+        else
+        {
             stage->unmark_virtual();
         }
 
         // Loop through elements
-        for (int i_element = 0; i_element < count_element; i_element++) {
+        for (int i_element = 0; i_element < count_element; i_element++)
+        {
             element_ptr el;
             if (!read_element(fp, optics_map, el, sd, virt) || el == nullptr)
             {
@@ -592,12 +637,14 @@ bool process_stages(FILE*                                      fp,
             el->set_name(std::to_string(i_element));
             // TODO make virtual if stage is virtual?
 
-            if (!Element::is_success(stage->add_element(el))) {
+            if (!Element::is_success(stage->add_element(el)))
+            {
                 std::cout << "Failed to add element to stage" << std::endl;
             }
         }
 
-        if (!Element::is_success(sd.add_stage(stage))) {
+        if (!Element::is_success(sd.add_stage(stage)))
+        {
             std::cout << "Failed to add stage to SimulationData" << std::endl;
         }
     }
@@ -605,7 +652,8 @@ bool process_stages(FILE*                                      fp,
     return true;
 }
 
-bool process_sim_par(FILE* fp, SimulationData& sd) {
+bool process_sim_par(FILE* fp, SimulationData& sd)
+{
     char buf[1024];
 
     // Check if end of file
@@ -640,10 +688,12 @@ bool process_sim_par(FILE* fp, SimulationData& sd) {
     return true;
 }
 
-bool load_stinput_file(SimulationData& sd, std::string filename) {
+bool load_stinput_file(SimulationData& sd, std::string filename)
+{
     // Read in file
     FILE* fp = fopen(filename.data(), "r");
-    if (!fp) {
+    if (!fp)
+    {
         printf("failed to open system input file: %s\n", filename.data());
         return false;
     }
@@ -657,7 +707,8 @@ bool load_stinput_file(SimulationData& sd, std::string filename) {
     // Get version info (if first line starts with '#')
     int  vmaj = 0, vmin = 0, vmic = 0;
     char c = fgetc(fp);
-    if (c == '#') {
+    if (c == '#')
+    {
         read_line(buf, 1023, fp);
         sscanf(
             buf, " SOLTRACE VERSION %d.%d.%d INPUT FILE", &vmaj, &vmin, &vmic);
@@ -665,22 +716,21 @@ bool load_stinput_file(SimulationData& sd, std::string filename) {
         // unsigned int file_version = vmaj*10000 + vmin*100 + vmic;
 
         printf("loading input file version %d.%d.%d\n", vmaj, vmin, vmic);
-    } else {
+    }
+    else
+    {
         ungetc(c, fp);
     }
 
     // Read in Sun
-    if(!process_sun(fp, sd))
-        return false;
+    if (!process_sun(fp, sd)) return false;
 
     // Read in Optics
     std::map<std::string, OpticalPropertySet> optics_map;
-    if (!process_optics(fp, optics_map))
-        return false;
+    if (!process_optics(fp, optics_map)) return false;
 
     // Read in Stages
-    if (!process_stages(fp, sd, optics_map))
-        return false;
+    if (!process_stages(fp, sd, optics_map)) return false;
 
     // Read in simulation parameters (if any)
     process_sim_par(fp, sd);

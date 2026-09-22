@@ -19,6 +19,7 @@
 #include <memory>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -61,6 +62,24 @@ namespace SolTrace::Data
         Both
     };
 
+    // A single (angle, value) sample of an angle-dependent reflectivity or
+    // transmissivity table. Angle is the incidence angle in [mrad].
+    struct AngularTablePoint
+    {
+        double angle;
+        double value;
+
+        bool operator==(const AngularTablePoint& other) const
+        {
+            return this->angle == other.angle && this->value == other.value;
+        }
+
+        bool operator!=(const AngularTablePoint& other) const
+        {
+            return !(*this == other);
+        }
+    };
+
     struct OpticalPropertySetReference
     {
         optics_id id = OPTICS_ID_UNASSIGNED;
@@ -79,11 +98,21 @@ namespace SolTrace::Data
             double slope_error;                 // [mrad]
             double specularity_error;           // [mrad]
 
+            // Angle-dependent tables, keyed on incidence angle [mrad] and
+            // interpolated linearly in cos(angle). Used instead of the
+            // scalar reflectivity/transmissivity above when enabled.
+            bool use_reflectivity_table;
+            bool use_transmissivity_table;
+            std::vector<AngularTablePoint> reflectivity_table;
+            std::vector<AngularTablePoint> transmissivity_table;
+
             OpticalPropertiesFace() : error_distribution_type(DistributionType::UNKNOWN),
                 transmissivity(0.0),
                 reflectivity(0.0),
                 slope_error(0.0),
-                specularity_error(0.0)
+                specularity_error(0.0),
+                use_reflectivity_table(false),
+                use_transmissivity_table(false)
             {
             }
 
@@ -94,7 +123,9 @@ namespace SolTrace::Data
                 transmissivity(trans),
                 reflectivity(refl),
                 slope_error(slope_err),
-                specularity_error(spec_err)
+                specularity_error(spec_err),
+                use_reflectivity_table(false),
+                use_transmissivity_table(false)
             {
                 validate();
             }
@@ -103,13 +134,23 @@ namespace SolTrace::Data
 
             void validate() const;
 
+            // Returns the scalar reflectivity, or the table value linearly
+            // interpolated in cos(incident_angle_mrad) if a table is in use.
+            double get_reflectivity(double incident_angle_mrad) const;
+
+            // Returns the scalar transmissivity, or the table value linearly
+            // interpolated in cos(incident_angle_mrad) if a table is in use.
+            double get_transmissivity(double incident_angle_mrad) const;
+
             // TODO: What should the error settings be with the below?
             void write_json(nlohmann::ordered_json& jnode) const;
 
             bool operator==(const OpticalPropertiesFace& other) const;
             bool operator!=(const OpticalPropertiesFace& other) const;
 
-            
+        private:
+            static double interpolate_table(const std::vector<AngularTablePoint>& table,
+                double incident_angle_mrad);
         };
 
         OpticalPropertiesFace front;
@@ -233,6 +274,106 @@ namespace SolTrace::Data
             if (side == OpticalSide::Back || side == OpticalSide::Both)
             {
                 this->back.transmissivity = trans;
+            }
+        }
+
+        // Enables and sets an angle-dependent reflectivity table (angle in
+        // [mrad], ascending) for the given side(s).
+        void set_reflectivity_table(const OpticalSide side,
+            const std::vector<AngularTablePoint>& table)
+        {
+            if (side == OpticalSide::Front || side == OpticalSide::Both)
+            {
+                this->front.use_reflectivity_table = true;
+                this->front.reflectivity_table = table;
+                this->front.validate();
+            }
+
+            if (side == OpticalSide::Back || side == OpticalSide::Both)
+            {
+                this->back.use_reflectivity_table = true;
+                this->back.reflectivity_table = table;
+                this->back.validate();
+            }
+        }
+
+        // Enables and sets an angle-dependent transmissivity table (angle in
+        // [mrad], ascending) for the given side(s).
+        void set_transmissivity_table(const OpticalSide side,
+            const std::vector<AngularTablePoint>& table)
+        {
+            if (side == OpticalSide::Front || side == OpticalSide::Both)
+            {
+                this->front.use_transmissivity_table = true;
+                this->front.transmissivity_table = table;
+                this->front.validate();
+            }
+
+            if (side == OpticalSide::Back || side == OpticalSide::Both)
+            {
+                this->back.use_transmissivity_table = true;
+                this->back.transmissivity_table = table;
+                this->back.validate();
+            }
+        }
+
+        // Toggles whether ray tracing uses the reflectivity table for the
+        // given side(s), without discarding the table itself.
+        void enable_reflectivity_table(const OpticalSide side)
+        {
+            if (side == OpticalSide::Front || side == OpticalSide::Both)
+            {
+                this->front.use_reflectivity_table = true;
+                this->front.validate();
+            }
+
+            if (side == OpticalSide::Back || side == OpticalSide::Both)
+            {
+                this->back.use_reflectivity_table = true;
+                this->back.validate();
+            }
+        }
+
+        void disable_reflectivity_table(const OpticalSide side)
+        {
+            if (side == OpticalSide::Front || side == OpticalSide::Both)
+            {
+                this->front.use_reflectivity_table = false;
+            }
+
+            if (side == OpticalSide::Back || side == OpticalSide::Both)
+            {
+                this->back.use_reflectivity_table = false;
+            }
+        }
+
+        // Toggles whether ray tracing uses the transmissivity table for the
+        // given side(s), without discarding the table itself.
+        void enable_transmissivity_table(const OpticalSide side)
+        {
+            if (side == OpticalSide::Front || side == OpticalSide::Both)
+            {
+                this->front.use_transmissivity_table = true;
+                this->front.validate();
+            }
+
+            if (side == OpticalSide::Back || side == OpticalSide::Both)
+            {
+                this->back.use_transmissivity_table = true;
+                this->back.validate();
+            }
+        }
+
+        void disable_transmissivity_table(const OpticalSide side)
+        {
+            if (side == OpticalSide::Front || side == OpticalSide::Both)
+            {
+                this->front.use_transmissivity_table = false;
+            }
+
+            if (side == OpticalSide::Back || side == OpticalSide::Both)
+            {
+                this->back.use_transmissivity_table = false;
             }
         }
 
@@ -382,6 +523,22 @@ namespace SolTrace::Data
             }
         }
 
+        // Returns the reflectivity for the given side, using the
+        // angle-dependent table (interpolated in cos(incident_angle_mrad))
+        // if one is enabled for that side, otherwise the scalar value.
+        double get_reflectivity(const OpticalSide side, double incident_angle_mrad) const
+        {
+            switch (side)
+            {
+                case(OpticalSide::Front):
+                    return this->front.get_reflectivity(incident_angle_mrad);
+                case(OpticalSide::Back):
+                    return this->back.get_reflectivity(incident_angle_mrad);
+                default:
+                    return std::numeric_limits<double>::quiet_NaN();
+            }
+        }
+
         double get_transmissivity(const OpticalSide side) const
         {
             switch (side)
@@ -392,6 +549,37 @@ namespace SolTrace::Data
                     return this->back.transmissivity;
                 default:
                     return std::numeric_limits<double>::quiet_NaN();
+            }
+        }
+
+        // Returns the transmissivity for the given side, using the
+        // angle-dependent table (interpolated in cos(incident_angle_mrad))
+        // if one is enabled for that side, otherwise the scalar value.
+        double get_transmissivity(const OpticalSide side, double incident_angle_mrad) const
+        {
+            switch (side)
+            {
+                case(OpticalSide::Front):
+                    return this->front.get_transmissivity(incident_angle_mrad);
+                case(OpticalSide::Back):
+                    return this->back.get_transmissivity(incident_angle_mrad);
+                default:
+                    return std::numeric_limits<double>::quiet_NaN();
+            }
+        }
+
+        // True if the given side has any angle-dependent reflectivity or
+        // transmissivity table enabled.
+        bool uses_angular_table(const OpticalSide side) const
+        {
+            switch (side)
+            {
+                case(OpticalSide::Front):
+                    return this->front.use_reflectivity_table || this->front.use_transmissivity_table;
+                case(OpticalSide::Back):
+                    return this->back.use_reflectivity_table || this->back.use_transmissivity_table;
+                default:
+                    return false;
             }
         }
 
