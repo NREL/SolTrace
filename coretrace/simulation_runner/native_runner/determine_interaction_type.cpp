@@ -33,21 +33,21 @@ namespace SolTrace::NativeRunner
         const OpticalSide side = LastHitBackSide == false ? OpticalSide::Front : OpticalSide::Back;
 
         // Only pay for the incident angle when a table lookup actually needs it.
-        double IncidentAngle = 0.0; // [mrad]
+        double IncidentCos = 1.0; // [mrad]
         if (optics->uses_angular_table(side))
         {
             const glm::dvec3 UnitLastDFXYZ = -glm::normalize(LastDFXYZ);
-            IncidentAngle = std::acos(glm::dot(LastCosRaySurfElement, UnitLastDFXYZ)) * 1000.0; // [mrad]
+            IncidentCos = glm::dot(LastCosRaySurfElement, UnitLastDFXYZ);
         }
 
         switch (optics->get_interaction_type())
         {
         case InteractionType::REFRACTION:
-            TestValue = optics->get_transmissivity(side, IncidentAngle);
+            TestValue = optics->get_transmissivity(side, IncidentCos);
             rev = RayEvent::TRANSMIT;
             break;
         case InteractionType::REFLECTION:
-            TestValue = optics->get_reflectivity(side, IncidentAngle);
+            TestValue = optics->get_reflectivity(side, IncidentCos);
             rev = RayEvent::REFLECT;
             break;
         default:

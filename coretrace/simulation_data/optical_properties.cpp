@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include <cmath>
 
 #include "optical_properties.hpp"
@@ -78,6 +79,7 @@ OpticalPropertySet::OpticalPropertiesFace::OpticalPropertiesFace(
         read_angular_table(jnode, "transmissivity_table");
 
     validate();
+    update_table_cache();
 }
 
 namespace
@@ -138,49 +140,83 @@ void OpticalPropertySet::OpticalPropertiesFace::validate() const
 }
 
 double OpticalPropertySet::OpticalPropertiesFace::get_reflectivity(
-    double incident_angle_mrad) const
+    double incident_cosine) const
 {
     return this->use_reflectivity_table
-               ? interpolate_table(this->reflectivity_table,
-                                   incident_angle_mrad)
+               ? interpolate_table(this->reflectivity_cache,
+                                   this->reflectivity_table,
+                                   incident_cosine)
                : this->reflectivity;
 }
 
 double OpticalPropertySet::OpticalPropertiesFace::get_transmissivity(
-    double incident_angle_mrad) const
+    double incident_cosine) const
 {
     return this->use_transmissivity_table
-               ? interpolate_table(this->transmissivity_table,
-                                   incident_angle_mrad)
+               ? interpolate_table(this->transmissivity_cache,
+                                   this->transmissivity_table,
+                                   incident_cosine)
                : this->transmissivity;
 }
 
 double OpticalPropertySet::OpticalPropertiesFace::interpolate_table(
+    const std::vector<double>&            cosine_cache,
     const std::vector<AngularTablePoint>& table,
-    double                                incident_angle_mrad)
+    double                                incident_cosine)
 {
-    // The table is sorted ascending by angle, i.e. descending by cos(angle),
-    // so interpolation is performed linearly in cos(angle) rather than angle.
-    if (table.size() == 1) return table.front().value;
+    const double c = incident_cosine;
 
-    const double c              = std::cos(incident_angle_mrad * kMradToRad);
-    const double c_at_min_angle = std::cos(table.front().angle * kMradToRad);
-    const double c_at_max_angle = std::cos(table.back().angle * kMradToRad);
-
-    if (c >= c_at_min_angle) return table.front().value;
-
-    if (c <= c_at_max_angle) return table.back().value;
+    if (c >= cosine_cache.front()) return table.front().value;
+    if (c <= cosine_cache.back()) return table.back().value;
 
     std::size_t k = 1;
-    while (std::cos(table[k].angle * kMradToRad) > c)
+    while (cosine_cache[k] > c)
         ++k;
 
-    const double c0 = std::cos(table[k - 1].angle * kMradToRad);
-    const double c1 = std::cos(table[k].angle * kMradToRad);
+    const double c0 = cosine_cache[k - 1];
+    const double c1 = cosine_cache[k];
     const double v0 = table[k - 1].value;
     const double v1 = table[k].value;
 
     return v0 + (c - c0) / (c1 - c0) * (v1 - v0);
+}
+
+void OpticalPropertySet::OpticalPropertiesFace::update_table_cache()
+{
+    if (this->use_reflectivity_table)
+    {
+        cache_cosines(this->reflectivity_cache, this->reflectivity_table);
+    }
+    else
+    {
+        this->reflectivity_cache.clear();
+    }
+
+    if (this->use_transmissivity_table)
+    {
+        cache_cosines(this->transmissivity_cache, this->transmissivity_table);
+    }
+    else
+    {
+        this->transmissivity_cache.clear();
+    }
+
+    return;
+}
+
+void OpticalPropertySet::OpticalPropertiesFace::cache_cosines(
+    std::vector<double>&                  cache,
+    const std::vector<AngularTablePoint>& table)
+{
+    // resize() sets size() to exactly table.size() regardless of prior
+    // contents, so a replaced table can't leave stale trailing entries.
+    cache.resize(table.size());
+    std::transform(table.begin(),
+                   table.end(),
+                   cache.begin(),
+                   [](const AngularTablePoint& point)
+                   { return std::cos(point.angle * kMradToRad); });
+    return;
 }
 
 void OpticalPropertySet::OpticalPropertiesFace::write_json(
