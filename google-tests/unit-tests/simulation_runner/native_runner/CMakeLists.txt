@@ -28,6 +28,7 @@ set(NATIVE_RUNNER_TEST_SRC
     tower_demo.cpp
     stage_test.cpp
     grouped_results_test.cpp
+    determine_interaction_type_test.cpp
 )
 
 if (NOT ENABLE_COVERAGE)
