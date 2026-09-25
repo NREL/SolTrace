@@ -219,6 +219,49 @@ void OpticalPropertySet::OpticalPropertiesFace::cache_cosines(
     return;
 }
 
+namespace
+{
+std::vector<double> extract_values(const std::vector<AngularTablePoint>& table)
+{
+    std::vector<double> values(table.size());
+    std::transform(table.begin(),
+                   table.end(),
+                   values.begin(),
+                   [](const AngularTablePoint& point) { return point.value; });
+    return values;
+}
+} // namespace
+
+std::vector<double>
+OpticalPropertySet::get_reflectivity_values(const OpticalSide side) const
+{
+    switch (side)
+    {
+    case (OpticalSide::Front):
+        return extract_values(this->front.reflectivity_table);
+    case (OpticalSide::Back):
+        return extract_values(this->back.reflectivity_table);
+    default:
+        throw std::invalid_argument(
+            "get_reflectivity_values requires Front or Back");
+    }
+}
+
+std::vector<double>
+OpticalPropertySet::get_transmissivity_values(const OpticalSide side) const
+{
+    switch (side)
+    {
+    case (OpticalSide::Front):
+        return extract_values(this->front.transmissivity_table);
+    case (OpticalSide::Back):
+        return extract_values(this->back.transmissivity_table);
+    default:
+        throw std::invalid_argument(
+            "get_transmissivity_values requires Front or Back");
+    }
+}
+
 void OpticalPropertySet::OpticalPropertiesFace::write_json(
     nlohmann::ordered_json& jnode) const
 {

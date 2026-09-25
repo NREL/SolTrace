@@ -578,6 +578,61 @@ public:
         }
     }
 
+    bool uses_reflectivity_table(const OpticalSide side) const
+    {
+        switch (side)
+        {
+        case (OpticalSide::Front): return this->front.use_reflectivity_table;
+        case (OpticalSide::Back): return this->back.use_reflectivity_table;
+        default: return false;
+        }
+    }
+
+    bool uses_transmissivity_table(const OpticalSide side) const
+    {
+        switch (side)
+        {
+        case (OpticalSide::Front): return this->front.use_transmissivity_table;
+        case (OpticalSide::Back): return this->back.use_transmissivity_table;
+        default: return false;
+        }
+    }
+
+    // Cached cos(angle) values for the reflectivity/transmissivity tables, in
+    // the same order as get_reflectivity_values()/get_transmissivity_values().
+    // Empty if no table is set for the given side.
+    const std::vector<double>&
+    get_reflectivity_cosine_cache(const OpticalSide side) const
+    {
+        switch (side)
+        {
+        case (OpticalSide::Front): return this->front.reflectivity_cache;
+        case (OpticalSide::Back): return this->back.reflectivity_cache;
+        default:
+            throw std::invalid_argument(
+                "get_reflectivity_cosine_cache requires Front or Back");
+        }
+    }
+
+    const std::vector<double>&
+    get_transmissivity_cosine_cache(const OpticalSide side) const
+    {
+        switch (side)
+        {
+        case (OpticalSide::Front): return this->front.transmissivity_cache;
+        case (OpticalSide::Back): return this->back.transmissivity_cache;
+        default:
+            throw std::invalid_argument(
+                "get_transmissivity_cosine_cache requires Front or Back");
+        }
+    }
+
+    // Table values, in the same order as get_reflectivity_cosine_cache().
+    std::vector<double> get_reflectivity_values(const OpticalSide side) const;
+
+    // Table values, in the same order as get_transmissivity_cosine_cache().
+    std::vector<double> get_transmissivity_values(const OpticalSide side) const;
+
     DistributionType get_error_distribution(const OpticalSide side) const
     {
         switch (side)

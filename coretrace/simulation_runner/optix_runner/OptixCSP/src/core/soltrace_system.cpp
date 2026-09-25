@@ -302,6 +302,8 @@ void SolTraceSystem::initialize()
     data_manager->allocateGeometryDataArray(geometry_manager->get_geometry_data_array());
     data_manager->allocateMaterialDataArray(geometry_manager->get_material_data_array_front(),
                                             geometry_manager->get_material_data_array_back());
+    data_manager->allocateAngularTablePool(geometry_manager->get_angular_table_cos_pool(),
+                                           geometry_manager->get_angular_table_value_pool());
 
     if (m_verbose)
     {

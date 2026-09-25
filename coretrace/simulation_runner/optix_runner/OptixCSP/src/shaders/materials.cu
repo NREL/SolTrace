@@ -97,6 +97,36 @@ fresnel_reflection_coef(float mu, float ci, float ct)
     return 0.5 * (rs + rp);
 }
 
+// Looks up a reflectivity/transmissivity value by the cosine of the incidence
+// angle (ci) in a table stored as parallel cos/value arrays within
+// [cos_pool + offset, cos_pool + offset + count). Tables are sorted by
+// descending cosine (ascending angle), matching the CPU cosine cache built in
+// OpticalPropertiesFace::cache_cosines().
+extern "C" __device__ __forceinline__ float
+lookup_angular_table(const float* cos_pool,
+                     const float* value_pool,
+                     uint32_t     offset,
+                     uint32_t     count,
+                     float        ci)
+{
+    const float* cos_values = cos_pool + offset;
+    const float* values     = value_pool + offset;
+
+    if (ci >= cos_values[0]) return values[0];
+    if (ci <= cos_values[count - 1]) return values[count - 1];
+
+    uint32_t k = 1;
+    while (cos_values[k] > ci)
+        ++k;
+
+    const float c0 = cos_values[k - 1];
+    const float c1 = cos_values[k];
+    const float v0 = values[k - 1];
+    const float v1 = values[k];
+
+    return v0 + (ci - c0) / (c1 - c0) * (v1 - v0);
+}
+
 // Applies Snell's law to refract (or, on total internal reflection/Fresnel
 // roll, reflect) an incident ray at a surface. mu is the precomputed relative
 // refractive index (incident/transmitted). Returns the resulting hit type and
@@ -240,9 +270,7 @@ extern "C" __global__ void __closesthit__element()
         hit_front_face
             ? params.material_data_array_front[optixGetPrimitiveIndex()]
             : params.material_data_array_back[optixGetPrimitiveIndex()];
-    const float transmissivity     = material.transmissivity;
     const bool  use_transmissivity = material.use_refraction;
-    const float reflectivity       = material.reflectivity;
     const float normal_sigma =
         1e-3f * material.slope_error; // Convert mrad to rad
     const float spec_sigma =
@@ -264,6 +292,23 @@ extern "C" __global__ void __closesthit__element()
         {
             ; // Intentional no-op
         }
+    }
+
+    // A material only ever reflects or transmits, so at most one of these is
+    // ever read below; look up its angle-dependent value (if enabled) using
+    // the incidence angle against the (possibly macro-error-perturbed) normal.
+    float transmissivity = material.transmissivity;
+    float reflectivity   = material.reflectivity;
+    if (material.use_angular_table)
+    {
+        const float ci = -dot(ray_dir, ffnormal);
+        const float looked_up = lookup_angular_table(params.angular_table_cos,
+                                                     params.angular_table_value,
+                                                     material.angular_table_offset,
+                                                     material.angular_table_count,
+                                                     ci);
+        if (use_transmissivity) transmissivity = looked_up;
+        else                    reflectivity   = looked_up;
     }
 
     // now we figure out the random number to determine if the ray is absorbed

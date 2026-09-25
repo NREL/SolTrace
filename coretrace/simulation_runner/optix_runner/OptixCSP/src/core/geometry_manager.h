@@ -5,6 +5,7 @@
 
 #include "shaders/Soltrace.h"
 #include "CspElement.h"
+#include "angular_table_registry.h"
 #include "soltrace_state.h"
 
 namespace OptixCSP {
@@ -45,6 +46,11 @@ namespace OptixCSP {
 		std::vector<MaterialData>& get_material_data_array_front() { return m_material_data_array_front_H; }
 		std::vector<MaterialData>& get_material_data_array_back() { return m_material_data_array_back_H; }
 
+		/// return the shared, de-duplicated angular table pool built while
+		/// collecting material data (valid after collect_geometry_info()).
+		const std::vector<float>& get_angular_table_cos_pool() const { return m_angular_table_registry.cos_pool(); }
+		const std::vector<float>& get_angular_table_value_pool() const { return m_angular_table_registry.value_pool(); }
+
 		// compute sun plane 
 		void compute_sun_plane_H(LaunchParams& params);
 
@@ -63,6 +69,7 @@ namespace OptixCSP {
 		std::vector<uint32_t>       m_sbt_index_H;           // sbt offset index
 		std::vector<MaterialData>   m_material_data_array_front_H; // material data
 		std::vector<MaterialData>	m_material_data_array_back_H; // material data
+		AngularTableRegistry        m_angular_table_registry; // shared pool for angle-dependent optics
 
 		// members related to building GAS
 		OptixBuildInput        m_aabb_input = {};                   // needed after the first build

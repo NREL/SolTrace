@@ -122,7 +122,8 @@ void CspElement::set_optics_back(const bool                use_refraction,
 }
 
 void CspElement::set_optics(
-    const std::shared_ptr<const SolTrace::Data::OpticalPropertySet>& optics)
+    const std::shared_ptr<const SolTrace::Data::OpticalPropertySet>& optics,
+    SolTrace::Data::optics_id                                        id)
 {
     if (optics == nullptr)
         throw std::invalid_argument(
@@ -165,6 +166,11 @@ void CspElement::set_optics(
         static_cast<float>(back_slope),
         static_cast<float>(back_specularity),
         to_optical_distribution(back_distribution));
+
+    using SolTrace::Data::OpticalSide;
+
+    m_optics    = optics;
+    m_optics_id = id;
 }
 
 // return L2G rotation matrix
@@ -606,11 +612,42 @@ GeometryDataST CspElement::toDeviceGeometryData() const
     return geometry_data;
 }
 
-MaterialData CspElement::toDeviceMaterialDataFront() const
-{ return this->m_optics_front; }
+MaterialData CspElement::toDeviceMaterialDataFront(AngularTableRegistry& registry) const
+{
+    MaterialData md = this->m_optics_front;
 
-MaterialData CspElement::toDeviceMaterialDataBack() const
-{ return this->m_optics_back; }
+    if (m_optics != nullptr)
+    {
+        const bool use_refraction = m_optics->get_interaction_type() ==
+                                    SolTrace::Data::InteractionType::REFRACTION;
+        const AngularTableRange range = registry.intern(
+            m_optics_id, *m_optics, SolTrace::Data::OpticalSide::Front, use_refraction);
+        md.use_angular_table    = range.count > 0;
+        md.angular_table_offset = range.offset;
+        md.angular_table_count  = range.count;
+    }
+
+    return md;
+}
+
+MaterialData CspElement::toDeviceMaterialDataBack(AngularTableRegistry& registry) const
+{
+    MaterialData md = this->m_optics_back;
+
+    if (m_optics != nullptr)
+    {
+        const bool use_refraction = m_optics->get_interaction_type() ==
+                                    SolTrace::Data::InteractionType::REFRACTION;
+        const AngularTableRange range = registry.intern(
+            m_optics_id, *m_optics, SolTrace::Data::OpticalSide::Back, use_refraction);
+        md.use_angular_table    = range.count > 0;
+        md.angular_table_offset = range.offset;
+        md.angular_table_count  = range.count;
+    }
+
+    return md;
+}
+
 
 // // we also need to implement the bounding box computation
 // // for a case like a rectangle aperture,
@@ -782,4 +819,10 @@ void CspElement::set_optics(const bool                is_front,
     md.slope_error         = slope_error;
     md.specularity_error   = specularity_error;
     md.optical_dist        = od;
+
+    // Overwritten with real offset/count by toDeviceMaterialDataFront()/Back();
+    // zeroed here so the struct is never left with uninitialized values.
+    md.use_angular_table    = false;
+    md.angular_table_offset = 0;
+    md.angular_table_count  = 0;
 }

@@ -205,7 +205,8 @@ RunnerStatus OptixRunner::setup_elements(const SimulationData* data)
             optix_el->set_id(static_cast<int32_t>(id));
 
             // Add optical properties
-            optix_el->set_optics(el->get_optical_property_set());
+            optix_el->set_optics(el->get_optical_property_set(),
+                                 el->get_optical_property_set_id());
 
             if (m_sys.is_verbose())
             {

@@ -3,20 +3,18 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "Aperture.h"
 #include "Surface.h"
+#include "angular_table_registry.h"
+#include "optical_properties.hpp"
 #include "shaders/GeometryDataST.h"
 #include "shaders/MaterialDataST.h"
 #include "soltrace_constants.h"
 #include "soltrace_type.h"
 #include "utils/math_util.h"
 #include "vec3d.h"
-
-namespace SolTrace::Data
-{
-class OpticalPropertySet;
-}
 
 namespace OptixCSP
 {
@@ -41,9 +39,11 @@ public:
     // virtual const Vec3d& get_upper_bounding_box() const = 0;
     // virtual const Vec3d& get_lower_bounding_box() const = 0;
 
-    virtual GeometryDataST toDeviceGeometryData() const      = 0;
-    virtual MaterialData   toDeviceMaterialDataFront() const = 0;
-    virtual MaterialData   toDeviceMaterialDataBack() const  = 0;
+    virtual GeometryDataST toDeviceGeometryData() const = 0;
+    virtual MaterialData
+    toDeviceMaterialDataFront(AngularTableRegistry& registry) const = 0;
+    virtual MaterialData
+    toDeviceMaterialDataBack(AngularTableRegistry& registry) const = 0;
 
     virtual void set_id(const int32_t id) = 0;
 
@@ -74,13 +74,13 @@ public:
     // Optical CspElements setters.
     void set_aperture(const std::shared_ptr<Aperture>& aperture);
     void set_surface(const std::shared_ptr<Surface>& surface);
-    void set_optics_front(const bool                use_refraction,
-                          const float               reflectivity,
-                          const float               transmissivity,
-                          const float               refractive_index_incident,
-                          const float               refractive_index_transmitted,
-                          const float               slope_error,
-                          const float               specularity_error,
+    void set_optics_front(const bool  use_refraction,
+                          const float reflectivity,
+                          const float transmissivity,
+                          const float refractive_index_incident,
+                          const float refractive_index_transmitted,
+                          const float slope_error,
+                          const float specularity_error,
                           const OpticalDistribution od);
     void set_optics_back(const bool                use_refraction,
                          const float               reflectivity,
@@ -90,9 +90,9 @@ public:
                          const float               slope_error,
                          const float               specularity_error,
                          const OpticalDistribution od);
-    void
-    set_optics(const std::shared_ptr<const SolTrace::Data::OpticalPropertySet>&
-                   optics);
+    void set_optics(
+        const std::shared_ptr<const SolTrace::Data::OpticalPropertySet>& optics,
+        SolTrace::Data::optics_id                                        id);
 
     // return L2G rotation matrix
     Matrix33d get_rotation_matrix() const;
@@ -111,8 +111,10 @@ public:
 
     // convert to device data available to GPU
     GeometryDataST toDeviceGeometryData() const override;
-    MaterialData   toDeviceMaterialDataFront() const override;
-    MaterialData   toDeviceMaterialDataBack() const override;
+    MaterialData
+    toDeviceMaterialDataFront(AngularTableRegistry& registry) const override;
+    MaterialData
+    toDeviceMaterialDataBack(AngularTableRegistry& registry) const override;
 
     // // we also need to implement the bounding box computation
     // // for a case like a rectangle aperture,
@@ -147,6 +149,17 @@ private:
 
     MaterialData m_optics_front;
     MaterialData m_optics_back;
+
+    // Retained so toDeviceMaterialDataFront()/Back() can look up the
+    // angle-dependent table directly from the (shared) OpticalPropertySet
+    // when needed, instead of every element copying it out eagerly.
+    std::shared_ptr<const SolTrace::Data::OpticalPropertySet> m_optics;
+
+    // Identifies the OpticalPropertySet these tables came from, used as the
+    // AngularTableRegistry cache key so elements sharing optics share pool
+    // entries instead of each appending their own copy.
+    SolTrace::Data::optics_id m_optics_id =
+        SolTrace::Data::OPTICS_ID_UNASSIGNED;
 
     // Element id (from soltrace)
     int32_t m_id;
