@@ -20,6 +20,7 @@ set(OPTIX_RUNNER_TEST_SRC
     gpu_tower_demo.cpp
     flat_optical_test.cpp
     material_interaction_test.cpp
+    angular_table_test.cpp
     two_plate_test.cpp
     sun_test.cpp
     ray_position_sampling_test.cpp
