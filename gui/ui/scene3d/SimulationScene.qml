@@ -344,11 +344,13 @@ Item {
 
         use_wasd: App.view.sim.camera === SimulationViewState.WASD
         use_orthographic: App.view.sim.perspective === SimulationViewState.Orthographic
-        input_enabled: !App.view.full_panel.visible
+        input_enabled: true
 
         anchors.fill: parent
 
     }
+
+    Component.onCompleted: controller.set_to_pretty_view()
 
     Connections {
         target: AppData

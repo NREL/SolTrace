@@ -73,22 +73,20 @@ ColumnLayout {
 
         STSpinBoxField {
             width: positionGroup.fieldWidth
-            label: "Latitude"
+            label: "Latitude (deg)"
             from: -90
             to: 90
             decimals: 4
-            suffix: "deg"
             value: App.sun.calc_data.latitude
             onValueModified: App.sun.calc_data.latitude = value
         }
 
         STSpinBoxField {
             width: positionGroup.fieldWidth
-            label: "Longitude"
+            label: "Longitude (deg)"
             from: -180
             to: 180
             decimals: 4
-            suffix: "deg"
             value: App.sun.calc_data.longitude
             onValueModified: App.sun.calc_data.longitude = value
         }
@@ -282,11 +280,10 @@ ColumnLayout {
 
         STSpinBoxField {
             width: extraOptions.fieldWidth
-            label: "Altitude"
+            label: "Altitude (m)"
             from: -440
             to: 8850
             decimals: 1
-            suffix: "m"
             value: App.sun.calc_data.altitude
             onValueModified: App.sun.calc_data.altitude = value
         }

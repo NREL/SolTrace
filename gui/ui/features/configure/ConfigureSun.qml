@@ -159,12 +159,11 @@ Flickable {
                             id: azimuthField
                             Layout.fillWidth: true
                             Layout.preferredWidth: 100
-                            label: "Azimuth"
+                            label: "Azimuth (deg)"
                             value: root.directionAzimuth()
                             from: 0
                             to: 360
                             decimals: 3
-                            suffix: "deg"
                             enabled: App.sun.ds_position_type === SunModule.Angle
                             onValueModified: root.setDirectionAngles(
                                                  value,
@@ -175,12 +174,11 @@ Flickable {
                             id: elevationField
                             Layout.fillWidth: true
                             Layout.preferredWidth: 100
-                            label: "Elevation"
+                            label: "Elevation (deg)"
                             value: root.directionElevation()
                             from: -90
                             to: 90
                             decimals: 3
-                            suffix: "deg"
                             enabled: App.sun.ds_position_type === SunModule.Angle
                             onValueModified: root.setDirectionAngles(
                                                  root.directionAzimuth(),
@@ -295,19 +293,17 @@ Flickable {
 
                         STSpinBoxField {
                             Layout.fillWidth: true
-                            label: "Standard Deviation"
+                            label: "Standard Deviation (mrad)"
                             value: App.sun.shape.sigma
                             decimals: 3
-                            suffix: "mrad"
                             onValueChanged: { App.sun.shape.sigma = value }
                         }
 
                         STSpinBoxField {
                             Layout.fillWidth: true
-                            label: "Half-width"
+                            label: "Half-width (mrad)"
                             value: App.sun.shape.half_width
                             decimals: 3
-                            suffix: "mrad"
                             onValueChanged: { App.sun.shape.half_width = value }
                         }
 

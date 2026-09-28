@@ -70,30 +70,8 @@ Item {
             spacing: 10
 
             WorkflowLargeItem {
-                icon: "\uf005"
-                title: "1. Start"
-                value: "Welcome"
-                active: App.view.workflow_phase === ViewModule.Start
-
-                description: "Review the basic workflow"
-
-                onActivated: {
-                    App.view.simulation_content_view = false
-                    App.view.workflow_phase = ViewModule.Start
-                }
-            }
-
-            Label {
-                Layout.alignment: Qt.AlignVCenter
-                font.family: "Font Awesome 7 Free"
-                text: "\uf101"
-                opacity: App.view.workflow_phase === ViewModule.Start
-                         || App.view.workflow_phase === ViewModule.Load ? 1.0 : 0.5
-            }
-
-            WorkflowLargeItem {
                 icon: "\uf56f"
-                title: "2. Load"
+                title: "1. Load"
                 value: "Load"
                 active: App.view.workflow_phase === ViewModule.Load
 
@@ -121,7 +99,7 @@ Item {
 
             WorkflowLargeItem {
                 icon: "\uf7d9"
-                title: "3. Configure"
+                title: "2. Configure"
                 value: root.active_name
                 active: App.view.workflow_phase === ViewModule.Configure
 
@@ -145,7 +123,7 @@ Item {
 
             WorkflowLargeItem {
                 icon: "\uf04b"
-                title: "4. Trace"
+                title: "3. Trace"
                 value: root.active_name
                 active: App.view.workflow_phase === ViewModule.Simulate
 
@@ -169,7 +147,7 @@ Item {
 
             WorkflowLargeItem {
                 icon: "\uf1fe"
-                title: "5. Analyze"
+                title: "4. Analyze"
                 value: root.active_result_name
                 active: App.view.workflow_phase === ViewModule.Analyze
 

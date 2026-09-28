@@ -1,10 +1,10 @@
 #pragma once
 
-#include "database/database.h"
-#include "database/simulationresult.h"
-#include "utilities/notification.h"
-#include "utilities/qt_helpers.h"
-#include "utilities/structmodel.h"
+#include "data/database.h"
+#include "data/simulationresult.h"
+#include "support/notification.h"
+#include "support/qt_helpers.h"
+#include "support/structmodel.h"
 
 #include <QObject>
 #include <QUrl>
@@ -15,7 +15,7 @@ namespace SolTrace::GUI::App {
 
 /// One open database shown in the load/start workflow.
 struct DatabaseRecord {
-    QPointer<db::Database> database;
+    QPointer<SolTrace::GUI::Data::Database> database;
 
     RECORD_META(DatabaseRecord, SM_EXPOSE_RO(database), );
 };
@@ -24,15 +24,15 @@ struct DatabaseRecord {
 struct LoadedFile {
     // TODO: Store this in the DB
     QString                       provenance = { };
-    std::unique_ptr<db::Database> ptr;
+    std::unique_ptr<SolTrace::GUI::Data::Database> ptr;
 };
 
 /// Failed database load result packaged as a user notification.
 struct LoadFileFailed {
-    ANotification notification;
+    Support::ANotification notification;
 
     LoadFileFailed(QString message)
-        : notification(ANotification::error(message)) { }
+        : notification(Support::ANotification::error(message)) { }
 };
 
 /// QML-facing controller for opening, saving, creating, and switching
@@ -40,11 +40,11 @@ struct LoadFileFailed {
 ///
 /// The model rows represent open databases. The module owns loaded database
 /// instances and exposes the selected one through current_database.
-class DatabaseModule : public StructModelAdapter<DatabaseRecord> {
+class DatabaseModule : public Support::StructModelAdapter<DatabaseRecord> {
     Q_OBJECT
     QML_ELEMENT
 
-    QOBJECT_WRITABLE_PROPERTY(db::Database, current_database)
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::Database, current_database)
     Q_PROPERTY(QUrl examples_folder READ examples_folder CONSTANT)
     Q_WRITABLE_PROPERTY(QString,
                         default_example_filename,
@@ -94,10 +94,10 @@ public slots:
     void append_new(QString);
 
     /// Clone a simulation result into an editable database.
-    bool append_clone(db::SimulationResultPtr);
+    bool append_clone(SolTrace::GUI::Data::SimulationResultPtr);
 
 signals:
-    void notify(ANotification);
+    void notify(SolTrace::GUI::Support::ANotification);
     void cancel_current_load(QPrivateSignal);
 };
 

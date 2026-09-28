@@ -1,7 +1,7 @@
 #include "database_module.h"
-#include "utilities/asynctask.h"
-#include "utilities/math_utility.h"
-#include "utilities/result.h"
+#include "support/asynctask.h"
+#include "support/math_utility.h"
+#include "support/result.h"
 
 #include <QCoreApplication>
 #include <QDir>
@@ -50,11 +50,13 @@ struct DirectTaskControl : TaskControl {
 
 } // namespace
 
-static ::Result<LoadedFile, LoadFileFailed>
-load_file(TaskControl& control, QString fname, db::Database* new_db) {
+static Support::Result<LoadedFile, LoadFileFailed>
+load_file(Support::TaskControl&          control,
+          QString                        fname,
+          SolTrace::GUI::Data::Database* new_db) {
 
     // Take control of that free pointer...
-    std::unique_ptr<db::Database> destination(new_db);
+    std::unique_ptr<SolTrace::GUI::Data::Database> destination(new_db);
     QString                       stage = "starting";
 
     try {
@@ -66,7 +68,7 @@ load_file(TaskControl& control, QString fname, db::Database* new_db) {
         auto file = QFileInfo(fname);
 
         if (!(file.isFile() && file.isReadable())) {
-            return ::return_failure(
+            return Support::return_failure(
                 QString("Could not open the file for reading: %1").arg(fname));
         }
 
@@ -81,20 +83,20 @@ load_file(TaskControl& control, QString fname, db::Database* new_db) {
         if (str.ends_with("stinput")) {
             legacy_import = true;
             if (!new_data->import_from_file(str)) {
-                return return_failure(
+                return Support::return_failure(
                     QString("Could not import the file: %1").arg(fname));
             }
         } else if (str.ends_with("json")) {
             try {
                 new_data->import_json_file(str);
             } catch (std::exception const& e) {
-                return return_failure(
+                return Support::return_failure(
                     QString("Could not import the file: %1 %2")
                         .arg(fname)
                         .arg(e.what()));
             }
         } else {
-            return return_failure("Unknown file type.");
+            return Support::return_failure("Unknown file type.");
         }
 
 
@@ -117,11 +119,11 @@ load_file(TaskControl& control, QString fname, db::Database* new_db) {
             .ptr        = std::move(destination),
         };
     } catch (std::exception const& e) {
-        return return_failure(
+        return Support::return_failure(
             QString("Could not load %1 while %2: %3")
                 .arg(fname, stage, QString::fromUtf8(e.what())));
     } catch (...) {
-        return return_failure(
+        return Support::return_failure(
             QString("Could not load %1 while %2.").arg(fname, stage));
     }
 }
@@ -156,7 +158,7 @@ void DatabaseModule::file_ready(QUrl, LoadedFile result) {
         database->setParent(this);
         store_push_append({ .database = database });
 
-        notify(ANotification::info(
+        notify(Support::ANotification::info(
             QString("Loaded scene: %1").arg(database->name())));
     }
 
@@ -170,7 +172,7 @@ void DatabaseModule::file_failed(QUrl, LoadFileFailed reason) {
 
 void DatabaseModule::load_url(QUrl url, QString name_override) {
     if (is_loading()) {
-        emit notify(ANotification::warning(
+        emit notify(Support::ANotification::warning(
             "A file is already loading. Please wait for it to finish."));
         return;
         // emit cancel_current_load(QPrivateSignal {});
@@ -186,7 +188,7 @@ void DatabaseModule::load_url(QUrl url, QString name_override) {
         if (name_override.isEmpty()) name_override = "Untitled";
 
         this->store_push_append(DatabaseRecord {
-            .database = new db::Database(name_override, this),
+            .database = new SolTrace::GUI::Data::Database(name_override, this),
         });
 
         return;
@@ -213,7 +215,7 @@ void DatabaseModule::load_url(QUrl url, QString name_override) {
     // unique pointer and send it off to the async task, which takes copies.
     // So we just do a raw new, NOT giving it a parent, and immediately send it
     // to the task, which then wraps it.
-    auto ptr = new db::Database(fname);
+    auto ptr = new SolTrace::GUI::Data::Database(fname);
 
 #if defined(Q_OS_WASM) && !defined(__EMSCRIPTEN_PTHREADS__)
     auto local_path = new_source.toLocalFile();
@@ -240,7 +242,7 @@ void DatabaseModule::load_url(QUrl url, QString name_override) {
     connect(this,
             &DatabaseModule::cancel_current_load,
             task,
-            &AsyncTaskBase::cancel);
+            &Support::AsyncTaskBase::cancel);
 #endif
 }
 
@@ -314,14 +316,14 @@ bool DatabaseModule::set_current(int index) {
     return true;
 }
 
-static bool save_common(db::Database&   source,
+static bool save_common(SolTrace::GUI::Data::Database&   source,
                         QString         path,
                         DatabaseModule& notification,
                         bool            emit_success = true) {
     auto result = source.export_to_simdata();
 
     if (!result) {
-        emit notification.notify(ANotification::error(
+        emit notification.notify(Support::ANotification::error(
             QStringLiteral("Unable to save database. An error occurred while "
                            "packing content: %1")
                 .arg(result.get_failure())));
@@ -333,7 +335,7 @@ static bool save_common(db::Database&   source,
     try {
         pack->data->export_json_file(path.toStdString());
     } catch (std::exception const& ex) {
-        emit notification.notify(ANotification::error(
+        emit notification.notify(Support::ANotification::error(
             QStringLiteral(
                 "An exception occurred while trying to save content: %1")
                 .arg(ex.what())));
@@ -342,8 +344,8 @@ static bool save_common(db::Database&   source,
     }
 
     if (emit_success) {
-        emit notification.notify(
-            ANotification::info(QStringLiteral("File successfully saved.")));
+        emit notification.notify(Support::ANotification::info(
+            QStringLiteral("File successfully saved.")));
     }
 
     return true;
@@ -353,7 +355,7 @@ void DatabaseModule::save_db_at_index(int index, QUrl path) {
     auto db = this->get_at(index);
 
     if (!db or !db->database) {
-        notify(ANotification::error(QStringLiteral(
+        notify(Support::ANotification::error(QStringLiteral(
             "An internal error was encountered trying to save the scene.")));
         return;
     }
@@ -363,7 +365,7 @@ void DatabaseModule::save_db_at_index(int index, QUrl path) {
 
 void DatabaseModule::save_current(QUrl path) {
     if (!m_current_database) {
-        notify(ANotification::error(QStringLiteral(
+        notify(Support::ANotification::error(QStringLiteral(
             "An internal error was encountered trying to save the scene.")));
         return;
     }
@@ -373,7 +375,7 @@ void DatabaseModule::save_current(QUrl path) {
 
 bool DatabaseModule::export_current_json(QString path) {
     if (!m_current_database) {
-        notify(ANotification::error(QStringLiteral(
+        notify(Support::ANotification::error(QStringLiteral(
             "An internal error was encountered trying to save the scene.")));
         return false;
     }
@@ -442,7 +444,7 @@ void DatabaseModule::delete_current() {
 
     auto index = std::distance(v.begin(), iter);
 
-    db::Database* curr_cache = m_current_database;
+    SolTrace::GUI::Data::Database* curr_cache = m_current_database;
 
     if (rowCount() == 1) {
         // this should mean that index == 0.
@@ -463,9 +465,9 @@ void DatabaseModule::append_new(QString new_name) {
     load_url({ }, new_name);
 }
 
-bool DatabaseModule::append_clone(db::SimulationResultPtr result) {
+bool DatabaseModule::append_clone(SolTrace::GUI::Data::SimulationResultPtr result) {
     if (!result || !result->database) {
-        emit notify(ANotification::warning(
+        emit notify(Support::ANotification::warning(
             "Select a simulation result before creating an editable copy."));
         return false;
     }
@@ -473,7 +475,7 @@ bool DatabaseModule::append_clone(db::SimulationResultPtr result) {
     auto clone_name = result->database->name() + " Copy";
     auto clone      = result->database->clone(clone_name, this);
     if (!clone) {
-        emit notify(ANotification::error(
+        emit notify(Support::ANotification::error(
             "Could not create an editable copy of this result."));
         return false;
     }
@@ -481,7 +483,7 @@ bool DatabaseModule::append_clone(db::SimulationResultPtr result) {
     this->store_push_append(DatabaseRecord {
         .database = clone,
     });
-    emit notify(ANotification::info(
+    emit notify(Support::ANotification::info(
         QString("Created editable scene: %1").arg(clone_name)));
 
     return true;

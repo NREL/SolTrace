@@ -6,7 +6,6 @@ ViewModule::ViewModule(QObject* parent)
     : QObject { parent },
       m_left_panel(new SplitPanelData(this)),
       m_right_panel(new SplitPanelData(this)),
-      m_full_panel(new FullPanelData(this)),
       m_sim(new SimulationViewState(this)) {
     connect(this, &ViewModule::workflow_phase_changed, this, [this] {
         set_simulation_content_view(m_workflow_phase == WorkflowPhase::Analyze);
@@ -24,14 +23,6 @@ void SplitPanelData::update_size() {
         new_size = Full;
 
     set_size(new_size);
-}
-
-void SplitPanelData::save_visibility() {
-    set_saved_visible(m_visible);
-}
-
-void SplitPanelData::restore_visibility() {
-    set_visible(m_saved_visible);
 }
 
 void SplitPanelData::show() {
@@ -133,35 +124,7 @@ void ViewModule::fit_panels(int  available_width,
     }
 }
 
-void ViewModule::open_full_panel() {
-    m_left_panel->save_visibility();
-    m_right_panel->save_visibility();
-    m_left_panel->hide();
-    m_right_panel->hide();
-    m_full_panel->show();
-}
-
-void ViewModule::close_full_panel(int available_width) {
-    m_left_panel->restore_visibility();
-    m_right_panel->restore_visibility();
-    fit_panels(available_width);
-    m_full_panel->hide();
-}
-
-void ViewModule::toggle_full_panel(int available_width) {
-    if (m_full_panel->visible()) {
-        close_full_panel(available_width);
-        return;
-    } else {
-        open_full_panel();
-    }
-}
-
 void ViewModule::open_left_panel(int available_width) {
-    if (m_full_panel->visible()) {
-        close_full_panel(available_width);
-        return;
-    }
     m_left_panel->show();
     fit_panels(available_width);
 }
@@ -179,10 +142,6 @@ void ViewModule::toggle_left_panel(int available_width) {
 }
 
 void ViewModule::open_right_panel(int available_width) {
-    if (m_full_panel->visible()) {
-        close_full_panel(available_width);
-        return;
-    }
     m_right_panel->show();
     fit_panels(available_width, true);
 }
@@ -197,17 +156,6 @@ void ViewModule::toggle_right_panel(int available_width) {
         return;
     }
     open_right_panel(available_width);
-}
-
-
-FullPanelData::FullPanelData(QObject* parent) : QObject(parent) { }
-
-void FullPanelData::show() {
-    set_visible(true);
-}
-
-void FullPanelData::hide() {
-    set_visible(false);
 }
 
 

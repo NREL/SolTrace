@@ -1,5 +1,5 @@
 #include "documentation_module.h"
-#include "utilities/qt_file_helpers.h"
+#include "support/qt_file_helpers.h"
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
@@ -13,8 +13,7 @@ namespace SolTrace::GUI::App {
 
 DocumentationModule::DocumentationModule(QObject* parent)
     : QObject(parent),
-      m_directory_path(":/docs"),
-      m_status(new StatusComponent(this)) {
+      m_directory_path(":/docs") {
     connect(this,
             &DocumentationModule::locale_changed,
             this,
@@ -88,7 +87,8 @@ void DocumentationModule::doc_walker(const QString& dir_path,
             new_key = key_prefix.isEmpty() ? name : key_prefix + "." + name;
         }
 
-        m_docs[m_locale].insert(new_key, parse_processed_doc_file(file));
+        m_docs[m_locale].insert(new_key,
+                                Support::parse_processed_doc_file(file));
     }
 
     QFileInfoList subdirs =

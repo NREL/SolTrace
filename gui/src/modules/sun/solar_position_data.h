@@ -1,6 +1,6 @@
 #pragma once
 
-#include "utilities/qt_helpers.h"
+#include "support/qt_helpers.h"
 
 #include <QObject>
 

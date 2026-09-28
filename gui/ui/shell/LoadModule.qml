@@ -22,7 +22,6 @@ ColumnLayout {
     }
 
     WorkflowStepper {
-        previous: "Get Started"
         next: "Configure Scene"
         currentIndex: ViewModule.Load
     }

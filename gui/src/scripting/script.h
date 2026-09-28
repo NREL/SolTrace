@@ -1,0 +1,261 @@
+#pragma once
+
+#include "scripting/script_db_interface.h"
+#include "support/notification.h"
+#include "support/qt_helpers.h"
+#include "support/structmodel.h"
+
+#include <QJSValue>
+#include <QObject>
+#include <QQmlEngine>
+#include <QStringList>
+
+namespace SolTrace::GUI::App {
+class DatabaseModule;
+class SimulationModule;
+} // namespace SolTrace::GUI::App
+
+namespace SolTrace::GUI::Scripting {
+
+/// One user-editable argument declared in a script header.
+///
+/// Script headers are parsed into these records and exposed to QML through
+/// ScriptPropertyModel. The `value` field is editable; the remaining fields
+/// describe how the UI should present and validate that value.
+struct ScriptProperty {
+    QString name;
+    QString identifier;
+    QString type;
+    QString extra;
+    bool    min_bounded   = false;
+    bool    max_bounded   = false;
+    bool    max_inclusive = false;
+    double  min           = 0.0;
+    double  max           = 0.0;
+    QString unit;
+    QString error;
+
+    QString value;
+
+    RECORD_META(ScriptProperty,
+                SM_EXPOSE_RO(name),
+                SM_EXPOSE_RO(identifier),
+                SM_EXPOSE_RO(type),
+                SM_EXPOSE_RO(extra),
+                SM_EXPOSE_RO(min_bounded),
+                SM_EXPOSE_RO(max_bounded),
+                SM_EXPOSE_RO(max_inclusive),
+                SM_EXPOSE_RO(min),
+                SM_EXPOSE_RO(max),
+                SM_EXPOSE_RO(unit),
+                SM_EXPOSE_RO(error),
+                SM_EXPOSE_RW(value));
+};
+
+class ScriptPropertyModel : public Support::StructTableModel<ScriptProperty> {
+    Q_OBJECT
+
+public:
+    explicit ScriptPropertyModel(QObject* parent = nullptr);
+};
+
+/// Severity for messages emitted by user scripts.
+enum class ScriptLogLevel { Log, Warn, Error };
+
+/// Console object exposed to scripts for log/warn/error output.
+class ScriptConsole : public QObject {
+    Q_OBJECT
+
+public:
+    explicit ScriptConsole(QObject*);
+
+public slots:
+    /// Emit a log-level message built from up to eight JavaScript values.
+    void log(QJSValue a = { },
+             QJSValue b = { },
+             QJSValue c = { },
+             QJSValue d = { },
+             QJSValue e = { },
+             QJSValue f = { },
+             QJSValue g = { },
+             QJSValue h = { });
+
+    /// Emit a warning-level message built from up to eight JavaScript values.
+    void warn(QJSValue a = { },
+              QJSValue b = { },
+              QJSValue c = { },
+              QJSValue d = { },
+              QJSValue e = { },
+              QJSValue f = { },
+              QJSValue g = { },
+              QJSValue h = { });
+
+    /// Emit an error-level message built from up to eight JavaScript values.
+    void error(QJSValue a = { },
+               QJSValue b = { },
+               QJSValue c = { },
+               QJSValue d = { },
+               QJSValue e = { },
+               QJSValue f = { },
+               QJSValue g = { },
+               QJSValue h = { });
+
+signals:
+    void logged(int, QString);
+};
+
+/// Script-facing simulation controls exposed as `sim`.
+class ScriptSimulationInterface : public QObject {
+    Q_OBJECT
+
+    QPointer<App::SimulationModule> m_simulation;
+
+public:
+    explicit ScriptSimulationInterface(App::SimulationModule*,
+                                       QObject* parent = nullptr);
+
+public slots:
+    /// Start a simulation using the selected runner and optional config patch.
+    bool start(QJsonObject config = {});
+};
+
+/// Script-facing open-scene controls exposed as `scenes`.
+class ScriptSceneInterface : public QObject {
+    Q_OBJECT
+
+    QPointer<App::DatabaseModule> m_databases;
+    QPointer<ScriptDBInterface>   m_database_interface;
+    QString                       m_working_directory;
+
+public:
+    explicit ScriptSceneInterface(App::DatabaseModule*,
+                                  ScriptDBInterface*,
+                                  QString working_directory,
+                                  QObject* parent = nullptr);
+
+public slots:
+    /// Select an open scene by list index.
+    bool set_current_index(int index);
+
+    /// Select the first open scene with the given display name.
+    bool set_current_name(QString name);
+
+    /// Create a new blank scene and select it.
+    bool new_blank(QString name = "Untitled");
+
+    /// Load a scene file relative to the script working directory.
+    bool new_from_file(QString relative_path, QString name_override = "");
+
+    /// Export the current scene to JSON relative to the script working directory.
+    bool export_json(QString relative_path);
+};
+
+/// User-authored script plus parsed metadata and execution state.
+///
+/// Script source must start with a comment header block. No whitespace or code
+/// may appear before it. Both block comments and consecutive line comments are
+/// accepted:
+///
+///     /*
+///     TITLE Example Script
+///     DESC Creates a few entities.
+///     DESC Additional DESC lines are concatenated with newlines.
+///     PROPERTY mirror_count integer 12 1..=100
+///     PROPERTY radius real 10.0 0.1..
+///     PROPERTY label string Demo
+///     PROPERTY direction vec3 [0,0,1] unit
+///     *\/
+///     const e = db.create()
+///     return e
+///
+///     // TITLE Example Script
+///     // DESC Equivalent line-comment form.
+///     // PROPERTY count integer 4 1..=10
+///     return db.create()
+///
+/// Header directives:
+/// - TITLE text
+///   Required. Must be the first non-empty directive in the header. The
+///   remaining text becomes Script::title.
+/// - DESC text
+///   Optional and repeatable. Each line is appended to Script::description.
+/// - PROPERTY name type initial [extra...]
+///   Optional and repeatable. Properties are parsed in header order, exposed in
+///   Script::properties, and passed as positional arguments to the evaluated
+///   JavaScript function during run(). The initial value is stored as the
+///   editable ScriptProperty::value shown in the UI.
+///
+/// Property types:
+/// - integer initial range
+///   Integer argument. The range follows the initial value and uses Rust-like
+///   syntax: `..0`, `1..`, `1..10`, or `1..=100`. A range is currently
+///   required.
+/// - real initial range
+///   Floating-point argument with the same range syntax as integer.
+/// - string
+///   Unrestricted string argument. The initial value is one token; no extra
+///   arguments are currently used.
+/// - vec3 initial [unit]
+///   Three-component vector argument. The optional `unit` extra follows the
+///   initial value and marks that the vector should be treated as a direction.
+///   The current runner accepts values like `1 0 0`, `[1, 0, 0]`, or a single
+///   scalar such as `1`, which expands to `[1, 1, 1]`. Header initial values
+///   should be written without spaces, for example `[0,0,1]`.
+///
+/// After the header, the script body is wrapped in a generated JavaScript
+/// function. Script::run() converts property values according to the
+/// declarations above and calls the generated function with those arguments.
+/// PROPERTY identifiers are available as normal JavaScript parameters, and the
+/// database script API is available as `db`.
+class Script : public QObject {
+    Q_OBJECT
+
+    QPointer<ScriptDBInterface> m_interface;
+    QPointer<SolTrace::GUI::Data::Database>      m_database;
+    QPointer<App::DatabaseModule>   m_databases;
+    QPointer<App::SimulationModule> m_simulation;
+
+    Q_WRITABLE_PROPERTY(QString, code, { });
+    Q_READONLY_PROPERTY(QString, title);
+    Q_READONLY_PROPERTY(QString, description);
+    Q_READONLY_PROPERTY(bool, valid);
+    Q_READONLY_PROPERTY(QStringList, parse_errors);
+    QOBJECT_READONLY_PROPERTY(ScriptPropertyModel, properties);
+
+
+    // Directory where scripts can pull additional content from
+    Q_WRITABLE_PROPERTY(QString, working_directory, { });
+
+    Q_READONLY_PROPERTY(QStringList, builtin_scripts);
+
+public:
+    explicit Script(QObject* parent = nullptr);
+
+    /// Attach the script to the database it will inspect and mutate.
+    void set_database(SolTrace::GUI::Data::Database*);
+
+    /// Attach app-level services exposed to scripts.
+    void set_services(App::DatabaseModule*, App::SimulationModule*);
+
+public slots:
+    /// Parse header metadata and validate property declarations.
+    bool parse();
+
+    /// Parse, compile, and run the script against the attached database.
+    void run();
+
+    /// Emit a script error notification.
+    void notify_error(QString message);
+
+    /// Generate markdown documentation for the script database API.
+    QString api_markdown();
+
+signals:
+    void notify(Support::ANotification);
+
+    void logged(int, QString);
+
+    void runCompleted();
+};
+
+} // namespace SolTrace::GUI::Scripting

@@ -218,7 +218,7 @@ STFormPanel {
     // =========================================================================
 
     STFormRow {
-        label: qsTr("Slope Error (σ<sub>slope</sub>)")
+        label: qsTr("σ<sub>slope</sub> (mrad)")
         labelTextFormat: Label.RichText
         singleColumn: root.singleColumn
         labelAlignment: root.labelAlignment
@@ -229,7 +229,6 @@ STFormPanel {
             to: 1000
             decimals: 3
             stepSize: 0.01
-            suffix: "mrad"
             value: root.side_editor ? root.side_editor.slope_error : 0
             onValueModified: {
                 if (root.side_editor) {
@@ -242,7 +241,7 @@ STFormPanel {
     // =========================================================================
 
     STFormRow {
-        label: qsTr("Specularity Error (σ<sub>spec</sub>)")
+        label: qsTr("σ<sub>spec</sub> (mrad)")
         labelTextFormat: Label.RichText
         singleColumn: root.singleColumn
         labelAlignment: root.labelAlignment
@@ -253,7 +252,6 @@ STFormPanel {
             to: 1000
             decimals: 3
             stepSize: 0.01
-            suffix: "mrad"
             value: root.side_editor ? root.side_editor.specularity_error : 0
             onValueModified: {
                 if (root.side_editor) {

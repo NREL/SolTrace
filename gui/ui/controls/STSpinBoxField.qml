@@ -9,7 +9,6 @@ Column {
     property real to: 100
     property real stepSize: 1
     property int decimals: 0
-    property string suffix: ""
     property real value: 0
     property bool enableSpinBox: true
     signal valueModified()
@@ -23,7 +22,6 @@ Column {
         to: root.to
         decimals: root.decimals
         stepSize: root.stepSize
-        suffix: root.suffix
         enabled: root.enableSpinBox
         onValueModified: {
             root.value = value

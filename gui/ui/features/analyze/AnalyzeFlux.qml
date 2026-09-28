@@ -31,6 +31,11 @@ Flickable {
                    + formatCoordinate(centroid.z) + ")"
     }
 
+    function formatStatistic(value, suffix = "") {
+        let suffix_part = suffix.length ? " " + suffix : ""
+        return Number(value).toLocaleString(Qt.locale(), 'G', 6) + suffix_part
+    }
+
     contentWidth: width
     contentHeight: content_column.implicitHeight
     clip: true
@@ -174,51 +179,61 @@ Flickable {
             }
 
             STFormRow {
-                label: "Plotted Power (W)"
+                label: "Plotted Power"
+
+                labelWidth: 180
 
                 Label {
                     Layout.fillWidth: true
-                    text: root.flux_module.current_flux_stats.plotted_power
+                    text: formatStatistic(root.flux_module.current_flux_stats.plotted_power, "W")
                     font.bold: true
                 }
             }
 
             STFormRow {
-                label: "Peak Flux (W/m^2)"
+                label: "Peak Flux"
+
+                labelWidth: 180
 
                 Label {
                     Layout.fillWidth: true
-                    text: root.flux_module.current_flux_stats.peak_flux
+                    text: formatStatistic(root.flux_module.current_flux_stats.peak_flux, "W/m^2")
                     font.bold: true
                 }
             }
 
             STFormRow {
-                label: "Min Flux (W/m^2)"
+                label: "Min Flux"
+
+                labelWidth: 180
 
                 Label {
                     Layout.fillWidth: true
-                    text: root.flux_module.current_flux_stats.min_flux
+                    text: formatStatistic(root.flux_module.current_flux_stats.min_flux, "W/m^2")
                     font.bold: true
                 }
             }
 
             STFormRow {
-                label: "Average Flux (W/m^2)"
+                label: "Average Flux"
+
+                labelWidth: 180
 
                 Label {
                     Layout.fillWidth: true
-                    text: root.flux_module.current_flux_stats.average_flux
+                    text: formatStatistic(root.flux_module.current_flux_stats.average_flux, "W/m^2")
                     font.bold: true
                 }
             }
 
             STFormRow {
-                label: "Sigma Flux (W/m^2)"
+                label: "Sigma Flux"
+
+                labelWidth: 180
 
                 Label {
                     Layout.fillWidth: true
-                    text: root.flux_module.current_flux_stats.sigma_flux
+                    text: formatStatistic(root.flux_module.current_flux_stats.sigma_flux, "W/m^2")
                     font.bold: true
                 }
             }
@@ -226,9 +241,11 @@ Flickable {
             STFormRow {
                 label: "Uniformity"
 
+                labelWidth: 180
+
                 Label {
                     Layout.fillWidth: true
-                    text: root.flux_module.current_flux_stats.uniformity
+                    text: formatStatistic(root.flux_module.current_flux_stats.uniformity)
                     font.bold: true
                 }
             }
@@ -236,9 +253,11 @@ Flickable {
             STFormRow {
                 label: "Peak Flux Uncert"
 
+                labelWidth: 180
+
                 Label {
                     Layout.fillWidth: true
-                    text: root.flux_module.current_flux_stats.peak_flux_uncertainty
+                    text: formatStatistic(root.flux_module.current_flux_stats.peak_flux_uncertainty)
                     font.bold: true
                 }
             }
@@ -246,15 +265,19 @@ Flickable {
             STFormRow {
                 label: "Average Flux Uncert"
 
+                labelWidth: 180
+
                 Label {
                     Layout.fillWidth: true
-                    text: root.flux_module.current_flux_stats.average_flux_uncertainty
+                    text: formatStatistic(root.flux_module.current_flux_stats.average_flux_uncertainty)
                     font.bold: true
                 }
             }
 
             STFormRow {
                 label: "Centroid"
+
+                labelWidth: 180
 
                 Label {
                     property vector3d cent: root.flux_module.current_flux_stats.centroid
@@ -324,7 +347,7 @@ Flickable {
             }
 
             STFormRow {
-                label: "Solar DNI"
+                label: "Solar DNI (W/m^2)"
 
                 STDoubleSpinBox {
                     Layout.fillWidth: true
@@ -333,7 +356,6 @@ Flickable {
                     stepSize: 50.0
                     decimals: 1
                     value: AppData.flux.dni
-                    suffix: " W/m^2"
 
                     onValueModified: AppData.flux.dni = value
                 }
@@ -465,6 +487,96 @@ Flickable {
                 }
             }
 
+            STDangerousButton {
+                Layout.fillWidth: true
+
+                text: "Compute All Maps"
+                left_text_icon: "\uf252"
+
+                onClicked: batch_warn.open()
+
+                STDialog {
+                    id: batch_warn
+                    title: "Batch Compute All Maps"
+
+                    height: 256
+                    width: 320
+
+                    ColumnLayout {
+                        anchors.fill: parent
+                        Label {
+                            Layout.fillWidth: true
+                            text: "This will generate flux maps for ALL elements which have an interacting ray."
+                            wrapMode: Label.WrapAtWordBoundaryOrAnywhere
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: "Depending on the size of the scene, this operation could take a significant amount of time and compute resources."
+                            wrapMode: Label.WrapAtWordBoundaryOrAnywhere
+                        }
+                    }
+
+                    standardButtons: Dialog.Ok | Dialog.Cancel
+
+                    onAccepted: {
+                        AppData.flux.start_generate_batch()
+                    }
+                }
+
+                STPopup {
+                    id: batch_progress
+
+                    modal: true
+
+                    closePolicy: STPopup.NoAutoClose
+
+                    parent: Overlay.overlay
+                    anchors.centerIn: Overlay.overlay
+
+                    contentWidth: progress_view.implicitWidth
+                    contentHeight: progress_view.implicitHeight
+
+                    Connections {
+                        target: AppData.flux
+                        function onStarted_batch() {
+                            batch_progress.open()
+                        }
+                    }
+
+                    Connections {
+                        target: AppData.flux
+                        function onBatch_progress(value, max) {
+                            if (max <= 0) batch_progress.close()
+                            batch_progress_bar.from = 0
+                            batch_progress_bar.to = Math.max(max, value)
+                            batch_progress_bar.value = value
+                        }
+                    }
+
+                    ColumnLayout {
+                        id: progress_view
+                        anchors.fill: parent
+
+
+                        ProgressBar {
+                            Layout.fillWidth: true
+                            id: batch_progress_bar
+                            from: 0
+                            to: 0
+                            value: 0
+                        }
+
+                        STDangerousButton {
+                            id: cancel_batch_button
+
+                            text: "Cancel"
+
+                            onClicked: AppData.flux.cancel_batch()
+                        }
+                    }
+                }
+            }
 
         }
 

@@ -14,11 +14,10 @@ RowLayout {
 
     function getTitle() {
         switch (App.view.workflow_phase) {
-            case ViewModule.Start: return "Get Started"
-            case ViewModule.Load: return "Load Scene"
-            case ViewModule.Configure: return "Configure Scene"
-            case ViewModule.Simulate: return "Trace Scene"
-            case ViewModule.Analyze: return "Analyze Results"
+            case ViewModule.Load: return "Scene"
+            case ViewModule.Configure: return "Scene"
+            case ViewModule.Simulate: return "Scene"
+            case ViewModule.Analyze: return "Results"
             default: return "Other"
         }
     }
@@ -136,17 +135,20 @@ RowLayout {
             id: logo_mouse_area
             anchors.fill: logo_content
             hoverEnabled: true
-            onClicked: version_pop.open()
+            onClicked: info_pop.open()
         }
 
         STPopup {
-            id: version_pop
+            id: info_pop
 
-            contentWidth: 280
+            contentWidth: Math.min(760, Math.max(360, root.available_width - 40))
+            contentHeight: 560
+            modal: false
+            closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
             ColumnLayout {
                 anchors.fill: parent
-                spacing: 6
+                spacing: 10
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -156,13 +158,14 @@ RowLayout {
 
                         text: "SolTrace"
                         font.bold: true
+                        font.pointSize: App.theme.labelSize + 2
                         wrapMode: Label.WrapAtWordBoundaryOrAnywhere
                     }
 
                     STIconButton {
                         icon: "\uf00d"
 
-                        onClicked: version_pop.close()
+                        onClicked: info_pop.close()
                     }
                 }
 
@@ -170,16 +173,82 @@ RowLayout {
                     Layout.fillWidth: true
 
                     color: Material.color(Material.Yellow)
+                    visible: AppData.is_prerelease
 
                     text: "This version of SolTrace is intended for testing and evaluation. Features, file formats, and simulation behavior may change before the final release. Verify important results with a stable release before using them for production work."
                     wrapMode: Label.WrapAtWordBoundaryOrAnywhere
                 }
 
-                Label {
-                    Layout.fillWidth: true
+                AdaptiveEditor {
+                    id: infoView
 
-                    text: AppData.current_build_info
-                    wrapMode: Label.WrapAtWordBoundaryOrAnywhere
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+
+                    wideThreshold: 520
+                    listWidth: 180
+                    currentIndex: App.view.info_section
+                    onCurrentIndexChanged: {
+                        App.view.info_section = currentIndex
+                    }
+
+                    model: ListModel {
+                        ListElement { name: "Get Started"; icon: "\uf005" }
+                        ListElement { name: "What's New"; icon: "\uf587" }
+                        ListElement { name: "Overview"; icon: "\ue0bb" }
+                        ListElement { name: "Community"; icon: "\uf500" }
+                        ListElement { name: "Licenses"; icon: "\ue447" }
+                        ListElement { name: "Build & Logs"; icon: "\uf7d9" }
+                    }
+
+                    listDelegate: ItemDelegate {
+                        text: itemModel ? itemModel.name : ""
+                        highlighted: isCurrent
+                        width: parent ? parent.width : implicitWidth
+
+                        contentItem: RowLayout {
+                            spacing: 8
+                            Label {
+                                text: itemModel ? itemModel.icon : ""
+                                font.family: "Font Awesome 7 Free"
+                                font.pointSize: 14
+
+                                Layout.preferredWidth: 32
+                            }
+                            Label {
+                                text: itemModel ? itemModel.name : ""
+                                Layout.fillWidth: true
+                            }
+                        }
+
+                        background: Rectangle {
+                            implicitHeight: 36
+                            implicitWidth: 100
+                            opacity: enabled ? 1 : 0.3
+                            color: parent.down ? Material.rippleColor
+                                 : parent.highlighted ? Qt.rgba(Material.accentColor.r,
+                                                                 Material.accentColor.g,
+                                                                 Material.accentColor.b, 0.12)
+                                 : "transparent"
+                            radius: 14
+                        }
+                    }
+
+                    detailView: StackLayout {
+                        currentIndex: infoView.currentIndex
+
+                        GetStartedModule {}
+
+                        FeatureModule {}
+
+                        OverviewModule {}
+
+                        CommunityModule {}
+
+                        LicenseModule {}
+
+                        DiagnosticsModule {}
+                    }
                 }
             }
         }

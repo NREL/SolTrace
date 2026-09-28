@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls
 import QtQuick.Controls.Material
 import QtQuick.Layouts
 
@@ -12,33 +13,28 @@ ScrollView {
     contentWidth: availableWidth
     clip: true
 
-    function resetGlass() {
-        App.theme.glassColor = App.theme.defaultGlassColor
-        App.theme.fontColor = App.theme.defaultFontColor
-        glassColorPicker.color = App.theme.glassColor
-        glassAlphaSlider.value = App.theme.glassColor.a * 100
-        fontColorPicker.color = App.theme.fontColor
-    }
-
-    function resetFont() {
-        App.theme.fontColor = App.theme.defaultFontColor
-        App.theme._headerSize = App.theme.defaultHeaderSize
-        App.theme._subHeaderSize = App.theme.defaultSubHeaderSize
-        App.theme._labelSize = App.theme.defaultLabelSize
-        App.theme._normalSize = App.theme.defaultNormalSize
-        App.theme.zoomLevel = 1
-
-        fontColorPicker.color = App.theme.fontColor
-        headerSizeField.value = App.theme._headerSize
-        subHeaderSizeField.value = App.theme._subHeaderSize
-        labelSizeField.value = App.theme._labelSize
-        normalSizeField.value = App.theme._normalSize
-        zoomLevelField.value = App.theme.zoomLevel * 100
-    }
+    readonly property var tintOptions: [
+        { label: "Default", value: App.theme.glassTintDefault },
+        { label: "Red", value: App.theme.glassTintRed },
+        { label: "Pink", value: App.theme.glassTintPink },
+        { label: "Purple", value: App.theme.glassTintPurple },
+        { label: "Indigo", value: App.theme.glassTintIndigo },
+        { label: "Blue", value: App.theme.glassTintBlue },
+        { label: "Cyan", value: App.theme.glassTintCyan },
+        { label: "Teal", value: App.theme.glassTintTeal },
+        { label: "Green", value: App.theme.glassTintGreen },
+        { label: "Lime", value: App.theme.glassTintLime },
+        { label: "Yellow", value: App.theme.glassTintYellow },
+        { label: "Amber", value: App.theme.glassTintAmber },
+        { label: "Orange", value: App.theme.glassTintOrange },
+        { label: "Brown", value: App.theme.glassTintBrown },
+        { label: "Grey", value: App.theme.glassTintGrey },
+    ]
 
     function reset() {
-        resetGlass()
-        resetFont()
+        App.theme.glassTint = App.theme.glassTintDefault
+        App.theme.glassClarity = App.theme.glassClarityBalanced
+        App.theme.fontSize = App.theme.fontSizeDefault
     }
 
     ColumnLayout {
@@ -49,150 +45,88 @@ ScrollView {
             text: "Theme"
         }
 
-        STDangerousButton {
-            Layout.preferredWidth: 100
-
-            text: "Reset"
-            down_color: App.theme.defaultGlassColor
-
-            onClicked: root.reset()
-        }
-
         STPropertyPanel {
             Layout.fillWidth: true
-
-            title: "Glass"
+            title: "Glass Tint"
             collapsed: false
 
-            ColumnLayout {
-                ColorPickerField {
-                    id: glassColorPicker
-                    color: App.theme.glassColor
-                    label: "Glass Color"
-                    onUpdated: {
-                        App.theme.glassColor.r = glassColorPicker.color.r
-                        App.theme.glassColor.g = glassColorPicker.color.g
-                        App.theme.glassColor.b = glassColorPicker.color.b
+            Flow {
+                Layout.fillWidth: true
+                Layout.columnSpan: 2
+                spacing: 8
+
+                Repeater {
+                    model: root.tintOptions
+
+                    Rectangle {
+                        id: tintPill
+                        required property var modelData
+
+                        readonly property bool selected: App.theme.glassTint === modelData.value
+
+                        width: tintRow.implicitWidth + 18
+                        height: Math.max(30, tintRow.implicitHeight + 8)
+                        radius: height / 2
+                        color: selected ? Qt.alpha(Material.accentColor, 0.18)
+                                        : App.theme.glassColorA(0.08)
+                        border.width: selected ? 2 : 1
+                        border.color: selected ? Material.accentColor
+                                               : Material.dividerColor
+
+                        RowLayout {
+                            id: tintRow
+                            anchors.centerIn: parent
+                            spacing: 7
+
+                            Rectangle {
+                                Layout.preferredWidth: 14
+                                Layout.preferredHeight: 14
+                                radius: 7
+                                color: App.theme.tintColor(tintPill.modelData.value)
+                                border.color: Qt.alpha(App.theme.fontColor, 0.3)
+                            }
+
+                            Label {
+                                text: tintPill.modelData.label
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            hoverEnabled: true
+                            onClicked: App.theme.glassTint = tintPill.modelData.value
+                        }
                     }
-                }
-
-                SliderField {
-                    id: glassAlphaSlider
-
-                    Layout.preferredWidth: 250
-                    Layout.maximumWidth: 350
-
-                    from: 0
-                    to: 100
-
-                    value: App.theme.glassColor.a * 100
-
-                    onModified: {
-                        App.theme.glassColor.a = value / 100
-                    }
-
-                    text: "Glass Translucency"
-                }
-
-                STDangerousButton {
-                    Layout.preferredWidth: 100
-                    text: "Reset"
-
-                    down_color: App.theme.defaultGlassColor
-
-                    onClicked: root.resetGlass()
                 }
             }
         }
 
         STPropertyPanel {
             Layout.fillWidth: true
-
-            title: "Font"
+            title: "Glass Translucency"
             collapsed: false
 
-            ColumnLayout {
-                ColorPickerField {
-                    id: fontColorPicker
-                    color: App.theme.fontColor
-                    label: "Font Color"
-                    onUpdated: {
-                        App.theme.fontColor.r = fontColorPicker.color.r
-                        App.theme.fontColor.g = fontColorPicker.color.g
-                        App.theme.fontColor.b = fontColorPicker.color.b
-                    }
-                }
+            STComboBar {
+                Layout.fillWidth: true
+                Layout.columnSpan: 2
+                model: ["Clear", "Balanced", "Solid"]
+                currentIndex: App.theme.glassClarity
+                onCurrentIndexChanged: App.theme.glassClarity = currentIndex
+            }
+        }
 
-                STSpinBoxField {
-                    id: headerSizeField
-                    label: "Header Size"
-                    from: 1
-                    to: 48
-                    Layout.preferredWidth: 200
-                    value: App.theme._headerSize
-                    onValueModified: {
-                        App.theme._headerSize = value
-                    }
-                }
+        STPropertyPanel {
+            Layout.fillWidth: true
+            title: "Font Size"
+            collapsed: false
 
-                STSpinBoxField {
-                    id: subHeaderSizeField
-                    label: "Subheader Size"
-                    from: 1
-                    to: 48
-                    Layout.preferredWidth: 200
-                    value: App.theme._subHeaderSize
-                    onValueModified: {
-                        App.theme._subHeaderSize = value
-                    }
-                }
-
-                STSpinBoxField {
-                    id: labelSizeField
-                    label: "Label Size"
-                    from: 1
-                    to: 48
-                    Layout.preferredWidth: 200
-                    value: App.theme._labelSize
-                    onValueModified: {
-                        App.theme._labelSize = value
-                    }
-                }
-
-                STSpinBoxField {
-                    id: normalSizeField
-                    label: "Normal Font Size"
-                    from: 1
-                    to: 48
-                    Layout.preferredWidth: 200
-                    value: App.theme._normalSize
-                    onValueModified: {
-                        App.theme._normalSize = value
-                    }
-                }
-
-                SliderField {
-                    id: zoomLevelField
-                    Layout.preferredWidth: 250
-                    Layout.maximumWidth: 350
-
-                    from: 0
-                    to: 200
-                    value: App.theme.zoomLevel * 100
-                    onModified: {
-                        App.theme.zoomLevel = value / 100
-                    }
-
-                    text: "Zoom Level"
-                }
-
-                STDangerousButton {
-                    Layout.preferredWidth: 100
-                    text: "Reset"
-
-                    down_color: App.theme.defaultGlassColor
-                    onClicked: root.resetFont()
-                }
+            STComboBar {
+                Layout.fillWidth: true
+                Layout.columnSpan: 2
+                model: ["Small", "Default", "Large"]
+                currentIndex: App.theme.fontSize
+                onCurrentIndexChanged: App.theme.fontSize = currentIndex
             }
         }
 

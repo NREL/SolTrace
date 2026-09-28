@@ -12,10 +12,9 @@ RowLayout {
     STButton {
         left_text_icon: "\uf177"
         text: root.previous
-        visible: root.currentIndex > ViewModule.Start
+        visible: root.currentIndex > ViewModule.Load
         onClicked: {
-            if (root.currentIndex == 0) console.log("Getting started")
-            else App.view.workflow_phase = root.currentIndex - 1
+            App.view.workflow_phase = root.currentIndex - 1
         }
     }
 

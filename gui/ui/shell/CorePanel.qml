@@ -60,18 +60,6 @@ Item {
         available_width: root.width
     }
 
-    FullPanel {
-        anchors.top: top_bar.bottom
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.bottom: bottom_bar.top
-        anchors.margins: 10
-        blur_source: root.blur_source
-        enabled: App.view.full_panel.visible
-        opacity: enabled
-        available_width: root.width
-    }
-
     SplitView {
         id: split
         anchors.top: top_bar.bottom

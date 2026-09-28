@@ -54,4 +54,14 @@ ApplicationWindow {
         blur_source: simulation_scene
         anchors.fill: parent
     }
+
+    GetStartedDialog {
+        id: get_started_dialog
+    }
+
+    Component.onCompleted: {
+        if (AppData.show_get_started_on_start) {
+            Qt.callLater(get_started_dialog.open)
+        }
+    }
 }

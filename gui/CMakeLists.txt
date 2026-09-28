@@ -72,7 +72,7 @@ if(SOLTRACE_GIT_DESCRIBE STREQUAL "")
 endif()
 
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/app_build_info.h.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/app/app_build_info.h.in"
     "${CMAKE_CURRENT_BINARY_DIR}/generated/app_build_info.h"
     @ONLY
 )
@@ -332,11 +332,20 @@ function(soltrace_enable_wasm_threads target)
     endif()
 endfunction()
 
-target_include_directories(SolTrace PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_include_directories(SolTrace PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
-target_include_directories(SolTrace PRIVATE ../coretrace/simulation_data)
-target_include_directories(SolTrace PRIVATE ../coretrace/simulation_results)
-target_include_directories(SolTrace PRIVATE ../coretrace/simulation_runner)
+target_include_directories(SolTrace
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/analysis/flux
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/analysis/rays
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/app
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/data
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/modules
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/modules/sun
+        ${CMAKE_CURRENT_BINARY_DIR}/generated
+        ../coretrace/simulation_data
+        ../coretrace/simulation_results
+        ../coretrace/simulation_runner
+)
 
 set_target_properties(SolTrace PROPERTIES CXX_STANDARD 20)
 

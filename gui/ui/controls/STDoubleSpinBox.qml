@@ -9,48 +9,6 @@ DoubleSpinBox {
     from: -Infinity
     to: Infinity
 
-    property string suffix
-
-    contentItem: TextInput {
-        id: input
-        readonly property int suffixRightMargin: 5
-        readonly property int suffixSpacing: 8
-
-        z: 2
-        //text: control.textFromValue(control.value, control.locale)
-        text: control.displayText
-        color: App.theme.fontColor
-        font.family: control.font.family
-        font.pointSize: App.theme.labelSize
-        horizontalAlignment: Qt.AlignHCenter
-        verticalAlignment: Qt.AlignVCenter
-        // rightPadding: suffixLabel.visible ?
-        //                   suffixLabel.width + suffixRightMargin + suffixSpacing
-        //                 : 0
-        rightPadding: 0
-        readOnly: !control.editable
-        validator: control.validator
-        inputMethodHints: control.inputMethodHints
-
-        Label {
-            id: suffixLabel
-            anchors.right: parent.right
-            anchors.rightMargin: input.suffixRightMargin
-            anchors.verticalCenter: parent.verticalCenter
-            color: App.theme.fontColor
-            font.family: input.font.family
-            font.pointSize: input.font.pointSize
-            text: control.suffix
-            visible: text.length > 0
-        }
-    }
-
-    background: WellRectangle {
-        implicitWidth: 80
-        implicitHeight: 32
-        radius: height / 2
-    }
-
     up.indicator: Rectangle {
         x: control.mirrored ? 0 : parent.width - width
         height: parent.height
@@ -84,4 +42,20 @@ DoubleSpinBox {
             anchors.centerIn: parent
         }
     }
+
+    background: WellRectangle {
+        implicitWidth: 140
+        implicitHeight: 32
+        radius: height / 2
+
+        function compute_border_color() {
+            if (control.activeFocus) return control.Material.accentColor
+            if (!enabled) return control.Material.hintTextColor
+            return "black"
+        }
+
+        border.color: compute_border_color()
+    }
 }
+
+

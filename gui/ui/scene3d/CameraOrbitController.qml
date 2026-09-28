@@ -328,6 +328,25 @@ QtObject {
         align_to_offset(host.build_pretty_view_vector())
     }
 
+    function set_to_pretty_view() {
+        var cam = host.active_camera
+        var target = rotation_point
+        var offset = cam.position.minus(target)
+        var distance = offset.length()
+
+        if (distance < 0.000001)
+            distance = 1.0
+
+        var desired_offset = host.build_pretty_view_vector()
+            .times(host.clamp_orbit_distance(distance))
+        var angles = yaw_pitch_from_offset(desired_offset)
+
+        is_animating = false
+        yaw_deg = angles.yaw
+        pitch_deg = clamp(angles.pitch, min_pitch_deg, max_pitch_deg)
+        apply_orbit_transform(distance)
+    }
+
     function look_at(point) {
         var cam = host.active_camera
         var target = Qt.vector3d(point.x, point.y, point.z)

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "analysis/baked_flux_map.h"
-#include "database/entity.h"
-#include "database/simulationresult.h"
-#include "utilities/notification.h"
-#include "utilities/qt_helpers.h"
+#include "analysis/flux/baked_flux_map.h"
+#include "data/entity.h"
+#include "data/simulationresult.h"
+#include "support/notification.h"
+#include "support/qt_helpers.h"
 
 #include <QObject>
 #include <QUrl>
@@ -21,8 +21,8 @@ namespace SolTrace::GUI::App {
 class ExportModule : public QObject {
     Q_OBJECT
 
-    db::SimulationResultPtr                                   m_results;
-    std::unordered_map<db::Entity, analysis::BakedFluxMapPtr> m_flux_maps;
+    SolTrace::GUI::Data::SimulationResultPtr                                   m_results;
+    std::unordered_map<SolTrace::GUI::Data::Entity, SolTrace::GUI::Analysis::BakedFluxMapPtr> m_flux_maps;
 
     Q_WRITABLE_PROPERTY(QUrl, export_directory, { });
     Q_WRITABLE_PROPERTY(bool, export_flux_map_images, true);
@@ -45,17 +45,17 @@ public:
 
 public slots:
     /// Set the simulation result that subsequent export operations use.
-    void set_results(db::SimulationResultPtr);
+    void set_results(SolTrace::GUI::Data::SimulationResultPtr);
 
     /// Store a generated flux map so it can be included in exports.
     void
-    cache_flux_map(db::Entity, analysis::BakedFluxMapPtr, db::Database const*);
+    cache_flux_map(SolTrace::GUI::Data::Entity, SolTrace::GUI::Analysis::BakedFluxMapPtr, SolTrace::GUI::Data::Database const*);
 
     /// Export the current result according to the configured export options.
     void export_current();
 
 signals:
-    void notify(ANotification);
+    void notify(Support::ANotification);
 };
 
 } // namespace SolTrace::GUI::App

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "datetime.hpp"
-#include "utilities/qt_helpers.h"
+#include "support/qt_helpers.h"
 
 #include <QObject>
 #include <qqmlintegration.h>

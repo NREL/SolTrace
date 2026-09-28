@@ -1,4 +1,4 @@
-#include "database/database.h"
+#include "data/database.h"
 
 #include "composite_element.hpp"
 #include "native_runner.hpp"
@@ -456,8 +456,11 @@ std::string sun_box_summary(SolTrace::Result::SimulationResult& actual,
     return out.str();
 }
 
-::testing::AssertionResult export_succeeded(
-    Result<std::shared_ptr<db::DatabaseExport>, QString> const& result) {
+::testing::AssertionResult
+export_succeeded(SolTrace::GUI::Support::Result<
+                 std::shared_ptr<SolTrace::GUI::Data::DatabaseExport>,
+                 QString> const& result)
+{
     if (result) return ::testing::AssertionSuccess();
 
     return ::testing::AssertionFailure()
@@ -493,27 +496,27 @@ TEST(RaySourceResource, ClonePreservesGuiSourceType) {
     sun->set_position(0.0, 0.0, 1.0);
     sun->set_shape(SD::SunShape::GAUSSIAN, 4.65, 4.65, 0.1);
 
-    db::RaySourceResource original {
+    SolTrace::GUI::Data::RaySourceResource original {
         .source = sun,
-        .type   = db::RaySourceType::PointSource,
+        .type   = SolTrace::GUI::Data::RaySourceType::PointSource,
     };
 
     auto clone = original.clone();
 
-    EXPECT_EQ(clone.type, db::RaySourceType::PointSource);
+    EXPECT_EQ(clone.type, SolTrace::GUI::Data::RaySourceType::PointSource);
     ASSERT_NE(clone.source, nullptr);
     EXPECT_NE(clone.source, original.source);
 }
 
 TEST(RaySourceResource, CloneWithoutSourcePreservesGuiSourceType) {
-    db::RaySourceResource original {
+    SolTrace::GUI::Data::RaySourceResource original {
         .source = {},
-        .type   = db::RaySourceType::PointSource,
+        .type   = SolTrace::GUI::Data::RaySourceType::PointSource,
     };
 
     auto clone = original.clone();
 
-    EXPECT_EQ(clone.type, db::RaySourceType::PointSource);
+    EXPECT_EQ(clone.type, SolTrace::GUI::Data::RaySourceType::PointSource);
     EXPECT_EQ(clone.source, nullptr);
 }
 
@@ -522,7 +525,7 @@ TEST(DatabaseRoundTrip, PowerTowerSurroundExportsEquivalentGlobalSimData) {
     ASSERT_TRUE(
         original.import_from_file(power_tower_surround_path().string()));
 
-    db::Database database("round-trip");
+    SolTrace::GUI::Data::Database database("round-trip");
     database.import(original);
 
     auto exported_result = database.export_to_simdata();
@@ -556,7 +559,7 @@ TEST(DatabaseRoundTrip, LegacyImportNormalizesNumericElementNames) {
     ASSERT_TRUE(
         original.import_from_file(power_tower_surround_path().string()));
 
-    db::Database database("legacy-round-trip");
+    SolTrace::GUI::Data::Database database("legacy-round-trip");
     database.import(original, true);
 
     auto exported_result = database.export_to_simdata();
@@ -594,7 +597,7 @@ TEST(DatabaseRoundTrip, PowerTowerSurroundNativeTraceMatchesOriginalSimData) {
     ASSERT_TRUE(source_for_database.import_from_file(
         power_tower_surround_path().string()));
 
-    db::Database database("round-trip-trace");
+    SolTrace::GUI::Data::Database database("round-trip-trace");
     database.import(source_for_database);
 
     auto exported_result = database.export_to_simdata();
@@ -610,7 +613,7 @@ TEST(DatabaseRoundTrip, PowerTowerSurroundNativeTraceMatchesOriginalSimData) {
     ASSERT_TRUE(source_for_expected.import_from_file(
         power_tower_surround_path().string()));
 
-    db::Database expected_database("round-trip-trace-expected");
+    SolTrace::GUI::Data::Database expected_database("round-trip-trace-expected");
     expected_database.import(source_for_expected);
 
     auto expected_exported_result = expected_database.export_to_simdata();

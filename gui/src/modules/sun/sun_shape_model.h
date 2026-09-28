@@ -1,7 +1,7 @@
 #pragma once
 
-#include "utilities/qt_helpers.h"
-#include "utilities/structmodel.h"
+#include "support/qt_helpers.h"
+#include "support/structmodel.h"
 
 #include <QObject>
 #include <QVariantList>
@@ -20,7 +20,7 @@ struct SunShapePoint {
 };
 
 /// Editable table model for sun-shape samples.
-class SunShapeModel : public StructTableModel<SunShapePoint> {
+class SunShapeModel : public Support::StructTableModel<SunShapePoint> {
     Q_OBJECT
 public:
     explicit SunShapeModel(QObject* parent = nullptr);

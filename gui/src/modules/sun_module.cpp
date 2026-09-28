@@ -8,6 +8,8 @@
 #include <optional>
 #include <vector>
 
+using namespace SolTrace::GUI::Support;
+
 namespace SolTrace::GUI::App {
 
 namespace {
@@ -35,13 +37,15 @@ QVector<SunShapePoint> normalized_radial_points(QVector<SunShapePoint> points) {
     return merged;
 }
 
-std::optional<SunShape::Shape> gui_shape_for_data_shape(Data::SunShape shape) {
+std::optional<SunShape::Shape>
+gui_shape_for_data_shape(SolTrace::Data::SunShape shape) {
     switch (shape) {
-    case Data::SunShape::GAUSSIAN: return SunShape::Shape::Gaussian;
-    case Data::SunShape::PILLBOX: return SunShape::Shape::Pillbox;
-    case Data::SunShape::BUIE_CSR: return SunShape::Shape::Buie_CSR;
-    case Data::SunShape::USER_DEFINED: return SunShape::Shape::Custom;
-    case Data::SunShape::LIMBDARKENED: return SunShape::Shape::LimbDarkened;
+    case SolTrace::Data::SunShape::GAUSSIAN: return SunShape::Shape::Gaussian;
+    case SolTrace::Data::SunShape::PILLBOX: return SunShape::Shape::Pillbox;
+    case SolTrace::Data::SunShape::BUIE_CSR: return SunShape::Shape::Buie_CSR;
+    case SolTrace::Data::SunShape::USER_DEFINED: return SunShape::Shape::Custom;
+    case SolTrace::Data::SunShape::LIMBDARKENED:
+        return SunShape::Shape::LimbDarkened;
     default: return std::nullopt;
     }
 }
@@ -67,7 +71,6 @@ points_from_user_data(std::vector<double> const& angles,
 
 SunModule::SunModule(QObject* parent)
     : QObject(parent),
-      m_status(new StatusComponent(this)),
       m_shape(new SunShape(this)),
       m_ps_position(new SolarPositionData(this)),
       m_ds_position(new SolarPositionData(this)),
@@ -204,7 +207,7 @@ QString SunModule::write_position_to_database() {
 
     try {
         m_current_database->ray_source_resource.patch(
-            [this](db::RaySourceResource& resource) {
+            [this](SolTrace::GUI::Data::RaySourceResource& resource) {
                 const bool created = !resource.source;
                 if (created) {
                     resource.source = SD::make_ray_source<SD::Sun>();
@@ -223,10 +226,10 @@ QString SunModule::write_position_to_database() {
                 resource.source->set_position(
                     m_position->x(), m_position->y(), m_position->z());
 
-                resource.source->set_gen_type(Data::GenType::RANDOM);
+                resource.source->set_gen_type(SolTrace::Data::GenType::RANDOM);
                 resource.type = m_type == Type::PointSource
-                                    ? db::RaySourceType::PointSource
-                                    : db::RaySourceType::Directional;
+                                    ? SolTrace::GUI::Data::RaySourceType::PointSource
+                                    : SolTrace::GUI::Data::RaySourceType::Directional;
             });
     } catch (std::exception const& e) {
         qWarning() << "Unable to update sun position:" << e.what();
@@ -250,7 +253,7 @@ void SunModule::update_database_connections() {
 
     m_database_connections.push_back(
         connect(m_current_database->ray_source_resource.self(),
-                &db::ComponentAPIBase::changed,
+                &SolTrace::GUI::Data::ComponentAPIBase::changed,
                 this,
                 [this](entt::entity) {
                     if (m_writing_to_database) return;
@@ -259,7 +262,7 @@ void SunModule::update_database_connections() {
 
     m_database_connections.push_back(
         connect(m_current_database->ray_source_resource.self(),
-                &db::ComponentAPIBase::removed,
+                &SolTrace::GUI::Data::ComponentAPIBase::removed,
                 this,
                 [this](entt::entity) {
                     if (m_writing_to_database) return;
@@ -300,7 +303,7 @@ void SunModule::load_from_database() {
 
     auto const* resource = m_current_database->ray_source_resource.get();
     auto const  source_type =
-        resource ? resource->type : db::RaySourceType::Directional;
+        resource ? resource->type : SolTrace::GUI::Data::RaySourceType::Directional;
 
     if (!resource || !resource->source) {
         qDebug() << Q_FUNC_INFO << "No ray source in this database";
@@ -312,7 +315,7 @@ void SunModule::load_from_database() {
 }
 
 void SunModule::load_from_ray_source(SD::RaySource&    ray_source,
-                                     db::RaySourceType source_type) {
+                                     SolTrace::GUI::Data::RaySourceType source_type) {
     qDebug() << Q_FUNC_INFO;
     // We always need a shape to work with here
     auto gui_shape = gui_shape_for_data_shape(ray_source.get_shape())
@@ -320,7 +323,7 @@ void SunModule::load_from_ray_source(SD::RaySource&    ray_source,
 
     QScopedValueRollback<bool> guard(m_loading_from_database, true);
 
-    set_type(source_type == db::RaySourceType::PointSource ? Type::PointSource
+    set_type(source_type == SolTrace::GUI::Data::RaySourceType::PointSource ? Type::PointSource
                                                            : Type::Directional);
 
     // A core Sun stores only the parameter used by its active shape and leaves
@@ -384,20 +387,20 @@ void SunModule::load_from_ray_source(SD::RaySource&    ray_source,
              << "mapped gui shape" << int(gui_shape);
 }
 
-Data::SolarPositionCalculationMethod
+SolTrace::Data::SolarPositionCalculationMethod
 SunModule::selected_calculation_method() const {
     switch (m_calc_data->calculator()) {
     case SolarCalculatorData::Calculator::Legacy:
-        return Data::SolarPositionCalculationMethod::LEGACY;
+        return SolTrace::Data::SolarPositionCalculationMethod::LEGACY;
     case SolarCalculatorData::Calculator::Duffie:
-        return Data::SolarPositionCalculationMethod::DUFFIE;
+        return SolTrace::Data::SolarPositionCalculationMethod::DUFFIE;
     case SolarCalculatorData::Calculator::SOLPOS:
-        return Data::SolarPositionCalculationMethod::SOLPOS;
+        return SolTrace::Data::SolarPositionCalculationMethod::SOLPOS;
     case SolarCalculatorData::Calculator::SPA:
-        return Data::SolarPositionCalculationMethod::SPA;
+        return SolTrace::Data::SolarPositionCalculationMethod::SPA;
     }
 
-    return Data::SolarPositionCalculationMethod::LEGACY;
+    return SolTrace::Data::SolarPositionCalculationMethod::LEGACY;
 }
 
 QString SunModule::apply_calculator(int    calculator,

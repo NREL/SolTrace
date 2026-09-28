@@ -1,11 +1,10 @@
 #pragma once
 
-#include "database/database.h"
-#include "database/geometryeditor.h"
-#include "database/materialeditor.h"
-#include "database/models/group_models.h"
-#include "module_common.h"
-#include "utilities/qt_helpers.h"
+#include "data/database.h"
+#include "editing/geometryeditor.h"
+#include "editing/materialeditor.h"
+#include "scene_models/group_models.h"
+#include "support/qt_helpers.h"
 
 #include <QObject>
 
@@ -25,29 +24,28 @@ class MaterialsModule : public QObject {
 
     // TODO: A name module that always watches the name of an entity
 
-    QPointer<db::Database> m_database;
+    QPointer<SolTrace::GUI::Data::Database> m_database;
 
 private slots:
     void new_material_selected();
     void new_geometry_selected();
 
-    void reset(db::Database*);
+    void reset(SolTrace::GUI::Data::Database*);
 
 public:
     explicit MaterialsModule(QObject* parent = nullptr);
 
-    QOBJECT_READONLY_PROPERTY(StatusComponent, status);
-    QOBJECT_WRITABLE_PROPERTY(db::Database, current_database)
-    QOBJECT_WRITABLE_PROPERTY(db::MaterialGroupsModel, materials_list)
-    QOBJECT_WRITABLE_PROPERTY(db::GeometryGroupsModel, geometry_list)
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::Database, current_database)
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::MaterialGroupsModel, materials_list)
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::GeometryGroupsModel, geometry_list)
 
-    QOBJECT_WRITABLE_PROPERTY(db::MaterialEditor, material_edit);
-    QOBJECT_WRITABLE_PROPERTY(db::GeometryEditor, geometry_edit);
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::MaterialEditor, material_edit);
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::GeometryEditor, geometry_edit);
 
-    Q_WRITABLE_PROPERTY(db::Entity, current_material, { })
+    Q_WRITABLE_PROPERTY(SolTrace::GUI::Data::Entity, current_material, { })
     Q_READONLY_PROPERTY(QString, current_material_name)
 
-    Q_WRITABLE_PROPERTY(db::Entity, current_geometry, { })
+    Q_WRITABLE_PROPERTY(SolTrace::GUI::Data::Entity, current_geometry, { })
     Q_READONLY_PROPERTY(QString, current_geometry_name)
 };
 

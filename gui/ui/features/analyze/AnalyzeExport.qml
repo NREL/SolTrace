@@ -110,7 +110,7 @@ Flickable {
             }
 
             STFormRow {
-                label: "Sample size"
+                label: "Sample size (rays)"
                 visible: AppData.exporter.export_rays
                          && AppData.exporter.random_sample_rays
 
@@ -120,7 +120,6 @@ Flickable {
                     to: 1000000000
                     decimals: 0
                     stepSize: 1000
-                    suffix: "rays"
                     value: AppData.exporter.random_sample_ray_count
                     onValueModified: AppData.exporter.random_sample_ray_count = value
                 }

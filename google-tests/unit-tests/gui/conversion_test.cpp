@@ -1,4 +1,4 @@
-#include "database/conversion.h"
+#include "data_io/conversion.h"
 
 #include "single_element.hpp"
 
@@ -67,7 +67,7 @@ void expect_basis_near(Basis const& actual,
 } // namespace
 
 TEST(DirRollToQuat, IdentityForZeroDirection) {
-    auto q = db::dir_roll_to_quat({ 0.0, 0.0, 0.0 }, 1.25);
+    auto q = SolTrace::GUI::Data::dir_roll_to_quat({ 0.0, 0.0, 0.0 }, 1.25);
 
     EXPECT_TRUE(same_rotation(q, glm::identity<glm::dquat>()));
 }
@@ -75,7 +75,7 @@ TEST(DirRollToQuat, IdentityForZeroDirection) {
 TEST(DirRollToQuat, MapsLocalForwardToDirection) {
     glm::dvec3 direction = glm::normalize(glm::dvec3(1.0, 2.0, 3.0));
 
-    auto q = db::dir_roll_to_quat(direction, 0.0);
+    auto q = SolTrace::GUI::Data::dir_roll_to_quat(direction, 0.0);
 
     expect_vec_near(q * glm::dvec3(0.0, 0.0, 1.0), direction);
 }
@@ -84,7 +84,7 @@ TEST(DirRollToQuat, AppliesRollAroundDirection) {
     glm::dvec3 direction = glm::dvec3(0.0, 0.0, 1.0);
     double     roll      = glm::half_pi<double>();
 
-    auto q = db::dir_roll_to_quat(direction, roll);
+    auto q = SolTrace::GUI::Data::dir_roll_to_quat(direction, roll);
 
     expect_vec_near(q * glm::dvec3(0.0, 0.0, 1.0), direction);
     expect_vec_near(q * glm::dvec3(0.0, 1.0, 0.0), glm::dvec3(-1.0, 0.0, 0.0));
@@ -115,7 +115,7 @@ TEST(DirRollToQuat, RoundTripsThroughQuatToDirRollAndSimData) {
 
         glm::dvec3 decoded_direction;
         double     decoded_roll = 0.0;
-        db::quat_to_dir_roll(q0, decoded_direction, decoded_roll);
+        SolTrace::GUI::Data::quat_to_dir_roll(q0, decoded_direction, decoded_roll);
 
         auto basis1 = materialize_in_simdata(decoded_direction, decoded_roll);
 
@@ -137,7 +137,7 @@ TEST(DirRollToQuat, PreservesPowerTowerSurroundElement10028Roll) {
 
     glm::dvec3 decoded_direction;
     double     decoded_roll = 0.0;
-    db::quat_to_dir_roll(q0, decoded_direction, decoded_roll);
+    SolTrace::GUI::Data::quat_to_dir_roll(q0, decoded_direction, decoded_roll);
 
     auto basis = materialize_in_simdata(decoded_direction, decoded_roll);
 
@@ -160,7 +160,7 @@ TEST(DirRollToQuat, MaterializesPowerTowerSurroundElement10028InSimData) {
 
     glm::dvec3 exported_direction;
     double     exported_roll = 0.0;
-    db::quat_to_dir_roll(q0, exported_direction, exported_roll);
+    SolTrace::GUI::Data::quat_to_dir_roll(q0, exported_direction, exported_roll);
 
     glm::dvec3 const origin(-859.977, 573.788, -0.520187);
 

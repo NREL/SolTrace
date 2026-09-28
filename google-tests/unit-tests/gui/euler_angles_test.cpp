@@ -1,4 +1,4 @@
-#include "utilities/euler_angles.h"
+#include "support/euler_angles.h"
 
 #include <gtest/gtest.h>
 
@@ -59,41 +59,48 @@ TEST(EulerAnglesXYZ, RoundTripsAwayFromSingularity)
                      std::to_string(degrees_case.z) + ")");
 
         auto expected = radians(degrees_case);
-        auto quat     = db::euler_xyz_to_quat(expected);
-        auto actual   = db::compatible_euler_xyz_from_quat(quat, expected);
+        auto quat     = SolTrace::GUI::Support::euler_xyz_to_quat(expected);
+        auto actual   = SolTrace::GUI::Support::compatible_euler_xyz_from_quat(
+            quat, expected);
 
         expect_vec_near(actual, expected);
-        EXPECT_TRUE(same_rotation(db::euler_xyz_to_quat(actual), quat));
+        EXPECT_TRUE(same_rotation(
+            SolTrace::GUI::Support::euler_xyz_to_quat(actual), quat));
     }
 }
 
 TEST(EulerAnglesXYZ, PreservesCompatibleValuesPastOneRevolution)
 {
     glm::dvec3 previous = radians({ 370.0, -20.0, 725.0 });
-    auto       quat     = db::euler_xyz_to_quat(previous);
+    auto       quat     = SolTrace::GUI::Support::euler_xyz_to_quat(previous);
 
-    auto actual = db::compatible_euler_xyz_from_quat(quat, previous);
+    auto actual =
+        SolTrace::GUI::Support::compatible_euler_xyz_from_quat(quat, previous);
 
     expect_vec_near(actual, previous);
-    EXPECT_TRUE(same_rotation(db::euler_xyz_to_quat(actual), quat));
+    EXPECT_TRUE(
+        same_rotation(SolTrace::GUI::Support::euler_xyz_to_quat(actual), quat));
 }
 
 TEST(EulerAnglesXYZ, KeepsXChannelStableAtNinetyDegrees)
 {
     glm::dvec3 previous = radians({ 90.0, 0.0, 0.0 });
-    auto       quat     = db::euler_xyz_to_quat(previous);
+    auto       quat     = SolTrace::GUI::Support::euler_xyz_to_quat(previous);
 
-    auto refreshed = db::compatible_euler_xyz_from_quat(quat, previous);
+    auto refreshed =
+        SolTrace::GUI::Support::compatible_euler_xyz_from_quat(quat, previous);
     expect_vec_near(degrees(refreshed), { 90.0, 0.0, 0.0 });
 
     glm::dvec3 edited_y = radians({ 90.0, 22.5, 0.0 });
-    quat                = db::euler_xyz_to_quat(edited_y);
-    refreshed           = db::compatible_euler_xyz_from_quat(quat, previous);
+    quat                = SolTrace::GUI::Support::euler_xyz_to_quat(edited_y);
+    refreshed =
+        SolTrace::GUI::Support::compatible_euler_xyz_from_quat(quat, previous);
     expect_vec_near(degrees(refreshed), { 90.0, 22.5, 0.0 });
 
     glm::dvec3 edited_z = radians({ 90.0, 22.5, -37.0 });
-    quat                = db::euler_xyz_to_quat(edited_z);
-    refreshed           = db::compatible_euler_xyz_from_quat(quat, edited_y);
+    quat                = SolTrace::GUI::Support::euler_xyz_to_quat(edited_z);
+    refreshed =
+        SolTrace::GUI::Support::compatible_euler_xyz_from_quat(quat, edited_y);
     expect_vec_near(degrees(refreshed), { 90.0, 22.5, -37.0 });
 }
 
@@ -101,10 +108,12 @@ TEST(EulerAnglesXYZ, ChoosesEquivalentSolutionNearestPrevious)
 {
     glm::dvec3 previous  = radians({ 350.0, 10.0, -355.0 });
     glm::dvec3 canonical = radians({ -10.0, 10.0, 5.0 });
-    auto       quat      = db::euler_xyz_to_quat(canonical);
+    auto       quat      = SolTrace::GUI::Support::euler_xyz_to_quat(canonical);
 
-    auto actual = db::compatible_euler_xyz_from_quat(quat, previous);
+    auto actual =
+        SolTrace::GUI::Support::compatible_euler_xyz_from_quat(quat, previous);
 
     expect_vec_near(degrees(actual), { 350.0, 10.0, -355.0 });
-    EXPECT_TRUE(same_rotation(db::euler_xyz_to_quat(actual), quat));
+    EXPECT_TRUE(
+        same_rotation(SolTrace::GUI::Support::euler_xyz_to_quat(actual), quat));
 }

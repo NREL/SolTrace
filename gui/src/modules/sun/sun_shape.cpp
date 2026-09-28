@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <cmath>
 
+using namespace SolTrace::GUI::Support;
+
 namespace SolTrace::GUI::App {
 
 SunShape::SunShape(QObject* parent)

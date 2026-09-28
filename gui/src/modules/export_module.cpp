@@ -1,6 +1,6 @@
 #include "export_module.h"
 
-#include "database/database.h"
+#include "data/database.h"
 
 #include <entt/entity/entity.hpp>
 
@@ -17,19 +17,21 @@
 #include <limits>
 #include <numeric>
 
+using namespace SolTrace::GUI::Support;
+
 namespace SolTrace::GUI::App {
 
 namespace {
 
-QString event_type_name(db::RayEventType event) {
+QString event_type_name(SolTrace::GUI::Data::RayEventType event) {
     switch (event) {
-    case db::RayEventType::CREATE: return QStringLiteral("CREATE");
-    case db::RayEventType::ABSORB: return QStringLiteral("ABSORB");
-    case db::RayEventType::REFLECT: return QStringLiteral("REFLECT");
-    case db::RayEventType::TRANSMIT: return QStringLiteral("TRANSMIT");
-    case db::RayEventType::VIRTUAL: return QStringLiteral("VIRTUAL");
-    case db::RayEventType::EXIT: return QStringLiteral("EXIT");
-    case db::RayEventType::UNKNOWN: return QStringLiteral("UNKNOWN");
+    case SolTrace::GUI::Data::RayEventType::CREATE: return QStringLiteral("CREATE");
+    case SolTrace::GUI::Data::RayEventType::ABSORB: return QStringLiteral("ABSORB");
+    case SolTrace::GUI::Data::RayEventType::REFLECT: return QStringLiteral("REFLECT");
+    case SolTrace::GUI::Data::RayEventType::TRANSMIT: return QStringLiteral("TRANSMIT");
+    case SolTrace::GUI::Data::RayEventType::VIRTUAL: return QStringLiteral("VIRTUAL");
+    case SolTrace::GUI::Data::RayEventType::EXIT: return QStringLiteral("EXIT");
+    case SolTrace::GUI::Data::RayEventType::UNKNOWN: return QStringLiteral("UNKNOWN");
     }
 
     return QStringLiteral("UNKNOWN");
@@ -80,7 +82,7 @@ size_t bounded_index(QRandomGenerator* random, size_t upper_exclusive) {
 
 bool write_flux_map_mesh(QString const&             path,
                          QString const&             object_name,
-                         analysis::BakedFluxMapPtr const& map) {
+                         SolTrace::GUI::Analysis::BakedFluxMapPtr const& map) {
     if (!map) return false;
 
     QFile file(path);
@@ -204,7 +206,7 @@ ExportModule::ExportModule(QObject* parent) : QObject(parent) {
     });
 }
 
-void ExportModule::set_results(db::SimulationResultPtr results) {
+void ExportModule::set_results(SolTrace::GUI::Data::SimulationResultPtr results) {
     m_results = std::move(results);
     m_flux_maps.clear();
 
@@ -215,9 +217,9 @@ void ExportModule::set_results(db::SimulationResultPtr results) {
     update_can_export();
 }
 
-void ExportModule::cache_flux_map(db::Entity                entity,
-                                  analysis::BakedFluxMapPtr image,
-                                  db::Database const*) {
+void ExportModule::cache_flux_map(SolTrace::GUI::Data::Entity                entity,
+                                  SolTrace::GUI::Analysis::BakedFluxMapPtr image,
+                                  SolTrace::GUI::Data::Database const*) {
     if (!m_results || !image || !entity.is_valid()) return;
 
     m_flux_maps.insert_or_assign(entity, std::move(image));
@@ -264,7 +266,7 @@ void ExportModule::export_current() {
             return;
         }
 
-        auto* database = const_cast<db::Database*>(m_results->database.get());
+        auto* database = const_cast<SolTrace::GUI::Data::Database*>(m_results->database.get());
         auto  result   = database->export_to_simdata();
 
         if (!result) {

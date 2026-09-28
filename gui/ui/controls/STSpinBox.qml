@@ -1,89 +1,14 @@
 import QtQuick
+import QtQuick.Templates as T
 import QtQuick.Controls.Material
+import QtQuick.Controls.Material.impl
+
 import SolTrace
+
 
 SpinBox {
     id: control
     editable: true
-    live: true
-
-    property string suffix
-    signal clamped_to_min
-    signal clamped_to_max
-
-    function commitText(restoreInvalid) {
-        const parsed = control.valueFromText(input.text, control.locale)
-        if (Number.isNaN(parsed)) {
-            if (restoreInvalid) {
-                input.text = control.textFromValue(control.value, control.locale)
-            }
-            return
-        }
-
-        if (parsed > control.to) {
-            control.clamped_to_max()
-        } else if (parsed < control.from) {
-            control.clamped_to_min()
-        }
-
-        const nextValue = Math.max(control.from, Math.min(control.to, parsed))
-        if (nextValue === control.value) {
-            input.text = control.textFromValue(control.value, control.locale)
-            return
-        }
-
-        control.value = nextValue
-        control.valueModified()
-    }
-
-    contentItem: TextInput {
-        id: input
-        readonly property int suffixRightMargin: 30
-        readonly property int suffixSpacing: 8
-
-        z: 2
-        color: App.theme.fontColor
-        font.family: control.font.family
-        font.pointSize: App.theme.labelSize
-        horizontalAlignment: Qt.AlignHCenter
-        verticalAlignment: Qt.AlignVCenter
-        rightPadding: suffixLabel.visible ? suffixLabel.width + suffixRightMargin + suffixSpacing : 0
-        readOnly: !control.editable
-        validator: control.validator
-        inputMethodHints: control.inputMethodHints
-        onTextEdited: {
-            if (control.live && acceptableInput) {
-                control.commitText(false)
-            }
-        }
-        onAccepted: control.commitText(true)
-        onEditingFinished: control.commitText(true)
-
-        Binding {
-            target: input
-            property: "text"
-            value: control.textFromValue(control.value, control.locale)
-            restoreMode: Binding.RestoreBinding
-        }
-
-        Label {
-            id: suffixLabel
-            anchors.right: parent.right
-            anchors.rightMargin: input.suffixRightMargin
-            anchors.verticalCenter: parent.verticalCenter
-            color: App.theme.fontColor
-            font.family: input.font.family
-            font.pointSize: input.font.pointSize
-            text: control.suffix
-            visible: text.length > 0
-        }
-    }
-
-    background: WellRectangle {
-        implicitWidth: 80
-        implicitHeight: 32
-        radius: height / 2
-    }
 
     up.indicator: Rectangle {
         x: control.mirrored ? 0 : parent.width - width
@@ -119,5 +44,19 @@ SpinBox {
 
             anchors.centerIn: parent
         }
+    }
+
+    background: WellRectangle {
+        implicitWidth: 140
+        implicitHeight: 32
+        radius: height / 2
+
+        function compute_border_color() {
+            if (control.activeFocus) return control.Material.accentColor
+            if (!enabled) return control.Material.hintTextColor
+            return "black"
+        }
+
+        border.color: compute_border_color()
     }
 }

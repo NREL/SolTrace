@@ -25,11 +25,10 @@ STPropertyPanel {
             Layout.column: 0
             Layout.fillWidth: true
             Layout.maximumWidth: 200
-            label: qsTr("Latitude")
+            label: qsTr("Latitude (deg)")
             from: -90
             to: 90
             decimals: 4
-            suffix: "deg"
             onValueModified: { root.latitude = value; root.modified() }
         }
         Binding { latField.value: root.latitude }
@@ -40,11 +39,10 @@ STPropertyPanel {
             Layout.column: App.view.left_panel.size == SplitPanelData.Small ? 0 : 1
             Layout.fillWidth: true
             Layout.maximumWidth: 200
-            label: qsTr("Longitude")
+            label: qsTr("Longitude (deg)")
             from: -180
             to: 180
             decimals: 4
-            suffix: "deg"
             onValueModified: { root.longitude = value; root.modified() }
         }
         Binding { lonField.value: root.longitude }

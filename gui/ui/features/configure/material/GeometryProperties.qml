@@ -88,7 +88,7 @@ ColumnLayout {
                 to: toDisplayValue(max)
                 decimals: 8
                 stepSize: isAngle ? 1 : 0.01
-                suffix: isAngle ? "deg" : ""
+                //suffix: isAngle ? "deg" : ""
                 onValueModified: model.content = toModelValue(value)
             }
         }

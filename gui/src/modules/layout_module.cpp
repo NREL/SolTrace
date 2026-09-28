@@ -18,7 +18,7 @@ void LayoutModule::edited_entity_changed() {
 
     m_current_database->clear_selection();
     if (m_edited_element.is_valid() &&
-        m_current_database->as_registry().all_of<db::ElementComponent>(
+        m_current_database->as_registry().all_of<SolTrace::GUI::Data::ElementComponent>(
             m_edited_element)) {
         m_current_database->add_to_selection(m_edited_element);
     }
@@ -26,7 +26,7 @@ void LayoutModule::edited_entity_changed() {
     set_edited_element_name(m_current_database->name_of(m_edited_element));
 }
 
-void LayoutModule::reset(db::Database* database) {
+void LayoutModule::reset(SolTrace::GUI::Data::Database* database) {
     if (m_observed_database) {
         disconnect(
             m_observed_database->identity.self(), nullptr, this, nullptr);
@@ -42,7 +42,7 @@ void LayoutModule::reset(db::Database* database) {
     }
 
     connect(database->identity.self(),
-            &db::ComponentAPIBase::changed,
+            &SolTrace::GUI::Data::ComponentAPIBase::changed,
             this,
             &LayoutModule::identity_changed);
 
@@ -52,7 +52,7 @@ void LayoutModule::reset(db::Database* database) {
 void LayoutModule::identity_changed(entt::entity entity) {
     if (!m_current_database) return;
 
-    if (db::Entity(entity) != m_edited_element) return;
+    if (SolTrace::GUI::Data::Entity(entity) != m_edited_element) return;
 
     set_edited_element_name(m_current_database->name_of(m_edited_element));
 }
@@ -71,15 +71,14 @@ void LayoutModule::delete_edited_element() {
 
 LayoutModule::LayoutModule(QObject* parent)
     : QObject(parent),
-      m_status(new StatusComponent(this)),
-      m_all_elements_model(new db::AllElementsModel(this)),
-      m_root_elements_model(new db::RootElementsModel(this)),
-      m_filtered_root_elements_model(new db::InstanceSortFilter(this)),
-      m_child_model(new db::ChildModel(this)),
-      m_filtered_child_model(new db::InstanceSortFilter(this)),
-      m_breadcrumb_model(new db::BreadcrumbModel(this)),
-      m_instance_edit(new db::AnInstanceEditor(this)),
-      m_world_geometry_model(new db::WorldGeometryModel(this)) {
+      m_all_elements_model(new SolTrace::GUI::Data::AllElementsModel(this)),
+      m_root_elements_model(new SolTrace::GUI::Data::RootElementsModel(this)),
+      m_filtered_root_elements_model(new SolTrace::GUI::Data::InstanceSortFilter(this)),
+      m_child_model(new SolTrace::GUI::Data::ChildModel(this)),
+      m_filtered_child_model(new SolTrace::GUI::Data::InstanceSortFilter(this)),
+      m_breadcrumb_model(new SolTrace::GUI::Data::BreadcrumbModel(this)),
+      m_instance_edit(new SolTrace::GUI::Data::AnInstanceEditor(this)),
+      m_world_geometry_model(new SolTrace::GUI::Data::WorldGeometryModel(this)) {
 
     m_filtered_root_elements_model->setSourceModel(m_root_elements_model);
     m_filtered_child_model->setSourceModel(m_child_model);
@@ -87,12 +86,12 @@ LayoutModule::LayoutModule(QObject* parent)
     connect(this,
             &LayoutModule::current_database_value_changed,
             m_all_elements_model,
-            &db::AllElementsModel::reset);
+            &SolTrace::GUI::Data::AllElementsModel::reset);
 
     connect(this,
             &LayoutModule::current_database_value_changed,
             m_root_elements_model,
-            &db::RootElementsModel::reset);
+            &SolTrace::GUI::Data::RootElementsModel::reset);
 
     connect(this,
             &LayoutModule::current_database_value_changed,
@@ -102,37 +101,37 @@ LayoutModule::LayoutModule(QObject* parent)
     connect(this,
             &LayoutModule::current_database_value_changed,
             m_filtered_root_elements_model,
-            &db::InstanceSortFilter::reset);
+            &SolTrace::GUI::Data::InstanceSortFilter::reset);
 
     connect(this,
             &LayoutModule::current_database_value_changed,
             m_filtered_child_model,
-            &db::InstanceSortFilter::reset);
+            &SolTrace::GUI::Data::InstanceSortFilter::reset);
 
     connect(this,
             &LayoutModule::current_database_value_changed,
             m_child_model,
-            &db::ChildModel::reset);
+            &SolTrace::GUI::Data::ChildModel::reset);
 
     connect(this,
             &LayoutModule::current_database_value_changed,
             m_breadcrumb_model,
-            &db::BreadcrumbModel::reset);
+            &SolTrace::GUI::Data::BreadcrumbModel::reset);
 
     connect(this,
             &LayoutModule::current_database_value_changed,
             m_instance_edit,
-            &db::AnInstanceEditor::reset);
+            &SolTrace::GUI::Data::AnInstanceEditor::reset);
 
     connect(m_instance_edit,
-            &db::AnInstanceEditor::notify,
+            &SolTrace::GUI::Data::AnInstanceEditor::notify,
             this,
             &LayoutModule::notify);
 
     connect(this,
             &LayoutModule::current_database_value_changed,
             m_world_geometry_model,
-            &db::WorldGeometryModel::reset);
+            &SolTrace::GUI::Data::WorldGeometryModel::reset);
 
     // Element changes
 

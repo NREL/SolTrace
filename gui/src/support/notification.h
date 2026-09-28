@@ -1,0 +1,43 @@
+#pragma once
+
+#include <QObject>
+#include <utility>
+
+namespace SolTrace::GUI::Support {
+
+/// User-visible notification payload passed through Qt signals and QML.
+struct ANotification {
+    Q_GADGET
+    Q_PROPERTY(QString message MEMBER message)
+    Q_PROPERTY(Type type MEMBER type)
+
+public:
+    /// Notification severity.
+    enum Type { INFO, WARNING, ERROR };
+
+    Q_ENUM(Type);
+
+
+    QString message;
+    Type    type;
+
+    ANotification() = default;
+    ANotification(QString msg, Type t = INFO)
+        : message(std::move(msg)), type(t) { }
+
+    static ANotification info(QString msg) {
+        return ANotification(std::move(msg), INFO);
+    }
+
+    static ANotification warning(QString msg) {
+        return ANotification(std::move(msg), WARNING);
+    }
+
+    static ANotification error(QString msg) {
+        return ANotification(std::move(msg), ERROR);
+    }
+};
+
+} // namespace SolTrace::GUI::Support
+
+Q_DECLARE_METATYPE(SolTrace::GUI::Support::ANotification)

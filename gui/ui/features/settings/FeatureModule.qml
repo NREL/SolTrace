@@ -10,111 +10,41 @@ ScrollView {
     Layout.fillHeight: true
     contentWidth: availableWidth
 
+    readonly property var backendFeatures: [
+        "gpu_ray_tracing",
+        "large_scale_simulations",
+        "open_source_extensible",
+        "sam_integration",
+        "python_api"
+    ]
+    readonly property var guiFeatures: [
+        "viewport",
+        "geometry_editor",
+        "flux_visualization",
+        "theming_accessibility",
+        "documentation"
+    ]
+
     ColumnLayout {
         width: root.availableWidth
         spacing: 12
 
-        ListModel {
-            id: backendFeatureModel
-            ListElement {
-                name: "GPU Ray Tracing"
-                icon: "\uf2db"
-                description: "Massively parallel Monte Carlo ray tracing on GPU architecture. Full physical fidelity with order-of-magnitude speedups over legacy CPU-bound workflows."
-            }
-            ListElement {
-                name: "Large-Scale Simulations"
-                icon: "\uf0b2"
-                description: "Robust handling of high-resolution, full-scale heliostat fields. Simulations that were previously impractical are now routine."
-            }
-            ListElement {
-                name: "Open-Source & Extensible"
-                icon: "\uf121"
-                description: "Modular codebase with clear APIs. Customizable beyond proprietary software limits, lowering barriers to entry for researchers and developers."
-            }
-            ListElement {
-                name: "SAM Integration"
-                icon: "\uf0c1"
-                description: "Coupling optical simulations with system-level techno-economic models like SAM for end-to-end CST performance and cost analysis."
-            }
-            ListElement {
-                name: "Python API"
-                icon: "\uf120"
-                description: "Scriptable interface via pysoltrace for parametric studies, optimization loops, and integration with existing Python-based research pipelines."
-            }
-        }
-
-        ListModel {
-            id: guiFeatureModel
-            ListElement {
-                name: "3D Viewport"
-                icon: "\uf1b2"
-                description: "Interactive 3D visualization of optical geometries, ray intersections, and flux maps. Explore your system spatially instead of through tables."
-            }
-            ListElement {
-                name: "Geometry Editor"
-                icon: "\uf5ee"
-                description: "Direct manipulation of stages, elements, and optical properties. Eliminates trial-and-error geometry generation from legacy workflows."
-            }
-            ListElement {
-                name: "Flux Visualization"
-                icon: "\uf06d"
-                description: "Real-time flux map rendering and scatter plots. Quickly assess optical performance without exporting data to external tools."
-            }
-            ListElement {
-                name: "Theming & Accessibility"
-                icon: "\uf53f"
-                description: "Customizable glass UI with adjustable colors, font sizes, and zoom levels. Adapts to user preferences and display environments."
-            }
-            ListElement {
-                name: "Documentation"
-                icon: "\uf02d"
-                description: "Built-in multilingual documentation and help resources. Minimizes learning curve and provides guidance without leaving the application."
-            }
-        }
-
         Header {
-            text: "New in SolTrace"
+            text: App.docs.get("settings.features", "title")
         }
 
-        Repeater {
-            model: [
-                { title: "Backend Features", source: backendFeatureModel },
-                { title: "GUI Features", source: guiFeatureModel }
-            ]
-
-            STPropertyPanel {
-                title: modelData.title
-                Layout.fillWidth: true
-                CardGallery {
-                    model: modelData.source
-                    Layout.fillWidth: true
-                    Layout.columnSpan: 2
-                    delegate: ColumnLayout {
-                        property string name
-                        property string icon
-                        property string description
-                        spacing: 5
-                        RowLayout {
-                            spacing: 8
-                            Label {
-                                text: icon
-                                font.family: "Font Awesome 7 Free"
-                                font.pointSize: 16
-                            }
-                            SubHeader {
-                                Layout.fillWidth: true
-                                text: name
-                                wrapMode: Text.WordWrap
-                            }
-                        }
-                        Label {
-                            Layout.fillWidth: true
-                            text: description
-                            wrapMode: Text.WordWrap
-                        }
-                    }
-                }
-            }
+        FeatureSection {
+            title: App.docs.get("settings.features.backend", "title")
+            keys: root.backendFeatures
+            Layout.fillWidth: true
         }
+
+        FeatureSection {
+            title: App.docs.get("settings.features.gui", "title")
+            keys: root.guiFeatures
+            Layout.fillWidth: true
+        }
+
+        Item { Layout.fillHeight: true }
     }
 }

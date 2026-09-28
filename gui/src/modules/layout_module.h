@@ -1,13 +1,12 @@
 #pragma once
 
-#include "database/models/hierarchy_models.h"
-#include "database/models/instance_editor.h"
-#include "database/models/element_models.h"
-#include "database/models/instance_sort_filter.h"
-#include "database/models/world_geometry_model.h"
-#include "module_common.h"
-#include "utilities/notification.h"
-#include "utilities/qt_helpers.h"
+#include "scene_models/hierarchy_models.h"
+#include "scene_models/instance_editor.h"
+#include "scene_models/element_models.h"
+#include "scene_models/instance_sort_filter.h"
+#include "scene_models/world_geometry_model.h"
+#include "support/notification.h"
+#include "support/qt_helpers.h"
 
 #include <QObject>
 
@@ -25,39 +24,37 @@ namespace SolTrace::GUI::App {
 class LayoutModule : public QObject {
     Q_OBJECT
 
-    QPointer<db::Database> m_observed_database;
+    QPointer<SolTrace::GUI::Data::Database> m_observed_database;
 
 private slots:
     void viewed_entity_changed();
     void edited_entity_changed();
-    void reset(db::Database*);
+    void reset(SolTrace::GUI::Data::Database*);
     void identity_changed(entt::entity);
 
 public:
     explicit LayoutModule(QObject* parent = nullptr);
 
-    QOBJECT_WRITABLE_PROPERTY(db::Database, current_database)
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::Database, current_database)
 
-    QOBJECT_READONLY_PROPERTY(db::AllElementsModel, all_elements_model);
+    QOBJECT_READONLY_PROPERTY(SolTrace::GUI::Data::AllElementsModel, all_elements_model);
 
-    QOBJECT_READONLY_PROPERTY(db::RootElementsModel, root_elements_model);
-    QOBJECT_READONLY_PROPERTY(db::InstanceSortFilter,
+    QOBJECT_READONLY_PROPERTY(SolTrace::GUI::Data::RootElementsModel, root_elements_model);
+    QOBJECT_READONLY_PROPERTY(SolTrace::GUI::Data::InstanceSortFilter,
                               filtered_root_elements_model);
 
-    QOBJECT_WRITABLE_PROPERTY(db::ChildModel, child_model);
-    QOBJECT_READONLY_PROPERTY(db::InstanceSortFilter, filtered_child_model);
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::ChildModel, child_model);
+    QOBJECT_READONLY_PROPERTY(SolTrace::GUI::Data::InstanceSortFilter, filtered_child_model);
 
-    QOBJECT_WRITABLE_PROPERTY(db::BreadcrumbModel, breadcrumb_model);
-    QOBJECT_WRITABLE_PROPERTY(db::AnInstanceEditor, instance_edit);
-    QOBJECT_READONLY_PROPERTY(db::WorldGeometryModel, world_geometry_model);
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::BreadcrumbModel, breadcrumb_model);
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::AnInstanceEditor, instance_edit);
+    QOBJECT_READONLY_PROPERTY(SolTrace::GUI::Data::WorldGeometryModel, world_geometry_model);
 
-    Q_WRITABLE_PROPERTY(db::Entity, viewed_element, { })
-    Q_WRITABLE_PROPERTY(db::Entity, edited_element, { })
+    Q_WRITABLE_PROPERTY(SolTrace::GUI::Data::Entity, viewed_element, { })
+    Q_WRITABLE_PROPERTY(SolTrace::GUI::Data::Entity, edited_element, { })
     Q_READONLY_PROPERTY(QString, edited_element_name);
 
     /// we need a selected element lists. need global pos and rot
-
-    QOBJECT_READONLY_PROPERTY(StatusComponent, status);
 
 public slots:
     /// Clear the element currently shown in the layout details pane.
@@ -70,6 +67,6 @@ public slots:
     void delete_edited_element();
 
 signals:
-    void notify(ANotification);
+    void notify(Support::ANotification);
 };
 } // namespace SolTrace::GUI::App

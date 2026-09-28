@@ -12,51 +12,13 @@ RowLayout {
     readonly property int bar_height: 42
     required property var blur_source
     property bool collapsed: false
-    property int normal_width: left_bottom_bar.width + workflow_bar.width + right_bottom_bar.width + spacing * 2
+    property int normal_width: workflow_bar.width + right_bottom_bar.width + spacing
 
     height: workflow_bar.is_open ? workflow_large_pane.implicitHeight : bar_height
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.bottom: parent.bottom
     anchors.margins: 10
-
-    ShadowedGlassRectangle {
-        id: left_bottom_bar
-        Layout.preferredWidth: docGroup.implicitWidth + 40
-        Layout.preferredHeight: bottom_bar.bar_height
-        Layout.alignment: Qt.AlignBottom
-
-        blur_source: bottom_bar.blur_source
-        radius: height / 2
-        glassColor: App.theme.glassColor
-
-        RowLayout {
-            id: docGroup
-            height: parent.height
-            anchors.horizontalCenter: parent.horizontalCenter
-
-            STIconButton {
-                icon: "\uf02d"
-                toolTip: "Docs"
-
-                onClicked: {
-                    App.view.full_panel.mode = FullPanelData.Documentation
-                    if (!App.view.full_panel.visible) App.view.toggle_full_panel(bottom_bar.width)
-                }
-            }
-
-            STIconButton {
-                icon: "\uf05a"
-                toolTip: "Build Info"
-
-                onClicked: {
-                    App.view.full_panel.mode = FullPanelData.BuildInformation
-                    if (!App.view.full_panel.visible) App.view.toggle_full_panel(bottom_bar.width)
-                }
-            }
-
-        }
-    }
 
     Item {
         Layout.fillWidth: true

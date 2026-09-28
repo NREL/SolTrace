@@ -1,14 +1,12 @@
 #pragma once
 
-#include "database/database.h"
-#include "database/simulationresult.h"
-#include "database/models/world_geometry_model.h"
-#include "job_control/job_run.h"
-#include "utilities/notification.h"
-#include "utilities/qt_helpers.h"
-#include "utilities/structmodel.h"
-
-#include "module_common.h"
+#include "data/database.h"
+#include "data/simulationresult.h"
+#include "jobs/job_run.h"
+#include "scene_models/world_geometry_model.h"
+#include "support/notification.h"
+#include "support/qt_helpers.h"
+#include "support/structmodel.h"
 
 #include <QObject>
 #include <QQmlEngine>
@@ -35,26 +33,35 @@ class SimulationRunnerModel;
 class SimulationModule : public QObject {
     Q_OBJECT
 
-    QPointer<RunningJob> m_running;
+    QPointer<Jobs::RunningJob> m_running;
 
-    db::SimulationResultPtr m_current_result;
+    Data::SimulationResultPtr m_current_result;
 
-    QVector<std::shared_ptr<db::SimulationResult>> m_completed_sims;
+    QVector<std::shared_ptr<Data::SimulationResult>> m_completed_sims;
+
+    uint32_t m_running_requested_ray_count     = 0;
+    uint32_t m_running_requested_max_ray_count = 0;
 
 private slots:
     void job_done();
     void job_failed(QString const& message);
-    void update_result_world(db::SimulationResultPtr);
+    void update_result_world(Data::SimulationResultPtr);
+
+private:
+    Jobs::ThreadRunnerBackend                  selected_backend() const;
+    uint32_t                                   effective_thread_count() const;
+    Support::Result<Jobs::SimDataPtr, QString> prepare_simulation_data();
+    void connect_running_job(Jobs::RunningJob* job);
+    void publish_completed_result(Data::SimulationResultPtr results);
 
 public:
     explicit SimulationModule(QObject* parent = nullptr);
     ~SimulationModule();
 
-    QOBJECT_WRITABLE_PROPERTY(db::Database, current_database)
-    QOBJECT_READONLY_PROPERTY(StatusComponent, status);
+    QOBJECT_WRITABLE_PROPERTY(Data::Database, current_database)
     QOBJECT_READONLY_PROPERTY(SimulationRunnerModel, runners);
-    QOBJECT_READONLY_PROPERTY(db::SimulationResultModel, results);
-    QOBJECT_READONLY_PROPERTY(db::WorldGeometryModel, world_geometry_model);
+    QOBJECT_READONLY_PROPERTY(Data::SimulationResultModel, results);
+    QOBJECT_READONLY_PROPERTY(Data::WorldGeometryModel, world_geometry_model);
     Q_READONLY_PROPERTY(QVector3D, result_sun_position)
     Q_READONLY_PROPERTY(bool, result_sun_is_point_source)
 
@@ -102,11 +109,12 @@ public slots:
     void export_result(int index);
     void duplicate_current_result_for_edit();
 
+    void update_ray_count(int new_count);
     void update_max_ray_count(int new_max);
 signals:
-    void new_results(db::SimulationResultPtr);
-    void edit_result_copy_requested(db::SimulationResultPtr);
-    void notify(ANotification);
+    void new_results(SolTrace::GUI::Data::SimulationResultPtr);
+    void edit_result_copy_requested(SolTrace::GUI::Data::SimulationResultPtr);
+    void notify(SolTrace::GUI::Support::ANotification);
 };
 
 struct SimulationRunnerRecord {
@@ -119,7 +127,7 @@ struct SimulationRunnerRecord {
 };
 
 class SimulationRunnerModel
-    : public StructModelAdapter<SimulationRunnerRecord> {
+    : public Support::StructModelAdapter<SimulationRunnerRecord> {
     Q_OBJECT
 
 public:

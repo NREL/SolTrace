@@ -106,6 +106,10 @@ Item {
         internal.current_controller.align_to_pretty_view()
     }
 
+    function set_to_pretty_view() {
+        orbit_control.set_to_pretty_view()
+    }
+
     function look_at(point) {
         internal.current_controller.look_at(point)
     }

@@ -1,16 +1,15 @@
 #pragma once
 
 
-#include "database/components.h"
-#include "database/database.h"
-#include "module_common.h"
+#include "data/components.h"
+#include "data/database.h"
 #include "modules/sun/solar_calculator_data.h"
 #include "modules/sun/solar_position_data.h"
 #include "modules/sun/sun_shape.h"
 #include "ray_source.hpp"
 #include "solar_position_calculator.hpp"
-#include "utilities/notification.h"
-#include "utilities/qt_helpers.h"
+#include "support/notification.h"
+#include "support/qt_helpers.h"
 
 #include <QDateTime>
 #include <QMetaObject>
@@ -31,13 +30,14 @@ private:
 
     // This should be const, but the library has non-const getters
     void load_from_ray_source(SD::RaySource&    ray_source,
-                              db::RaySourceType source_type);
+                              SolTrace::GUI::Data::RaySourceType source_type);
 
     void                                 write_shape_to_database();
     QString                              write_position_to_database();
-    Data::SolarPositionCalculationMethod selected_calculation_method() const;
+    ::SolTrace::Data::SolarPositionCalculationMethod
+    selected_calculation_method() const;
 
-    Data::SolarPositionCalculator    m_calculator;
+    ::SolTrace::Data::SolarPositionCalculator m_calculator;
     QVector<QMetaObject::Connection> m_database_connections;
     bool                             m_loading_from_database        = false;
     bool                             m_writing_to_database          = false;
@@ -46,8 +46,7 @@ private:
 public:
     explicit SunModule(QObject* parent = nullptr);
 
-    QOBJECT_READONLY_PROPERTY(StatusComponent, status);
-    QOBJECT_WRITABLE_PROPERTY(db::Database, current_database)
+    QOBJECT_WRITABLE_PROPERTY(SolTrace::GUI::Data::Database, current_database)
 
     QOBJECT_READONLY_PROPERTY(SunShape, shape)
 
@@ -96,7 +95,7 @@ public slots:
     QString update_position();
 
 signals:
-    void notify(ANotification);
+    void notify(Support::ANotification);
 };
 
 } // namespace SolTrace::GUI::App

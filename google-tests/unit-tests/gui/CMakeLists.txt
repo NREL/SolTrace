@@ -5,20 +5,20 @@ find_package(Qt6 6.11 REQUIRED COMPONENTS
 )
 
 set(GUI_UNIT_TEST_SRC
-    ../../../gui/src/database/entity.h
-    ../../../gui/src/database/components.cpp
-    ../../../gui/src/database/conversion.cpp
-    ../../../gui/src/database/database.cpp
-    ../../../gui/src/database/database_clone.cpp
-    ../../../gui/src/database/database_import.cpp
-    ../../../gui/src/database/database_export.cpp
-    ../../../gui/src/database/database_notification.cpp
+    ../../../gui/src/data/entity.h
+    ../../../gui/src/data/components.cpp
+    ../../../gui/src/data_io/conversion.cpp
+    ../../../gui/src/data/database.cpp
+    ../../../gui/src/data/database_clone.cpp
+    ../../../gui/src/data_io/database_import.cpp
+    ../../../gui/src/data_io/database_export.cpp
+    ../../../gui/src/data_io/database_notification.cpp
     ../../../gui/src/modules/database_module.cpp
-    ../../../gui/src/utilities/asynctask.cpp
-    ../../../gui/src/utilities/euler_angles.cpp
-    ../../../gui/src/utilities/euler_angles.h
-    ../../../gui/src/utilities/notification.h
-    ../../../gui/src/utilities/structmodel.h
+    ../../../gui/src/support/asynctask.cpp
+    ../../../gui/src/support/euler_angles.cpp
+    ../../../gui/src/support/euler_angles.h
+    ../../../gui/src/support/notification.h
+    ../../../gui/src/support/structmodel.h
     conversion_test.cpp
     database_module_test.cpp
     database_roundtrip_test.cpp
@@ -32,6 +32,10 @@ add_executable(GUIUnitTests
 target_include_directories(GUIUnitTests
     PRIVATE
         ../../../gui/src
+        ../../../gui/src/data
+        ../../../gui/src/data_io
+        ../../../gui/src/modules
+        ../../../gui/src/support
         ../../../coretrace/simulation_data
         ../../../coretrace/simulation_results
         ../../../coretrace/simulation_runner

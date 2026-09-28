@@ -1,41 +1,11 @@
 #pragma once
 
-#include "utilities/qt_helpers.h"
+#include "support/qt_helpers.h"
 #include <QColor>
 #include <QObject>
 #include <QQmlEngine>
 
 namespace SolTrace::GUI::App {
-
-/// State for the full-screen overlay panel used by settings/docs/build info.
-class FullPanelData : public QObject {
-    Q_OBJECT
-    QML_ELEMENT
-public:
-    explicit FullPanelData(QObject* parent = nullptr);
-
-    enum class FullPanelMode {
-        Settings         = 0,
-        Documentation    = 1,
-        BuildInformation = 2
-    };
-
-    Q_ENUM(FullPanelMode)
-
-    Q_WRITABLE_PROPERTY(bool, visible, false)
-    Q_WRITABLE_PROPERTY(bool, saved_visible, false)
-    Q_WRITABLE_PROPERTY(FullPanelMode, mode, FullPanelMode::Settings)
-    Q_WRITABLE_PROPERTY(int, settings_section, 0)
-    Q_WRITABLE_PROPERTY(int, docs_section, 0)
-    Q_WRITABLE_PROPERTY(int, build_section, 0)
-
-public slots:
-    /// Mark the full panel visible.
-    void show();
-
-    /// Mark the full panel hidden.
-    void hide();
-};
 
 /// Width and visibility state for a side panel.
 ///
@@ -67,7 +37,6 @@ public:
     Q_WRITABLE_PROPERTY(PanelSize, size, PanelSize::Normal)
 
     Q_WRITABLE_PROPERTY(bool, visible, false)
-    Q_WRITABLE_PROPERTY(bool, saved_visible, false)
 
     // Q_WRITABLE_PROPERTY(bool, tags, false)
     // Idea: show walkthrough tags just for this section
@@ -84,12 +53,6 @@ public slots:
 
     /// Recompute size from width and emit the generated property changes.
     void update_size();
-
-    /// Preserve the current visibility before opening a mutually exclusive UI.
-    void save_visibility();
-
-    /// Restore visibility saved by save_visibility().
-    void restore_visibility();
 
     /// Mark the panel visible.
     void show();
@@ -168,7 +131,6 @@ public:
     // Panel Data
     QOBJECT_READONLY_PROPERTY(SplitPanelData, left_panel)
     QOBJECT_READONLY_PROPERTY(SplitPanelData, right_panel)
-    QOBJECT_READONLY_PROPERTY(FullPanelData, full_panel)
 
     // Left Panel Section State
     Q_WRITABLE_PROPERTY(WorkflowPhase, workflow_phase, Configure)
@@ -177,6 +139,8 @@ public:
     Q_WRITABLE_PROPERTY(int, analyze_section, 0)
 
     Q_WRITABLE_PROPERTY(int, sun_section, 0)
+    Q_WRITABLE_PROPERTY(int, info_section, 0)
+    Q_WRITABLE_PROPERTY(int, settings_section, 0)
 
     // Right Panel Section State
     Q_WRITABLE_PROPERTY(int, right_panel_section, 0)
@@ -206,15 +170,6 @@ public slots:
                     bool expanding_right_panel = false,
                     bool resizing_window       = false,
                     int  margin                = 30);
-
-    /// Open the modal/full-width panel.
-    void open_full_panel();
-
-    /// Close the modal/full-width panel and refit side panels.
-    void close_full_panel(int available_width);
-
-    /// Toggle the modal/full-width panel and refit side panels.
-    void toggle_full_panel(int available_width);
 
     /// Open the left workflow panel and refit available width.
     void open_left_panel(int available_width);
