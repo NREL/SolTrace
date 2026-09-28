@@ -178,6 +178,10 @@ class OpticalPropertySet
             this->front.error_distribution_type = DistributionType::NONE;
             this->front.specularity_error       = 0.0;
             this->front.slope_error             = 0.0;
+            // Ideal values below are scalars; an active table would
+            // otherwise still override them at lookup time.
+            this->front.use_reflectivity_table   = false;
+            this->front.use_transmissivity_table = false;
         }
 
         if (side == OpticalSide::Back || side == OpticalSide::Both)
@@ -185,6 +189,8 @@ class OpticalPropertySet
             this->back.error_distribution_type = DistributionType::NONE;
             this->back.specularity_error       = 0.0;
             this->back.slope_error             = 0.0;
+            this->back.use_reflectivity_table   = false;
+            this->back.use_transmissivity_table = false;
         }
 
         return;

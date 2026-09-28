@@ -37,6 +37,17 @@ public:
     const std::vector<float>& cos_pool() const { return m_cos_pool; }
     const std::vector<float>& value_pool() const { return m_value_pool; }
 
+    // Resets the cache and pools so a subsequent intern() re-derives every
+    // table from scratch. Must be called before re-collecting geometry for a
+    // new run, otherwise stale (optics_id, side) entries from a prior run
+    // would keep growing the pools instead of being replaced.
+    void clear()
+    {
+        m_cache.clear();
+        m_cos_pool.clear();
+        m_value_pool.clear();
+    }
+
 private:
     std::map<std::pair<SolTrace::Data::optics_id, SolTrace::Data::OpticalSide>,
              AngularTableRange>

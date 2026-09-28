@@ -59,7 +59,7 @@ extern "C" __device__ __inline__ float3 orthonormal_vector(float3 v)
  * be normalized. The returned vector is the reflected direction pointing away
  * from the surface and has the same magnitude as `i`.
  */
-extern "C" __device__ __host__ __inline__ float3 reflect(const float3& i,
+extern "C" __device__ __inline__ float3 reflect(const float3& i,
                                                          const float3& n)
 { return i - 2.0f * n * dot(n, i); }
 
@@ -87,7 +87,7 @@ extern "C" __device__ __host__ __inline__ float3 reflect(const float3& i,
 // Unpolarized Fresnel reflectance (average of s- and p-polarized components)
 // for a ray crossing an interface with relative index mu, given the cosines
 // of the incident (ci) and transmitted (ct) angles.
-extern "C" __device__ __host__ __inline__ float
+extern "C" __device__ __inline__ float
 fresnel_reflection_coef(float mu, float ci, float ct)
 {
     const float rs =
@@ -131,7 +131,7 @@ lookup_angular_table(const float* cos_pool,
 // roll, reflect) an incident ray at a surface. mu is the precomputed relative
 // refractive index (incident/transmitted). Returns the resulting hit type and
 // writes the outgoing direction to out_dir.
-extern "C" __device__ __host__ __inline__ uint8_t
+extern "C" __device__ __inline__ uint8_t
 refract(const float3&         i,
         const float3&         n,
         float                 mu,

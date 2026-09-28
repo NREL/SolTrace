@@ -472,3 +472,180 @@ TEST(MaterialInteraction, ReflectionFollowsLawOfReflection)
         EXPECT_GT(capture_fraction, 0.95) << "tilt_angle_deg=" << tilt_angle_deg;
     }
 }
+
+namespace
+{
+
+// Refracting plate (tilted about the X axis) with an ideal-absorbing target
+// placed exactly where Snell's law predicts the transmitted beam should
+// land. If hit_back_side, the plate faces away from the sun so the ray
+// refracts through its back face, exercising the reversed refractive-index
+// ordering (mu = n_back / n_front instead of n_front / n_back).
+void make_refracting_plate_and_target_sd(SimulationData& sd,
+                                         element_ptr&    plate,
+                                         element_ptr&    target,
+                                         double          tilt_angle_deg,
+                                         double          n_incident,
+                                         double          n_transmit,
+                                         bool            hit_back_side)
+{
+    sd.clear();
+
+    auto sun = make_ray_source<Sun>();
+    sun->set_position(0, 0, 100);
+    sd.add_ray_source(sun);
+
+    auto stage = make_stage(0);
+    stage->set_origin(0, 0, 0);
+    stage->set_aim_vector(0, 0, 1);
+    stage->set_name("stage");
+
+    const double theta    = tilt_angle_deg * D2R;
+    const double plate_x = 0.0, plate_y = 0.0, plate_z = 50.0;
+    // Facing away from the sun flips which face the ray reaches first,
+    // without changing the (unsigned) incidence angle the shader sees.
+    const double normal_sign = hit_back_side ? -1.0 : 1.0;
+
+    plate = make_element<SingleElement>();
+    plate->set_origin(plate_x, plate_y, plate_z);
+    plate->set_aim_vector(plate_x,
+                         plate_y + normal_sign * 100.0 * std::sin(theta),
+                         plate_z + normal_sign * 100.0 * std::cos(theta));
+    plate->set_surface(make_surface<Flat>());
+    plate->set_aperture(make_aperture<Rectangle>(5, 5));
+    plate->set_name("plate");
+
+    OpticalPropertySet plate_optics(InteractionType::REFRACTION,
+                                    n_incident,
+                                    n_transmit,
+                                    "RefractingPlateOptics");
+    plate_optics.set_properties(
+        OpticalSide::Both, DistributionType::NONE, 1.0, 0.0, 0.0, 0.0);
+    auto plate_optics_ref = sd.add_optical_property_set(plate_optics);
+    plate->set_optical_property_set(plate_optics_ref);
+
+    // CspElement::set_optics assigns incident/transmitted indices in
+    // reversed order for a back-face hit (mu = n_back / n_front).
+    const double mu = hit_back_side ? (n_transmit / n_incident)
+                                    : (n_incident / n_transmit);
+
+    // Scalar Snell's law (n1 sin(theta_i) = n2 sin(theta_t)), then the
+    // transmitted direction is reconstructed from components
+    // parallel/perpendicular to the surface normal within the plane of
+    // incidence (the Y-Z plane here). Independent of refract()'s vector
+    // formula in materials.cu.
+    const double sin_i = std::sin(theta);
+    const double cos_i = std::cos(theta);
+    const double sin_t = mu * sin_i;
+    ASSERT_LT(sin_t, 1.0) << "test angle causes total internal reflection";
+    const double cos_t = std::sqrt(1.0 - sin_t * sin_t);
+
+    const double dt_y = sin_i * (mu * cos_i - cos_t);
+    const double dt_z = -(mu * sin_i * sin_i + cos_t * cos_i);
+
+    const double distance = 50.0;
+    const double target_x = plate_x;
+    const double target_y = plate_y + distance * dt_y;
+    const double target_z = plate_z + distance * dt_z;
+
+    target = make_element<SingleElement>();
+    target->set_origin(target_x, target_y, target_z);
+    target->set_aim_vector(
+        target_x, target_y - 100.0 * dt_y, target_z - 100.0 * dt_z);
+    target->set_surface(make_surface<Flat>());
+    target->set_aperture(make_aperture<Rectangle>(10, 10));
+    target->set_name("target");
+
+    OpticalPropertySet target_optics(
+        InteractionType::REFLECTION, 0.0, 0.0, "IdealAbsorber");
+    target_optics.set_ideal_absorption(OpticalSide::Both);
+    auto target_optics_ref = sd.add_optical_property_set(target_optics);
+    target->set_optical_property_set(target_optics_ref);
+
+    stage->add_element(plate);
+    stage->add_element(target);
+    sd.add_stage(stage);
+
+    SimulationParameters& params    = sd.get_simulation_parameters();
+    params.number_of_rays           = 20000;
+    params.max_number_of_rays       = params.number_of_rays * 100;
+    params.include_optical_errors   = false;
+    params.include_sun_shape_errors = false;
+    params.seed                     = 654;
+}
+
+} // namespace
+
+TEST(MaterialInteraction, RefractionFollowsSnellsLaw)
+{
+    const std::vector<double> tilt_angles_deg = { 10.0, 25.0, 40.0 };
+    const double              n_incident      = 1.0;
+    const double              n_transmit      = 1.5;
+
+    for (double tilt_angle_deg : tilt_angles_deg)
+    {
+        SimulationData sd;
+        element_ptr    plate, target;
+        make_refracting_plate_and_target_sd(sd,
+                                            plate,
+                                            target,
+                                            tilt_angle_deg,
+                                            n_incident,
+                                            n_transmit,
+                                            /*hit_back_side=*/false);
+
+        OptixRunner runner;
+        ASSERT_EQ(runner.initialize(), RunnerStatus::SUCCESS);
+        ASSERT_EQ(runner.setup_simulation(&sd), RunnerStatus::SUCCESS);
+        ASSERT_EQ(runner.run_simulation(), RunnerStatus::SUCCESS);
+
+        SimulationResult result;
+        ASSERT_EQ(runner.report_simulation(&result, 0), RunnerStatus::SUCCESS);
+
+        int absorbed, transmitted, reflected;
+        count_hits(result, absorbed, transmitted, reflected);
+        ASSERT_GT(transmitted, 0);
+
+        // A wrong sign/index-ordering in refract()'s Snell's-law formula
+        // sends the transmitted beam elsewhere and this capture fraction
+        // collapses toward zero.
+        const double capture_fraction =
+            static_cast<double>(absorbed) / static_cast<double>(transmitted);
+        EXPECT_GT(capture_fraction, 0.95) << "tilt_angle_deg=" << tilt_angle_deg;
+    }
+}
+
+TEST(MaterialInteraction, RefractionFollowsSnellsLawOnBackSideHit)
+{
+    const double tilt_angle_deg = 20.0;
+    const double n_incident     = 1.0;
+    const double n_transmit     = 1.5;
+
+    SimulationData sd;
+    element_ptr    plate, target;
+    make_refracting_plate_and_target_sd(sd,
+                                        plate,
+                                        target,
+                                        tilt_angle_deg,
+                                        n_incident,
+                                        n_transmit,
+                                        /*hit_back_side=*/true);
+
+    OptixRunner runner;
+    ASSERT_EQ(runner.initialize(), RunnerStatus::SUCCESS);
+    ASSERT_EQ(runner.setup_simulation(&sd), RunnerStatus::SUCCESS);
+    ASSERT_EQ(runner.run_simulation(), RunnerStatus::SUCCESS);
+
+    SimulationResult result;
+    ASSERT_EQ(runner.report_simulation(&result, 0), RunnerStatus::SUCCESS);
+
+    int absorbed, transmitted, reflected;
+    count_hits(result, absorbed, transmitted, reflected);
+    ASSERT_GT(transmitted, 0);
+
+    // If the back-face MaterialData used the un-reversed index ratio, the
+    // beam would bend the wrong amount and miss the target.
+    const double capture_fraction =
+        static_cast<double>(absorbed) / static_cast<double>(transmitted);
+    EXPECT_GT(capture_fraction, 0.95);
+}

@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include "constants.hpp"
 #include "optical_properties.hpp"
 #include "simdata_io.hpp"
 
@@ -11,6 +12,10 @@ namespace SolTrace::Data
 namespace
 {
 constexpr double kMradToRad = 1.0e-3;
+
+// Cosine is only monotonic (and thus invertible) for angles in [0, pi]; the
+// lookup's descending-cosine assumption breaks past this.
+constexpr double kMaxAngleMrad = PI / kMradToRad;
 }
 
 const std::string interaction_string(InteractionType it)
@@ -96,10 +101,11 @@ void validate_angular_table(const std::vector<AngularTablePoint>& table,
 
     for (std::size_t i = 0; i < table.size(); ++i)
     {
-        if (!std::isfinite(table[i].angle) || table[i].angle < 0.0)
+        if (!std::isfinite(table[i].angle) || table[i].angle < 0.0 ||
+            table[i].angle > kMaxAngleMrad)
             throw std::invalid_argument(
                 std::string("Optical properties: ") + name +
-                " table angle must be finite and non-negative");
+                " table angle must be finite and within [0, pi]");
 
         if (!std::isfinite(table[i].value))
             throw std::invalid_argument(std::string("Optical properties: ") +

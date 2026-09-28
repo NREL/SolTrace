@@ -22,6 +22,7 @@ void GeometryManager::collect_geometry_info(const std::vector<std::shared_ptr<Cs
     m_geometry_data_array_H.clear(); // Clear the existing geometry data array
     m_material_data_array_front_H.clear();
     m_material_data_array_back_H.clear();
+    m_angular_table_registry.clear(); // Re-derive tables so reruns don't accumulate stale entries
 
     m_obj_counts = static_cast<uint32_t>(element_list.size()); // Number of objects in the scene
 
