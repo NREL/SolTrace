@@ -20,6 +20,7 @@ set(NATIVE_RUNNER_SRC
     newton_calculator.cpp
     parabola_calculator.cpp
     process_interaction.cpp
+    process_stage_hit.cpp
     pt_optimizations.cpp
     sphere_calculator.cpp
     sun_to_primary_stage.cpp
