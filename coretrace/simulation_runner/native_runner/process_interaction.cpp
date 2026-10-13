@@ -13,9 +13,7 @@ namespace SolTrace::NativeRunner
 constexpr double kDefaultWavelength = 630.0;
 
 void ProcessInteraction(
-    TSystem*                                  System,
     MTRand&                                   myrng,
-    const bool                                IncludeSunShape,
     const SolTrace::Data::OpticalPropertySet* optics,
     const bool                                LastHitBackSide,
     const bool                                IncludeErrors,
@@ -33,25 +31,8 @@ void ProcessInteraction(
 {
     if (!Stage->Virtual)
     {
-        // change to account for first hit only in primary stage 8-11-31
-        if (IncludeSunShape && i == 0 && MultipleHitCount == 1)
-        {
-            // Apply sunshape to UNPERTURBED ray at intersection point
-            // only apply sunshape error once for primary stage
-            LastCosRaySurfElement =
-                ApplySunShape(myrng, LastCosRaySurfElement, System->Sun);
-        }
-
         //{Determine interaction at surface and direction of perturbed ray}
         ErrorFlag = 0;
-
-        // {Apply surface normal errors to surface normal before interaction
-        // ray at intersection point - Wendelin 11-23-09}
-        if (IncludeErrors)
-        {
-            LastDFXYZ =
-                ApplySlopeError(myrng, LastDFXYZ, *optics, LastHitBackSide);
-        }
 
         Interaction(myrng,
                     LastPosRaySurfElement,

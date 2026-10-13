@@ -1,6 +1,9 @@
 #include "determine_interaction_type.hpp"
 
+#include <cmath>
 #include <sstream>
+
+#include <glm/geometric.hpp>
 
 #include <simulation_data_export.hpp>
 
@@ -26,77 +29,25 @@ namespace SolTrace::NativeRunner
         rev = RayEvent::VIRTUAL;
 
         double TestValue;
-        auto UnitLastDFXYZ = glm::dvec3{0.0};
-        double IncidentAngle = 0;
 
         const OpticalSide side = LastHitBackSide == false ? OpticalSide::Front : OpticalSide::Back;
 
-        // TODO: Implement tables...
+        // Only pay for the incident angle when a table lookup actually needs it.
+        double IncidentCos = 1.0; // [mrad]
+        if (optics->uses_angular_table(side))
+        {
+            const glm::dvec3 UnitLastDFXYZ = -glm::normalize(LastDFXYZ);
+            IncidentCos = glm::dot(LastCosRaySurfElement, UnitLastDFXYZ);
+        }
+
         switch (optics->get_interaction_type())
         {
         case InteractionType::REFRACTION:
-            // if (optics->UseTransmissivityTable)
-            // {
-            //     int npoints = optics->TransmissivityTable.size();
-            //     int m = 0;
-
-            //     UnitLastDFXYZ[0] = -LastDFXYZ[0] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
-            //     UnitLastDFXYZ[1] = -LastDFXYZ[1] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
-            //     UnitLastDFXYZ[2] = -LastDFXYZ[2] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
-            //     IncidentAngle = acos(DOT(LastCosRaySurfElement, UnitLastDFXYZ)) * 1000.; //[mrad]
-            //     if (IncidentAngle >= optics->TransmissivityTable[npoints - 1].angle)
-            //     {
-            //         TestValue = optics->TransmissivityTable[npoints - 1].trans;
-            //     }
-            //     else
-            //     {
-            //         while (optics->TransmissivityTable[m].angle < IncidentAngle)
-            //             m++;
-
-            //         if (m == 0)
-            //             TestValue = optics->TransmissivityTable[m].trans;
-            //         else
-            //             TestValue = (optics->TransmissivityTable[m].trans + optics->TransmissivityTable[m - 1].trans) / 2.0;
-            //     }
-            // }
-            // else
-            // {
-            //     TestValue = optics->transmitivity;
-            //     rev = RayEvent::TRANSMIT;
-            // }
-            TestValue = optics->get_transmissivity(side);
+            TestValue = optics->get_transmissivity(side, IncidentCos);
             rev = RayEvent::TRANSMIT;
             break;
         case InteractionType::REFLECTION:
-            // if (optics->UseReflectivityTable)
-            // {
-            //     int npoints = optics->ReflectivityTable.size();
-            //     int m = 0;
-            //     UnitLastDFXYZ[0] = -LastDFXYZ[0] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
-            //     UnitLastDFXYZ[1] = -LastDFXYZ[1] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
-            //     UnitLastDFXYZ[2] = -LastDFXYZ[2] / sqrt(DOT(LastDFXYZ, LastDFXYZ));
-            //     IncidentAngle = acos(DOT(LastCosRaySurfElement, UnitLastDFXYZ)) * 1000.; //[mrad]
-            //     if (IncidentAngle >= optics->ReflectivityTable[npoints - 1].angle)
-            //     {
-            //         TestValue = optics->ReflectivityTable[npoints - 1].refl;
-            //     }
-            //     else
-            //     {
-            //         while (optics->ReflectivityTable[m].angle < IncidentAngle)
-            //             m++;
-
-            //         if (m == 0)
-            //             TestValue = optics->ReflectivityTable[m].refl;
-            //         else
-            //             TestValue = (optics->ReflectivityTable[m].refl + optics->ReflectivityTable[m - 1].refl) / 2.0;
-            //     }
-            // }
-            // else
-            // {
-            //     TestValue = optics->reflectivity;
-            //     rev = RayEvent::REFLECT;
-            // }
-            TestValue = optics->get_reflectivity(side);
+            TestValue = optics->get_reflectivity(side, IncidentCos);
             rev = RayEvent::REFLECT;
             break;
         default:

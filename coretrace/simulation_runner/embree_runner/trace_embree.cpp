@@ -18,11 +18,10 @@
 #include <simulation_runner.hpp>
 
 // NativeRunner header(s)
-#include <determine_interaction_type.hpp>
 #include <generate_ray.hpp>
 #include <mtrand.hpp>
 #include <native_runner_types.hpp>
-#include <process_interaction.hpp>
+#include <process_stage_hit.hpp>
 #include <sun_to_primary_stage.hpp>
 #include <thread_manager.hpp>
 #include <trace_logger.hpp>
@@ -35,8 +34,8 @@ namespace SolTrace::EmbreeRunner
 {
     using SolTrace::NativeRunner::GlobalRay_refactored;
     using SolTrace::NativeRunner::MTRand;
+    using SolTrace::NativeRunner::StageHitOutcome;
     using SolTrace::NativeRunner::TElement;
-    using SolTrace::NativeRunner::telement_ptr;
     using SolTrace::NativeRunner::thread_manager_ptr;
     using SolTrace::NativeRunner::ThreadManager;
     using SolTrace::NativeRunner::trace_logger_ptr;
@@ -221,72 +220,6 @@ namespace SolTrace::EmbreeRunner
         uint_fast64_t n_rays_active = NumberOfRays;
         uint_fast64_t sun_ray_count_local = 0;
 
-        // // Timing accumulators
-        // using Clock = std::chrono::steady_clock;
-        // using ns_t = long long;
-        // ns_t t_generate_ray = 0;
-        // ns_t t_transform_to_local = 0;
-        // ns_t t_find_element_hit = 0;
-        // ns_t t_determine_interaction = 0;
-        // ns_t t_process_interaction = 0;
-        // ns_t t_transform_to_reference = 0;
-        // ns_t t_ray_data_append = 0;
-        // ns_t t_progress_update = 0;
-        // uint_fast64_t n_find_element_hit = 0;
-        // uint_fast64_t n_determine_interaction = 0;
-        // uint_fast64_t n_process_interaction = 0;
-        // uint_fast64_t n_ray_data_append = 0;
-
-        // auto write_timing = [&]() {
-        //     std::string fname = "trace_embree_timing_thread_" +
-        //                         std::to_string(thread_id) + ".csv";
-        //     std::ofstream f(fname);
-        //     constexpr double ns_to_s = 1.0e-9;
-        //     ns_t t_total = t_generate_ray + t_transform_to_local + t_find_element_hit +
-        //                    t_determine_interaction + t_process_interaction +
-        //                    t_transform_to_reference + t_ray_data_append + t_progress_update;
-        //     auto pct = [&](ns_t t) -> double {
-        //         return t_total > 0 ? 100.0 * static_cast<double>(t) / static_cast<double>(t_total) : 0.0;
-        //     };
-        //     f << std::fixed;
-        //     f << "section,calls,seconds,pct_total\n";
-        //     f << "generate_ray,,"         << t_generate_ray        * ns_to_s << "," << pct(t_generate_ray)        << "\n";
-        //     f << "transform_to_local,,"   << t_transform_to_local  * ns_to_s << "," << pct(t_transform_to_local)  << "\n";
-        //     f << "find_element_hit,"      << n_find_element_hit    << "," << t_find_element_hit      * ns_to_s << "," << pct(t_find_element_hit)      << "\n";
-        //     f << "determine_interaction," << n_determine_interaction << "," << t_determine_interaction * ns_to_s << "," << pct(t_determine_interaction) << "\n";
-        //     f << "process_interaction,"   << n_process_interaction  << "," << t_process_interaction   * ns_to_s << "," << pct(t_process_interaction)   << "\n";
-        //     f << "transform_to_reference,,"<< t_transform_to_reference * ns_to_s << "," << pct(t_transform_to_reference) << "\n";
-        //     f << "ray_data_append,"       << n_ray_data_append     << "," << t_ray_data_append        * ns_to_s << "," << pct(t_ray_data_append)       << "\n";
-        //     f << "progress_update,,"      << t_progress_update     * ns_to_s << "," << pct(t_progress_update)     << "\n";
-        //     f << "total,,"                << t_total               * ns_to_s << ",100.0\n";
-        // };
-
-        // auto write_timing = [&]() {
-        //     // std::string fname = "trace_embree_timing_thread_" +
-        //     //                     std::to_string(thread_id) + ".csv";
-        //     // std::ofstream f(fname);
-        //     std::stringstream f;
-        //     constexpr double ns_to_s = 1.0e-9;
-        //     ns_t t_total = t_generate_ray + t_transform_to_local + t_find_element_hit +
-        //                    t_determine_interaction + t_process_interaction +
-        //                    t_transform_to_reference + t_ray_data_append + t_progress_update;
-        //     auto pct = [&](ns_t t) -> double {
-        //         return t_total > 0 ? 100.0 * static_cast<double>(t) / static_cast<double>(t_total) : 0.0;
-        //     };
-        //     f << "thread_id " << thread_id << "\n" << std::fixed;
-        //     f << "section,calls,seconds,pct_total\n";
-        //     f << "generate_ray,,"         << t_generate_ray        * ns_to_s << "," << pct(t_generate_ray)        << "\n";
-        //     f << "transform_to_local,,"   << t_transform_to_local  * ns_to_s << "," << pct(t_transform_to_local)  << "\n";
-        //     f << "find_element_hit,"      << n_find_element_hit    << "," << t_find_element_hit      * ns_to_s << "," << pct(t_find_element_hit)      << "\n";
-        //     f << "determine_interaction," << n_determine_interaction << "," << t_determine_interaction * ns_to_s << "," << pct(t_determine_interaction) << "\n";
-        //     f << "process_interaction,"   << n_process_interaction  << "," << t_process_interaction   * ns_to_s << "," << pct(t_process_interaction)   << "\n";
-        //     f << "transform_to_reference,,"<< t_transform_to_reference * ns_to_s << "," << pct(t_transform_to_reference) << "\n";
-        //     f << "ray_data_append,"       << n_ray_data_append     << "," << t_ray_data_append        * ns_to_s << "," << pct(t_ray_data_append)       << "\n";
-        //     f << "progress_update,,"      << t_progress_update     * ns_to_s << "," << pct(t_progress_update)     << "\n";
-        //     f << "total,,"                << t_total               * ns_to_s << ",100.0\n";
-        //     std::cout << f.str() << std::endl;
-        // };
-
         // Loop through stages
         for (uint_fast64_t i = 0; i < System->StageList.size(); i++)
         {
@@ -374,9 +307,6 @@ namespace SolTrace::EmbreeRunner
                 bool StageHit;
                 int MultipleHitCount = 0;
 
-                glm::dvec3 PosRayOutElement(0.0);
-                glm::dvec3 CosRayOutElement(0.0);
-
                 // Start Loop to trace ray until it leaves stage
                 bool RayIsAbsorbed = false;
                 while (RayInStage)
@@ -428,108 +358,39 @@ namespace SolTrace::EmbreeRunner
                         }
                     }
 
-                    // Get optics and check for absorption
-                    decltype(&Stage->ElementList[0]->Optics) optics_set = nullptr;
-                    RayEvent rev = RayEvent::VIRTUAL;
-                    if (Stage->Virtual)
+                    // Get optics, apply errors, classify, and interact -
+                    // shared with the native runner to keep ordering in sync.
+                    StageHitOutcome outcome = SolTrace::NativeRunner::ProcessStageHit(
+                        logger,
+                        System,
+                        myrng,
+                        thread_id,
+                        i,
+                        Stage,
+                        IncludeSunShape,
+                        IncludeErrors,
+                        MultipleHitCount,
+                        LastElementNumber,
+                        LastRayNumber,
+                        LastHitBackSide,
+                        LastDFXYZ,
+                        LastCosRaySurfElement,
+                        LastPosRaySurfElement,
+                        ErrorFlag,
+                        PosRayStage,
+                        CosRayStage,
+                        PosRayGlob,
+                        CosRayGlob);
+
+                    if (outcome == StageHitOutcome::ERROR)
                     {
-                        // If stage is virtual, there is no interaction
-                        PosRayOutElement = LastPosRaySurfElement;
-                        CosRayOutElement = LastCosRaySurfElement;
-                    }
-                    else
-                    {
-                        telement_ptr const& optelm =
-                            Stage->ElementList[LastElementNumber - 1];
-                        optics_set = &optelm->Optics;
-
-                        bool good;
-                        {
-                            // auto _t0 = Clock::now();
-                            good = SolTrace::NativeRunner::determine_interaction_type(
-                                logger,
-                                i,
-                                thread_id,
-                                myrng,
-                                optics_set,
-                                LastDFXYZ,
-                                LastCosRaySurfElement,
-                                LastHitBackSide,
-                                rev);
-                            // t_determine_interaction += std::chrono::duration_cast<std::chrono::nanoseconds>(
-                            //     Clock::now() - _t0).count();
-                            // ++n_determine_interaction;
-                        }
-
-                        if (!good)
-                        {
-                            // write_timing();
-                            return RunnerStatus::ERROR;
-                        }
-
-                        if (rev == RayEvent::ABSORB)
-                        {
-                            RayIsAbsorbed = true;
-                            break;
-                        }
+                        return RunnerStatus::ERROR;
                     }
 
-                    // Process Interaction
-                    int k = LastElementNumber - 1;
+                    if (outcome == StageHitOutcome::ABSORBED)
                     {
-                        // auto _t0 = Clock::now();
-                        SolTrace::NativeRunner::ProcessInteraction(
-                            System,
-                            myrng,
-                            IncludeSunShape,
-                            optics_set,
-                            LastHitBackSide,
-                            IncludeErrors,
-                            i,
-                            Stage,
-                            MultipleHitCount,
-                            LastDFXYZ,
-                            LastCosRaySurfElement,
-                            ErrorFlag,
-                            CosRayOutElement,
-                            LastPosRaySurfElement,
-                            PosRayOutElement);
-                        // t_process_interaction += std::chrono::duration_cast<std::chrono::nanoseconds>(
-                        //     Clock::now() - _t0).count();
-                        // ++n_process_interaction;
-                    }
-
-                    // Transform ray back to stage coordinate system
-                    {
-                        // auto _t0 = Clock::now();
-                        TransformToReference(PosRayOutElement,
-                                             CosRayOutElement,
-                                             Stage->ElementList[k]->Origin,
-                                             Stage->ElementList[k]->RLocToRef,
-                                             PosRayStage,
-                                             CosRayStage);
-                        TransformToReference(PosRayStage,
-                                             CosRayStage,
-                                             Stage->Origin,
-                                             Stage->RLocToRef,
-                                             PosRayGlob,
-                                             CosRayGlob);
-                        // t_transform_to_reference += std::chrono::duration_cast<std::chrono::nanoseconds>(
-                        //     Clock::now() - _t0).count();
-                    }
-
-                    {
-                        // auto _t0 = Clock::now();
-                        System->RayData.Append(thread_id,
-                                               PosRayGlob,
-                                               CosRayGlob,
-                                               LastElementNumber,
-                                               i + 1,
-                                               LastRayNumber,
-                                               rev);
-                        // t_ray_data_append += std::chrono::duration_cast<std::chrono::nanoseconds>(
-                        //     Clock::now() - _t0).count();
-                        // ++n_ray_data_append;
+                        RayIsAbsorbed = true;
+                        break;
                     }
 
                     // Break out if multiple hits are not allowed

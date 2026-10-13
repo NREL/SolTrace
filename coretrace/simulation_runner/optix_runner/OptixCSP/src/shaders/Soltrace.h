@@ -101,6 +101,12 @@ namespace OptixCSP{
 	    GeometryDataST*             geometry_data_array;
 		MaterialData*               material_data_array_front;
         MaterialData*               material_data_array_back;
+
+        // Shared, de-duplicated pool of (cosine, value) pairs backing every
+        // angle-dependent reflectivity/transmissivity table; MaterialData
+        // entries index into this pool via *_table_offset/*_table_count.
+        const float*                angular_table_cos;
+        const float*                angular_table_value;
     };
 
     struct PerRayData

@@ -36,6 +36,12 @@ namespace OptixCSP
         float *sun_user_intensity_D;
         size_t sun_user_capacity;
 
+        // Shared pool backing every angle-dependent reflectivity/transmissivity
+        // table (see AngularTableRegistry / MaterialData).
+        float *angular_table_cos_D;
+        float *angular_table_value_D;
+        size_t angular_table_capacity;
+
         dataManager();
         ~dataManager() noexcept;
 
@@ -66,6 +72,12 @@ namespace OptixCSP
 
         void allocateSunUserData(const std::vector<float>& user_angle,
                                  const std::vector<float>& user_intensity);
+
+        // create angular_table_cos_D/angular_table_value_D on the device from
+        // the pooled arrays built by AngularTableRegistry, then
+        // launch_params_D.angular_table_cos/value get copies.
+        void allocateAngularTablePool(const std::vector<float>& cos_pool,
+                                     const std::vector<float>& value_pool);
 
         void ensureCurandStates(unsigned int num_states,
                                 unsigned long long seed,

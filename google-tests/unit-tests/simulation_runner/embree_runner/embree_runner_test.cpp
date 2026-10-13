@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#include <cmath>
+#include <vector>
+
 #include <embree_runner.hpp>
 #include <simulation_data_export.hpp>
 #include <simulation_result.hpp>
@@ -335,4 +338,163 @@ TEST(EmbreeRunner, PowerTowerTest)
               << "\nReflect: " << nreflect << " ("
               << static_cast<double>(nreflect) / nevents << ")"
               << std::endl;
+}
+
+namespace
+{
+    // Builds a scene with a sun directly overhead (collimated rays along -z
+    // once sun-shape errors are disabled) and a single flat mirror tilted by
+    // incidence_angle_rad from normal incidence. Since the mirror is flat and
+    // every ray travels in the same direction, every ray sees exactly the
+    // same, analytically-known incidence angle. Returns the mirror's id.
+    element_id build_tilted_mirror_scene(SimulationData &sd,
+                                         double incidence_angle_rad,
+                                         const std::vector<AngularTablePoint> &reflectivity_table)
+    {
+        auto sun = SolTrace::Data::make_ray_source<Sun>();
+        sun->set_position(0.0, 0.0, 100.0);
+        sun->set_shape(SolTrace::Data::SunShape::PILLBOX, -1.0, 1.0, 0.0);
+        sd.add_ray_source(sun);
+
+        OpticalPropertySet mirror_optics(InteractionType::REFLECTION, "AngularTableEndToEndOptics");
+        mirror_optics.set_errors(OpticalSide::Both, DistributionType::NONE, 0.0, 0.0);
+        mirror_optics.set_reflectivity_table(OpticalSide::Front, reflectivity_table);
+        auto optics_ref = sd.add_optical_property_set(mirror_optics);
+
+        auto mirror = SolTrace::Data::make_element<SingleElement>();
+        mirror->set_aperture(SolTrace::Data::make_aperture<Circle>(5.0));
+        mirror->set_surface(SolTrace::Data::make_surface<Flat>());
+        mirror->set_reference_frame_geometry(
+            glm::dvec3(0.0, 0.0, 0.0),
+            glm::dvec3(std::sin(incidence_angle_rad), 0.0, std::cos(incidence_angle_rad)),
+            0.0);
+        mirror->set_optical_property_set(optics_ref);
+
+        return sd.add_element(mirror);
+    }
+} // namespace
+
+TEST(EmbreeRunner, AngularTableDeterministicallyAbsorbsAtZeroReflectivity)
+{
+    SimulationData sd;
+    SimulationParameters &params = sd.get_simulation_parameters();
+    params.include_optical_errors = false;
+    params.include_sun_shape_errors = false;
+    const uint_fast64_t NRAYS = 200;
+    params.number_of_rays = NRAYS;
+    params.max_number_of_rays = NRAYS * 10;
+    params.seed = 1;
+
+    constexpr double incidence_angle_mrad = 300.0;
+    constexpr double incidence_angle_rad = incidence_angle_mrad * 1.0e-3;
+    const std::vector<AngularTablePoint> table = {
+        {0.0, 1.0}, {incidence_angle_mrad, 0.0}, {1500.0, 1.0}};
+
+    element_id mirror_id = build_tilted_mirror_scene(sd, incidence_angle_rad, table);
+
+    EmbreeRunner runner;
+    RunnerStatus sts = runner.initialize();
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    sts = runner.setup_simulation(&sd);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    sts = runner.run_simulation();
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+
+    SimulationResult result;
+    sts = runner.report_simulation(&result, 0);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    ASSERT_EQ(result.get_number_of_records(), NRAYS);
+
+    int_fast64_t nabsorbed = count_element_event(result, mirror_id, RayEvent::ABSORB);
+    int_fast64_t nreflect = count_element_event(result, mirror_id, RayEvent::REFLECT);
+
+    EXPECT_EQ(nabsorbed, static_cast<int_fast64_t>(NRAYS));
+    EXPECT_EQ(nreflect, 0);
+}
+
+TEST(EmbreeRunner, AngularTableDeterministicallyReflectsAtFullReflectivity)
+{
+    SimulationData sd;
+    SimulationParameters &params = sd.get_simulation_parameters();
+    params.include_optical_errors = false;
+    params.include_sun_shape_errors = false;
+    const uint_fast64_t NRAYS = 200;
+    params.number_of_rays = NRAYS;
+    params.max_number_of_rays = NRAYS * 10;
+    params.seed = 1;
+
+    constexpr double incidence_angle_mrad = 300.0;
+    constexpr double incidence_angle_rad = incidence_angle_mrad * 1.0e-3;
+    const std::vector<AngularTablePoint> table = {
+        {0.0, 0.0}, {incidence_angle_mrad, 1.0}, {1500.0, 0.0}};
+
+    element_id mirror_id = build_tilted_mirror_scene(sd, incidence_angle_rad, table);
+
+    EmbreeRunner runner;
+    RunnerStatus sts = runner.initialize();
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    sts = runner.setup_simulation(&sd);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    sts = runner.run_simulation();
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+
+    SimulationResult result;
+    sts = runner.report_simulation(&result, 0);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    ASSERT_EQ(result.get_number_of_records(), NRAYS);
+
+    int_fast64_t nabsorbed = count_element_event(result, mirror_id, RayEvent::ABSORB);
+    int_fast64_t nreflect = count_element_event(result, mirror_id, RayEvent::REFLECT);
+
+    EXPECT_EQ(nreflect, static_cast<int_fast64_t>(NRAYS));
+    EXPECT_EQ(nabsorbed, 0);
+}
+
+TEST(EmbreeRunner, AngularTableStatisticallyMatchesInteriorReflectivityValue)
+{
+    SimulationData sd;
+    SimulationParameters &params = sd.get_simulation_parameters();
+    params.include_optical_errors = false;
+    params.include_sun_shape_errors = false;
+    const uint_fast64_t NRAYS = 20000;
+    params.number_of_rays = NRAYS;
+    params.max_number_of_rays = NRAYS * 10;
+    params.seed = 1;
+
+    constexpr double incidence_angle_mrad = 300.0;
+    constexpr double incidence_angle_rad = incidence_angle_mrad * 1.0e-3;
+    constexpr double expected_reflectivity = 0.5;
+    const std::vector<AngularTablePoint> table = {
+        {0.0, 1.0}, {incidence_angle_mrad, expected_reflectivity}, {1500.0, 1.0}};
+
+    element_id mirror_id = build_tilted_mirror_scene(sd, incidence_angle_rad, table);
+
+    EmbreeRunner runner;
+    RunnerStatus sts = runner.initialize();
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    sts = runner.setup_simulation(&sd);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    sts = runner.run_simulation();
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+
+    SimulationResult result;
+    sts = runner.report_simulation(&result, 0);
+    ASSERT_EQ(sts, RunnerStatus::SUCCESS);
+    ASSERT_EQ(result.get_number_of_records(), NRAYS);
+
+    int_fast64_t nabsorbed = count_element_event(result, mirror_id, RayEvent::ABSORB);
+    int_fast64_t nreflect = count_element_event(result, mirror_id, RayEvent::REFLECT);
+    int_fast64_t nevents = nabsorbed + nreflect;
+    ASSERT_EQ(nevents, static_cast<int_fast64_t>(NRAYS));
+
+    const double reflected_fraction = static_cast<double>(nreflect) / static_cast<double>(nevents);
+
+    // Binomial standard error for N draws of a Bernoulli(expected_reflectivity);
+    // a 5-sigma tolerance keeps this from flaking while still being a
+    // meaningful check that the table value drives the outcome fraction.
+    const double standard_error =
+        std::sqrt(expected_reflectivity * (1.0 - expected_reflectivity) / NRAYS);
+    const double tolerance = 5.0 * standard_error;
+
+    EXPECT_NEAR(reflected_fraction, expected_reflectivity, tolerance);
 }

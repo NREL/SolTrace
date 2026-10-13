@@ -137,11 +137,6 @@ private:
     // helper function, convert Vector3d to Optix::Vec3d
     OptixCSP::Vec3d     ToVec3d(glm::dvec3 v);
     OptixCSP::Matrix33d ToMatrix33d(const glm::dmat3& mat);
-    // helper function, convert SolTrace::Data::DistributionType to
-    // Optix::OpticalDistribution
-    OptixCSP::OpticalDistribution
-    to_optical_distribution(SolTrace::Data::DistributionType dt);
-
     // timers for report simulation
     OptixCSP::Timer m_timer_report;
     OptixCSP::Timer m_timer_get_output;

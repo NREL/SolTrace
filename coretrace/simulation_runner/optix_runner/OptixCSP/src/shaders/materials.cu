@@ -28,16 +28,6 @@ static __device__ __inline__ void setPayload(const OptixCSP::PerRayData& prd)
     optixSetPayload_1(prd.depth);
 }
 
-// // 32-bit avalanche mix (fast, good diffusion)
-// static __device__ __inline__ float rng_uniform(uint32_t x)
-// {
-//     x ^= x >> 16;
-//     x *= 0x85EBCA6Bu;
-//     x ^= x >> 13;
-//     x *= 0xC2B2AE35u;
-//     x ^= x >> 16;
-//     return float(x >> 8) * (1.0f / 16777216.0f); // Scale to [0, 1)
-// }
 } // namespace OptixCSP
 
 // Assumes that v is a unit vector
@@ -62,7 +52,123 @@ extern "C" __device__ __inline__ float3 orthonormal_vector(float3 v)
     return normalize(u);
 }
 
-// Add perturbation ortogonal to given vector. Perturbation is uniform over
+/**
+ * Reflect an incident direction about a surface normal.
+ *
+ * The incident direction `i` points toward the surface. The normal `n` must
+ * be normalized. The returned vector is the reflected direction pointing away
+ * from the surface and has the same magnitude as `i`.
+ */
+extern "C" __device__ __inline__ float3 reflect(const float3& i,
+                                                         const float3& n)
+{ return i - 2.0f * n * dot(n, i); }
+
+// extern "C" __device__ __host__ __inline__ float3
+// refract(const float3& i,
+//         const float3& n,
+//         const float&  refract_incident,
+//         const float&  refract_transmit)
+// {
+//     const float mu    = refract_incident / refract_transmit;
+//     const float c     = -dot(i, n);
+//     const float delta = 1.0f - mu * mu * (1.0f - ci * ci);
+//     if (delta < 0.0f)
+//     {
+//         // Total internal reflection
+//         return reflect(i, n);
+//     }
+//     else
+//     {
+//         // d_trans = mu * (alpha * n_surf + d_inc) - sqrt(delta) * n_surf
+//         return mu * (i + c * n) - sqrtf(delta) * n;
+//     }
+// }
+
+// Unpolarized Fresnel reflectance (average of s- and p-polarized components)
+// for a ray crossing an interface with relative index mu, given the cosines
+// of the incident (ci) and transmitted (ct) angles.
+extern "C" __device__ __inline__ float
+fresnel_reflection_coef(float mu, float ci, float ct)
+{
+    const float rs =
+        (mu * ci - ct) * (mu * ci - ct) / ((mu * ci + ct) * (mu * ci + ct));
+    const float rp =
+        (mu * ct - ci) * (mu * ct - ci) / ((mu * ct + ci) * (mu * ct + ci));
+    return 0.5 * (rs + rp);
+}
+
+// Looks up a reflectivity/transmissivity value by the cosine of the incidence
+// angle (ci) in a table stored as parallel cos/value arrays within
+// [cos_pool + offset, cos_pool + offset + count). Tables are sorted by
+// descending cosine (ascending angle), matching the CPU cosine cache built in
+// OpticalPropertiesFace::cache_cosines().
+extern "C" __device__ __forceinline__ float
+lookup_angular_table(const float* cos_pool,
+                     const float* value_pool,
+                     uint32_t     offset,
+                     uint32_t     count,
+                     float        ci)
+{
+    const float* cos_values = cos_pool + offset;
+    const float* values     = value_pool + offset;
+
+    if (ci >= cos_values[0]) return values[0];
+    if (ci <= cos_values[count - 1]) return values[count - 1];
+
+    uint32_t k = 1;
+    while (cos_values[k] > ci)
+        ++k;
+
+    const float c0 = cos_values[k - 1];
+    const float c1 = cos_values[k];
+    const float v0 = values[k - 1];
+    const float v1 = values[k];
+
+    return v0 + (ci - c0) / (c1 - c0) * (v1 - v0);
+}
+
+// Applies Snell's law to refract (or, on total internal reflection/Fresnel
+// roll, reflect) an incident ray at a surface. mu is the precomputed relative
+// refractive index (incident/transmitted). Returns the resulting hit type and
+// writes the outgoing direction to out_dir.
+extern "C" __device__ __inline__ uint8_t
+refract(const float3&         i,
+        const float3&         n,
+        float                 mu,
+        OptixCSP::PerRayData& prd,
+        float3&               out_dir)
+{
+    const float ci =
+        -dot(i, n); // Cosine of (negative) incident vector and surface normal
+    const float delta = 1.0f - mu * mu * (1.0f - ci * ci);
+    if (delta < 0.0f)
+    {
+        // Total internal reflection
+        out_dir = reflect(i, n);
+        return OptixCSP::HitType::HIT_REFLECT;
+    }
+
+    const float ct   = sqrtf(delta);
+    const float reff = fresnel_reflection_coef(mu, ci, ct);
+
+    curandState local_rng = params.rng_states[prd.ray_path_index];
+    const float u         = curand_uniform(&local_rng);
+    params.rng_states[prd.ray_path_index] = local_rng;
+
+    // Monte Carlo split between reflection and transmission per Fresnel
+    // probability
+    if (u < reff)
+    {
+        out_dir = reflect(i, n);
+        return OptixCSP::HitType::HIT_REFLECT;
+    }
+
+    out_dir = mu * i + (mu * ci - ct) * n;
+    return OptixCSP::HitType::HIT_TRANSMIT;
+}
+
+
+// Add perturbation orthogonal to given vector. Perturbation is uniform over
 // a disk of radius a centered at the vector n. Returned vector is a
 // unit vector.
 extern "C" __device__ float3 apply_uniform_errors(float                 a,
@@ -152,7 +258,7 @@ extern "C" __global__ void __closesthit__element()
 
     // we have two scenarios here
     // if we use refraction, then we look at transmissivity to determine if the
-    // ray will refract or get obsorbed. otherwise, it will get reflected.
+    // ray will refract or get absorbed. otherwise, it will get reflected.
     float3 new_dir;
     bool absorbed = false; // determine whether the ray is absorbed or not, this
                            // is montecarlo based, should be applied to
@@ -164,9 +270,7 @@ extern "C" __global__ void __closesthit__element()
         hit_front_face
             ? params.material_data_array_front[optixGetPrimitiveIndex()]
             : params.material_data_array_back[optixGetPrimitiveIndex()];
-    const float transmissivity     = material.transmissivity;
     const bool  use_transmissivity = material.use_refraction;
-    const float reflectivity       = material.reflectivity;
     const float normal_sigma =
         1e-3f * material.slope_error; // Convert mrad to rad
     const float spec_sigma =
@@ -190,6 +294,23 @@ extern "C" __global__ void __closesthit__element()
         }
     }
 
+    // A material only ever reflects or transmits, so at most one of these is
+    // ever read below; look up its angle-dependent value (if enabled) using
+    // the incidence angle against the (possibly macro-error-perturbed) normal.
+    float transmissivity = material.transmissivity;
+    float reflectivity   = material.reflectivity;
+    if (material.use_angular_table)
+    {
+        const float ci = -dot(ray_dir, ffnormal);
+        const float looked_up = lookup_angular_table(params.angular_table_cos,
+                                                     params.angular_table_value,
+                                                     material.angular_table_offset,
+                                                     material.angular_table_count,
+                                                     ci);
+        if (use_transmissivity) transmissivity = looked_up;
+        else                    reflectivity   = looked_up;
+    }
+
     // now we figure out the random number to determine if the ray is absorbed
     // or refracted float xi = OptixCSP::rng_uniform(prd); // random number in
     // [0,1)
@@ -206,8 +327,11 @@ extern "C" __global__ void __closesthit__element()
         } // ray is absorbed
         else
         {
-            new_dir  = refract(ray_dir, ffnormal);
-            hit_type = OptixCSP::HitType::HIT_TRANSMIT;
+            hit_type = refract(ray_dir,
+                               ffnormal,
+                               material.mu,
+                               prd,
+                               new_dir);
         }
     }
     else
@@ -353,13 +477,13 @@ extern "C" __global__ void __miss__ms()
     if (prd.depth > 0 && exit_depth < params.max_depth)
     {
         const float3 exit_direction = normalize(optixGetWorldRayDirection());
-        const float3 exit_point = optixGetWorldRayOrigin() + exit_direction;
+        const float3 exit_point     = optixGetWorldRayOrigin() + exit_direction;
         const unsigned int slot =
             params.max_depth * prd.ray_path_index + exit_depth;
 
         params.hit_buffer[slot].hit_point = make_float4(exit_depth, exit_point);
         params.hit_buffer[slot].element_id = OptixCSP::kElementIdUnassigned;
-        params.hit_buffer[slot].hit_type = OptixCSP::HitType::HIT_EXIT;
+        params.hit_buffer[slot].hit_type   = OptixCSP::HitType::HIT_EXIT;
     }
 
     // Set the payload values to 0, indicating that the ray missed all geometry.

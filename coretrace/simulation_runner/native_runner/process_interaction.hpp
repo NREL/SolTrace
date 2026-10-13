@@ -11,10 +11,7 @@
 namespace SolTrace::NativeRunner {
 
 void ProcessInteraction(
-    // system info
-    TSystem* System,
     MTRand& myrng,
-    const bool IncludeSunShape,
     const SolTrace::Data::OpticalPropertySet* optics,
     const bool LastHitBackSide,
     const bool IncludeErrors,

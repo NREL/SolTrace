@@ -16,6 +16,9 @@ dataManager::dataManager()
 	  sun_user_angle_D(nullptr),
 	  sun_user_intensity_D(nullptr),
 	  sun_user_capacity(0),
+	  angular_table_cos_D(nullptr),
+	  angular_table_value_D(nullptr),
+	  angular_table_capacity(0),
 	  rng_states_D(nullptr),
 	  rng_states_capacity(0),
 	  depth_exceeded_count_D(nullptr)
@@ -258,6 +261,50 @@ void dataManager::allocateSunUserData(const std::vector<float>& user_angle,
 	sun_user_capacity = user_angle.size();
 }
 
+void dataManager::allocateAngularTablePool(const std::vector<float>& cos_pool,
+	                                       const std::vector<float>& value_pool)
+{
+	if (cos_pool.size() != value_pool.size())
+	{
+		throw std::runtime_error("Angular table cos/value pools must have the same size.");
+	}
+
+	if (angular_table_cos_D != nullptr)
+	{
+		CUDA_CHECK(cudaFree(angular_table_cos_D));
+		angular_table_cos_D = nullptr;
+	}
+
+	if (angular_table_value_D != nullptr)
+	{
+		CUDA_CHECK(cudaFree(angular_table_value_D));
+		angular_table_value_D = nullptr;
+	}
+
+	launch_params_H.angular_table_cos = nullptr;
+	launch_params_H.angular_table_value = nullptr;
+	angular_table_capacity = 0;
+
+	if (cos_pool.empty())
+	{
+		return;
+	}
+
+	CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&angular_table_cos_D),
+		                  cos_pool.size() * sizeof(float)));
+	CUDA_CHECK(cudaMalloc(reinterpret_cast<void **>(&angular_table_value_D),
+		                  value_pool.size() * sizeof(float)));
+
+	CUDA_CHECK(cudaMemcpy(angular_table_cos_D, cos_pool.data(),
+		                  cos_pool.size() * sizeof(float), cudaMemcpyHostToDevice));
+	CUDA_CHECK(cudaMemcpy(angular_table_value_D, value_pool.data(),
+		                  value_pool.size() * sizeof(float), cudaMemcpyHostToDevice));
+
+	launch_params_H.angular_table_cos = angular_table_cos_D;
+	launch_params_H.angular_table_value = angular_table_value_D;
+	angular_table_capacity = cos_pool.size();
+}
+
 void dataManager::cleanup() {
 	if (launch_params_D) {
 		CUDA_CHECK(cudaFree(launch_params_D));
@@ -295,6 +342,19 @@ void dataManager::cleanup() {
 	launch_params_H.sun_user_intensity = nullptr;
 	launch_params_H.sun_user_capacity = 0;
 	sun_user_capacity = 0;
+
+	if (angular_table_cos_D != nullptr) {
+		CUDA_CHECK(cudaFree(angular_table_cos_D));
+		angular_table_cos_D = nullptr;
+	}
+	launch_params_H.angular_table_cos = nullptr;
+
+	if (angular_table_value_D != nullptr) {
+		CUDA_CHECK(cudaFree(angular_table_value_D));
+		angular_table_value_D = nullptr;
+	}
+	launch_params_H.angular_table_value = nullptr;
+	angular_table_capacity = 0;
 
 	if (rng_states_D != nullptr) {
 		CUDA_CHECK(cudaFree(rng_states_D));

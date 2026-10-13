@@ -4,6 +4,7 @@
 #include "simulation_data_api.hpp"
 
 // Classes and Structs
+using SolTrace::Data::AngularTablePoint;
 using SolTrace::Data::Annulus;
 using SolTrace::Data::Aperture;
 using SolTrace::Data::ApertureType;

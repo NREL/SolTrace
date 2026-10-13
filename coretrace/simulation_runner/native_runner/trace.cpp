@@ -65,11 +65,10 @@
 #include <simulation_runner.hpp>
 
 // NativeRunner headers
-#include "determine_interaction_type.hpp"
 #include "find_element_hit.hpp"
 #include "generate_ray.hpp"
 #include "native_runner_types.hpp"
-#include "process_interaction.hpp"
+#include "process_stage_hit.hpp"
 #include "pt_optimizations.hpp"
 #include "sun_to_primary_stage.hpp"
 #include "thread_manager.hpp"
@@ -312,8 +311,6 @@ namespace SolTrace::NativeRunner
 				int LastHitBackSide = 0;
 				bool StageHit = false;
 				int MultipleHitCount = 0;
-				glm::dvec3 PosRayOutElement = {0.0, 0.0, 0.0};
-				glm::dvec3 CosRayOutElement = {0.0, 0.0, 0.0};
 
 				// Start Loop to trace ray until it leaves stage
 				bool RayIsAbsorbed = false;
@@ -376,85 +373,40 @@ namespace SolTrace::NativeRunner
 						}
 					}
 
-					// Get optics and check for absorption
-					const OpticalPropertySet *optics_set = 0;
-					RayEvent rev = RayEvent::VIRTUAL;
-					if (Stage->Virtual)
+					// Get optics, apply errors, classify, and interact -
+					// shared with the Embree runner to keep ordering in sync.
+					StageHitOutcome outcome = ProcessStageHit(
+						logger,
+						System,
+						myrng,
+						thread_id,
+						i,
+						Stage,
+						IncludeSunShape,
+						IncludeErrors,
+						MultipleHitCount,
+						LastElementNumber,
+						LastRayNumber,
+						LastHitBackSide,
+						LastDFXYZ,
+						LastCosRaySurfElement,
+						LastPosRaySurfElement,
+						ErrorFlag,
+						PosRayStage,
+						CosRayStage,
+						PosRayGlob,
+						CosRayGlob);
+
+					if (outcome == StageHitOutcome::ERROR)
 					{
-						// If stage is virtual, there is no interaction
-						PosRayOutElement = LastPosRaySurfElement;
-						CosRayOutElement = LastCosRaySurfElement;
-					}
-					else
-					{
-						// trace through the interaction
-						telement_ptr optelm =
-							Stage->ElementList[LastElementNumber - 1];
-
-						optics_set = &optelm->Optics;
-
-						bool good = determine_interaction_type(
-							logger,
-							i,
-							0,
-							myrng,
-							optics_set,
-							LastDFXYZ,
-							LastCosRaySurfElement,
-							LastHitBackSide,
-							rev);
-
-						if (!good)
-						{
-							return RunnerStatus::ERROR;
-						}
-
-						if (rev == RayEvent::ABSORB)
-						{
-							RayIsAbsorbed = true;
-							break;
-						}
+						return RunnerStatus::ERROR;
 					}
 
-					// Process Interaction
-					int_fast64_t k = LastElementNumber - 1;
-					ProcessInteraction(System,
-									   myrng,
-									   IncludeSunShape,
-									   optics_set,
-									   LastHitBackSide,
-									   IncludeErrors,
-									   i,
-									   Stage,
-									   MultipleHitCount,
-									   LastDFXYZ,
-									   LastCosRaySurfElement,
-									   ErrorFlag,
-									   CosRayOutElement,
-									   LastPosRaySurfElement,
-									   PosRayOutElement);
-
-					// Transform ray back to stage coordinate system
-					TransformToReference(PosRayOutElement,
-										 CosRayOutElement,
-										 Stage->ElementList[k]->Origin,
-										 Stage->ElementList[k]->RLocToRef,
-										 PosRayStage,
-										 CosRayStage);
-					TransformToReference(PosRayStage,
-										 CosRayStage,
-										 Stage->Origin,
-										 Stage->RLocToRef,
-										 PosRayGlob,
-										 CosRayGlob);
-
-					System->RayData.Append(thread_id,
-										   PosRayGlob,
-										   CosRayGlob,
-										   LastElementNumber,
-										   i + 1,
-										   LastRayNumber,
-										   rev);
+					if (outcome == StageHitOutcome::ABSORBED)
+					{
+						RayIsAbsorbed = true;
+						break;
+					}
 
 					// Break out if multiple hits are not allowed
 					if (!Stage->MultiHitsPerRay)
