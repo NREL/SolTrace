@@ -213,6 +213,16 @@ TEST(data_tests, data_element_surface)
     CLEANUP_TEST_CXT();
 }
 
+TEST(data_tests, data_element_geometry)
+{
+    SETUP_TEST_CXT();
+
+    code = call_stapi_v2_element_geometry(pcxt);
+    EXPECT_EQ(code, 4 * st_return_code::INVALID_ARGUMENTS);
+
+    CLEANUP_TEST_CXT();
+}
+
 TEST(data_tests, data_element_optic)
 {
     SETUP_TEST_CXT();

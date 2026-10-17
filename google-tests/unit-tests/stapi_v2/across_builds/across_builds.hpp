@@ -108,6 +108,7 @@ st_return_t call_stapi_v2_element_aim(st_context_v2_t pcxt);
 st_return_t call_stapi_v2_element_zrot(st_context_v2_t pcxt);
 st_return_t call_stapi_v2_element_aperture(st_context_v2_t pcxt);
 st_return_t call_stapi_v2_element_surface(st_context_v2_t pcxt);
+st_return_t call_stapi_v2_element_geometry(st_context_v2_t pcxt);
 st_return_t call_stapi_v2_element_optic(st_context_v2_t pcxt);
 st_return_t call_stapi_v2_element_group(st_context_v2_t pcxt);
 

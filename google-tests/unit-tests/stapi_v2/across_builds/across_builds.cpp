@@ -784,6 +784,44 @@ st_return_t call_stapi_v2_element_surface(st_context_v2_t pcxt)
     return code;
 }
 
+st_return_t call_stapi_v2_element_geometry(st_context_v2_t pcxt)
+{
+    st_context *cxt = reinterpret_cast<st_context*>(pcxt);
+    SimulationData *data = cxt->p_data;
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
+
+    // test other good geometry
+    args_geometry geom_other = { { 4, 4 }, { 4 }, 'r', 's'};
+    code += st_element_geometry(pcxt, id, &geom_other);
+
+    // try bad aperture type
+    // expect code += st_return_code::INVALID_ARGUMENTS
+    args_geometry geom_bad_ap = { { 2 }, { 2, 2 }, 'z', 'p' };
+    code += st_element_geometry(pcxt, id, &geom_bad_ap);
+
+    // try bad surface type
+    // expect code += st_return_code::INVALID_ARGUMENTS
+    args_geometry geom_bad_surf = { { 2 }, { 2, 2 }, 'c', 'z' };
+    code += st_element_geometry(pcxt, id, &geom_bad_surf);
+
+    // try bad aperture params
+    // expect code += st_return_code::INVALID_ARGUMENTS
+    args_geometry geom_bad_ap_params = { { -2 }, { 2, 2 }, 'c', 'p' };
+    code += st_element_geometry(pcxt, id, &geom_bad_ap_params);
+
+    // try bad surface params
+    // expect code += st_return_code::INVALID_ARGUMENTS
+    args_geometry geom_bad_surf_params = { { 2 }, { std::numeric_limits<double>::quiet_NaN(), 2 }, 'c', 'p'};
+    code += st_element_geometry(pcxt, id, &geom_bad_surf_params);
+
+    // expect == 4 * st_return_code::INVALID_ARGUMENTS 
+    return code;
+}
+
 st_return_t call_stapi_v2_element_optic(st_context_v2_t pcxt)
 {
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
