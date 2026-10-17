@@ -1,7 +1,7 @@
 import ctypes
 from typing import Literal
 
-from pysoltrace import dot_h, soltrace_constants as _STC
+from pysoltrace import dot_h, soltrace_structs as _STS
 from pysoltrace.api.utils import st_function
 from pysoltrace.api.dll import context
 
@@ -10,7 +10,7 @@ from pysoltrace.api.dll import context
 ##################################################
 class parameters(context):
     @st_function
-    def set(self, params: _STC.simulation_parameters) -> None:
+    def set(self, params: _STS.simulation_parameters) -> None:
         return self._pdll.st_set_simulation_parameters(self._pcxt,
                                                        ctypes.byref(params.ctype))
 
@@ -36,7 +36,7 @@ class parameters(context):
         return self._pdll.st_sim_tolerance(self._pcxt, tolerance)
 
     @st_function
-    def get(self) -> _STC.simulation_parameters:
+    def get(self) -> _STS.simulation_parameters:
         params = dot_h.args_simulation_parameters()
         code = self._pdll.st_get_simulation_parameters(self._pcxt,
                                                         ctypes.byref(params))

@@ -11,7 +11,7 @@ from typing import Literal
 # from datetime import datetime, timedelta
 # from timer import timer
 import pysoltrace.soltrace_json as stJSON
-import pysoltrace.soltrace_constants as _STC
+import pysoltrace.soltrace_structs as _STS
 from pysoltrace.math_utils import arbitrary_rotation, zrot_from_azel
 from pysoltrace import api
 
@@ -119,15 +119,18 @@ class Facet():
             group: int = -1):
         pos, aim, zrot = self.aim(azimuth, elevation, elevation_axis, pos_h)
 
-        el_args = _STC.element(*map(float, pos), *map(float, aim), zrot, 
+        el_args = _STS.element([*map(float, pos)],
+                               [*map(float, aim)],
+                               zrot, 
                                True, False,
-                               self.aperture_type,
-                               self.surface_type,
                                group)
+        geom_args = _STS.geometry(self.aperture.tolist(),
+                                  self.surface.tolist(),
+                                  self.aperture_type,
+                                  self.surface_type)
         el_id = stapi.data.element.add(el_args,
                                        self.opt_id,
-                                       self.aperture.tolist(),
-                                       self.surface.tolist())
+                                       geom_args)
         return (el_id, el_args)
 
 class Heliostat():

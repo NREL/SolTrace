@@ -1,4 +1,4 @@
-import ctypes, functools, warnings
+import functools, warnings
 from colorama import just_fix_windows_console, Fore, Back, Style
 just_fix_windows_console()
 
@@ -50,7 +50,3 @@ def st_function(func):
             return code_rt[1] if len(code_rt) == 2 else code_rt[1:] if len(code_rt) > 2 else None
         else: check_return_code(code_rt)
     return wrapper
-
-def make_c_double_8(params: list[float]) -> ctypes.Array:
-    assert isinstance(params, list), f'Expected a list, got {type(params)}'
-    return (ctypes.c_double * 8)(*params)

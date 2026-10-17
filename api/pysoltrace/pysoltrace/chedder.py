@@ -300,7 +300,7 @@ def _split_type_and_name(rest: str) -> Optional[Tuple[str, str]]:
     type_str = " ".join(tokens[:-1])
     if _ARRAY_RE.match(name):
         temp = _ARRAY_LENGTH_RE.match(name)
-        return f'{type_str}[{temp.group("length")}]', name
+        return f'{type_str}[{temp.group("length")}]', name[:-3]
     if not _IDENTIFIER_RE.match(name):
         return None
     return type_str, name

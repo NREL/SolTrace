@@ -336,11 +336,6 @@ typedef struct args_geometry {
 	char   ap;
 	char   surf;
 } args_geometry;
-// TODO: [] change st_add_element/st_get_element args
-//		 [] spoof st_element_xyz/st_element_aim args as lists in py
-// 		 [] then batch args/func
-// 		 [] then tests both c++ and py
-
 STAPI_V2 st_return_t st_add_element(st_context_v2_t pcxt,
 									args_element    *args,
 									int_fast64_t    opt_id,

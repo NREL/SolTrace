@@ -1,8 +1,8 @@
 import ctypes
 
-from pysoltrace import dot_h, soltrace_constants as _STC
+from pysoltrace import dot_h, soltrace_structs as _STS
 from pysoltrace.api.batch.utils import batcher, generate_api_call
-from pysoltrace.api.utils import make_c_double_8
+# from pysoltrace.api.utils import make_c_double_8
 
 # short names
 _NE = dot_h.st_api_call.CALL_ST_NUM_ELEMENTS
@@ -30,23 +30,19 @@ class element(batcher):
         return self.adder(call, lambda: pcount.value)
 
     def add(self,
-            args: _STC.element,
+            args: _STS.element,
             opt_id: int,
-            a_params: list[float],
-            s_params: list[float]) -> int:
-        _a_params = make_c_double_8(a_params)
-        _s_params = make_c_double_8(s_params)
+            geom: _STS.geometry) -> int:
         pid = ctypes.c_uint64()
         call = generate_api_call(_AE,
                                  ctypes.pointer(args.ctype),
                                  opt_id,
-                                 _a_params,
-                                 _s_params,
+                                 ctypes.pointer(geom.ctype),
                                  ctypes.pointer(pid))
         return self.adder(call, lambda: pid.value)
 
     # TODO:
-    # def get(self, id: int) -> tuple[_STC.element,
+    # def get(self, id: int) -> tuple[_STS.element,
     #                                 int,
     #                                 list[float],
     #                                 list[float]]:
@@ -78,15 +74,13 @@ class element(batcher):
     def virtual(self, idx: int, virtual_flag: bool) -> None:
         return self.adder(generate_api_call(_EL_VI, idx, virtual_flag))
 
-    def xyz(self,
-            idx: int,
-            x: float, y: float, z: float) -> None:
-        return self.adder(generate_api_call(_EL_XYZ, idx, x, y, z))
+    def xyz(self, idx: int, xyz: list[float]) -> None:
+        assert len(xyz) == 3, f'Expected length 3, got {len(xyz)}'
+        return self.adder(generate_api_call(_EL_XYZ, idx, *xyz))
 
-    def aim(self,
-            idx: int, 
-            ax: float, ay: float, az: float) -> None:
-        return self.adder(generate_api_call(_EL_AIM, idx, ax, ay, az))
+    def aim(self, idx: int, aim: list[float]) -> None:
+        assert len(aim) == 3, f'Expected length 3, got {len(aim)}'
+        return self.adder(generate_api_call(_EL_AIM, idx, *aim))
 
     def zrot(self, idx: int, zrot: float) -> None:
         return self.adder(generate_api_call(_EL_Z, idx, zrot))
@@ -99,7 +93,7 @@ class element(batcher):
         assert isinstance(ap, bytes) and len(ap) == 1, \
             "Aperture type must be a single character byte string."
         
-        _params = make_c_double_8(params)
+        _params = _STS.make_c_double_8(params)
         return self.adder(generate_api_call(_EL_AP, idx, ap, _params))
 
     def surface(self,
@@ -110,7 +104,7 @@ class element(batcher):
         assert isinstance(surf, bytes) and len(surf) == 1, \
             "Surface type must be a single character byte string."
 
-        _params = make_c_double_8(params)
+        _params = _STS.make_c_double_8(params)
         return self.adder(generate_api_call(_EL_SU, idx, surf, _params))
 
     def optic(self, idx: int, opt_id: int) -> None:

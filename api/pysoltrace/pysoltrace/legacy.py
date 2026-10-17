@@ -44,7 +44,7 @@ import numpy as np
 import pandas as pd
 from datetime import datetime
 
-from pysoltrace import api, dot_h, soltrace_json as st_json, math_utils, Point, soltrace_constants as _STC
+from pysoltrace import api, dot_h, soltrace_json as st_json, math_utils, Point, soltrace_structs as _STS
 
 _default_cls_arg = lambda arg, default_cls, *args: arg if arg != None else default_cls(*args)
 
@@ -180,20 +180,20 @@ class _Optics:
         else:            return new_optics
 
     def Create(self, stapi: api, _do: bool = False):
-        opt_set = _STC.optical_properties_set(self.name.encode(), 
-                                                    self.front.refraction_real,
-                                                    self.back.refraction_real,
-                                                    self.type)
-        front   = _STC.optical_properties_face(self.front.transmissivity,
-                                                     self.front.reflectivity,
-                                                     self.front.slope_error,
-                                                     self.front.spec_error,
-                                                     self.front.dist_type[0].encode())
-        back    = _STC.optical_properties_face(self.back.transmissivity,
-                                                     self.back.reflectivity,
-                                                     self.back.slope_error,
-                                                     self.back.spec_error,
-                                                     self.back.dist_type[0].encode())
+        opt_set = _STS.optical_properties_set(self.name.encode(), 
+                                              self.front.refraction_real,
+                                              self.back.refraction_real,
+                                              self.type)
+        front   = _STS.optical_properties_face(self.front.transmissivity,
+                                               self.front.reflectivity,
+                                               self.front.slope_error,
+                                               self.front.spec_error,
+                                               self.front.dist_type[0].encode())
+        back    = _STS.optical_properties_face(self.back.transmissivity,
+                                               self.back.reflectivity,
+                                               self.back.slope_error,
+                                               self.back.spec_error,
+                                               self.back.dist_type[0].encode())
         if _do: return stapi.data.optic.add(opt_set, front, back)
         return stapi.batch.data.optic.add(opt_set, front, back)
     
@@ -257,12 +257,12 @@ class _Sun:
 
     def Create(self, stapi: api, _do: bool = False):
         npoints = len(self.user_intensity_table)
-        args = _STC.sun(npoints,
-                              self.position.x,
-                              self.position.y,
-                              self.position.z,
-                              self.sigma,
-                              self.shape[0].encode())
+        args = _STS.sun(npoints,
+                        self.position.x,
+                        self.position.y,
+                        self.position.z,
+                        self.sigma,
+                        self.shape[0].encode())
 
         _angle     = []
         _intensity = []
@@ -391,16 +391,18 @@ class _Element:
 
     def Create(self, stapi: api, unstager: Callable | None = None, _do: bool = False):
         # TODO: unstage element position/aim
-        el_args = _STC.element(*(unstager(self.position) if unstager else self.position),
-                                     *(unstager(self.aim) if unstager else self.aim),
-                                     self.zrot,
-                                     self.enabled,
-                                     self.virtual,
-                                     self.aperture.encode(),
-                                     self.surface.encode())
+        el_args = _STS.element(unstager(self.position) if unstager else self.position,
+                               unstager(self.aim) if unstager else self.aim,
+                               self.zrot,
+                               self.enabled,
+                               self.virtual)
+        geom_args = _STS.geometry(self.aperture_params,
+                                  self.surface_params,
+                                  self.aperture.encode(),
+                                  self.surface.encode())
 
-        if _do: return stapi.data.element.add(el_args, self.optic.id, self.aperture_params, self.surface_params)
-        return stapi.batch.data.element.add(el_args, self.optic.id, self.aperture_params, self.surface_params)
+        if _do: return stapi.data.element.add(el_args, self.optic.id, geom_args)
+        return stapi.batch.data.element.add(el_args, self.optic.id, geom_args)
         # _a_params = (ctypes.c_double * 8)(*self.aperture_params)
         # _s_params = (ctypes.c_double * 8)(*self.surface_params)
         # call = stapi.generate_api_call(dot_h.st_api_call.CALL_ST_ADD_ELEMENT,

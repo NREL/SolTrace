@@ -1,6 +1,6 @@
 import ctypes
 
-from pysoltrace import dot_h, soltrace_constants as _STC
+from pysoltrace import dot_h, soltrace_structs as _STS
 from pysoltrace.api.utils import st_function
 from pysoltrace.api.dll import context
 
@@ -22,9 +22,9 @@ class optic(context):
 
     @st_function
     def add(self,
-            opt_set: _STC.optical_properties_set,
-            front:   _STC.optical_properties_face,
-            back:    _STC.optical_properties_face) -> int:
+            opt_set: _STS.optical_properties_set,
+            front:   _STS.optical_properties_face,
+            back:    _STS.optical_properties_face) -> int:
         opt_id = ctypes.c_uint64()
         code = self._pdll.st_add_optical_properties_set(self._pcxt,
                                                        ctypes.byref(opt_set.ctype),
@@ -34,9 +34,9 @@ class optic(context):
         return code, opt_id.value
 
     @st_function
-    def get(self, optic_id: int) -> tuple[_STC.optical_properties_set, 
-                                          _STC.optical_properties_face, 
-                                          _STC.optical_properties_face]:
+    def get(self, optic_id: int) -> tuple[_STS.optical_properties_set, 
+                                          _STS.optical_properties_face, 
+                                          _STS.optical_properties_face]:
         opt_set = dot_h.args_optical_properties_set()
         front = dot_h.args_optical_properties_face()
         back = dot_h.args_optical_properties_face()

@@ -1,9 +1,9 @@
 import ctypes
 
-from pysoltrace import dot_h, soltrace_constants as _STC
+from pysoltrace import dot_h, soltrace_structs as _STS
 from pysoltrace.api.utils import st_function
 from pysoltrace.api.dll import context
-from pysoltrace.api.utils import make_c_double_8
+# from pysoltrace.api.utils import make_c_double_8
 
 ###########################################
 # functions to add/remove/modify elements #
@@ -23,37 +23,31 @@ class element(context):
 
     @st_function
     def add(self,
-            args: _STC.element,
+            args: _STS.element,
             opt_id: int,
-            a_params: list[float],
-            s_params: list[float]) -> int:
-        _a_params = make_c_double_8(a_params)
-        _s_params = make_c_double_8(s_params)
+            geom: _STS.geometry) -> int:
         pid = ctypes.c_uint64()
         code = self._pdll.st_add_element(self._pcxt,
                                          ctypes.byref(args.ctype),
                                          opt_id,
-                                         _a_params,
-                                         _s_params,
+                                         ctypes.byref(geom.ctype),
                                          ctypes.byref(pid))
         return code, pid.value
 
     @st_function
-    def get(self, id: int) -> tuple[_STC.element,
+    def get(self, id: int) -> tuple[_STS.element,
                                     int,
                                     list[float],
                                     list[float]]:
         args = dot_h.args_element()
         optic_id = ctypes.c_int64()
-        a_params = make_c_double_8([0 for _ in range(8)])
-        s_params = make_c_double_8([0 for _ in range(8)])
+        geom = _STS.geometry().ctype
         code = self._pdll.st_get_element(self._pcxt,
                                          id,
                                          ctypes.byref(args),
                                          ctypes.byref(optic_id),
-                                         ctypes.byref(a_params),
-                                         ctypes.byref(s_params))
-        return code, args.value, optic_id.value, a_params[:8], s_params[:8]
+                                         ctypes.byref(geom))
+        return code, args.value, optic_id.value, geom.value
 
     @st_function
     def delete(self, idx: int) -> None:
@@ -76,16 +70,14 @@ class element(context):
         return self._pdll.st_element_virtual(self._pcxt, idx, virtual_flag)
 
     @st_function
-    def xyz(self,
-            idx: int,
-            x: float, y: float, z: float) -> None:
-        return self._pdll.st_element_xyz(self._pcxt, idx, x, y, z)
+    def xyz(self, idx: int, xyz: list[float]) -> None:
+        assert len(xyz) == 3, f'Expected length 3, got {len(xyz)}'
+        return self._pdll.st_element_xyz(self._pcxt, idx, *xyz)
 
     @st_function
-    def aim(self,
-            idx: int, 
-            ax: float, ay: float, az: float) -> None:
-        return self._pdll.st_element_aim(self._pcxt, idx, ax, ay, az)
+    def aim(self, idx: int, aim: list[float]) -> None:
+        assert len(aim) == 3, f'Expected length 3, got {len(aim)}'
+        return self._pdll.st_element_aim(self._pcxt, idx, *aim)
 
     @st_function
     def zrot(self, idx: int, zrot: float) -> None:
@@ -100,7 +92,7 @@ class element(context):
         assert isinstance(ap, bytes) and len(ap) == 1, \
             "Aperture type must be a single character byte string."
         
-        _params = make_c_double_8(params)
+        _params = _STS.make_c_double_8(params)
         return self._pdll.st_element_aperture(self._pcxt, idx, ap, _params)
 
     @st_function
@@ -112,7 +104,7 @@ class element(context):
         assert isinstance(surf, bytes) and len(surf) == 1, \
             "Surface type must be a single character byte string."
 
-        _params = make_c_double_8(params)
+        _params = _STS.make_c_double_8(params)
         return self._pdll.st_element_surface(self._pcxt, idx, surf, _params)
 
     @st_function

@@ -1,6 +1,6 @@
 import ctypes
 
-from pysoltrace import dot_h, soltrace_constants as _STC
+from pysoltrace import dot_h, soltrace_structs as _STS
 from pysoltrace.api.batch.utils import batcher, generate_api_call
 
 # short names
@@ -15,7 +15,7 @@ _TOL  = dot_h.st_api_call.CALL_ST_SIM_TOLERANCE
 # functions for simulation parameters management #
 ##################################################
 class parameters(batcher):
-    def set(self, params: _STC.simulation_parameters) -> None:
+    def set(self, params: _STS.simulation_parameters) -> None:
         return self.adder(generate_api_call(_SET, ctypes.pointer(params.ctype)))
 
     def rays(self, raycount: int, maxcount: int) -> None:
@@ -34,7 +34,7 @@ class parameters(batcher):
         return self.adder(generate_api_call(_TOL, tolerance))
 
     # TODO:
-    # def get(self) -> _STC.simulation_parameters:
+    # def get(self) -> _STS.simulation_parameters:
     #     params = dot_h.args_simulation_parameters()
     #     code = self._pdll.st_get_simulation_parameters(self._pcxt,
     #                                                     ctypes.byref(params))
