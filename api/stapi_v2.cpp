@@ -2,17 +2,17 @@
 #include <vector>
 #include <system_error>
 
-#include "../simulation_runner/simulation_runner.hpp"
-#include "../simulation_runner/native_runner/native_runner.hpp"
-#include "../simulation_data/simulation_data_export.hpp"
-#include "../simulation_results/simulation_result_export.hpp"
+#include "../coretrace/simulation_runner/simulation_runner.hpp"
+#include "../coretrace/simulation_runner/native_runner/native_runner.hpp"
+#include "../coretrace/simulation_data/simulation_data_export.hpp"
+#include "../coretrace/simulation_results/simulation_result_export.hpp"
 
 #ifdef STAPI_V2_EMBREE_SUPPORT
-#include "../simulation_runner/embree_runner/embree_runner.hpp"
+#include "../coretrace/simulation_runner/embree_runner/embree_runner.hpp"
 #endif
 
 #ifdef STAPI_V2_OPTIX_SUPPORT
-#include "../simulation_runner/optix_runner/optix_runner.hpp"
+#include "../coretrace/simulation_runner/optix_runner/optix_runner.hpp"
 #endif
 
 #include "stapi_v2.h"
@@ -471,31 +471,21 @@ int32_t num_surface_params(SurfaceType type)
     return rt;
 }
 
-STAPI_V2 st_return_t st_add_element(st_context_v2_t pcxt,
-									args_element    *args,
-									int_fast64_t    opt_id,
-									double 		    a_params[8],
-									double 		    s_params[8],
-									uint_fast64_t   *element_id)
+st_return_t create_geometry(st_context    *cxt,
+                            args_geometry *geom,
+                            aperture_ptr  &ap,
+                            surface_ptr   &surf)
 {
-    CONTEXT(pcxt);
-    DATA(cxt);
-
-    // check that inputs are good
-    const OpticalPropertySetReference existing_set = get_optics_ref_by_id(data, opt_id);
-    if (existing_set.id == SolTrace::Data::OPTICS_ID_TYPES::OPTICS_ID_UNASSIGNED)
-        return st_return_code::DATA_VALUE_NOT_FOUND;
-
-    ApertureType a_type = char_to_aperture(args->ap);
-    SurfaceType s_type = char_to_surface(args->surf);
+    // checking geometry
+    ApertureType a_type = char_to_aperture(geom->ap);
+    SurfaceType s_type = char_to_surface(geom->surf);
     int32_t num_a_params = num_aperture_params(a_type);
     int32_t num_s_params = num_surface_params(s_type);
     if (num_a_params < 0 || num_s_params < 0) return st_return_code::INVALID_ARGUMENTS;
 
-    std::vector<double> _a_params(a_params, a_params + num_a_params);
-    std::vector<double> _s_params(s_params, s_params + num_s_params);
-    aperture_ptr ap;
-    surface_ptr surf;
+    std::vector<double> _a_params(std::begin(geom->a_params), std::end(geom->a_params));
+    std::vector<double> _s_params(std::begin(geom->s_params), std::end(geom->s_params));
+
     try
     {
         ap = Aperture::make_aperture_from_type(a_type, _a_params);
@@ -506,6 +496,50 @@ STAPI_V2 st_return_t st_add_element(st_context_v2_t pcxt,
         if (cxt->p_cb) cxt->p_cb("geometry creation", e.what());
         return st_return_code::INVALID_ARGUMENTS;
     }
+
+    return st_return_code::SUCCESS;
+}
+
+STAPI_V2 st_return_t st_add_element(st_context_v2_t pcxt,
+									args_element    *args,
+									int_fast64_t    opt_id,
+									args_geometry   *geom,
+									uint_fast64_t   *element_id)
+{
+    CONTEXT(pcxt);
+    DATA(cxt);
+
+    // check that inputs are good
+    // checking optics
+    const OpticalPropertySetReference existing_set = get_optics_ref_by_id(data, opt_id);
+    if (existing_set.id == SolTrace::Data::OPTICS_ID_TYPES::OPTICS_ID_UNASSIGNED)
+    return st_return_code::DATA_VALUE_NOT_FOUND;
+    
+    // checking geometry
+    // ApertureType a_type = char_to_aperture(geom->ap);
+    // SurfaceType s_type = char_to_surface(geom->surf);
+    // int32_t num_a_params = num_aperture_params(a_type);
+    // int32_t num_s_params = num_surface_params(s_type);
+    // if (num_a_params < 0 || num_s_params < 0) return st_return_code::INVALID_ARGUMENTS;
+
+    // std::vector<double> _a_params(std::begin(geom->a_params), std::end(geom->a_params));
+    // std::vector<double> _s_params(std::begin(geom->s_params), std::end(geom->s_params));
+    aperture_ptr ap;
+    surface_ptr surf;
+    st_return_t code = create_geometry(cxt, geom, ap, surf);
+
+    if (code > st_return_code::SUCCESS) return code;
+
+    // try
+    // {
+    //     ap = Aperture::make_aperture_from_type(a_type, _a_params);
+    //     surf = SolTrace::Data::make_surface_from_type(s_type, _s_params);
+    // }
+    // catch (const std::invalid_argument& e)
+    // {
+    //     if (cxt->p_cb) cxt->p_cb("geometry creation", e.what());
+    //     return st_return_code::INVALID_ARGUMENTS;
+    // }
 
     single_element_ptr el = make_element<SingleElement>();
     
@@ -527,7 +561,6 @@ STAPI_V2 st_return_t st_add_element(st_context_v2_t pcxt,
     *element_id = el->get_id();
     
     // to maintain grouping, changing groups goes thru SimulationData, so set group after adding the element
-    st_return_t code = st_return_code::SUCCESS;
     if (args->group < -1) code = st_return_code::WARNING_GROUP_IGNORED;
     else                  data->set_element_group(*element_id, args->group);
     
@@ -538,8 +571,7 @@ STAPI_V2 st_return_t st_get_element(st_context_v2_t pcxt,
 									uint_fast64_t   idx,
 									args_element    *args,
 									int_fast64_t    *opt_id,
-									double 		    a_params[8],
-									double 		    s_params[8])
+									args_geometry   *geom)
 {
     CONTEXT(pcxt);
     DATA(cxt);
@@ -547,6 +579,7 @@ STAPI_V2 st_return_t st_get_element(st_context_v2_t pcxt,
     element_ptr el = data->get_element(idx);
     if (!el) return st_return_code::DATA_VALUE_NOT_FOUND;
 
+    // get element
     args->enabled_flag = el->is_enabled();
     args->virtual_flag = el->is_virtual();
     glm::dvec3 pos = el->get_origin_global();
@@ -558,21 +591,21 @@ STAPI_V2 st_return_t st_get_element(st_context_v2_t pcxt,
     args->ay = aim[1];
     args->az = aim[2];
     args->zrot = el->get_zrot();
-    aperture_ptr ap_ptr = el->get_aperture();
-    ApertureType ap_type = ap_ptr->get_type();
-    args->ap = aperture_to_char(ap_type);
-    surface_ptr surf_ptr = el->get_surface();
-    SurfaceType surf_type = surf_ptr->get_type();
-    args->surf = surface_to_char(surf_type);
-    
     args->group = el->get_group();
     *opt_id = el->get_optical_property_set_id();
-
+    
+    // get geometry
+    aperture_ptr ap_ptr = el->get_aperture();
+    ApertureType ap_type = ap_ptr->get_type();
+    geom->ap = aperture_to_char(ap_type);
+    surface_ptr surf_ptr = el->get_surface();
+    SurfaceType surf_type = surf_ptr->get_type();
+    geom->surf = surface_to_char(surf_type);
     // reset params
     for (size_t i = 0; i < 8; ++i)
     {
-        a_params[i] = 0;
-        s_params[i] = 0;
+        geom->a_params[i] = 0;
+        geom->s_params[i] = 0;
     }
     
     switch (ap_type)
@@ -580,34 +613,34 @@ STAPI_V2 st_return_t st_get_element(st_context_v2_t pcxt,
         case ApertureType::ANNULUS:
         {
             auto temp = std::dynamic_pointer_cast<Annulus>(ap_ptr);
-            a_params[0] = temp->inner_radius;
-            a_params[1] = temp->outer_radius;
-            a_params[2] = temp->arc_angle;
+            geom->a_params[0] = temp->inner_radius;
+            geom->a_params[1] = temp->outer_radius;
+            geom->a_params[2] = temp->arc_angle;
             break;
         }
         case ApertureType::CIRCLE:
         {
             auto temp = std::dynamic_pointer_cast<Circle>(ap_ptr);
-            a_params[0] = temp->diameter;
+            geom->a_params[0] = temp->diameter;
             break;
         }
         case ApertureType::HEXAGON:
         {
             auto temp = std::dynamic_pointer_cast<Hexagon>(ap_ptr);
-            a_params[0] = temp->circumscribe_diameter;
+            geom->a_params[0] = temp->circumscribe_diameter;
             break;
         }
         case ApertureType::RECTANGLE:
         {
             auto temp = std::dynamic_pointer_cast<Rectangle>(ap_ptr);
-            a_params[0] = temp->x_length();
-            a_params[1] = temp->y_length();
+            geom->a_params[0] = temp->x_length();
+            geom->a_params[1] = temp->y_length();
             break;
         }
         case ApertureType::EQUILATERAL_TRIANGLE:
         {
             auto temp = std::dynamic_pointer_cast<EquilateralTriangle>(ap_ptr);
-            a_params[0] = temp->circumscribe_diameter;
+            geom->a_params[0] = temp->circumscribe_diameter;
             break;
         }
         
@@ -616,25 +649,25 @@ STAPI_V2 st_return_t st_get_element(st_context_v2_t pcxt,
         case ApertureType::IRREGULAR_TRIANGLE:
         {
             auto temp = std::dynamic_pointer_cast<IrregularTriangle>(ap_ptr);
-            a_params[0] = temp->x1;
-            a_params[1] = temp->y1;
-            a_params[2] = temp->x2;
-            a_params[3] = temp->y2;
-            a_params[4] = temp->x3;
-            a_params[5] = temp->y3;
+            geom->a_params[0] = temp->x1;
+            geom->a_params[1] = temp->y1;
+            geom->a_params[2] = temp->x2;
+            geom->a_params[3] = temp->y2;
+            geom->a_params[4] = temp->x3;
+            geom->a_params[5] = temp->y3;
             break;
         }
         case ApertureType::IRREGULAR_QUADRILATERAL:
         {
             auto temp = std::dynamic_pointer_cast<IrregularQuadrilateral>(ap_ptr);
-            a_params[0] = temp->x1;
-            a_params[1] = temp->y1;
-            a_params[2] = temp->x2;
-            a_params[3] = temp->y2;
-            a_params[4] = temp->x3;
-            a_params[5] = temp->y3;
-            a_params[6] = temp->x4;
-            a_params[7] = temp->y4;
+            geom->a_params[0] = temp->x1;
+            geom->a_params[1] = temp->y1;
+            geom->a_params[2] = temp->x2;
+            geom->a_params[3] = temp->y2;
+            geom->a_params[4] = temp->x3;
+            geom->a_params[5] = temp->y3;
+            geom->a_params[6] = temp->x4;
+            geom->a_params[7] = temp->y4;
             break;
         }
         default:
@@ -646,13 +679,13 @@ STAPI_V2 st_return_t st_get_element(st_context_v2_t pcxt,
         case SurfaceType::CONE:
         {
             auto temp = std::dynamic_pointer_cast<Cone>(surf_ptr);
-            s_params[0] = temp->half_angle;
+            geom->s_params[0] = temp->half_angle;
             break;
         }
         case SurfaceType::CYLINDER:
         {
             auto temp = std::dynamic_pointer_cast<Cylinder>(surf_ptr);
-            s_params[0] = temp->radius;
+            geom->s_params[0] = temp->radius;
             break;
         }
         case SurfaceType::FLAT:
@@ -662,14 +695,14 @@ STAPI_V2 st_return_t st_get_element(st_context_v2_t pcxt,
         case SurfaceType::PARABOLA:
         {
             auto temp = std::dynamic_pointer_cast<Parabola>(surf_ptr);
-            s_params[0] = temp->focal_length_x;
-            s_params[1] = temp->focal_length_y;
+            geom->s_params[0] = temp->focal_length_x;
+            geom->s_params[1] = temp->focal_length_y;
             break;
         }
         case SurfaceType::SPHERE:
         {
             auto temp = std::dynamic_pointer_cast<Sphere>(surf_ptr);
-            s_params[0] = temp->vertex_curv;
+            geom->s_params[0] = temp->vertex_curv;
             break;
         }
 
@@ -843,6 +876,28 @@ STAPI_V2 st_return_t st_element_surface(st_context_v2_t pcxt,
 
     el->set_surface(s);
     return st_return_code::SUCCESS;
+}
+
+STAPI_V2 st_return_t st_element_geometry(st_context_v2_t pcxt,
+                                         st_uint_t 	     idx,
+                                         args_geometry	 *geom)
+{
+    CONTEXT(pcxt);
+    DATA(cxt);
+    
+    element_ptr el = data->get_element(idx);
+    if (!el) return st_return_code::WARNING_NOT_FOUND;
+
+    aperture_ptr ap;
+    surface_ptr surf;
+    st_return_t code = create_geometry(cxt, geom, ap, surf);
+
+    if (code > st_return_code::SUCCESS) return code;
+    
+    el->set_aperture(ap);
+    el->set_surface(surf);
+    
+    return code;
 }
 
 STAPI_V2 st_return_t st_element_optic(st_context_v2_t pcxt,
@@ -1809,8 +1864,7 @@ STAPI_V2 st_return_t st_batch(st_context_v2_t  pcxt,
                     code = st_add_element(pcxt,
                                           call_args->payload.add_element_args.args,
                                           call_args->payload.add_element_args.opt_id,
-                                          call_args->payload.add_element_args.a_params,
-                                          call_args->payload.add_element_args.s_params,
+                                          call_args->payload.add_element_args.geom,
                                           call_args->payload.add_element_args.element_id);
                     break;
                 }
@@ -1878,6 +1932,13 @@ STAPI_V2 st_return_t st_batch(st_context_v2_t  pcxt,
                                               call_args->payload.element_surface_args.idx,
                                               call_args->payload.element_surface_args.surf,
                                               call_args->payload.element_surface_args.params);
+                    break;
+                }
+	            case st_api_call::CALL_ST_ELEMENT_GEOMETRY:
+                {
+                    code = st_element_geometry(pcxt,
+                                               call_args->payload.element_geometry_args.idx,
+                                               call_args->payload.element_geometry_args.geom);
                     break;
                 }
 	            case st_api_call::CALL_ST_ELEMENT_OPTIC:

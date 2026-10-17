@@ -328,22 +328,29 @@ typedef struct args_element {
 	double  zrot;
 	bool    enabled_flag;
 	bool    virtual_flag;
-	char    ap;
-	char    surf;
 	int32_t group = -1;
 } args_element;
+typedef struct args_geometry {
+	double a_params[8];
+	double s_params[8];
+	char   ap;
+	char   surf;
+} args_geometry;
+// TODO: [] change st_add_element/st_get_element args
+//		 [] spoof st_element_xyz/st_element_aim args as lists in py
+// 		 [] then batch args/func
+// 		 [] then tests both c++ and py
+
 STAPI_V2 st_return_t st_add_element(st_context_v2_t pcxt,
 									args_element    *args,
 									int_fast64_t    opt_id,
-									double 		    a_params[8],
-									double 		    s_params[8],
+									args_geometry	*geom,
 									uint_fast64_t   *element_id);
 STAPI_V2 st_return_t st_get_element(st_context_v2_t pcxt,
 									uint_fast64_t   element_id,
 									args_element    *args,
 									int_fast64_t    *opt_id,
-									double 		    a_params[8],
-									double 		    s_params[8]);
+									args_geometry	*geom);
 STAPI_V2 st_return_t st_delete_element(st_context_v2_t pcxt, st_uint_t idx);
 STAPI_V2 st_return_t st_clear_elements(st_context_v2_t pcxt);
 // functions to modify elements
@@ -374,6 +381,9 @@ STAPI_V2 st_return_t st_element_surface(st_context_v2_t pcxt,
                                         st_uint_t 	    idx,
                                         char      	    surf,
                                         double    	    params[8]);
+STAPI_V2 st_return_t st_element_geometry(st_context_v2_t pcxt,
+                                         st_uint_t 	     idx,
+                                         args_geometry	 *geom);
 STAPI_V2 st_return_t st_element_optic(st_context_v2_t pcxt,
 									  st_uint_t 	  idx,
 									  int_fast64_t 	  opt_id);
@@ -586,6 +596,7 @@ typedef enum st_api_call : st_uint_t {
 	CALL_ST_ELEMENT_ZROT,
 	CALL_ST_ELEMENT_APERTURE,
 	CALL_ST_ELEMENT_SURFACE,
+	CALL_ST_ELEMENT_GEOMETRY,
 	CALL_ST_ELEMENT_OPTIC,
 	CALL_ST_ELEMENT_GROUP,
 	// sun functions
@@ -704,8 +715,7 @@ typedef struct args_st_num_elements {
 typedef struct args_st_add_element {
 	args_element  *args;
 	int_fast64_t  opt_id;
-	double 		  *a_params;
-	double 		  *s_params;
+	args_geometry *geom;
 	uint_fast64_t *element_id;
 } args_st_add_element;
 
@@ -713,8 +723,7 @@ typedef struct args_st_get_element {
 	uint_fast64_t element_id;
 	args_element  *args;
 	int_fast64_t  *opt_id;
-	double 		  *a_params[8];
-	double 		  *s_params[8];
+	args_geometry *geom;
 } args_st_get_element;
 
 typedef struct args_st_delete_element {
@@ -764,6 +773,11 @@ typedef struct args_st_element_surface {
 	char 	  surf;
 	double    *params;
 } args_st_element_surface;
+
+typedef struct args_st_element_geometry {
+	st_uint_t 	  idx;
+	args_geometry *geom;
+} args_st_element_geometry;
 
 typedef struct args_st_element_optic {
 	st_uint_t 	 idx;
@@ -951,6 +965,7 @@ typedef struct st_api_call_args {
 		args_st_element_zrot     element_zrot_args;
 		args_st_element_aperture element_aperture_args;
 		args_st_element_surface  element_surface_args;
+		args_st_element_geometry element_geometry_args;
 		args_st_element_optic    element_optic_args;
 		args_st_element_group    element_group_args;
 		// sun functions

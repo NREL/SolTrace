@@ -410,13 +410,14 @@ st_return_t call_stapi_v2_add_elements(st_context_v2_t pcxt)
     st_return_t code = check(num, 0);
 
     // set element to non default values
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // test good element
     // expect += st_return_code::SUCCESS
-    code += st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    code += st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -453,48 +454,46 @@ st_return_t call_stapi_v2_add_elements(st_context_v2_t pcxt)
 
     // try bad optical id
     // expect code += st_return_code::DATA_VALUE_NOT_FOUND
-    code += st_add_element(pcxt, &el_args, res.id + 1, a_params, s_params, &id);
+    code += st_add_element(pcxt, &el_args, res.id + 1, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
 
     // try bad aperture type
     // expect code += st_return_code::INVALID_ARGUMENTS
-    el_args.ap = 'z';
-    code += st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    args_geometry geom_bad_ap = { { 2 }, { 2, 2 }, 'z', 'p' };
+    code += st_add_element(pcxt, &el_args, res.id, &geom_bad_ap, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
-    el_args.ap = 'c';
     
     // try bad surface type
     // expect code += st_return_code::INVALID_ARGUMENTS
-    el_args.surf = 'z';
-    code += st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    args_geometry geom_bad_surf = { { 2 }, { 2, 2 }, 'c', 'z' };
+    code += st_add_element(pcxt, &el_args, res.id, &geom_bad_surf, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
-    el_args.surf = 'p';
     
     // try bad aperture params
     // expect code += st_return_code::INVALID_ARGUMENTS
-    double bad_a_params[1] = { -2 };
-    code += st_add_element(pcxt, &el_args, res.id, bad_a_params, s_params, &id);
+    args_geometry geom_bad_ap_params = { { -2 }, { 2, 2 }, 'c', 'p' };
+    code += st_add_element(pcxt, &el_args, res.id, &geom_bad_ap_params, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
 
     // try bad surface params
     // expect code += st_return_code::INVALID_ARGUMENTS
-    double bad_s_params[2] = { std::numeric_limits<double>::quiet_NaN(), 2 };
-    code += st_add_element(pcxt, &el_args, res.id, a_params, bad_s_params, &id);
+    args_geometry geom_bad_surf_params = { { 2 }, { std::numeric_limits<double>::quiet_NaN(), 2 }, 'c', 'p'};
+    code += st_add_element(pcxt, &el_args, res.id, &geom_bad_surf_params, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
 
     // test another good element
     // expect += st_return_code::SUCCESS
-    code += st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    code += st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 2);
     st_num_elements(pcxt, &num);
     code += check(num, 2);
@@ -514,21 +513,23 @@ st_return_t call_stapi_v2_get_element(st_context_v2_t pcxt)
     uint_fast64_t id = -1;
 
     // set element to non default values
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
 
     // test good element
     // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     
-    args_element rt_el_args;
-    int_fast64_t opt_id;
-    double rt_a_params[8] = { 0 };
-    double rt_s_params[8] = { 0 };
+    args_element  rt_el_args;
+    int_fast64_t  opt_id;
+    args_geometry rt_geom_args;
+    // double rt_a_params[8] = { 0 };
+    // double rt_s_params[8] = { 0 };
     
     // expect += st_return_code::SUCCESS
-    code += st_get_element(pcxt, id, &rt_el_args, &opt_id, rt_a_params, rt_s_params);
+    code += st_get_element(pcxt, id, &rt_el_args, &opt_id, &rt_geom_args);
 
     // test values set
     element_ptr el = data->get_element(1);
@@ -549,18 +550,18 @@ st_return_t call_stapi_v2_get_element(st_context_v2_t pcxt)
     code += check(opt_id, res.id);
 
     aperture_ptr ap = sel->get_aperture();
-    code += check(rt_el_args.ap, aperture_to_char(ap->get_type()));
+    code += check(rt_geom_args.ap, aperture_to_char(ap->get_type()));
     auto circle = std::static_pointer_cast<Circle>(ap);
-    code += check(rt_a_params[0], circle->diameter);
+    code += check(rt_geom_args.a_params[0], circle->diameter);
 
     surface_ptr surf = sel->get_surface();
-    code += check(rt_el_args.surf, surface_to_char(surf->get_type()));
+    code += check(rt_geom_args.surf, surface_to_char(surf->get_type()));
     auto parabola = std::static_pointer_cast<Parabola>(surf);
-    code += check(rt_s_params[0], parabola->focal_length_x);
-    code += check(rt_s_params[1], parabola->focal_length_y);
+    code += check(rt_geom_args.s_params[0], parabola->focal_length_x);
+    code += check(rt_geom_args.s_params[1], parabola->focal_length_y);
 
     // expect += st_return_code::DATA_VALUE_NOT_FOUND
-    code += st_get_element(pcxt, id + 1, &rt_el_args, &opt_id, rt_a_params, rt_s_params);
+    code += st_get_element(pcxt, id + 1, &rt_el_args, &opt_id, &rt_geom_args);
     
     return code;
 }
@@ -576,12 +577,13 @@ st_return_t call_stapi_v2_remove_elements(st_context_v2_t pcxt)
     SimulationData *data = cxt->p_data;
     OpticalPropertySetReference res = data->add_optical_property_set(opt);
     // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -592,7 +594,7 @@ st_return_t call_stapi_v2_remove_elements(st_context_v2_t pcxt)
     code += check(num, 0);
     
     // expect += st_return_code::SUCCESS
-    code += st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    code += st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 2);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -622,12 +624,13 @@ st_return_t call_stapi_v2_toggle_element(st_context_v2_t pcxt)
     SimulationData *data = cxt->p_data;
     OpticalPropertySetReference res = data->add_optical_property_set(opt);
     // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -664,12 +667,13 @@ st_return_t call_stapi_v2_element_xyz(st_context_v2_t pcxt)
     SimulationData *data = cxt->p_data;
     OpticalPropertySetReference res = data->add_optical_property_set(opt);
     // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -702,12 +706,13 @@ st_return_t call_stapi_v2_element_aim(st_context_v2_t pcxt)
     SimulationData *data = cxt->p_data;
     OpticalPropertySetReference res = data->add_optical_property_set(opt);
     // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -740,12 +745,13 @@ st_return_t call_stapi_v2_element_zrot(st_context_v2_t pcxt)
     SimulationData *data = cxt->p_data;
     OpticalPropertySetReference res = data->add_optical_property_set(opt);
     // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -776,12 +782,13 @@ st_return_t call_stapi_v2_element_aperture(st_context_v2_t pcxt)
     SimulationData *data = cxt->p_data;
     OpticalPropertySetReference res = data->add_optical_property_set(opt);
     // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -820,12 +827,13 @@ st_return_t call_stapi_v2_element_surface(st_context_v2_t pcxt)
     SimulationData *data = cxt->p_data;
     OpticalPropertySetReference res = data->add_optical_property_set(opt);
     // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -862,12 +870,13 @@ st_return_t call_stapi_v2_element_optic(st_context_v2_t pcxt)
     SimulationData *data = cxt->p_data;
     OpticalPropertySetReference res1 = data->add_optical_property_set(opt1);
     // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p'};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res1.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res1.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
@@ -900,33 +909,35 @@ st_return_t call_stapi_v2_element_group(st_context_v2_t pcxt)
     SimulationData *data = cxt->p_data;
     OpticalPropertySetReference res1 = data->add_optical_property_set(opt1);
     // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true, 'c', 'p', -2};
-    double a_params[1] = { 2 };
-    double s_params[2] = { 2, 2 };
+    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true, -2 };
+    // double a_params[1] = { 2 };
+    // double s_params[2] = { 2, 2 };
+    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // expect += st_return_code::WARNING_GROUP_IGNORED
-    st_return_t code = st_add_element(pcxt, &el_args, res1.id, a_params, s_params, &id);
+    st_return_t code = st_add_element(pcxt, &el_args, res1.id, &geom_args, &id);
     code += check(id, 1);
     st_num_elements(pcxt, &num);
     code += check(num, 1);
 
     args_element rt_el_args;
     int_fast64_t opt_id;
-    double rt_a_params[8] = { 0 };
-    double rt_s_params[8] = { 0 };
+    args_geometry rt_geom_args;
+    // double rt_a_params[8] = { 0 };
+    // double rt_s_params[8] = { 0 };
     
     // expect += st_return_code::SUCCESS
-    code += st_get_element(pcxt, id, &rt_el_args, &opt_id, rt_a_params, rt_s_params);
+    code += st_get_element(pcxt, id, &rt_el_args, &opt_id, &rt_geom_args);
     code += check(rt_el_args.group, -1);
     
     // expect += st_return_code::WARNING_GROUP_IGNORED
     code += st_element_group(pcxt, id, -2);
-    code += st_get_element(pcxt, id, &rt_el_args, &opt_id, rt_a_params, rt_s_params);
+    code += st_get_element(pcxt, id, &rt_el_args, &opt_id, &rt_geom_args);
     code += check(rt_el_args.group, -1);
     
     // expect += st_return_code::SUCCESS
     code += st_element_group(pcxt, id, 1);
-    code += st_get_element(pcxt, id, &rt_el_args, &opt_id, rt_a_params, rt_s_params);
+    code += st_get_element(pcxt, id, &rt_el_args, &opt_id, &rt_geom_args);
     code += check(rt_el_args.group, 1);
     
     // expect == 2 * st_return_code::WARNING_GROUP_IGNORED
