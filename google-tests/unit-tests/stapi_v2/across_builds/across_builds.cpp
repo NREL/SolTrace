@@ -411,8 +411,6 @@ st_return_t call_stapi_v2_add_elements(st_context_v2_t pcxt)
 
     // set element to non default values
     args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
     args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
 
     // test good element
@@ -503,30 +501,37 @@ st_return_t call_stapi_v2_add_elements(st_context_v2_t pcxt)
     return code;
 }
 
-st_return_t call_stapi_v2_get_element(st_context_v2_t pcxt)
+st_return_t add_dummy_element(st_context_v2_t             pcxt,
+                              SimulationData              *data,
+                              args_element                &el_args,
+                              OpticalPropertySetReference &res,
+                              args_geometry               &geom_args,
+                              uint_fast64_t               &id,
+                              int32_t                     group = -1)
 {
     // set up dummy optical properties
     OpticalPropertySet opt(InteractionType::REFLECTION, std::string("dummy"));
+    res = data->add_optical_property_set(opt);
+    // set element to non default values
+    el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
+    el_args.group = group;
+    geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
+    return st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
+}
+
+st_return_t call_stapi_v2_get_element(st_context_v2_t pcxt)
+{
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res = data->add_optical_property_set(opt);
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
     uint_fast64_t id = -1;
-
-    // set element to non default values
-    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-
-    // test good element
-    // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
     
     args_element  rt_el_args;
     int_fast64_t  opt_id;
     args_geometry rt_geom_args;
-    // double rt_a_params[8] = { 0 };
-    // double rt_s_params[8] = { 0 };
     
     // expect += st_return_code::SUCCESS
     code += st_get_element(pcxt, id, &rt_el_args, &opt_id, &rt_geom_args);
@@ -568,23 +573,15 @@ st_return_t call_stapi_v2_get_element(st_context_v2_t pcxt)
 
 st_return_t call_stapi_v2_remove_elements(st_context_v2_t pcxt)
 {
-    uint_fast64_t num = -1;
-    uint_fast64_t id = -1;
-
-    // set up dummy optical properties
-    OpticalPropertySet opt(InteractionType::REFLECTION, std::string("dummy"));
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res = data->add_optical_property_set(opt);
-    // set up dummy element arguments
-    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-
-    // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
-    code += check(id, 1);
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
+    
+    uint_fast64_t num = -1;
     st_num_elements(pcxt, &num);
     code += check(num, 1);
     
@@ -615,25 +612,13 @@ st_return_t call_stapi_v2_remove_elements(st_context_v2_t pcxt)
 
 st_return_t call_stapi_v2_toggle_element(st_context_v2_t pcxt)
 {
-    uint_fast64_t num = -1;
-    uint_fast64_t id = -1;
-
-    // set up dummy optical properties
-    OpticalPropertySet opt(InteractionType::REFLECTION, std::string("dummy"));
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res = data->add_optical_property_set(opt);
-    // set up dummy element arguments
-    args_element el_args = {2, 2, 2, 2, 2, 2, 2, false, true };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-
-    // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
-    code += check(id, 1);
-    st_num_elements(pcxt, &num);
-    code += check(num, 1);
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
     
     // expect += st_return_code::SUCCESS
     code += st_element_enabled(pcxt, 1, true);
@@ -658,25 +643,13 @@ st_return_t call_stapi_v2_toggle_element(st_context_v2_t pcxt)
 
 st_return_t call_stapi_v2_element_xyz(st_context_v2_t pcxt)
 {
-    uint_fast64_t num = -1;
-    uint_fast64_t id = -1;
-
-    // set up dummy optical properties
-    OpticalPropertySet opt(InteractionType::REFLECTION, std::string("dummy"));
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res = data->add_optical_property_set(opt);
-    // set up dummy element arguments
-    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-
-    // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
-    code += check(id, 1);
-    st_num_elements(pcxt, &num);
-    code += check(num, 1);
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
     
     // expect += st_return_code::SUCCESS
     code += st_element_xyz(pcxt, 1, 1, 1, 1);
@@ -697,25 +670,13 @@ st_return_t call_stapi_v2_element_xyz(st_context_v2_t pcxt)
 
 st_return_t call_stapi_v2_element_aim(st_context_v2_t pcxt)
 {
-    uint_fast64_t num = -1;
-    uint_fast64_t id = -1;
-
-    // set up dummy optical properties
-    OpticalPropertySet opt(InteractionType::REFLECTION, std::string("dummy"));
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res = data->add_optical_property_set(opt);
-    // set up dummy element arguments
-    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-
-    // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
-    code += check(id, 1);
-    st_num_elements(pcxt, &num);
-    code += check(num, 1);
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
     
     // expect += st_return_code::SUCCESS
     code += st_element_aim(pcxt, 1, 1, 1, 1);
@@ -736,25 +697,13 @@ st_return_t call_stapi_v2_element_aim(st_context_v2_t pcxt)
 
 st_return_t call_stapi_v2_element_zrot(st_context_v2_t pcxt)
 {
-    uint_fast64_t num = -1;
-    uint_fast64_t id = -1;
-
-    // set up dummy optical properties
-    OpticalPropertySet opt(InteractionType::REFLECTION, std::string("dummy"));
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res = data->add_optical_property_set(opt);
-    // set up dummy element arguments
-    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-
-    // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
-    code += check(id, 1);
-    st_num_elements(pcxt, &num);
-    code += check(num, 1);
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
     
     // expect += st_return_code::SUCCESS
     code += st_element_zrot(pcxt, 1, 1);
@@ -773,25 +722,13 @@ st_return_t call_stapi_v2_element_zrot(st_context_v2_t pcxt)
 
 st_return_t call_stapi_v2_element_aperture(st_context_v2_t pcxt)
 {
-    uint_fast64_t num = -1;
-    uint_fast64_t id = -1;
-
-    // set up dummy optical properties
-    OpticalPropertySet opt(InteractionType::REFLECTION, std::string("dummy"));
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res = data->add_optical_property_set(opt);
-    // set up dummy element arguments
-    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-
-    // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
-    code += check(id, 1);
-    st_num_elements(pcxt, &num);
-    code += check(num, 1);
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
 
     double params[2] = { 4, 4 };
 
@@ -818,25 +755,13 @@ st_return_t call_stapi_v2_element_aperture(st_context_v2_t pcxt)
 
 st_return_t call_stapi_v2_element_surface(st_context_v2_t pcxt)
 {
-    uint_fast64_t num = -1;
-    uint_fast64_t id = -1;
-
-    // set up dummy optical properties
-    OpticalPropertySet opt(InteractionType::REFLECTION, std::string("dummy"));
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res = data->add_optical_property_set(opt);
-    // set up dummy element arguments
-    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-
-    // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res.id, &geom_args, &id);
-    code += check(id, 1);
-    st_num_elements(pcxt, &num);
-    code += check(num, 1);
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
     
     double params[1] = { 4 };
     // expect += st_return_code::SUCCESS
@@ -861,28 +786,16 @@ st_return_t call_stapi_v2_element_surface(st_context_v2_t pcxt)
 
 st_return_t call_stapi_v2_element_optic(st_context_v2_t pcxt)
 {
-    uint_fast64_t num = -1;
-    uint_fast64_t id = -1;
-
-    // set up dummy optical properties
-    OpticalPropertySet opt1(InteractionType::REFLECTION, std::string("dummy"));
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res1 = data->add_optical_property_set(opt1);
-    // set up dummy element arguments
-    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-
-    // expect += st_return_code::SUCCESS
-    st_return_t code = st_add_element(pcxt, &el_args, res1.id, &geom_args, &id);
-    code += check(id, 1);
-    st_num_elements(pcxt, &num);
-    code += check(num, 1);
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id);
 
     // expect += st_return_code::DATA_VALUE_NOT_FOUND
-    code += st_element_optic(pcxt, 1, res1.id + 1);
+    code += st_element_optic(pcxt, 1, res.id + 1);
 
     // set up other optical properties
     OpticalPropertySet opt2(InteractionType::REFLECTION, std::string("other"));
@@ -900,31 +813,18 @@ st_return_t call_stapi_v2_element_optic(st_context_v2_t pcxt)
 
 st_return_t call_stapi_v2_element_group(st_context_v2_t pcxt)
 {
-    uint_fast64_t num = -1;
-    uint_fast64_t id = -1;
-
-    // set up dummy optical properties
-    OpticalPropertySet opt1(InteractionType::REFLECTION, std::string("dummy"));
     st_context *cxt = reinterpret_cast<st_context*>(pcxt);
     SimulationData *data = cxt->p_data;
-    OpticalPropertySetReference res1 = data->add_optical_property_set(opt1);
-    // set up dummy element arguments
-    args_element el_args = { 2, 2, 2, 2, 2, 2, 2, false, true, -2 };
-    // double a_params[1] = { 2 };
-    // double s_params[2] = { 2, 2 };
-    args_geometry geom_args = { { 2 }, { 2, 2 }, 'c', 'p' };
-
+    args_element  el_args;
+    OpticalPropertySetReference res;
+    args_geometry geom_args;
+    uint_fast64_t id = -1;
     // expect += st_return_code::WARNING_GROUP_IGNORED
-    st_return_t code = st_add_element(pcxt, &el_args, res1.id, &geom_args, &id);
-    code += check(id, 1);
-    st_num_elements(pcxt, &num);
-    code += check(num, 1);
+    st_return_t code = add_dummy_element(pcxt, data, el_args, res, geom_args, id, -2);
 
     args_element rt_el_args;
     int_fast64_t opt_id;
     args_geometry rt_geom_args;
-    // double rt_a_params[8] = { 0 };
-    // double rt_s_params[8] = { 0 };
     
     // expect += st_return_code::SUCCESS
     code += st_get_element(pcxt, id, &rt_el_args, &opt_id, &rt_geom_args);
