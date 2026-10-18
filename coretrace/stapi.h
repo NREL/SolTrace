@@ -70,6 +70,7 @@ extern "C" {
 #endif
 
 typedef unsigned long     st_uint_t;     // unsigned integer type, at least 32 bits, could be 64 bit in the future
+// TODO: update v1 to use SimulationData/Runner/Results
 typedef void*             st_context_t;  // opaque reference type, 32 or 64 bit, depending on system/compiler
 
 /* Runner types for st_sim_run_SolTrace20 */
@@ -182,7 +183,6 @@ STCORE_API void st_transform_to_reference( double posloc[3], double cosloc[3], d
 STCORE_API void st_matrix_vector_mult( double m[3][3], double v[3], double mxv[3] );
 STCORE_API void st_calc_transform_matrices( double euler[3], double rreftoloc[3][3], double rloctoref[3][3] );
 STCORE_API void st_matrix_transpose( double input[3][3], double output[3][3] );
-
 
 #ifdef __cplusplus
 } /* extern "C" */

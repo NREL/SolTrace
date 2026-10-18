@@ -72,7 +72,7 @@ const std::map<OpticalEntityType, std::string> IntersectionKernelMap = {
     {OpticalEntityType::TRIANGLE_SPHERICAL, "__intersection__triangle_spherical"},
     {OpticalEntityType::QUADRILATERAL_SPHERICAL, "__intersection__quadrilateral_spherical"}};
 
-pipelineManager::pipelineManager(SoltraceState &state) : m_state(state) {}
+pipelineManager::pipelineManager(SoltraceState &state) : m_state(state), additional_ptx_directory() {}
 
 pipelineManager::~pipelineManager() noexcept
 {
@@ -126,34 +126,6 @@ std::filesystem::path executableDirectory()
 #endif
 }
 
-std::vector<std::filesystem::path> ptxSearchDirectories()
-{
-    std::vector<std::filesystem::path> directories;
-
-    if (const char *env_path = std::getenv("SOLTRACE_PTX_DIR"))
-    {
-        if (*env_path != '\0')
-            directories.emplace_back(env_path);
-    }
-
-    directories.emplace_back(SAMPLES_PTX_DIR);
-
-    const auto cwd = std::filesystem::current_path();
-    directories.emplace_back(cwd / "ptx");
-    directories.emplace_back(cwd / "lib" / "ptx");
-
-    const auto exe_dir = executableDirectory();
-    if (!exe_dir.empty())
-    {
-        directories.emplace_back(exe_dir / "ptx");
-        directories.emplace_back(exe_dir / "lib" / "ptx");
-        directories.emplace_back(exe_dir / ".." / "lib" / "ptx");
-        directories.emplace_back(exe_dir / ".." / "share" / "SolTrace" / "ptx");
-    }
-
-    return directories;
-}
-
 } // namespace
 
 void pipelineManager::cleanup()
@@ -196,6 +168,40 @@ void pipelineManager::cleanup()
         OPTIX_CHECK(optixModuleDestroy(m_state.sun_module));
         m_state.sun_module = nullptr;
     }
+}
+
+std::vector<std::filesystem::path> pipelineManager::ptxSearchDirectories()
+{
+    std::vector<std::filesystem::path> directories;
+
+    if (!additional_ptx_directory.empty())
+    {
+        directories.emplace_back(additional_ptx_directory);
+        directories.emplace_back(additional_ptx_directory / "ptx");
+    }
+
+    if (const char *env_path = std::getenv("SOLTRACE_PTX_DIR"))
+    {
+        if (*env_path != '\0')
+            directories.emplace_back(env_path);
+    }
+
+    directories.emplace_back(SAMPLES_PTX_DIR);
+
+    const auto cwd = std::filesystem::current_path();
+    directories.emplace_back(cwd / "ptx");
+    directories.emplace_back(cwd / "lib" / "ptx");
+
+    const auto exe_dir = executableDirectory();
+    if (!exe_dir.empty())
+    {
+        directories.emplace_back(exe_dir / "ptx");
+        directories.emplace_back(exe_dir / "lib" / "ptx");
+        directories.emplace_back(exe_dir / ".." / "lib" / "ptx");
+        directories.emplace_back(exe_dir / ".." / "share" / "SolTrace" / "ptx");
+    }
+
+    return directories;
 }
 
 std::string pipelineManager::loadPtxFromFile(const std::string &kernelName)

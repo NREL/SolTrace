@@ -121047,7 +121047,8 @@
                         "surface_type": "CYLINDER",
                         "radius": 7.750015500031
                     },
-                    "is_single": true
+                    "is_single": true,
+                    "group": 0
                 }
             }
         }

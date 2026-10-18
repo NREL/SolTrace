@@ -4,6 +4,8 @@
 #include "aperture.hpp"
 #include "composite_element.hpp"
 #include "constants.hpp"
+#include "optical_properties.hpp"
+#include "simdata_io.hpp"
 #include "ray_source.hpp"
 #include "simulation_data.hpp"
 #include "simulation_parameters.hpp"

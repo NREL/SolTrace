@@ -1,0 +1,4262 @@
+{
+  "schema_version": "2026.07.15",
+  "simulation_parameters": {
+    "include_sun_shape_errors": true,
+    "include_optical_errors": true,
+    "number_of_rays": 100000,
+    "max_number_of_rays": 1000000000,
+    "tolerance": 0.1,
+    "latitude": 35.962278,
+    "longitude": -106.5122622,
+    "seed": 123
+  },
+  "ray_sources": {
+    "1": {
+      "source_type": "Sun",
+      "my_shape": "BUIE_CSR",
+      "sigma": 4.65,
+      "half_width": 4.65,
+      "csr": 0.05,
+      "user_angle": [],
+      "user_intensity": [],
+      "gen_type": "HALTON",
+      "pos": [
+        0.47239,
+        -826.21038,
+        563.36151
+      ]
+    }
+  },
+  "optical_properties": {
+    "0": {
+      "my_name": "receiver",
+      "my_type": "REFLECTION",
+      "refraction_index_front": 1.1,
+      "refraction_index_back": 1.1,
+      "front": {
+        "error_distribution_type": "GAUSSIAN",
+        "transmissivity": 0.0,
+        "reflectivity": 0,
+        "slope_error": 0.95,
+        "specularity_error": 0.2
+      },
+      "back": {
+        "error_distribution_type": "GAUSSIAN",
+        "transmissivity": 0.0,
+        "reflectivity": 0,
+        "slope_error": 0.95,
+        "specularity_error": 0.2
+      }
+    },
+    "1": {
+      "my_name": "heliostat",
+      "my_type": "REFLECTION",
+      "refraction_index_front": 1.1,
+      "refraction_index_back": 1.1,
+      "front": {
+        "error_distribution_type": "GAUSSIAN",
+        "transmissivity": 0.0,
+        "reflectivity": 0.885,
+        "slope_error": 1.2,
+        "specularity_error": 0.05
+      },
+      "back": {
+        "error_distribution_type": "GAUSSIAN",
+        "transmissivity": 0.0,
+        "reflectivity": 0.0,
+        "slope_error": 1.2,
+        "specularity_error": 0.05
+      }
+    }
+  },
+  "elements": [
+    {
+      "is_stage": true,
+      "is_composite": true,
+      "active": true,
+      "virtual_flag": false,
+      "is_single": false,
+      "my_name": "stage",
+      "stage": 0,
+      "id": 0,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "aim": [
+        0,
+        0,
+        1
+      ],
+      "zrot": 0,
+      "is_virtual": false,
+      "is_multihit": false,
+      "is_tracethrough": false,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "elements": [
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 1",
+          "group": -1,
+          "origin": [
+            -2.639916832221178,
+            32.43130834864835,
+            1.228216265754129
+          ],
+          "aim": [
+            -2.6548551669886606,
+            31.934450433827635,
+            2.095919588123114
+          ],
+          "zrot": 1.9844841420195465,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 2",
+          "group": -1,
+          "origin": [
+            -1.1192162950598272,
+            32.33107922973983,
+            1.2282162657541305
+          ],
+          "aim": [
+            -1.143811898041773,
+            31.8347972832543,
+            2.0960291929171984
+          ],
+          "zrot": 3.268541778263214,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 3",
+          "group": -1,
+          "origin": [
+            0.14813553261044268,
+            32.247548282041464,
+            1.228216265754129
+          ],
+          "aim": [
+            0.1154977228986955,
+            31.7517911499616,
+            2.0960639652895834
+          ],
+          "zrot": 4.3381059210797925,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 4",
+          "group": -1,
+          "origin": [
+            1.4154873602807123,
+            32.1640173343431,
+            1.2282162657541305
+          ],
+          "aim": [
+            1.3748161033198745,
+            31.668825139421457,
+            2.0960471992163816
+          ],
+          "zrot": 5.406418618330706,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 5",
+          "group": -1,
+          "origin": [
+            2.936187897442063,
+            32.06378821543458,
+            1.2282162657541305
+          ],
+          "aim": [
+            2.885898515755667,
+            31.569325693926768,
+            2.095959193256014
+          ],
+          "zrot": 6.684940048777199,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 6",
+          "group": -1,
+          "origin": [
+            -2.713072184374527,
+            31.321377576760018,
+            0.6151420040294693
+          ],
+          "aim": [
+            -2.7275561781722977,
+            30.831479480046966,
+            1.4868013818209753
+          ],
+          "zrot": 1.942638273040292,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 7",
+          "group": -1,
+          "origin": [
+            -1.1923716472131765,
+            31.221148457851488,
+            0.6151420040294675
+          ],
+          "aim": [
+            -1.2165214175317525,
+            30.731827547622373,
+            1.4869113709805433
+          ],
+          "zrot": 3.2402380725171804,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 8",
+          "group": -1,
+          "origin": [
+            0.07498018045709337,
+            31.137617510153127,
+            0.6151420040294675
+          ],
+          "aim": [
+            0.0427812453450992,
+            30.648820640435655,
+            1.4869452257381053
+          ],
+          "zrot": 4.321084680878554,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 9",
+          "group": -1,
+          "origin": [
+            1.342332008127363,
+            31.054086562454764,
+            0.6151420040294675
+          ],
+          "aim": [
+            1.3020941506065906,
+            30.565853179192935,
+            1.4869269952158788
+          ],
+          "zrot": 5.400473353234319,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 10",
+          "group": -1,
+          "origin": [
+            2.863032545288714,
+            30.953857443546237,
+            0.6151420040294675
+          ],
+          "aim": [
+            2.813167748364842,
+            30.46634999940549,
+            1.4868357596398187
+          ],
+          "zrot": 6.692525742962956,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 11",
+          "group": -1,
+          "origin": [
+            -2.7880523648316204,
+            30.18376006660689,
+            0.0
+          ],
+          "aim": [
+            -2.8020702084881557,
+            29.701006585530227,
+            0.8756440965463341
+          ],
+          "zrot": 1.8992917954860769,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 12",
+          "group": -1,
+          "origin": [
+            -1.2673518276702698,
+            30.083530947698364,
+            0.0
+          ],
+          "aim": [
+            -1.2910425881464818,
+            29.60135579592392,
+            0.8757544553933493
+          ],
+          "zrot": 3.2111412252312297,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 13",
+          "group": -1,
+          "origin": [
+            0.0,
+            30.0,
+            0.0
+          ],
+          "aim": [
+            -0.03174560193850912,
+            29.518348016563323,
+            0.8757874077703317
+          ],
+          "zrot": 4.303841258981968,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 14",
+          "group": -1,
+          "origin": [
+            1.2673518276702698,
+            29.916469052301636,
+            0.0
+          ],
+          "aim": [
+            1.2275615477711024,
+            29.43537842493144,
+            0.8757673973416903
+          ],
+          "zrot": 5.395078173215499,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 15",
+          "group": -1,
+          "origin": [
+            2.7880523648316204,
+            29.81623993339311,
+            0.0
+          ],
+          "aim": [
+            2.7386277279611866,
+            29.335872029113563,
+            0.875673382001292
+          ],
+          "zrot": 6.701365105034936,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 16",
+          "group": -1,
+          "origin": [
+            -2.862297164768929,
+            29.05729992831968,
+            -0.6354294441729857
+          ],
+          "aim": [
+            -2.8758465559286583,
+            28.58174424097185,
+            0.24415182125903734
+          ],
+          "zrot": 1.855296114792865,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 17",
+          "group": -1,
+          "origin": [
+            -1.341596627607578,
+            28.957070809411153,
+            -0.6354294441729857
+          ],
+          "aim": [
+            -1.3648208457444275,
+            28.48209427211057,
+            0.2442625051556817
+          ],
+          "zrot": 3.181371005736989,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 18",
+          "group": -1,
+          "origin": [
+            -0.07424479993730818,
+            28.87353986171279,
+            -0.6354294441729857
+          ],
+          "aim": [
+            -0.1055251076430704,
+            28.399086638108248,
+            0.2442953323769521
+          ],
+          "zrot": 4.285902945556467,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 19",
+          "group": -1,
+          "origin": [
+            1.1931070277329616,
+            28.790008914014425,
+            -0.6354294441729857
+          ],
+          "aim": [
+            1.1537790941907982,
+            28.316114667509442,
+            0.24427366696193797
+          ],
+          "zrot": 5.38918136944283,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 20",
+          "group": -1,
+          "origin": [
+            2.7138075648943123,
+            28.6897797951059,
+            -0.6354294441729875
+          ],
+          "aim": [
+            2.6648422747080636,
+            28.21660396591625,
+            0.24417674097037423
+          ],
+          "zrot": 6.709782204214434,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 21",
+          "group": -1,
+          "origin": [
+            -2.9354525169222785,
+            27.947369156431343,
+            -1.2485037058976454
+          ],
+          "aim": [
+            -2.948539072737399,
+            27.47890870413005,
+            -0.36511616626008947
+          ],
+          "zrot": 1.8112528775540662,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 22",
+          "group": -1,
+          "origin": [
+            -1.4147519797609274,
+            27.847140037522816,
+            -1.2485037058976471
+          ],
+          "aim": [
+            -1.4375154120689002,
+            27.37925957035868,
+            -0.3650051544761077
+          ],
+          "zrot": 3.151963680200976,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 23",
+          "group": -1,
+          "origin": [
+            -0.1474001520906577,
+            27.763609089824453,
+            -1.2485037058976471
+          ],
+          "aim": [
+            -0.17822124600847172,
+            27.296250745481714,
+            -0.36497315336002123
+          ],
+          "zrot": 4.268689116571132,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 24",
+          "group": -1,
+          "origin": [
+            1.1199516755796122,
+            27.68007814212609,
+            -1.2485037058976471
+          ],
+          "aim": [
+            1.0810813425474066,
+            27.21327694870827,
+            -0.36499606427720854
+          ],
+          "zrot": 5.384155918900276,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 25",
+          "group": -1,
+          "origin": [
+            2.640652212740963,
+            27.579849023217562,
+            -1.2485037058976471
+          ],
+          "aim": [
+            2.5921428966244924,
+            27.113761793235206,
+            -0.36509579557560023
+          ],
+          "zrot": 6.719267418066898,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 1",
+          "group": 0,
+          "origin": [
+            13.023106466468857,
+            28.98319507094265,
+            1.2108776387640994
+          ],
+          "aim": [
+            12.89146208249124,
+            28.51078796263924,
+            2.0823713433927464
+          ],
+          "zrot": 17.732102259408816,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 2",
+          "group": 0,
+          "origin": [
+            14.4753816711855,
+            28.52116397916935,
+            1.2108776387641011
+          ],
+          "aim": [
+            14.334500292372573,
+            28.051633047855418,
+            2.082481408999229
+          ],
+          "zrot": 18.99587551405635,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 3",
+          "group": 0,
+          "origin": [
+            15.685707826796351,
+            28.13610726728548,
+            1.2108776387640994
+          ],
+          "aim": [
+            15.537144930604573,
+            27.66901494362286,
+            2.0825162205572507
+          ],
+          "zrot": 20.046911978571902,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 4",
+          "group": 0,
+          "origin": [
+            16.896033982407207,
+            27.751050555401612,
+            1.2108776387640994
+          ],
+          "aim": [
+            16.739807575367568,
+            27.286433311740094,
+            2.0824991832224224
+          ],
+          "zrot": 21.095238338980792,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 5",
+          "group": 0,
+          "origin": [
+            18.348309187123853,
+            27.289019463628314,
+            1.2108776387641011
+          ],
+          "aim": [
+            18.18292018950968,
+            26.827416776524633,
+            2.0824104459737
+          ],
+          "zrot": 22.347891734210585,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 6",
+          "group": 0,
+          "origin": [
+            12.684460837033756,
+            27.918750145977363,
+            0.6063660890789736
+          ],
+          "aim": [
+            12.554935938278351,
+            27.45301950549162,
+            1.4817621555805442
+          ],
+          "zrot": 17.624924761033174,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 7",
+          "group": 0,
+          "origin": [
+            14.1367360417504,
+            27.45671905420407,
+            0.6063660890789753
+          ],
+          "aim": [
+            13.997966181245957,
+            26.993867816743368,
+            1.4818726005024214
+          ],
+          "zrot": 18.903653554887153,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 8",
+          "group": 0,
+          "origin": [
+            15.34706219736125,
+            27.0716623423202,
+            0.6063660890789753
+          ],
+          "aim": [
+            15.200603876768216,
+            26.611250623356764,
+            1.4819065039198396
+          ],
+          "zrot": 19.967187802952214,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 9",
+          "group": 0,
+          "origin": [
+            16.557388352972104,
+            26.68660563043633,
+            0.6063660890789736
+          ],
+          "aim": [
+            16.403260854847137,
+            26.228668885617196,
+            1.4818880160649543
+          ],
+          "zrot": 21.027830441196205,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 10",
+          "group": 0,
+          "origin": [
+            18.00966355768875,
+            26.224574538663028,
+            0.6063660890789753
+          ],
+          "aim": [
+            17.846364008472463,
+            25.76965081571291,
+            1.4817960823725258
+          ],
+          "zrot": 22.29553356337475,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 11",
+          "group": 0,
+          "origin": [
+            12.337398639672504,
+            26.82784991719032,
+            -1.6909327974700883e-15
+          ],
+          "aim": [
+            12.210049077881592,
+            26.36897252046201,
+            0.8793256684143669
+          ],
+          "zrot": 17.516228053017226,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 12",
+          "group": 0,
+          "origin": [
+            13.789673844389148,
+            26.365818825417026,
+            0.0
+          ],
+          "aim": [
+            13.65307266391184,
+            25.909823656404473,
+            0.8794364778603229
+          ],
+          "zrot": 18.810658408104732,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 13",
+          "group": 0,
+          "origin": [
+            15.0,
+            25.980762113533157,
+            0.0
+          ],
+          "aim": [
+            14.855704637181741,
+            25.52720697123254,
+            0.8794694884768971
+          ],
+          "zrot": 19.887293629281153,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 14",
+          "group": 0,
+          "origin": [
+            16.210326155610854,
+            25.595705401649287,
+            -1.6909327974700883e-15
+          ],
+          "aim": [
+            16.058355512622846,
+            25.144624532748406,
+            0.8794492400053439
+          ],
+          "zrot": 20.96105891656528,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 15",
+          "group": 0,
+          "origin": [
+            17.6626013603275,
+            25.13367430987599,
+            0.0
+          ],
+          "aim": [
+            17.50145068740506,
+            24.685605099481286,
+            0.8793545550289698
+          ],
+          "zrot": 22.244547386671623,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 16",
+          "group": 0,
+          "origin": [
+            11.993679015531868,
+            25.747456202563654,
+            -0.6267388238856466
+          ],
+          "aim": [
+            11.868519668973361,
+            25.295482773753985,
+            0.25646848919987675
+          ],
+          "zrot": 17.408097913482454,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 17",
+          "group": 0,
+          "origin": [
+            13.445954220248511,
+            25.285425110790356,
+            -0.6267388238856448
+          ],
+          "aim": [
+            13.311541598199545,
+            24.836335166980962,
+            0.25657961835984167
+          ],
+          "zrot": 18.718225635978825,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 18",
+          "group": 0,
+          "origin": [
+            14.656280375859362,
+            24.900368398906487,
+            -0.6267388238856448
+          ],
+          "aim": [
+            14.514172394363515,
+            24.453718921354717,
+            0.2566125033407648
+          ],
+          "zrot": 19.80794614427179,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 19",
+          "group": 0,
+          "origin": [
+            15.866606531470218,
+            24.515311687022617,
+            -0.6267388238856448
+          ],
+          "aim": [
+            15.71681983356466,
+            24.07113486832204,
+            0.2565906196558202
+          ],
+          "zrot": 20.895041974349326,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 20",
+          "group": 0,
+          "origin": [
+            17.318881736186864,
+            24.05328059524932,
+            -0.6267388238856432
+          ],
+          "aim": [
+            17.159911056785585,
+            23.612111953223273,
+            0.25649305863354366
+          ],
+          "zrot": 22.194421065173916,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 21",
+          "group": 0,
+          "origin": [
+            11.655033386096765,
+            24.683011277598368,
+            -1.231250373570771
+          ],
+          "aim": [
+            11.532033899803531,
+            24.23784264345488,
+            -0.3442915176779233
+          ],
+          "zrot": 17.302456390585338,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 22",
+          "group": 0,
+          "origin": [
+            13.107308590813409,
+            24.220980185825074,
+            -1.2312503735707692
+          ],
+          "aim": [
+            12.975054040382018,
+            23.778696341337128,
+            -0.34418006600587336
+          ],
+          "zrot": 18.628672074603756,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 23",
+          "group": 0,
+          "origin": [
+            14.317634746424261,
+            23.835923473941204,
+            -1.231250373570771
+          ],
+          "aim": [
+            14.17768302285602,
+            23.396079310625627,
+            -0.34414799718345945
+          ],
+          "zrot": 19.731832627502886,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 24",
+          "group": 0,
+          "origin": [
+            15.527960902035115,
+            23.450866762057334,
+            -1.231250373570771
+          ],
+          "aim": [
+            15.380328454991293,
+            23.013493862589048,
+            -0.3441711115210925
+          ],
+          "zrot": 20.83238401912691,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "pray 25",
+          "group": 0,
+          "origin": [
+            16.98023610675176,
+            22.988835670284033,
+            -1.2312503735707692
+          ],
+          "aim": [
+            16.823417024525842,
+            22.554466993291197,
+            -0.3442714428065772
+          ],
+          "zrot": 22.147829216286826,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 1",
+          "group": 1,
+          "origin": [
+            24.79647236679637,
+            18.422930871721967,
+            1.1269154386650668
+          ],
+          "aim": [
+            24.57318824432395,
+            18.022974635488847,
+            2.0158356863620965
+          ],
+          "zrot": 32.13018319153776,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 2",
+          "group": 1,
+          "origin": [
+            26.097328502443677,
+            17.628985461540164,
+            1.1269154386650668
+          ],
+          "aim": [
+            25.865757738127453,
+            17.23402177620884,
+            2.0159478672234092
+          ],
+          "zrot": 33.40449702250075,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 3",
+          "group": 1,
+          "origin": [
+            27.181462005892143,
+            16.967311356694655,
+            1.1269154386650677
+          ],
+          "aim": [
+            26.943010054402624,
+            16.576543117526004,
+            2.0159828378579987
+          ],
+          "zrot": 34.463836440508906,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 4",
+          "group": 1,
+          "origin": [
+            28.26559550934061,
+            16.30563725184914,
+            1.1269154386650677
+          ],
+          "aim": [
+            28.020287522321915,
+            15.919093956578648,
+            2.015964516339812
+          ],
+          "zrot": 35.519948608735355,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 5",
+          "group": 1,
+          "origin": [
+            29.56645164498792,
+            15.511691841667337,
+            1.1269154386650677
+          ],
+          "aim": [
+            29.312958314709327,
+            15.130251501720998,
+            2.015872352065086
+          ],
+          "zrot": 36.78115156554149,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 6",
+          "group": 1,
+          "origin": [
+            24.203366725649637,
+            17.451144773486213,
+            0.5638740973425888
+          ],
+          "aim": [
+            23.983800378054735,
+            17.05728839006197,
+            1.4564365715543879
+          ],
+          "zrot": 31.988145990972605,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 7",
+          "group": 1,
+          "origin": [
+            25.504222861296945,
+            16.65719936330441,
+            0.5638740973425888
+          ],
+          "aim": [
+            25.276362906958514,
+            16.268340569349338,
+            1.4565491072542955
+          ],
+          "zrot": 33.28175002437198,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 8",
+          "group": 1,
+          "origin": [
+            26.58835636474541,
+            15.9955252584589,
+            0.5638740973425895
+          ],
+          "aim": [
+            26.35360867896817,
+            15.610864417660533,
+            1.4565832158285774
+          ],
+          "zrot": 34.357207317969234,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 9",
+          "group": 1,
+          "origin": [
+            27.672489868193882,
+            15.333851153613384,
+            0.5638740973425895
+          ],
+          "aim": [
+            27.430880590271403,
+            14.953416456188021,
+            1.4565635116316225
+          ],
+          "zrot": 35.42924589348293,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 10",
+          "group": 1,
+          "origin": [
+            28.97334600384119,
+            14.539905743431582,
+            0.5638740973425888
+          ],
+          "aim": [
+            28.723541768780397,
+            14.164574661233786,
+            1.4564683122672137
+          ],
+          "zrot": 36.70981122279927,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 11",
+          "group": 1,
+          "origin": [
+            23.59577247443738,
+            16.455619515027315,
+            -1.5749328046248793e-15
+          ],
+          "aim": [
+            23.380020622727695,
+            16.068022169155213,
+            0.8962251074398695
+          ],
+          "zrot": 31.84412624822063,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 12",
+          "group": 1,
+          "origin": [
+            24.896628610084687,
+            15.661674104845515,
+            -7.874664023124397e-16
+          ],
+          "aim": [
+            24.6725773635007,
+            15.279078685358611,
+            0.8963379826570741
+          ],
+          "zrot": 33.157983113295224,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 13",
+          "group": 1,
+          "origin": [
+            25.980762113533157,
+            15.0,
+            0.0
+          ],
+          "aim": [
+            25.74981768134103,
+            14.621604360000118,
+            0.8963712450031719
+          ],
+          "zrot": 34.25034248828574,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 14",
+          "group": 1,
+          "origin": [
+            27.064895616981627,
+            14.338325895154485,
+            -7.874664023124397e-16
+          ],
+          "aim": [
+            26.82708346549017,
+            13.96415711444308,
+            0.896349873937897
+          ],
+          "zrot": 35.33929845060464,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 15",
+          "group": 1,
+          "origin": [
+            28.36575175262893,
+            13.544380484972683,
+            -7.874664023124397e-16
+          ],
+          "aim": [
+            28.119736518368228,
+            13.175315807284516,
+            0.896252061828514
+          ],
+          "zrot": 36.64017591167291,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 16",
+          "group": 1,
+          "origin": [
+            22.993528004807967,
+            15.468859715889888,
+            -0.5846383579588398
+          ],
+          "aim": [
+            22.781616219209894,
+            15.08756560706456,
+            0.31519951519854195
+          ],
+          "zrot": 31.70086165060177,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 17",
+          "group": 1,
+          "origin": [
+            24.294384140455275,
+            14.674914305708086,
+            -0.5846383579588406
+          ],
+          "aim": [
+            24.074171655338482,
+            14.298623747920345,
+            0.31531268433527704
+          ],
+          "zrot": 33.03510398811506,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 18",
+          "group": 1,
+          "origin": [
+            25.378517643903745,
+            14.01324020086257,
+            -0.5846383579588398
+          ],
+          "aim": [
+            25.151410931835894,
+            13.641150125290531,
+            0.3153458188516608
+          ],
+          "zrot": 34.14445999301102,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 19",
+          "group": 1,
+          "origin": [
+            26.46265114735221,
+            13.351566096017056,
+            -0.5846383579588406
+          ],
+          "aim": [
+            26.228672964075823,
+            12.983702078293444,
+            0.3153229085313426
+          ],
+          "zrot": 35.25066116408009,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 20",
+          "group": 1,
+          "origin": [
+            27.76350728299952,
+            12.557620685835253,
+            -0.5846383579588398
+          ],
+          "aim": [
+            27.521321297622606,
+            12.19485824056915,
+            0.31522238832714145
+          ],
+          "zrot": 36.57209911607042,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 21",
+          "group": 1,
+          "origin": [
+            22.400422363661235,
+            14.497073617654133,
+            -1.1476796992813179
+          ],
+          "aim": [
+            22.192295134087495,
+            14.12198960597368,
+            -0.24435526199868407
+          ],
+          "zrot": 31.56099844957751,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 22",
+          "group": 1,
+          "origin": [
+            23.701278499308543,
+            13.70312820747233,
+            -1.1476796992813179
+          ],
+          "aim": [
+            23.484849148815726,
+            13.333049448914526,
+            -0.24424179633629783
+          ],
+          "zrot": 32.91607037746689,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 23",
+          "group": 1,
+          "origin": [
+            24.78541200275701,
+            13.041454102626815,
+            -1.1476796992813179
+          ],
+          "aim": [
+            24.56208646183086,
+            12.675575469881384,
+            -0.2442094297124231
+          ],
+          "zrot": 34.04282822274444,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 24",
+          "group": 1,
+          "origin": [
+            25.86954550620548,
+            12.3797799977813,
+            -1.1476796992813179
+          ],
+          "aim": [
+            25.639346190085462,
+            12.018126507359598,
+            -0.24423349861870103
+          ],
+          "zrot": 35.166439579505884,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "charm 25",
+          "group": 1,
+          "origin": [
+            27.170401641852788,
+            11.585834587599498,
+            -1.1476796992813179
+          ],
+          "aim": [
+            26.93199095476993,
+            11.22927937513117,
+            -0.2443366191237175
+          ],
+          "zrot": 36.508663553829514,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 1",
+          "group": 2,
+          "origin": [
+            -18.14933858018463,
+            27.73517494926497,
+            1.1801010430869956
+          ],
+          "aim": [
+            -18.048231645171636,
+            27.26742365864487,
+            2.058159193115398
+          ],
+          "zrot": -13.829754713379094,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 2",
+          "group": 2,
+          "origin": [
+            -16.648811298602464,
+            28.001621711729115,
+            1.1801010430869956
+          ],
+          "aim": [
+            -16.55721944823608,
+            27.532121862947218,
+            2.058270056196134
+          ],
+          "zrot": -12.524779107877256,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 3",
+          "group": 2,
+          "origin": [
+            -15.398271862131882,
+            28.22367844356674,
+            1.180101043086994
+          ],
+          "aim": [
+            -15.3146144068796,
+            27.752765128753563,
+            2.058304931903362
+          ],
+          "zrot": -11.435881427783874,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 4",
+          "group": 2,
+          "origin": [
+            -14.147732425661301,
+            28.445735175404362,
+            1.180101043086994
+          ],
+          "aim": [
+            -14.072010265116951,
+            27.97344836105783,
+            2.058287418251713
+          ],
+          "zrot": -10.346563313843383,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 5",
+          "group": 2,
+          "origin": [
+            -12.647205144079134,
+            28.712181937868507,
+            1.180101043086994
+          ],
+          "aim": [
+            -12.580996088902687,
+            28.23830100461069,
+            2.0581974030744035
+          ],
+          "zrot": -9.040723683271105,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 6",
+          "group": 2,
+          "origin": [
+            -17.95263148158616,
+            26.627395049077258,
+            0.5907895088170079
+          ],
+          "aim": [
+            -17.852762665330555,
+            26.166591379348386,
+            1.4726546910503147
+          ],
+          "zrot": -13.807390195715175,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 7",
+          "group": 2,
+          "origin": [
+            -16.452104200003994,
+            26.893841811541407,
+            0.5907895088170062
+          ],
+          "aim": [
+            -16.361759022482115,
+            26.431288739058324,
+            1.472765924478543
+          ],
+          "zrot": -12.486937184390017,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 8",
+          "group": 2,
+          "origin": [
+            -15.201564763533415,
+            27.11589854337903,
+            0.5907895088170079
+          ],
+          "aim": [
+            -15.119160548700972,
+            26.651929570087884,
+            1.4727999088977064
+          ],
+          "zrot": -11.385184785519167,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 9",
+          "group": 2,
+          "origin": [
+            -13.951025327062833,
+            27.33795527521665,
+            0.5907895088170062
+          ],
+          "aim": [
+            -13.876561370754676,
+            26.872610053873917,
+            1.4727809695191292
+          ],
+          "zrot": -10.2832544931679,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 10",
+          "group": 2,
+          "origin": [
+            -12.450498045480666,
+            27.6044020376808,
+            0.5907895088170062
+          ],
+          "aim": [
+            -12.385554848209255,
+            27.137456896413912,
+            1.4726878169060904
+          ],
+          "zrot": -8.962097473068168,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 11",
+          "group": 2,
+          "origin": [
+            -17.751066718052748,
+            25.492258619231386,
+            1.6484154880805512e-15
+          ],
+          "aim": [
+            -17.652468858683584,
+            25.038585386007927,
+            0.8856969384802327
+          ],
+          "zrot": -13.786839173336071,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 12",
+          "group": 2,
+          "origin": [
+            -16.250539436470582,
+            25.758705381695535,
+            0.0
+          ],
+          "aim": [
+            -16.161472423555967,
+            25.30328215491217,
+            0.8858085272668398
+          ],
+          "zrot": -12.450098086205397,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 13",
+          "group": 2,
+          "origin": [
+            -15.0,
+            25.980762113533157,
+            0.0
+          ],
+          "aim": [
+            -14.91887924970455,
+            25.523920762581803,
+            0.8858416359217073
+          ],
+          "zrot": -11.33483368986222,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 14",
+          "group": 2,
+          "origin": [
+            -13.74946056352942,
+            26.20281884537078,
+            -1.6484154880805512e-15
+          ],
+          "aim": [
+            -13.676285144095058,
+            25.744597764381275,
+            0.8858209702259016
+          ],
+          "zrot": -10.219435060731636,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 15",
+          "group": 2,
+          "origin": [
+            -12.248933281947254,
+            26.469265607834927,
+            -1.6484154880805512e-15
+          ],
+          "aim": [
+            -12.18528504428967,
+            26.009439652598125,
+            0.8857251169922442
+          ],
+          "zrot": -8.882146584682943,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 16",
+          "group": 2,
+          "origin": [
+            -17.55138110047578,
+            24.36770482791203,
+            -0.6113098531448055
+          ],
+          "aim": [
+            -17.454064504523505,
+            23.92121321001106,
+            0.2781701722436797
+          ],
+          "zrot": -13.768475392992919,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 17",
+          "group": 2,
+          "origin": [
+            -16.050853818893614,
+            24.634151590376177,
+            -0.6113098531448055
+          ],
+          "aim": [
+            -15.963070121607249,
+            24.185910325547876,
+            0.27828207128102533
+          ],
+          "zrot": -12.415408452566307,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 18",
+          "group": 2,
+          "origin": [
+            -14.800314382423029,
+            24.8562083222138,
+            -0.6113098531448071
+          ],
+          "aim": [
+            -14.720478193931251,
+            24.4065487731656,
+            0.2783150534712482
+          ],
+          "zrot": -11.286589938127122,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 19",
+          "group": 2,
+          "origin": [
+            -13.549774945952448,
+            25.07826505405142,
+            -0.6113098531448071
+          ],
+          "aim": [
+            -13.47788637549914,
+            24.627222725866623,
+            0.2782927876963185
+          ],
+          "zrot": -10.157473261510065,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 20",
+          "group": 2,
+          "origin": [
+            -12.04924766437028,
+            25.34471181651557,
+            -0.6113098531448071
+          ],
+          "aim": [
+            -11.986888147666948,
+            24.892059655895466,
+            0.2781941199083039
+          ],
+          "zrot": -8.803917152307468,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 21",
+          "group": 2,
+          "origin": [
+            -17.35467400187731,
+            23.25992492772432,
+            -1.200621387414793
+          ],
+          "aim": [
+            -17.258619108415406,
+            22.820511285891037,
+            -0.3074869589477425
+          ],
+          "zrot": -13.752982874606946,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 22",
+          "group": 2,
+          "origin": [
+            -15.854146720295144,
+            23.526371690188466,
+            -1.200621387414793
+          ],
+          "aim": [
+            -15.767626916464708,
+            23.085208728711226,
+            -0.3073747469319431
+          ],
+          "zrot": -12.383145291758709,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 23",
+          "group": 2,
+          "origin": [
+            -14.603607283824562,
+            23.748428422026088,
+            -1.200621387414793
+          ],
+          "aim": [
+            -14.525036227305007,
+            23.30584562699252,
+            -0.3073425632270763
+          ],
+          "zrot": -11.240392226399956,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 24",
+          "group": 2,
+          "origin": [
+            -13.353067847353982,
+            23.97048515386371,
+            -1.2006213874147946
+          ],
+          "aim": [
+            -13.282445533927055,
+            23.526517395008067,
+            -0.30736603326853174
+          ],
+          "zrot": -10.097376617800453,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fourth 25",
+          "group": 2,
+          "origin": [
+            -11.852540565771815,
+            24.236931916327862,
+            -1.2006213874147946
+          ],
+          "aim": [
+            -11.79144780966856,
+            23.791349553750074,
+            -0.30746740906974956
+          ],
+          "zrot": -8.72732104392575,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 1",
+          "group": 3,
+          "origin": [
+            -29.47733534913263,
+            16.015853897109608,
+            1.063462660619317
+          ],
+          "aim": [
+            -29.2870486043605,
+            15.62623883801724,
+            1.96456812476226
+          ],
+          "zrot": -28.45757620634868,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 2",
+          "group": 3,
+          "origin": [
+            -28.08167137787192,
+            16.62797976596729,
+            1.0634626606193163
+          ],
+          "aim": [
+            -27.900223162255838,
+            16.234430997844697,
+            1.9646817809245696
+          ],
+          "zrot": -27.09392198866162,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 3",
+          "group": 3,
+          "origin": [
+            -26.918525024223243,
+            17.138125465073287,
+            1.0634626606193163
+          ],
+          "aim": [
+            -26.744456349783853,
+            16.741337118073893,
+            1.964716839241648
+          ],
+          "zrot": -25.95494217218374,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 4",
+          "group": 3,
+          "origin": [
+            -25.755378670574565,
+            17.648271164179285,
+            1.063462660619317
+          ],
+          "aim": [
+            -25.588698734376756,
+            17.248279399315248,
+            1.9646975784060698
+          ],
+          "zrot": -24.814637054109106,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 5",
+          "group": 3,
+          "origin": [
+            -24.359714699313855,
+            18.260397033036973,
+            1.0634626606193154
+          ],
+          "aim": [
+            -24.201903561754428,
+            17.85661265075525,
+            1.9646029453715665
+          ],
+          "zrot": -23.44668128564923,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 6",
+          "group": 3,
+          "origin": [
+            -29.01404168249953,
+            14.959531477931769,
+            0.5317672595460076
+          ],
+          "aim": [
+            -28.826667126888896,
+            14.576545411039598,
+            1.4363182258311915
+          ],
+          "zrot": -28.407719932158003,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 7",
+          "group": 3,
+          "origin": [
+            -27.61837771123882,
+            15.571657346789458,
+            0.531767259546009
+          ],
+          "aim": [
+            -27.43984980696615,
+            15.184734753075132,
+            1.4364322183111644
+          ],
+          "zrot": -27.02286685521002,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 8",
+          "group": 3,
+          "origin": [
+            -26.455231357590144,
+            16.08180304589545,
+            0.531767259546009
+          ],
+          "aim": [
+            -26.284088787074147,
+            15.691636921389694,
+            1.436466449605799
+          ],
+          "zrot": -25.86626608039333,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 9",
+          "group": 3,
+          "origin": [
+            -25.292085003941466,
+            16.59194874500145,
+            0.5317672595460083
+          ],
+          "aim": [
+            -25.12833532115174,
+            16.198575299202883,
+            1.436445857775165
+          ],
+          "zrot": -24.708605571302623,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 10",
+          "group": 3,
+          "origin": [
+            -23.896421032680756,
+            17.204074613859135,
+            0.5317672595460076
+          ],
+          "aim": [
+            -23.741546160422967,
+            16.806900971128595,
+            1.4363483123534766
+          ],
+          "zrot": -23.319676619984893,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 11",
+          "group": 3,
+          "origin": [
+            -28.539572438442544,
+            13.877728432036315,
+            -7.436261494153141e-16
+          ],
+          "aim": [
+            -28.355185421671024,
+            13.501542235517643,
+            0.9080117735160561
+          ],
+          "zrot": -28.360345745505015,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 12",
+          "group": 3,
+          "origin": [
+            -27.143908467181834,
+            14.489854300894004,
+            0.0
+          ],
+          "aim": [
+            -26.968374974805183,
+            14.109729322588676,
+            0.9081260866115356
+          ],
+          "zrot": -26.95314848327365,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 13",
+          "group": 3,
+          "origin": [
+            -25.980762113533157,
+            15.0,
+            0.0
+          ],
+          "aim": [
+            -25.81261856553902,
+            14.616628043553698,
+            0.9081595070682671
+          ],
+          "zrot": -25.777990392163442,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 14",
+          "group": 3,
+          "origin": [
+            -24.81761575988448,
+            15.510145699105998,
+            0.0
+          ],
+          "aim": [
+            -24.65686917620318,
+            15.12356176644386,
+            0.9081373195760706
+          ],
+          "zrot": -24.601834119168963,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 15",
+          "group": 3,
+          "origin": [
+            -23.421951788623765,
+            16.122271567963683,
+            0.0
+          ],
+          "aim": [
+            -23.270085038844726,
+            15.731880990965182,
+            0.9080372667680606
+          ],
+          "zrot": -23.19078075041683,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 16",
+          "group": 3,
+          "origin": [
+            -28.068998206046132,
+            12.804806120837553,
+            -0.5528045928953448
+          ],
+          "aim": [
+            -27.88761977579387,
+            12.43546479636648,
+            0.3586167429015782
+          ],
+          "zrot": -28.316390938167388,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 17",
+          "group": 3,
+          "origin": [
+            -26.673334234785422,
+            13.416931989695241,
+            -0.5528045928953433
+          ],
+          "aim": [
+            -26.500811411011313,
+            13.043651750864484,
+            0.35873133046876426
+          ],
+          "zrot": -26.886594588748757,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 18",
+          "group": 3,
+          "origin": [
+            -25.510187881136744,
+            13.927077688801237,
+            -0.5528045928953433
+          ],
+          "aim": [
+            -25.345056172645386,
+            13.550550017050076,
+            0.35876462157557365
+          ],
+          "zrot": -25.69264897026596,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 19",
+          "group": 3,
+          "origin": [
+            -24.347041527488066,
+            14.437223387907231,
+            -0.5528045928953433
+          ],
+          "aim": [
+            -24.189308257454943,
+            14.05748016717366,
+            0.35874096756734797
+          ],
+          "zrot": -24.497553148679643,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 20",
+          "group": 3,
+          "origin": [
+            -22.951377556227353,
+            15.04934925676492,
+            -0.5528045928953433
+          ],
+          "aim": [
+            -22.802524717726804,
+            14.665794007264944,
+            0.35863833398825207
+          ],
+          "zrot": -23.064022145165286,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 21",
+          "group": 3,
+          "origin": [
+            -27.605704539413033,
+            11.748483701659717,
+            -1.084499993968652
+          ],
+          "aim": [
+            -27.42728873360425,
+            11.385885292667512,
+            -0.16979228517077916
+          ],
+          "zrot": -28.27710393587537,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 22",
+          "group": 3,
+          "origin": [
+            -26.210040568152323,
+            12.360609570517406,
+            -1.0844999939686513
+          ],
+          "aim": [
+            -26.040482581259994,
+            11.994072063249808,
+            -0.16967742067085434
+          ],
+          "zrot": -26.82413009944453,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 23",
+          "group": 3,
+          "origin": [
+            -25.046894214503645,
+            12.870755269623402,
+            -1.084499993968652
+          ],
+          "aim": [
+            -24.88472816642934,
+            12.500968496700128,
+            -0.16964486087518194
+          ],
+          "zrot": -25.610909697102187,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 24",
+          "group": 3,
+          "origin": [
+            -23.883747860854967,
+            13.380900968729396,
+            -1.084499993968652
+          ],
+          "aim": [
+            -23.72898080705767,
+            13.00789620526606,
+            -0.16966961883859144
+          ],
+          "zrot": -24.396588242380535,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "fifth 25",
+          "group": 3,
+          "origin": [
+            -22.488083889594254,
+            13.993026837587085,
+            -1.0844999939686513
+          ],
+          "aim": [
+            -22.342196581181202,
+            13.616205169640354,
+            -0.16977472399295312
+          ],
+          "zrot": -22.94022680841842,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "receiver",
+          "group": 4,
+          "origin": [
+            0,
+            0,
+            60
+          ],
+          "aim": [
+            0,
+            1,
+            60
+          ],
+          "zrot": -3.5083546492674384e-15,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 10,
+            "y_length": 10,
+            "x_coord": -5.0,
+            "y_coord": -5.0
+          },
+          "surface": {
+            "surface_type": "FLAT"
+          },
+          "opt_id": 0
+        }
+      ]
+    }
+  ],
+  "number_of_elements": 1
+}

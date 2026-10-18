@@ -2,6 +2,8 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <filesystem>
+
 #include "optix.h"
 #include "shaders/Soltrace.h"
 #include "soltrace_type.h"
@@ -109,12 +111,17 @@ namespace OptixCSP
          */
         OptixProgramGroup getElementProgram(OpticalEntityType map) const;
 
+        void set_additional_ptx_directory(std::filesystem::path &p) { additional_ptx_directory = p; }
+
     private:
         SoltraceState &m_state;                                               ///< Reference to the simulation's OptiX state.
         std::vector<OptixProgramGroup> m_program_groups;                      ///< Stores all created OptiX program groups.
         std::map<OpticalEntityType, size_t> m_intersection_program_group_map; ///< Map surface-aperture combinations to index in m_program_groups
         bool m_verbose = false;
         uint8_t m_max_trace_depth = DEFAULT_MAX_TRACE_DEPTH;
+
+        std::vector<std::filesystem::path> ptxSearchDirectories();
+        std::filesystem::path additional_ptx_directory;
 
         // // Number of program groups categorized by type.
         // int num_raygen_programs = 1; ///< Number of ray generation programs.

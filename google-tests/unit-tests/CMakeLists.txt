@@ -9,3 +9,7 @@ add_subdirectory(simulation_runner)
 if(SOLTRACE_BUILD_GUI)
     add_subdirectory(gui)
 endif()
+
+if(SOLTRACE_BUILD_API)
+    add_subdirectory(stapi_v2)
+endif()

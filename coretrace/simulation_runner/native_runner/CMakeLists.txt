@@ -31,7 +31,7 @@ set(NATIVE_RUNNER_SRC
     treemesh.cpp
 )
 
-set(POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_library(native_runner STATIC ${NATIVE_RUNNER_SRC})
 

@@ -17,14 +17,19 @@
 namespace SolTrace::Data {
 
 DistributionType char_to_distribution(const char dist_char);
+char distribution_to_char(const DistributionType dist);
 
 SunShape char_to_sunshape(const char dist_char);
+char sunshape_to_char(const SunShape dist);
 
 ApertureType char_to_aperture(const char aperture_char);
+char aperture_to_char(const ApertureType aperture);
 
 SurfaceType char_to_surface(const char surface_char);
+char surface_to_char(const SurfaceType surface);
 
 InteractionType int_to_interaction(const int interaction_int);
+int interaction_to_int(const InteractionType interaction);
 
 /**
 * @brief Lookup an enumeration value from its string representation.

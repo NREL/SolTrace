@@ -943,3 +943,6 @@ uint_fast64_t SolTraceSystem::determine_batch_size() const
 
     return batch_size;
 }
+
+void SolTraceSystem::set_additional_ptx_directory(std::filesystem::path &p) 
+{ pipeline_manager->set_additional_ptx_directory(p); }

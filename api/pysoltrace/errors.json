@@ -1,0 +1,170 @@
+{
+  "schema_version": "2025.11.12",
+  "simulation_parameters": {
+    "include_sun_shape_errors": true,
+    "include_optical_errors": true,
+    "number_of_rays": 100000,
+    "max_number_of_rays": 1000000000,
+    "tolerance": 0.1,
+    "latitude": 35.962278,
+    "longitude": -106.5122622,
+    "seed": 123
+  },
+  "ray_sources": {
+    "1": {
+      "source_type": "Sun",
+      "my_shape": "BUIE_CSR",
+      "sigma": 4.65,
+      "half_width": 4.65,
+      "csr": 0.05,
+      "user_angle": [],
+      "user_intensity": [],
+      "gen_type": "HALTON",
+      "pos": [
+        0.47239,
+        -826.21038,
+        563.36151
+      ]
+    }
+  },
+  "optical_properties": {
+    "0": {
+      "my_name": "receiver",
+      "my_type": "REFLECTION",
+      "refraction_index_front": 1.1,
+      "refraction_index_back": 1.1,
+      "front": {
+        "error_distribution_type": "GAUSSIAN",
+        "transmissivity": 0.0,
+        "reflectivity": 0,
+        "slope_error": 0.95,
+        "specularity_error": 0.2
+      },
+      "back": {
+        "error_distribution_type": "GAUSSIAN",
+        "transmissivity": 0.0,
+        "reflectivity": 0,
+        "slope_error": 0.95,
+        "specularity_error": 0.2
+      }
+    },
+    "1": {
+      "my_name": "heliostat",
+      "my_type": "REFLECTION",
+      "refraction_index_front": 1.1,
+      "refraction_index_back": 1.1,
+      "front": {
+        "error_distribution_type": "GAUSSIAN",
+        "transmissivity": 0.0,
+        "reflectivity": 0.885,
+        "slope_error": 1.2,
+        "specularity_error": 0.05
+      },
+      "back": {
+        "error_distribution_type": "GAUSSIAN",
+        "transmissivity": 0.0,
+        "reflectivity": 0.0,
+        "slope_error": 1.2,
+        "specularity_error": 0.05
+      }
+    }
+  },
+  "elements": [
+    {
+      "is_stage": true,
+      "is_composite": true,
+      "active": true,
+      "virtual_flag": false,
+      "is_single": false,
+      "my_name": "stage",
+      "stage": 0,
+      "id": 0,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "aim": [
+        0,
+        0,
+        1
+      ],
+      "zrot": 0,
+      "is_virtual": false,
+      "is_multihit": false,
+      "is_tracethrough": false,
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "elements": [
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "hope 1",
+          "group": -1,
+          "origin": [
+            -2.639916832221178,
+            32.43130834864835,
+            1.228216265754129
+          ],
+          "aim": [
+            -2.6548551669886606,
+            31.934450433827635,
+            2.095919588123114
+          ],
+          "zrot": 1.9844841420195465,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 1.2192,
+            "y_length": 1.2192,
+            "x_coord": -0.6096,
+            "y_coord": -0.6096
+          },
+          "surface": {
+            "surface_type": "PARABOLA",
+            "focal_length_x": 146.18600707540276,
+            "focal_length_y": 146.18600707540276
+          },
+          "opt_id": 1
+        },
+        {
+          "is_single": true,
+          "active": true,
+          "virtual_flag": false,
+          "my_id": null,
+          "stage": 0,
+          "my_name": "receiver",
+          "group": 4,
+          "origin": [
+            0,
+            0,
+            60
+          ],
+          "aim": [
+            0,
+            1,
+            60
+          ],
+          "zrot": -3.5083546492674384e-15,
+          "aperture": {
+            "aperture_type": "RECTANGLE",
+            "x_length": 10,
+            "y_length": 10,
+            "x_coord": -5.0,
+            "y_coord": -5.0
+          },
+          "surface": {
+            "surface_type": "FLAT"
+          },
+          "opt_id": 0
+        }
+      ]
+    }
+  ],
+  "number_of_elements": 1
+}

@@ -8,6 +8,7 @@ include(GNUInstallDirs)
 # core target
 # ---------------------------------------------------------------------------
 add_library(OptixCSP_core STATIC)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Link against CUDA and simulation_data (simdata)
 target_link_libraries(OptixCSP_core PRIVATE
@@ -112,7 +113,7 @@ foreach(shader ${SHADERS})
             "Generating PTX for compute_${SOLTRACE_OPTIX_COMPUTE_CAPABILITY}: ${shader}.ptx"
         VERBATIM
     )
-
+        
     list(APPEND PTX_OUTPUTS ${SHADER_PTX})
     list(APPEND SHADER_FILES ${SHADER_SRC})
 
@@ -121,6 +122,18 @@ endforeach()
 add_custom_target(OptixCSP_shaders DEPENDS ${PTX_OUTPUTS} ${SHADER_FILES}
                                    SOURCES ${SHADER_FILES}
 )
+
+# if building the API, copy the PTX files to the API directory for use by the Python bindings
+if(SOLTRACE_BUILD_API)
+    set(NVSOLTRACE_PTX ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../api/nvsoltrace/nvsoltrace/bin/ptx/)
+    add_custom_command(
+        TARGET OptixCSP_shaders
+        POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+        ARGS -E copy ${PTX_OUTPUTS} ${NVSOLTRACE_PTX}
+        COMMENT "Copying ptx to nvsoltrace directory"
+    )
+endif()
 
 install(FILES ${PTX_OUTPUTS}
     DESTINATION ${CMAKE_INSTALL_BINDIR}/ptx

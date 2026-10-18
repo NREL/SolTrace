@@ -31,10 +31,28 @@ namespace SolTrace::Data {
 class SimulationData
 {
     friend void load_json_file(SimulationData& sd, std::string filename, std::string* upgrade_log);
+    friend void load_json_cstr(SimulationData& sd, const char* json_str, std::string* upgrade_log);
+    friend void json_to_simulation_data(SimulationData& sd, nlohmann::ordered_json& root, std::string* upgrade_log);
 
 public:
     SimulationData();
     virtual ~SimulationData();
+
+    /// @brief enforce that all user fields are set and coordinate
+    ///        retations are calculated
+    // for added robustness and user flexibility consilidate enforcing
+    // that elements are ready for the runner to one function.
+    // adds robustness because calling from Native/OptixRunner::setup_elements
+    // is actually when the fields need to be set by.
+    // the current implementation: 
+    // - misses enforcing in SimulationData::replace_element
+    // - misses enforcing data->get_number_of_elements() <= 0 in
+    //   OptixRunner::setup_elements
+    // - requires addtional checks that optical property sets exists when 
+    //   implying they are unnecessary
+    // adds flexibility to users by making SimulationData more freeform
+    // before being sent to the runner
+    void enforce_elements_ready();
 
     /// @brief Add the given RaySource to the simulation data
     /// @param src RaySource to add
@@ -123,6 +141,13 @@ public:
     /// @return true if Element was replaced, false otherwise
     bool replace_element(element_id id, element_ptr el);
 
+    void clear_elements()
+    {
+        this->my_elements.clear();
+        this->my_groups.clear();
+        this->number_of_elements = 0;
+    }
+
     /// @brief Gives the number of elements owned by the SimulationData.
     ///        CompositeElements do not count toward this number.
     /// @return Number of elements owned by the SimulationData object
@@ -170,6 +195,19 @@ public:
     const OpticalPropertySet* get_optical_property_set(const Element& el) const;
     OpticalPropertySet* get_mutable_optical_property_set(const Element& el);
 
+    /// @brief Remove the OpticalPropertySet corresponding to the unique identifier `id`
+    /// @param id unique identifier of the OpticalPropertySet to remove
+    /// @return true if the element was removed, false otherwise
+    auto remove_optical_property_set(ray_source_id id)
+    {
+        return this->my_optical_property_sets.remove_item(id);
+    }
+
+    void clear_optical_property_sets()
+    {
+        this->my_optical_property_sets.clear();
+    }
+
     /// @brief Get an iterator that can be used to access all 
     ///  optical property sets owned by this SimulationData object.
     /// @return iterator
@@ -184,6 +222,11 @@ public:
     bool is_optics_at_end(OpticalPropertySetContainer::iterator it)
     {
         return this->my_optical_property_sets.is_at_end(it);
+    }
+
+    uint_fast64_t get_number_of_optocal_property_sets()
+    {
+        return this->my_optical_property_sets.get_number_of_items();
     }
 
     /// @brief Set the number of rays to trace
@@ -287,6 +330,33 @@ public:
         return this->my_parameters.sim_dt.my_time;
     }
 
+    const bool get_include_sun_shape_errors() const
+    {
+        return this->my_parameters.include_sun_shape_errors;
+    }
+    void set_include_sun_shape_errors(bool e)
+    {
+        this->my_parameters.include_sun_shape_errors = e;
+    }
+
+    const bool get_include_optical_errors() const
+    {
+        return this->my_parameters.include_optical_errors;
+    }
+    void set_include_optical_errors(bool e)
+    {
+        this->my_parameters.include_optical_errors = e;
+    }
+    
+    const bool get_as_power_tower() const
+    {
+        return this->my_parameters.as_power_tower;
+    }
+    void set_as_power_tower(bool pt)
+    {
+        this->my_parameters.as_power_tower = pt;
+    }
+
     SimulationParameters &get_simulation_parameters()
     {
         return this->my_parameters;
@@ -300,6 +370,8 @@ public:
     {
         return this->my_groups;
     }
+
+    void set_element_group(uint_fast64_t element_id, int32_t group);
 
     int update_simulation_positions();
     int update_simulation_positions(const Time &);
@@ -318,6 +390,17 @@ public:
     /// @throws std::runtime_error if the file cannot be read or parsed.
     /// Loads simulation data from the specified JSON file and updates the current simulation state.
     void import_json_file(const std::string file_name, std::string* upgrade_log = nullptr);
+
+    /// @brief Import simulation data from a JSON string.
+    /// @param json_str The JSON string to import.
+    /// @param upgrade_log Optional pointer to a string that will be populated
+    ///        with a human-readable description of any schema upgrades applied
+    ///        during import. Left untouched if no upgrade was needed. Pass
+    ///        nullptr (default) if this information is not needed.
+    /// @throws std::runtime_error if the file cannot be read or parsed.
+    /// Loads simulation data from the specified JSON string and updates the current simulation state.
+    void import_json_string(const std::string json_str, std::string* upgrade_log = nullptr);
+    void import_json_string(const char* json_str, std::string* upgrade_log = nullptr);
 
     /// @brief Export simulation data to a JSON file.
     /// @param file_name Path to the JSON file to write.
@@ -351,6 +434,9 @@ private:
 
     const OpticalPropertySet* get_optical_property_set(optics_id id) const;
     OpticalPropertySet* get_optical_property_set(optics_id id);
+
+    void insert_element_into_group(element_ptr el, int32_t group);
+    void remove_element_from_group(element_ptr el);
 };
 
 } // namespace SolTrace::Data

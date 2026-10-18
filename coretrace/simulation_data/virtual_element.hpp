@@ -31,7 +31,7 @@ public:
     //    return opt_id;  // TODO: return identifier saying it's permanent/virtual
     //}
 private:
-    std::shared_ptr<const OpticalPropertySet> owned_optical_property_set;
+    optical_set_ptr owned_optical_property_set;
 };
 
 class VirtualPlane : public VirtualElement

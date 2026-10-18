@@ -143,6 +143,8 @@ namespace OptixCSP
         void set_trim_excess_rays(bool trim) { m_trim_excess_rays = trim; }
         bool get_trim_excess_rays() const { return m_trim_excess_rays; }
 
+        void set_additional_ptx_directory(std::filesystem::path &p);
+
     private:
         // could use FRIEND_TEST macro, however to avoid linking gtest to prod, forward declare test class and make it a friend
         friend class ::grouped_results_SolTraceSystem_helper;

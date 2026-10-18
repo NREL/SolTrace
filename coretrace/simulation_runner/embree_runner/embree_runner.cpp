@@ -70,6 +70,8 @@ namespace SolTrace::EmbreeRunner
             this->tsys.sim_errors_optical,
             this->embree_scene);
 
+        if (sts == RunnerStatus::SUCCESS) this->set_ready_to_report(true);
+
         return sts;
     }
 

@@ -23,6 +23,7 @@ using SolTrace::Data::optics_id;
 using SolTrace::Data::OpticalPropertySet;
 using SolTrace::Data::OpticalPropertySetReference;
 using SolTrace::Data::OpticalSide;
+using SolTrace::Data::optical_set_ptr;
 using SolTrace::Data::Parabola;
 using SolTrace::Data::Rectangle;
 using SolTrace::Data::SimulationData;
@@ -48,6 +49,7 @@ using SolTrace::Data::ParabolicTrough;
 using SolTrace::Data::aperture_ptr;
 using SolTrace::Data::element_id;
 using SolTrace::Data::element_ptr;
+using SolTrace::Data::mut_optical_set_ptr;
 using SolTrace::Data::ray_source_id;
 using SolTrace::Data::ray_source_ptr;
 using SolTrace::Data::stage_ptr;
@@ -86,5 +88,17 @@ using SolTrace::Data::ELEMENT_NULL;
 using SolTrace::Data::D2R;
 using SolTrace::Data::PI;
 using SolTrace::Data::R2D;
+
+// char to enum functions
+using SolTrace::Data::char_to_distribution;
+using SolTrace::Data::distribution_to_char;
+using SolTrace::Data::char_to_sunshape;
+using SolTrace::Data::sunshape_to_char;
+using SolTrace::Data::char_to_aperture;
+using SolTrace::Data::aperture_to_char;
+using SolTrace::Data::char_to_surface;
+using SolTrace::Data::surface_to_char;
+using SolTrace::Data::int_to_interaction;
+using SolTrace::Data::interaction_to_int;
 
 #endif

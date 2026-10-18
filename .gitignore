@@ -306,6 +306,7 @@ __pycache__/
 *.dylib
 *.bin
 *.mod
+*.ptx
 
 #*.html
 #*.png

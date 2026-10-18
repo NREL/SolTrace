@@ -58,7 +58,10 @@ void SimulationResult::write_csv_file(std::string csv_name, int precision) const
 
 void SimulationResult::write_csv_file(const char* csv_name, int precision) const
 {
-    std::ofstream csv(csv_name);
+    std::ofstream csv(csv_name, std::ios::out | std::ios::trunc);
+
+    if (!csv.is_open()) throw std::runtime_error("Failure opening " + std::string(csv_name));
+
     csv.precision(precision);
     csv << "Ray Number,Pos X,Pos Y,Pos Z,"
         << "Cos X,Cos Y,Cos Z,Element,Event\n";

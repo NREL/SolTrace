@@ -121,7 +121,7 @@ namespace SolTrace::Data
          * @brief Get optical propertiy set pointer
          * @return nullptr (composite elements don't have optical properties)
          */
-        virtual std::shared_ptr<const OpticalPropertySet> get_optical_property_set() const override
+        virtual optical_set_ptr get_optical_property_set() const override
         {
             return nullptr;
         }

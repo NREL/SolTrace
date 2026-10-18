@@ -22,7 +22,7 @@ set(OPTIX_RUNNER_SRC
     optix_runner.cpp
 )
 
-set(POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_library(optix_runner STATIC ${OPTIX_RUNNER_SRC})
 

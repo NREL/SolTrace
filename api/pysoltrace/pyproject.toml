@@ -1,0 +1,72 @@
+# NOTE: the wheel expects the cmake build process to be run before running `py -m build --wheel`
+[build-system]
+requires = ["hatchling == 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pysoltrace"
+version = "0.0.1"
+description = "Python bindings and utilities for the NLR SolTrace(TM) ray-tracing engine."
+readme = "./README.md"
+license-files = ["LICENSE.md"]
+keywords = ["SolTrace", "Concentrating Solar", "CSP", "CST"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Education",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "colorama >= 0.4.6",
+    "hatchling >= 1.32.4",
+    "numpy >= 2.5.2", 
+    "matplotlib >= 3.11.2", 
+    "orjson >= 3.10,<4",
+    "pandas >= 3.0.5",
+]
+
+[project.optional-dependencies]
+optix = [
+  "nvsoltrace",
+]
+
+[project.urls]
+Homepage = "https://github.com/NLR-SolTrace/SolTrace"
+Documentation = "https://github.com/NLR-SolTrace/SolTrace#readme"
+Repository = "https://github.com/NLR-SolTrace/SolTrace.git"
+"Bug Tracker" = "https://github.com/NLR-SolTrace/SolTrace/issues"
+
+[tool.hatch.build.targets.sdist]
+# exclude development virtual environment and local data files
+include = ["pysoltrace"]
+exclude = [
+    "**.csv",
+    "**.json",
+    "**.pickle",
+]
+
+[tool.hatch.build.targets.wheel]
+# include build artifacts in wheel target
+artifacts = ["pysoltrace/bin/**"]
+
+[tool.hatch.build.targets.wheel.force-include]
+# include headers for dot_h generation
+"../stapi_v2.h" = "pysoltrace/include/stapi_v2.h"
+"../../coretrace/simulation_data/solar_position_calculators/solar_position_calculator.hpp" = "pysoltrace/include/solar_position_calculator.hpp"
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "pysoltrace/_whl_tag.py"

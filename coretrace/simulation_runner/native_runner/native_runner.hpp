@@ -54,6 +54,9 @@ namespace SolTrace::NativeRunner
             return tsys.SunRayCount > 0 ? tsys.sim_raycount : 0;
         }
 
+        bool is_ready_to_run() const override { return this->ready_to_run; }
+        bool is_ready_to_report() const override { return this->ready_to_report; }
+
         // Runner options
         void disable_power_tower() { this->as_power_tower = false; }
         void enable_power_tower() { this->as_power_tower = true; }
@@ -166,8 +169,14 @@ namespace SolTrace::NativeRunner
         void check_supported_options(telement_ptr telem);
 
     private:
-            // could use FRIEND_TEST macro, however to avoid linking gtest to prod, forward declare test class and make it a friend
-            friend class ::grouped_results_NativeRunner_helper;
+        // could use FRIEND_TEST macro, however to avoid linking gtest to prod, forward declare test class and make it a friend
+        friend class ::grouped_results_NativeRunner_helper;
+    
+    protected:
+        bool ready_to_run;
+        bool ready_to_report;
+        void set_ready_to_run(bool ready) override { this->ready_to_run = ready; }
+        void set_ready_to_report(bool ready) override { this->ready_to_report = ready; }
     };
 
 } // namespace SolTrace::NativeRunner

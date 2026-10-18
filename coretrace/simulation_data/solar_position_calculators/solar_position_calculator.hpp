@@ -9,7 +9,8 @@ enum SolarPositionCalculationMethod {
     DUFFIE,
     SOLPOS,
     SPA_ORIGINAL,
-    SPA
+    SPA,
+    CALCULATOR_COUNT /* sentinel */
 };
 
 class SolarPositionCalculator {

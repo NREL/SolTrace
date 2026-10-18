@@ -2,17 +2,18 @@ cmake_minimum_required(VERSION 3.20)
 
 project(OptixCSP LANGUAGES CXX CUDA)
 
-if(MSVC)
-    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/Zc:preprocessor")
-endif()
-
 # C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # CUDA architectures 
 set(CMAKE_CUDA_ARCHITECTURES 75;86;89;90)
+
+if(MSVC)
+    set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -Xcompiler=/Zc:preprocessor")
+endif()
 
 # Set CMAKE_MODULE_PATH BEFORE add_subdirectory so child can find FindOptiX.cmake
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")

@@ -16,7 +16,7 @@ namespace SolTrace::NativeRunner
         int_fast64_t stage,
         unsigned thread_id,
         MTRand &myrng,
-        const SolTrace::Data::OpticalPropertySet *optics,
+        const SolTrace::Data::OpticalPropertySet* optics,
         glm::dvec3 const& LastDFXYZ,
         glm::dvec3 const& LastCosRaySurfElement,
         bool LastHitBackSide,

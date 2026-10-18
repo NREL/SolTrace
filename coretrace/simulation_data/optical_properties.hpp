@@ -506,8 +506,9 @@ public:
 
     const InteractionType get_interaction_type() const { return this->my_type; }
 
-    const std::string get_name() const { return this->my_name; }
-
+    const std::string& get_name() const { return this->my_name; }
+    void set_name(std::string name) { this->my_name = name; }
+    
     void get_refraction_indices(double& rfront, double& rback) const
     {
         rfront = this->refraction_index_front;
@@ -701,6 +702,9 @@ public:
     friend std::ostream& operator<<(std::ostream&                os,
                                     const OpticalPropertiesFace& op);
 };
+
+using optical_set_ptr = typename std::shared_ptr<const OpticalPropertySet>;
+using mut_optical_set_ptr = typename std::shared_ptr<OpticalPropertySet>;
 
 } // namespace SolTrace::Data
 

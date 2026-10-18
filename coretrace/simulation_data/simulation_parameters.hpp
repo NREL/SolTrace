@@ -34,6 +34,8 @@ public:
     bool include_sun_shape_errors;
     bool include_optical_errors;
 
+    bool as_power_tower;
+
     SimulationParameters() : number_of_rays(10000),
                              max_number_of_rays(1000000),
                              tolerance(0.0),
@@ -41,7 +43,8 @@ public:
                              longitude(0.0),
                              seed(0),
                              include_sun_shape_errors(false),
-                             include_optical_errors(false)
+                             include_optical_errors(false),
+                             as_power_tower(false)
     {
     }
     SimulationParameters(const nlohmann::ordered_json& jnode)

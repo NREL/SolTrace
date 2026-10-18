@@ -64,11 +64,12 @@ namespace SolTrace::Result
     {
         return std::make_shared<InteractionRecord>(std::forward<Args>(args)...);
     }
+    using InteractionRecordContainer = typename std::vector<interaction_ptr>;
 
     struct RayRecord
     {
         ray_id id;
-        std::vector<interaction_ptr> interactions;
+        InteractionRecordContainer interactions;
 
         RayRecord(ray_id id);
         ~RayRecord();
@@ -102,6 +103,10 @@ namespace SolTrace::Result
         {
             return this->interactions.size();
         }
+        InteractionRecordContainer::const_iterator get_interaction_record_iterator() const
+        { return interactions.cbegin(); }
+        bool is_at_end(InteractionRecordContainer::const_iterator citer) const
+        { return citer == this->interactions.cend(); }
 
         const interaction_ptr &operator[](int_fast64_t idx) const;
         friend std::ostream &operator<<(std::ostream &os,
@@ -118,7 +123,7 @@ namespace SolTrace::Result
     struct ElementRecord
     {
         SolTrace::Data::element_id elid;
-        std::vector<interaction_ptr> interactions;
+        InteractionRecordContainer interactions;
 
         ElementRecord(SolTrace::Data::element_id eid);
         ~ElementRecord();

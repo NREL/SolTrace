@@ -18,6 +18,8 @@ OptixRunner::OptixRunner()
     : SimulationRunner(),
       m_simdata(nullptr),
       m_sys(),
+      ready_to_run(false),
+      ready_to_report(false),
       m_timer_report(),
       m_timer_get_output(),
       m_timer_report_loop()
@@ -98,8 +100,7 @@ RunnerStatus OptixRunner::setup_simulation(const SimulationData* data)
 
     m_sys.initialize();
 
-    // std::cout << "Number of stages: " << this->tsys.StageList.size()
-    //           << std::endl;
+    if (sts == RunnerStatus::SUCCESS) this->set_ready_to_run(true);
 
     return sts;
 }
@@ -490,6 +491,7 @@ RunnerStatus OptixRunner::run_simulation_core()
 {
 
     m_sys.run();
+    this->set_ready_to_report(true);
 
     return RunnerStatus::SUCCESS;
 }

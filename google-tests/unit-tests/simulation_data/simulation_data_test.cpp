@@ -354,3 +354,92 @@ TEST(SimulationData, ParametersInterface)
     mutable_params.seed = 0;
     EXPECT_EQ(my_sim.get_seed(), 0);
 }
+
+TEST(SimulationData, SetElementGroup)
+{
+    SimulationData my_sim;
+
+    // Make dummy optical properties
+    OpticalPropertySet dummy_optics;
+    auto optics_ref = my_sim.add_optical_property_set(dummy_optics);
+
+    // Create a properly configured SingleElement
+    auto configured_single = SolTrace::Data::make_element<SingleElement>();
+    auto aperture = SolTrace::Data::make_aperture<SolTrace::Data::Rectangle>(1.0, 1.0);
+    auto surface = SolTrace::Data::make_surface<SolTrace::Data::Flat>();
+    configured_single->set_aperture(aperture);
+    configured_single->set_surface(surface);
+    configured_single->set_optical_property_set(optics_ref);
+    my_sim.add_element(configured_single);
+
+    // Create a properly configured CompositeElement
+    auto configured_composite = SolTrace::Data::make_element<CompositeElement>();
+    auto configured_sub1 = SolTrace::Data::make_element<SingleElement>();
+    auto aperture2 = SolTrace::Data::make_aperture<SolTrace::Data::Rectangle>(2.0, 2.0);
+    auto surface2 = SolTrace::Data::make_surface<SolTrace::Data::Flat>();
+    configured_sub1->set_aperture(aperture2);
+    configured_sub1->set_surface(surface2);
+    configured_sub1->set_optical_property_set(optics_ref);
+    configured_composite->add_element(configured_sub1);
+    auto configured_sub2 = SolTrace::Data::make_element<SingleElement>();
+    auto aperture3 = SolTrace::Data::make_aperture<SolTrace::Data::Rectangle>(3.0, 3.0);
+    auto surface3 = SolTrace::Data::make_surface<SolTrace::Data::Flat>();
+    configured_sub2->set_aperture(aperture3);
+    configured_sub2->set_surface(surface3);
+    configured_sub2->set_optical_property_set(optics_ref);
+    configured_composite->add_element(configured_sub2);
+    my_sim.add_element(configured_composite);
+
+    auto single_id = configured_single->get_id();
+    auto comp_id = configured_composite->get_id();
+    auto sub1_id = configured_sub1->get_id();
+    auto sub2_id = configured_sub2->get_id();
+
+    // Set group for single element
+    int32_t group1 = 1;
+    my_sim.set_element_group(single_id, group1);
+    EXPECT_EQ(configured_single->get_group(), group1);
+    
+    // Set group for composite element
+    int32_t group2 = 2;
+    my_sim.set_element_group(comp_id, group2);
+    EXPECT_EQ(configured_sub1->get_group(), group2);
+    EXPECT_EQ(configured_sub2->get_group(), group2);
+
+    // Check that the groups are correctly reflected in the SimulationData
+    std::vector<std::set<uint_fast64_t>> groups = my_sim.get_groups();
+    ASSERT_EQ(groups[group1].count(single_id), 1);
+    ASSERT_EQ(groups[group2].count(sub1_id), 1);
+    ASSERT_EQ(groups[group2].count(sub2_id), 1);
+
+    // Attempt to set an invalid group number, does nothing
+    int32_t invalid_group = -3;
+
+    my_sim.set_element_group(single_id, invalid_group);
+    EXPECT_EQ(configured_single->get_group(), group1);
+    my_sim.set_element_group(comp_id, invalid_group);
+    EXPECT_EQ(configured_sub1->get_group(), group2);
+
+    groups = my_sim.get_groups();
+    ASSERT_EQ(groups[group1].count(single_id), 1);
+    ASSERT_EQ(groups[group2].count(sub1_id), 1);
+    ASSERT_EQ(groups[group2].count(sub2_id), 1);
+
+    // attempt to set group for non-existent element, does nothing
+    element_id non_existent_id = 9999;
+    my_sim.set_element_group(non_existent_id, 3);
+    groups = my_sim.get_groups();
+    // index 0 has empty group
+    EXPECT_EQ(groups.size(), 3);
+
+    // attempt to ungroup an element by setting its group to -1
+    my_sim.set_element_group(single_id, -1);
+    EXPECT_EQ(configured_single->get_group(), -1);
+    my_sim.set_element_group(comp_id, -1);
+    EXPECT_EQ(configured_sub1->get_group(), -1);
+    EXPECT_EQ(configured_sub2->get_group(), -1);
+    groups = my_sim.get_groups();
+    ASSERT_EQ(groups[group1].count(single_id), 0);
+    ASSERT_EQ(groups[group2].count(sub1_id), 0);
+    ASSERT_EQ(groups[group2].count(sub2_id), 0);
+}

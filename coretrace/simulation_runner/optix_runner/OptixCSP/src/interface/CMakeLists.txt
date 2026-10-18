@@ -11,6 +11,8 @@ if(NOT OptiX_INCLUDE)
     endif()
 endif()
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 add_library(OptixCSP_interface_soltrace STATIC
     soltrace_optix_interface.cpp
 )

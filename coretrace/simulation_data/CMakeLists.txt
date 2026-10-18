@@ -83,7 +83,7 @@ set(SIMDATA_HDRS
 
 source_group("Header Files" FILES ${SIMDATA_HDRS})
 
-set(POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_library(simdata STATIC ${SIMDATA_SRC} ${SIMDATA_HDRS})
 set_target_properties(simdata

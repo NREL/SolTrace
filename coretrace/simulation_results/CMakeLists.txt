@@ -21,7 +21,7 @@ set(SIMRES_HDRS
     simulation_result_export.hpp
 )
 
-set(POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 add_library(simresult STATIC ${SIMRES_SRC})
 

@@ -43,6 +43,9 @@ public:
     inline uint_fast64_t get_number_rays_traced() const override
     { return m_sys.get_N_hit_rays(); }
 
+    bool is_ready_to_run() const override { return this->ready_to_run; }
+    bool is_ready_to_report() const override { return this->ready_to_report; }
+
     uint64_t get_N_run_iterations() const;
 
     void print_timing() const;
@@ -105,6 +108,9 @@ public:
     size_t  get_num_groups() const { return m_groups.size(); }
     int32_t get_group(int32_t element_id);
 
+    void set_additional_ptx_directory(std::filesystem::path &p)
+    { m_sys.set_additional_ptx_directory(p); }
+
 private:
     bool should_report_grouped_counts(int level) const;
     bool should_report_ray_records(int level) const;
@@ -141,6 +147,12 @@ private:
     OptixCSP::Timer m_timer_report;
     OptixCSP::Timer m_timer_get_output;
     OptixCSP::Timer m_timer_report_loop;
+
+protected:
+    bool ready_to_run;
+    bool ready_to_report;
+    void set_ready_to_run(bool ready) override { this->ready_to_run = ready; }
+    void set_ready_to_report(bool ready) override { this->ready_to_report = ready; }
 };
 
 #endif

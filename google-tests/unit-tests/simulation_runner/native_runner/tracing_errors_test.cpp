@@ -21,6 +21,7 @@ using SolTrace::Data::DistributionType;
 using SolTrace::Data::InteractionType;
 using SolTrace::Data::OpticalPropertySet;
 using SolTrace::Data::OpticalSide;
+using SolTrace::Data::optical_set_ptr;
 using SolTrace::Data::SunShape;
 using SolTrace::NativeRunner::ApplySlopeError;
 using SolTrace::NativeRunner::ApplySpecularityError;
@@ -54,9 +55,9 @@ double AngleBetween(const glm::dvec3& a, const glm::dvec3& b)
 }
 
 OpticalPropertySet MakeReflector(DistributionType   dist,
-                                 double             slope_mrad,
-                                 double             spec_mrad,
-                                 const std::string& name = "test_optics")
+                              double             slope_mrad,
+                              double             spec_mrad,
+                              const std::string& name = "test_optics")
 {
     OpticalPropertySet optics(InteractionType::REFLECTION, name);
     // set_ideal_reflection() clears the error terms, so it must come first.
@@ -533,7 +534,7 @@ TEST(TracingErrors, DiffuseIsIndependentOfIncidenceDirection)
         plate->set_aperture(make_aperture<Rectangle>(20, 20));
         plate->set_name("plate");
 
-        OpticalPropertySet plate_optics =
+        const OpticalPropertySet plate_optics =
             MakeReflector(DistributionType::DIFFUSE, 0.0, 0.0, "diffuse_plate");
         plate->set_optical_property_set(
             sd.add_optical_property_set(plate_optics));
