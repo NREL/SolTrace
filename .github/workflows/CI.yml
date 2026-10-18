@@ -410,15 +410,18 @@ jobs:
 
     - name : Activate virtual environment (Ubuntu/MacOS)
       if: matrix.os != 'windows-latest'
+      working-directory: ./testing
       run: > 
         source .venv/bin/activate
 
     - name : Activate virtual environment (Windows)
       if: matrix.os == 'windows-latest'
+      working-directory: ./testing
       run: > 
         .venv/bin/activate
 
     - name: Install/test wheel
+      working-directory: ./testing
       run: |
         python -m pip install --upgrade pip
         python -m pip install -r ${{ github.workspace }}/api/requirements.txt
