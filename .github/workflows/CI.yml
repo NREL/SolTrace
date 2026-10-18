@@ -400,10 +400,27 @@ jobs:
         path: ${{ github.workspace }}/dist/
         merge-multiple: true
 
-    - name: Install/test wheel
+    - name: Set up testing environment
       run: |
         ls ${{ github.workspace }}/dist/
+        mkdir testing
+        cp ${{ github.workspace }}/api/pysoltrace/testing.py ./testing
+        cd ./testing
+        python -m venv .venv
+
+    - name : Activate virtual environment (Ubuntu/MacOS)
+      if: matrix.os != 'windows-latest'
+      run: > 
+        source .venv/bin/activate
+
+    - name : Activate virtual environment (Windows)
+      if: matrix.os == 'windows-latest'
+      run: > 
+        .venv/bin/activate
+
+    - name: Install/test wheel
+      run: |
         python -m pip install --upgrade pip
         python -m pip install -r ${{ github.workspace }}/api/requirements.txt
         python -m pip install --no-index --find-links=${{ github.workspace }}/dist/ pysoltrace
-        python ${{ github.workspace }}/api/pysoltrace/testing.py -v --locals
+        python ./testing.py -v
